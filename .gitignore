@@ -1,2 +1,28 @@
 *.class
 *.log
+
+# Scala.js specific
+*.js.map
+*.js
+run.mjs
+bundle.js
+*.wasm
+
+# scala-cli specific
+.scala-build/
+.bloop/
+.metals/
+.bsp/
+
+# IDE
+.idea/
+.vscode/
+.DS_Store
+
+# npm
+node_modules/
+package-lock.json
+yarn.lock
+
+# webpack
+webpack.config.js
