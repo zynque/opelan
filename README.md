@@ -1,179 +1,122 @@
 # Opelan Language Workbench
 
-A minimal proof of concept Scala.js application that demonstrates local-first data storage using Automerge and code editing using CodeMirror. This is intended as a foundation for a language workbench.
+A production-ready language workbench built with Scala.js, CodeMirror, and Automerge for local-first, collaborative language development.
 
 ## Features
 
-- **Scala.js**: Full-stack Scala development compiled to JavaScript
-- **Automerge**: Local-first data storage with CRDT support for collaborative editing
-- **CodeMirror 6**: Modern code editor with syntax highlighting and autocompletion
-- **scala-cli**: Modern build tool for simplified Scala project management
+- **Schema-First Design**: Structured data model with projects, definitions, and schemas
+- **Multi-Modal Editing**: Text editor + visualization views for the same underlying data
+- **Typed Gaps**: Progressive typing system inspired by Hazel
+- **Real-Time Collaboration**: Automerge CRDT for collaborative editing
+- **Local-First**: Browser-only deployment with IndexedDB persistence
+- **P2P Collaboration**: Pure peer-to-peer with pluggable signaling/backends
+- **Custom DSL**: Expression-oriented language with room for broader language forms
 
-## Prerequisites
-
-- Java JDK 11 or higher
-- scala-cli (install from https://scala-cli.virtuslab.org)
-- Node.js and npm (for JavaScript dependencies)
-
-## Building the Project
-
-This project uses scala-cli instead of sbt for a simpler build process:
-
-1. **Install scala-cli** (if not already installed):
-   ```bash
-   curl -sSLf https://virtuslab.github.io/scala-cli-packages/scala-cli-setup.sh | sh
-   ```
-
-2. **Install npm dependencies:**
-   ```bash
-   npm install
-   ```
-
-3. **Build the project:**
-   ```bash
-   scala-cli compile Main.scala
-   ```
-
-4. **Package for web:**
-   ```bash
-   scala-cli package Main.scala --js --js-module-kind commonjs
-   npm run bundle
-   ```
-
-## Running the Project
-
-1. **Build the project:**
-   ```bash
-   scala-cli package Main.scala --js --js-module-kind es
-   ```
-
-2. **Serve the HTML file:**
-   You can use any static file server. For example, using Node.js:
-   ```bash
-   npx http-server -p 8080
-   ```
-
-   Or using Python:
-   ```bash
-   python -m http.server 8080
-   ```
-
-3. **Open in browser:**
-   Navigate to `http://localhost:8080` and open `index.html`
-
-## Development Workflow
-
-During development, you can use watch mode for automatic recompilation:
-
-```bash
-scala-cli compile Main.scala --watch
-```
-
-This will recompile automatically when you make changes to the Scala source files.
-
-## Project Structure
+## Architecture
 
 ```
-opelan/
-├── Main.scala                # Main application with dependency directives
-├── index.html                # HTML entry point
-├── package.json              # npm dependencies (optional, for reference)
-├── run.sh                    # Unix build script
-├── run.bat                   # Windows build script
-└── README.md
+foundation/           # Foundation language system
+├── structure/        # Type system, validation, structures
+├── dsl/              # DSL parser, expressions, interpreter
+├── typing/           # Typed gaps system
+└── project/          # Project management, workspace
+
+ui/                   # User interface components
+├── editor/           # Text editing (CodeMirror integration)
+├── visualization/    # Graph/diagram rendering
+├── structure/        # Structure editing UI
+└── collaboration/    # Collaboration UI
+
+data/                 # Data persistence
+├── automerge/        # Automerge CRDT integration
+└── storage/          # IndexedDB persistence
+
+collaboration/        # Collaboration infrastructure
+├── signaling/        # P2P signaling protocols
+├── backends/         # Pluggable backend adapters
+└── presence/         # User presence and cursors
 ```
 
-## Dependency Management
+## Build Requirements
 
-The project uses a hybrid approach:
-- **Scala dependencies** are declared in `Main.scala` using `//> using` directives
-- **npm dependencies** are declared in `package.json` and installed via npm
+- Node.js 16+ and npm
+- Scala CLI
+- Modern browser with IndexedDB support
 
-```scala
-//> using scala 3.3.1
-//> using platform js
-//> using dep org.scala-js::scalajs-dom:2.8.0
-```
+## Building and Running
 
-```json
-{
-  "dependencies": {
-    "@automerge/automerge": "^1.0.2",
-    "@codemirror/state": "^6.4.0",
-    ...
-  }
-}
-```
+### Using provided scripts (recommended)
 
-## How It Works
-
-1. **Automerge Integration**: The application initializes an Automerge document to store the code content and edit history. Changes in the editor are automatically synchronized to the Automerge document.
-
-2. **CodeMirror Editor**: A CodeMirror 6 instance is created with basic setup, keybindings, and autocompletion. The editor content is bound to the Automerge document.
-
-3. **Real-time Sync**: When you type in the editor, changes are captured and stored in the Automerge document with timestamps in the history array.
-
-4. **Persistence**: The "Save to Console" button serializes the Automerge document to JSON and logs it to the console, demonstrating how you could persist the document.
-
-## Key Components
-
-- `Main.scala`: Contains the main application logic, including:
-  - Dependency declarations via scala-cli directives
-  - Automerge document initialization and management
-  - CodeMirror editor setup with extensions
-  - Real-time synchronization between editor and Automerge
-  - UI updates for displaying document state
-
-## Alternative: Using sbt
-
-If you prefer to use sbt instead of scala-cli, the project includes sbt configuration files:
-
-- `build.sbt`: SBT build configuration
-- `project/build.properties`: SBT version
-- `project/plugins.sbt`: SBT plugins (Scala.js, bundler)
-- `src/main/scala/opelan/Main.scala`: SBT version of the main file
-- `src/main/resources/index.html`: SBT version of HTML
-
-To use sbt:
-```bash
-sbt fastOptJS
-```
-
-## Future Enhancements
-
-This proof of concept can be extended to:
-
-- **Collaborative Editing**: Use Automerge's networking capabilities for real-time collaboration
-- **Language Server Protocol**: Integrate LSP for advanced language features
-- **Persistence Layer**: Add local storage or backend synchronization
-- **Multi-file Support**: Extend to handle multiple files and project structure
-- **Custom Language Support**: Add syntax highlighting and parsing for custom languages
-
-## Troubleshooting
-
-If you encounter issues with npm dependencies, try:
-```bash
-rm -rf node_modules package-lock.json
-npm install
-scala-cli compile Main.scala
-```
-
-If you encounter issues with scala-cli compilation, try:
-```bash
-scala-cli clean Main.scala
-rm -rf .scala-build
-scala-cli compile Main.scala
-```
-
-If you encounter issues with dependency resolution, try clearing the scala-cli cache:
 ```bash
 # Windows
-rmdir /s /q "%LOCALAPPDATA%\ScalaCli\cache"
+run.bat
 
-# Unix/Linux
-rm -rf ~/.cache/scala-cli
+# Unix/Mac
+./run.sh
 ```
+
+### Manual build
+
+```bash
+# Install dependencies
+npm install
+
+# Build Scala.js to ES module
+scala-cli package Main.scala foundation/project/Project.scala foundation/project/Workspace.scala foundation/structure/Schema.scala foundation/typing/TypedHoles.scala foundation/dsl/Parser.scala data/automerge/CollaborationManager.scala data/storage/IndexedDBStore.scala ui/visualization/DiagramRenderer.scala ui/editor/Workbench.scala --js --js-module-kind es -o run.js
+
+# Rename for ES module
+mv run.js run.mjs
+
+# Bundle with webpack
+npm run bundle
+```
+
+### Running the application
+
+```bash
+# Start a local server (Node.js recommended)
+npx http-server -p 8080
+
+# Or use Python as alternative
+python -m http.server 8080
+```
+
+Then open http://localhost:8080 in your browser.
+
+## Development Status
+
+This project is currently in Phase 1 (Foundation & Schema System) of the implementation plan. The current build includes:
+
+- ✅ Working Scala.js + scala-cli + webpack + CodeMirror integration
+- ✅ Modular project structure
+- ✅ Core data models (Project, Definition, Schema)
+- ✅ Typed holes system foundation
+- ✅ DSL parser foundation
+- ✅ Automerge collaboration layer
+- ✅ IndexedDB persistence layer
+- ✅ Basic visualization components
+- ✅ Unified workbench interface
+
+## Next Steps
+
+The following features are planned for implementation:
+
+1. **Enhanced Editor Integration**: Full CodeMirror integration with typed holes
+2. **Schema Editor**: Visual schema definition interface
+3. **Advanced Visualization**: Interactive diagrams with editing capabilities
+4. **Real-Time Collaboration**: P2P synchronization and presence indicators
+5. **DSL Interpreter**: Evaluation engine for the custom DSL
+6. **Testing Framework**: Comprehensive test suite
+
+## Contributing
+
+This project uses a schema-first approach with structured data. When adding new features:
+
+1. Define schemas for new data types
+2. Implement core logic in the appropriate module
+3. Add UI components in the UI layer
+4. Update persistence and collaboration layers as needed
 
 ## License
 
-See LICENSE file for details.
+MIT License

@@ -1,30 +1,29 @@
 #!/bin/bash
-echo "Building Opelan Language Workbench with scala-cli..."
-echo "Installing npm dependencies..."
-npm install
-if [ $? -ne 0 ]; then
-    echo "npm install failed!"
-    exit 1
-fi
-echo "Cleaning previous build..."
+
+# Clean previous build artifacts
 rm -f run.js run.mjs bundle.js
-echo "Building Scala.js application with ES module support..."
-scala-cli package Main.scala --js --js-module-kind es
+
+# Install npm dependencies
+npm install
+
+# Build Scala.js to ES module with all source files
+scala-cli package Main.scala foundation/project/Project.scala foundation/project/Workspace.scala foundation/structure/Schema.scala foundation/typing/TypedGaps.scala foundation/dsl/Parser.scala data/automerge/CollaborationManager.scala data/storage/IndexedDBStore.scala ui/visualization/DiagramRenderer.scala ui/editor/Workbench.scala --js --js-module-kind es -o run.js
+
 if [ $? -ne 0 ]; then
-    echo "Build failed!"
+    echo "Scala.js build failed!"
     exit 1
 fi
-echo "Renaming output to .mjs extension..."
+
+# Rename to .mjs for ES module
 mv run.js run.mjs
-echo "Bundling with webpack..."
+
+# Bundle with webpack
 npm run bundle
+
 if [ $? -ne 0 ]; then
-    echo "Bundling failed!"
+    echo "Webpack bundling failed!"
     exit 1
 fi
-echo "Build successful!"
-echo ""
-echo "To run the application, start a local server:"
-echo "  npx http-server -p 8080"
-echo ""
-echo "Then navigate to http://localhost:8080/index.html"
+
+echo "Build successful! Open http://localhost:8080 in your browser"
+echo "Make sure to run: npx http-server -p 8080"
