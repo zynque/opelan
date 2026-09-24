@@ -26,3 +26,6 @@ yarn.lock
 
 # webpack
 webpack.config.js
+
+# old prototypes
+old-olps/
