@@ -16,6 +16,8 @@ A production-ready language workbench built with Scala.js, CodeMirror, and Autom
 
 ```
 foundation/           # Foundation language system
+├── document/         # Persistent document tree model (ported from olw-p4)
+├── version/          # Version DAG / merge-base machinery (ported from olw-p4)
 ├── structure/        # Type system, validation, structures
 ├── dsl/              # DSL parser, expressions, interpreter
 ├── typing/           # Typed gaps system
@@ -49,10 +51,10 @@ collaboration/        # Collaboration infrastructure
 
 ```bash
 # Windows
-run.bat
+build.bat
 
 # Unix/Mac
-./run.sh
+./build.sh
 ```
 
 ### Manual build
@@ -62,13 +64,23 @@ run.bat
 npm install
 
 # Build Scala.js to ES module
-scala-cli package Main.scala foundation/project/Project.scala foundation/project/Workspace.scala foundation/structure/Schema.scala foundation/typing/TypedHoles.scala foundation/dsl/Parser.scala data/automerge/CollaborationManager.scala data/storage/IndexedDBStore.scala ui/visualization/DiagramRenderer.scala ui/editor/Workbench.scala --js --js-module-kind es -o run.js
-
-# Rename for ES module
-mv run.js run.mjs
+scala-cli package Main.scala foundation ui data collaboration --js --js-module-kind es -o app.js
 
 # Bundle with webpack
 npm run bundle
+```
+
+### Running tests
+
+```bash
+# Windows
+test.bat
+
+# Unix/Mac
+./test.sh
+
+# Or manually
+scala-cli test Main.scala project.scala foundation ui data collaboration test
 ```
 
 ### Running the application

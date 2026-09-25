@@ -3,3 +3,4 @@
 //> using repository central
 //> using dep org.scala-js:scalajs-dom_sjs1_3:2.8.1
 //> using jsModuleKind es
+//> using test.dep org.scalameta::munit::1.1.0

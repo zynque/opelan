@@ -4,7 +4,6 @@
 # Scala.js specific
 *.js.map
 *.js
-run.mjs
 bundle.js
 *.wasm
 
