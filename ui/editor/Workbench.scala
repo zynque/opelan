@@ -21,7 +21,8 @@ class Workbench {
   private var container: dom.Element = null
   private var isInitialized = false
   private var currentProject: Option[Project] = None
-  private var currentView: String = "editor" // editor, visualization, schema
+  private var currentView: String = "document" // document, editor, visualization, schema
+  private var documentEditor: Option[DocumentEditor] = None
   
   // Initialize the workbench
   def initialize(containerId: String): Unit = {
@@ -32,6 +33,7 @@ class Workbench {
       }
       
       setupUI()
+      switchView(currentView)
       initializeStorage()
       initializeCollaboration()
       isInitialized = true
@@ -63,6 +65,7 @@ class Workbench {
         <div id="main-content" style="flex: 1; display: flex; flex-direction: column;">
           <!-- Toolbar -->
           <div id="toolbar" style="padding: 10px; border-bottom: 1px solid #ccc; background: #f9f9f9;">
+            <button id="doc-view-btn" style="margin-right: 5px; padding: 5px 10px;">Document</button>
             <button id="editor-view-btn" style="margin-right: 5px; padding: 5px 10px;">Editor</button>
             <button id="viz-view-btn" style="margin-right: 5px; padding: 5px 10px;">Visualization</button>
             <button id="schema-view-btn" style="padding: 5px 10px;">Schema</button>
@@ -71,8 +74,13 @@ class Workbench {
           
           <!-- Content Area -->
           <div id="content-area" style="flex: 1; padding: 10px; overflow: auto;">
+            <!-- Document View -->
+            <div id="doc-view" style="height: 100%;">
+              <div id="doc-container" style="height: 100%;"></div>
+            </div>
+
             <!-- Editor View -->
-            <div id="editor-view" style="height: 100%;">
+            <div id="editor-view" style="height: 100%; display: none;">
               <div id="editor-container" style="height: 100%; border: 1px solid #ccc;"></div>
             </div>
             
@@ -109,6 +117,11 @@ class Workbench {
     }
     
     // View buttons
+    val docViewBtn = dom.document.getElementById("doc-view-btn")
+    docViewBtn.asInstanceOf[dom.HTMLButtonElement].onclick = (event: dom.MouseEvent) => {
+      switchView("document")
+    }
+
     val editorViewBtn = dom.document.getElementById("editor-view-btn")
     editorViewBtn.asInstanceOf[dom.HTMLButtonElement].onclick = (event: dom.MouseEvent) => {
       switchView("editor")
@@ -194,7 +207,7 @@ class Workbench {
     currentView = view
     
     // Hide all views
-    val views = List("editor-view", "viz-view", "schema-view")
+    val views = List("doc-view", "editor-view", "viz-view", "schema-view")
     views.foreach { viewId =>
       val element = dom.document.getElementById(viewId)
       element.asInstanceOf[dom.HTMLElement].style.display = "none"
@@ -202,6 +215,7 @@ class Workbench {
     
     // Show selected view
     val viewId = view match {
+      case "document" => "doc-view"
       case "visualization" => "viz-view"
       case _ => s"${view}-view"
     }
@@ -210,6 +224,7 @@ class Workbench {
     
     // Update view-specific content
     view match {
+      case "document" => setupDocumentView()
       case "editor" => setupEditorView()
       case "visualization" => setupVisualizationView()
       case "schema" => setupSchemaView()
@@ -218,6 +233,17 @@ class Workbench {
     updateStatus(s"Switched to $view view")
   }
   
+  // Setup document editor view (created once, then kept alive across view switches)
+  private def setupDocumentView(): Unit = {
+    if (documentEditor.isEmpty) {
+      val docContainer = dom.document.getElementById("doc-container")
+      val editor = new DocumentEditor(docContainer)
+      editor.initialize()
+      documentEditor = Some(editor)
+    }
+    updateStatus("Document view ready")
+  }
+
   // Setup editor view
   private def setupEditorView(): Unit = {
     val editorContainer = dom.document.getElementById("editor-container")
