@@ -22,7 +22,7 @@ class Workbench {
   private var isInitialized = false
   private var currentProject: Option[Project] = None
   private var currentView: String = "document" // document, editor, visualization, schema
-  private var documentEditor: Option[DocumentEditor] = None
+  private var documentEditor: Option[opelan.ui.fp.Handle[EditorInput, EditorOutput]] = None
   
   // Initialize the workbench
   def initialize(containerId: String): Unit = {
@@ -69,6 +69,7 @@ class Workbench {
             <button id="editor-view-btn" style="margin-right: 5px; padding: 5px 10px;">Editor</button>
             <button id="viz-view-btn" style="margin-right: 5px; padding: 5px 10px;">Visualization</button>
             <button id="schema-view-btn" style="padding: 5px 10px;">Schema</button>
+            <button id="components-view-btn" style="margin-left: 5px; padding: 5px 10px;">Components</button>
             <span style="margin-left: 20px;">Project: <span id="current-project-name">None</span></span>
           </div>
           
@@ -92,6 +93,11 @@ class Workbench {
             <!-- Schema View -->
             <div id="schema-view" style="height: 100%; display: none;">
               <div id="schema-container" style="height: 100%; border: 1px solid #ccc;"></div>
+            </div>
+
+            <!-- Components Demo View -->
+            <div id="components-view" style="height: 100%; display: none;">
+              <div id="components-container" style="height: 100%; border: 1px solid #ccc; padding: 10px;"></div>
             </div>
           </div>
           
@@ -135,6 +141,11 @@ class Workbench {
     val schemaViewBtn = dom.document.getElementById("schema-view-btn")
     schemaViewBtn.asInstanceOf[dom.HTMLButtonElement].onclick = (event: dom.MouseEvent) => {
       switchView("schema")
+    }
+
+    val componentsViewBtn = dom.document.getElementById("components-view-btn")
+    componentsViewBtn.asInstanceOf[dom.HTMLButtonElement].onclick = (event: dom.MouseEvent) => {
+      switchView("components")
     }
   }
   
@@ -207,7 +218,7 @@ class Workbench {
     currentView = view
     
     // Hide all views
-    val views = List("doc-view", "editor-view", "viz-view", "schema-view")
+    val views = List("doc-view", "editor-view", "viz-view", "schema-view", "components-view")
     views.foreach { viewId =>
       val element = dom.document.getElementById(viewId)
       element.asInstanceOf[dom.HTMLElement].style.display = "none"
@@ -228,18 +239,34 @@ class Workbench {
       case "editor" => setupEditorView()
       case "visualization" => setupVisualizationView()
       case "schema" => setupSchemaView()
+      case "components" => setupComponentsView()
     }
     
     updateStatus(s"Switched to $view view")
   }
   
-  // Setup document editor view (created once, then kept alive across view switches)
+  // Components demo view: mounts the fp.CounterList example once.
+  private var componentsHandle: Option[opelan.ui.fp.Handle[?, ?]] = None
+  private def setupComponentsView(): Unit = {
+    if (componentsHandle.isEmpty) {
+      val c = dom.document.getElementById("components-container")
+      val handle = opelan.ui.fp.Runtime.mount(c, opelan.ui.fp.demo.CounterList)
+      handle.outputs.subscribe(o => updateStatus(s"Components: $o"))
+      componentsHandle = Some(handle)
+    }
+    updateStatus("Components view ready")
+  }
+
+  // Setup document editor view (mounted once, then kept alive across view switches)
   private def setupDocumentView(): Unit = {
     if (documentEditor.isEmpty) {
       val docContainer = dom.document.getElementById("doc-container")
-      val editor = new DocumentEditor(docContainer)
-      editor.initialize()
-      documentEditor = Some(editor)
+      val handle = opelan.ui.fp.Runtime.mount(docContainer, DocumentEditor)
+      handle.outputs.subscribe {
+        case EditorOutput.Status(msg) => updateStatus(msg)
+        case _ => ()
+      }
+      documentEditor = Some(handle)
     }
     updateStatus("Document view ready")
   }

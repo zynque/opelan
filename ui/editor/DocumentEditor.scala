@@ -2,12 +2,16 @@
 
 package opelan.ui.editor
 
-import org.scalajs.dom.{Element, HTMLElement}
 import opelan.foundation.document._
-import opelan.foundation.document.Detached._
+import opelan.ui.fp._
 
 // Raw document editor: an outliner-style structural editor over
-// Document[NodeData]. One row per node; indentation shows depth.
+// Document[NodeData], now as an fp component.
+//
+//   I: EditorInput  — one channel for everything (view events, keyboard,
+//                     parent-pushed commands like LoadDocument)
+//   S: EditorModel  — a pure value (EditorUpdate.scala)
+//   O: EditorOutput — DocChanged / Status, interpreted by whoever mounts it
 //
 // Key bindings (when the outline has focus):
 //   Up/Down                    move selection
@@ -20,48 +24,26 @@ import opelan.foundation.document.Detached._
 //   Ctrl+Z, Ctrl+Y             undo / redo
 //   Escape                     deselect / cancel edit
 //
-// Composed of small traits in this package:
-//   DocumentEditorState      session state (doc, selection, stacks, clipboard)
-//   DocumentEditorCommands   whole-document commands (new/sample/compact)
-//   DocumentEditorOps        structural edits (insert/indent/outdent)
-//   DocumentEditorClipboard  remove/cut/copy/paste of subtrees
-//   DocumentEditorSession    selection, edit mode, undo/redo
-//   DocumentEditorKeys       keyboard dispatch
-//   DocumentEditorView       render + focus management + status bar
-//   DocumentEditorRow        per-node row rendering (label or inline input)
-//   DocumentEditorToolbar    toolbar buttons and key hints
-class DocumentEditor(val container: Element)
-    extends DocumentEditorState
-    with DocumentEditorCommands
-    with DocumentEditorOps
-    with DocumentEditorClipboard
-    with DocumentEditorSession
-    with DocumentEditorKeys
-    with DocumentEditorView
-    with DocumentEditorRow
-    with DocumentEditorToolbar {
+// Layout of this component (each file one responsibility):
+//   EditorModel.scala    state value + input/output types
+//   EditorUpdate.scala   dispatch + shared edit plumbing
+//   EditorSession.scala  selection, edit mode, load/new/sample, undo/redo
+//   EditorDocOps.scala   insert, indent/outdent, compact
+//   EditorClip.scala     remove, cut, copy, paste
+//   EditorKeys.scala     keymap (KeyboardEvent => Option[EditorInput])
+//   EditorView.scala     toolbar, outline, status bar
+//   EditorRow.scala      per-node row + inline edit input
+//   EditorSample.scala   the manifesto as a sample document
+object DocumentEditor extends Component[EditorInput, EditorOutput] {
 
-  def getDocument: Document[NodeData] = doc
+  type State = EditorModel
 
-  def setDocument(d: Document[NodeData]): Unit = {
-    doc = d
-    selectedId = None
-    editingId = None
-    undoStack = Nil
-    redoStack = Nil
-    detachedNodeId = None
-    render()
-  }
+  def init: State = EditorSample.model
 
-  def initialize(): Unit = {
-    container.asInstanceOf[HTMLElement].style.cssText =
-      "height: 100%; display: flex; flex-direction: column;"
-    sampleDocument()
-  }
-}
+  def update(state: State, input: EditorInput): Update[State, EditorOutput] =
+    EditorUpdate(state, input)
 
-// Pure helpers for translating between NodeData and editable text.
-object DocumentEditor {
+  def view(state: State): View[EditorInput] = EditorView.view(state)
 
   // Display text for a node's data in the outline.
   def displayData(data: NodeData): String = data match {
