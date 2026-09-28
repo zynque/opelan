@@ -12,6 +12,7 @@ import opelan.foundation.dsl.{DSLParser, Expression}
 import opelan.foundation.typing.{TypedGap, TypedGapManager}
 import opelan.data.automerge.CollaborationManager
 import opelan.data.storage.IndexedDBStore
+import opelan.ui.typeddoc.{TypedDoc, TypedDocInput, TypedDocOutput}
 import opelan.ui.visualization.DiagramRenderer
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Success, Failure}
@@ -22,7 +23,7 @@ class Workbench {
   private var isInitialized = false
   private var currentProject: Option[Project] = None
   private var currentView: String = "document" // document, editor, visualization, schema
-  private var documentEditor: Option[opelan.ui.fp.Handle[EditorInput, EditorOutput]] = None
+  private var documentEditor: Option[opelan.ui.fp.Handle[TypedDocInput, TypedDocOutput]] = None
   
   // Initialize the workbench
   def initialize(containerId: String): Unit = {
@@ -261,9 +262,9 @@ class Workbench {
   private def setupDocumentView(): Unit = {
     if (documentEditor.isEmpty) {
       val docContainer = dom.document.getElementById("doc-container")
-      val handle = opelan.ui.fp.Runtime.mount(docContainer, DocumentEditor)
+      val handle = opelan.ui.fp.Runtime.mount(docContainer, TypedDoc)
       handle.outputs.subscribe {
-        case EditorOutput.Status(msg) => updateStatus(msg)
+        case TypedDocOutput.Status(msg) => updateStatus(msg)
         case _ => ()
       }
       documentEditor = Some(handle)
