@@ -15,4 +15,10 @@ enum View[+I] {
     events: Map[String, dom.Event => Option[I]],
     children: Vector[View[I]]) extends View[I]
   case Mount extends View[Nothing]
+
+  // An imperative widget mounted under a managed key: Render calls
+  // mount(el, emit) once when the node is created; Patch keeps the node
+  // while the key is stable and rebuilds it when the key changes.
+  // For widgets like CodeMirror that own their own DOM.
+  case Managed[I](key: String, mount: (dom.Element, I => Unit) => Unit) extends View[I]
 }

@@ -36,6 +36,9 @@ object Patch {
         ctx.mountPoint = Some(node.asInstanceOf[dom.Element])
         node
 
+      // Same key: the mounted widget owns its DOM; leave it alone.
+      case (View.Managed(k1, _), View.Managed(k2, _)) if k1 == k2 => node
+
       case (View.Elem(t1, a1, _, c1), View.Elem(t2, a2, e2, c2)) if t1 == t2 =>
         val el = node.asInstanceOf[dom.Element]
         patchAttrs(el, a1, a2)

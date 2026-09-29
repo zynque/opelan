@@ -35,6 +35,7 @@ object EditorRow {
   private def dataLabel(node: Node[NodeData]): View[EditorInput] = {
     val css = node.data match {
       case _: NodeData.InternalNodeRef | _: NodeData.ExternalNodeRef => "color: #7b2cbf;"
+      case _: NodeData.GapData => "color: #b58900; background: #fdf6e3;"
       case _ => ""
     }
     el("span", style(css))(text(DocumentEditor.displayData(node.data)))

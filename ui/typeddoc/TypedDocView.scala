@@ -4,17 +4,21 @@ import opelan.foundation.document._
 import opelan.foundation.language.Languages
 import opelan.ui.fp._
 import opelan.ui.fp.Dsl._
+import opelan.ui.text.CodeMirror
 
 // Pure view: a view-switching toolbar, the editor child (kept mounted in
-// every mode so it survives view switches), the derived-view panel, and a
-// status bar. The mount sits in an always-present wrapper; hiding it with
-// display:none keeps the child's DOM — and its focus/edit state — intact.
+// every mode so it survives view switches), the text cell, the
+// derived-view panel, and a status bar. The mount sits in an
+// always-present wrapper; hiding it with display:none keeps the child's
+// DOM — and its focus/edit state — intact. The text cell likewise stays
+// mounted; it remounts only when textEpoch changes (external doc edits).
 object TypedDocView {
 
   def view(m: TypedDocModel): View[TypedDocInput] =
     el("div", style("height: 100%; display: flex; flex-direction: column;"))(
       toolbar(m),
       editorPane(m),
+      textPane(m),
       derivedPane(m),
       statusBar(m))
 
@@ -22,16 +26,24 @@ object TypedDocView {
     el("div", style("flex: 1; overflow: auto;" + hidden(m.view != DocView.Editor)))(
       mount)
 
+  private def textPane(m: TypedDocModel): View[TypedDocInput] =
+    el("div", style("flex: 1; overflow: auto;" + hidden(m.view != DocView.Text)))(
+      managed(s"cm-${m.textEpoch}") { (el, emit) =>
+        CodeMirror.mount(el, m.text, t => emit(TypedDocInput.TextEdited(t)))
+        ()
+      })
+
   private def derivedPane(m: TypedDocModel): View[TypedDocInput] = {
     val body = m.view match {
-      case DocView.Editor => Vector.empty[View[TypedDocInput]]
       case DocView.Derived(name) =>
         Vector(el("pre",
           style("font-family: Consolas, monospace; font-size: 16px; margin: 0;"))(
           text(derivedText(m, name))))
+      case _ => Vector.empty[View[TypedDocInput]]
     }
     els("div",
-      style("flex: 1; overflow: auto; padding: 16px;" + hidden(m.view == DocView.Editor)))(
+      style("flex: 1; overflow: auto; padding: 16px;" +
+        hidden(!m.view.isInstanceOf[DocView.Derived])))(
       body)
   }
 
@@ -45,7 +57,9 @@ object TypedDocView {
     }
 
   private def toolbar(m: TypedDocModel): View[TypedDocInput] = {
-    val viewButtons = viewButton("editor", DocView.Editor, m) +:
+    val viewButtons = List(
+        viewButton("editor", DocView.Editor, m),
+        viewButton("text", DocView.Text, m)) ++
       Languages.forDoc(m.doc).toList.flatMap(lang =>
         lang.views.map(v => viewButton(v, DocView.Derived(v), m)))
     els("div",

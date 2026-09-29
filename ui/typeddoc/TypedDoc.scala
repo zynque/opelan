@@ -21,7 +21,11 @@ object TypedDoc extends Component[TypedDocInput, TypedDocOutput] {
 
   def init: State = {
     val d = ExprLanguage.sampleDoc
-    TypedDocModel(doc = d, pushedDoc = d, status = "Expression sample loaded")
+    TypedDocModel(
+      doc = d,
+      pushedDoc = d,
+      text = opelan.foundation.language.DocText.render(d),
+      status = "Expression sample loaded")
   }
 
   def update(state: State, input: TypedDocInput): Update[State, TypedDocOutput] =
@@ -33,6 +37,6 @@ object TypedDoc extends Component[TypedDocInput, TypedDocOutput] {
     Vector(Child(
       key = "editor",
       component = DocumentEditor,
-      input = EditorInput.LoadDocument(state.pushedDoc),
+      input = EditorInput.SyncDocument(state.pushedDoc),
       onOutput = TypedDocInput.FromEditor(_)))
 }

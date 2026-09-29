@@ -30,5 +30,6 @@ object Show {
     case NodeData.FloatData(f)         => f.toString
     case NodeData.InternalNodeRef(id)  => s"ref:$id"
     case NodeData.ExternalNodeRef(ref) => s"ref:${ref.documentUrl}@${ref.documentVersionId}#${ref.nodeId}"
+    case NodeData.GapData(text)        => s"?$text"
   }
 }

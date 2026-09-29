@@ -10,9 +10,13 @@ class ExprSuite extends munit.FunSuite {
   val sample = Sub(Add(Lit(1), Lit(2)), Sub(Lit(3), Lit(4)))
 
   test("eval computes integer results") {
-    assertEquals(eval(sample), 4)
-    assertEquals(eval(Lit(-7)), -7)
-    assertEquals(eval(Sub(Sub(Lit(1), Lit(2)), Lit(3))), -4)
+    assertEquals(eval(sample), Right(4))
+    assertEquals(eval(Lit(-7)), Right(-7))
+    assertEquals(eval(Sub(Sub(Lit(1), Lit(2)), Lit(3))), Right(-4))
+  }
+
+  test("eval is blocked by holes") {
+    assert(eval(Add(Lit(1), Hole("x"))).isLeft)
   }
 
   test("print uses minimal parentheses") {
@@ -20,6 +24,8 @@ class ExprSuite extends munit.FunSuite {
     assertEquals(print(Sub(Sub(Lit(1), Lit(2)), Lit(3))), "1 - 2 - 3")
     assertEquals(print(Add(Lit(1), Add(Lit(2), Lit(3)))), "1 + (2 + 3)")
     assertEquals(print(Lit(42)), "42")
+    assertEquals(print(Hole("")), "?")
+    assertEquals(print(Add(Lit(1), Hole("foo"))), "1 + foo")
   }
 
   test("fromDocument reads back what toDetached wrote") {

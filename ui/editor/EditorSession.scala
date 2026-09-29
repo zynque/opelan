@@ -44,6 +44,10 @@ object EditorSession {
       EditorModel(doc = d, status = "Document loaded"),
       Vector(DocChanged(d), Status("Document loaded")))
 
+  // Parent-driven sync: replace the document without reporting it back.
+  def syncDocument(d: Document[NodeData]): Update[EditorModel, EditorOutput] =
+    Update(EditorModel(doc = d, status = "Document synced"))
+
   def newDocument(): Update[EditorModel, EditorOutput] = {
     val d = Build.beginDocument(Detached.s("root"))
     Update(

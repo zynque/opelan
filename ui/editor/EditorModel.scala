@@ -52,6 +52,9 @@ enum EditorInput {
   // document-level commands
   case NewDocument
   case LoadDocument(doc: Document[NodeData])
+  // Load without echoing DocChanged/Status back to the parent — for
+  // parents that push the document down themselves and already know it.
+  case SyncDocument(doc: Document[NodeData])
   case LoadSample
   case Compact
 }

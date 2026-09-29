@@ -32,6 +32,7 @@ object EditorUpdate {
       case Redo             => EditorSession.redo(m)
       case NewDocument      => EditorSession.newDocument()
       case LoadDocument(d)  => EditorSession.loadDocument(d)
+      case SyncDocument(d)  => EditorSession.syncDocument(d)
       case LoadSample       => EditorSession.sample()
       case Compact          => EditorDocOps.compact(m)
     }

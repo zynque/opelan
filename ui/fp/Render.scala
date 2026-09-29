@@ -26,6 +26,11 @@ object Render {
       ctx.mountPoint = Some(el)
       el
 
+    case View.Managed(_, mount) =>
+      val el = dom.document.createElement("div").asInstanceOf[dom.Element]
+      mount(el, emit)
+      el
+
     case View.Elem(tag, attrs, events, children) =>
       val el = dom.document.createElement(tag)
       attrs.foreach((k, v) => el.setAttribute(k, v))

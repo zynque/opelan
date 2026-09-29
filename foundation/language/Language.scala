@@ -24,6 +24,11 @@ trait Language {
 
   // Render a derived view of the typed document's content as text.
   def render(view: String, doc: Document[NodeData]): Either[String, String]
+
+  // Text syntax, if the language has one: parse cell text into a content
+  // subtree. Recovering parsers return Some even for malformed input,
+  // embedding holes (GapData nodes) where the text does not fit.
+  def parse(text: String): Option[DetachedNode[NodeData]] = None
 }
 
 // Registry mapping document-type references to languages defined in code.

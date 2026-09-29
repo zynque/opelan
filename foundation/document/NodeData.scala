@@ -13,6 +13,11 @@ object NodeData {
   case class InternalNodeRef(nodeId: Int) extends NodeData
   case class ExternalNodeRef(ref: ExternalNodeReference) extends NodeData
 
+  // A typed hole: text that did not fit the language's grammar, kept
+  // verbatim so it can heal when reparsing later accepts it. May carry
+  // children holding any sub-fragments that did parse.
+  case class GapData(text: String) extends NodeData
+
   // Remap internal node references using the given id translation.
   // Needed after operations like compaction that rewrite node ids.
   def remapInternalRefs(data: NodeData, f: Int => Int): NodeData = data match {

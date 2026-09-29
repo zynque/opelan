@@ -42,4 +42,10 @@ object Dsl {
 
   // Where this component's children render.
   val mount: View[Nothing] = View.Mount
+
+  // An imperative widget: mount runs once with the host element and this
+  // component's emit; the node is kept while `key` is stable and rebuilt
+  // (re-mounted) when it changes.
+  def managed[I](key: String)(mount: (dom.Element, I => Unit) => Unit): View[I] =
+    View.Managed(key, mount)
 }

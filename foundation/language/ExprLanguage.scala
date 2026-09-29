@@ -16,9 +16,14 @@ object ExprLanguage extends Language {
   def render(view: String, doc: Document[NodeData]): Either[String, String] =
     view match {
       case "print" => contentExpr(doc).map(Expr.print)
-      case "eval"  => contentExpr(doc).map(e => Expr.eval(e).toString)
+      case "eval"  => contentExpr(doc).flatMap(e => Expr.eval(e).map(_.toString))
       case v       => Left(s"$name has no '$v' view")
     }
+
+  // The text syntax is total: any input parses, producing holes where the
+  // text does not fit the grammar.
+  override def parse(text: String): Option[DetachedNode[NodeData]] =
+    Some(Expr.toDetached(ExprParse.parse(text).expr))
 
   private def contentExpr(doc: Document[NodeData]): Either[String, Expr] =
     Typed.contentId(doc)

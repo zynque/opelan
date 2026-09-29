@@ -52,11 +52,13 @@ object DocumentEditor extends Component[EditorInput, EditorOutput] {
     case NodeData.FloatData(f)         => f.toString
     case NodeData.InternalNodeRef(id)  => s"&$id"
     case NodeData.ExternalNodeRef(ref) => s"ext:${ref.documentUrl}@${ref.documentVersionId}#${ref.nodeId}"
+    case NodeData.GapData(t)           => s"?$t"
   }
 
   // Initial text when a node enters edit mode.
   def editText(data: NodeData): String = data match {
     case NodeData.StringData(s) => s
+    case NodeData.GapData(t)    => t
     case other                  => displayData(other)
   }
 
@@ -64,9 +66,11 @@ object DocumentEditor extends Component[EditorInput, EditorOutput] {
   //   &5    -> internal ref to node 5
   //   42    -> int
   //   1.5   -> float
+  //   ?abc  -> gap holding the text after '?'
   //   other -> string
   def parseNodeData(text: String): NodeData =
     if (text.matches("&\\d+")) NodeData.InternalNodeRef(text.drop(1).toInt)
+    else if (text.startsWith("?")) NodeData.GapData(text.drop(1))
     else if (text.matches("-?\\d+")) NodeData.IntData(text.toInt)
     else if (text.matches("-?\\d*\\.\\d+")) NodeData.FloatData(text.toDouble)
     else NodeData.StringData(text)

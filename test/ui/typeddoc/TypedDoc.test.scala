@@ -1,7 +1,7 @@
 package opelan.ui.typeddoc
 
 import opelan.foundation.document._
-import opelan.foundation.language.ExprLanguage
+import opelan.foundation.language.{Expr, ExprLanguage}
 import opelan.ui.editor.{EditorInput, EditorOutput}
 
 class TypedDocSuite extends munit.FunSuite {
@@ -19,7 +19,7 @@ class TypedDocSuite extends munit.FunSuite {
 
   test("structure mounts the document editor with the pushed document") {
     val m = init
-    assertEquals(editorInput(m), EditorInput.LoadDocument(m.pushedDoc))
+    assertEquals(editorInput(m), EditorInput.SyncDocument(m.pushedDoc))
   }
 
   test("SwitchView selects a derived view") {
@@ -33,7 +33,7 @@ class TypedDocSuite extends munit.FunSuite {
     val u = TypedDocUpdate(m, TypedDocInput.FromEditor(EditorOutput.DocChanged(edited)))
     assertEquals(u.state.doc, edited)
     assertEquals(u.state.pushedDoc, m.pushedDoc)
-    assertEquals(editorInput(u.state), EditorInput.LoadDocument(m.pushedDoc))
+    assertEquals(editorInput(u.state), EditorInput.SyncDocument(m.pushedDoc))
     assert(u.out.contains(TypedDocOutput.DocChanged(edited)))
   }
 
@@ -43,6 +43,38 @@ class TypedDocSuite extends munit.FunSuite {
     val u = TypedDocUpdate(m, TypedDocInput.Load(d))
     assertEquals(u.state.doc, d)
     assertEquals(u.state.pushedDoc, d)
-    assertEquals(editorInput(u.state), EditorInput.LoadDocument(d))
+    assertEquals(editorInput(u.state), EditorInput.SyncDocument(d))
+  }
+
+  test("TextEdited parses into the content subtree and pushes the doc") {
+    val m = init
+    val u = TypedDocUpdate(m, TypedDocInput.TextEdited("1 + 2"))
+    assertEquals(u.state.text, "1 + 2")
+    assertEquals(u.state.textEpoch, m.textEpoch)
+    val content = Typed.contentId(u.state.doc).get
+    assertEquals(Expr.fromDocument(u.state.doc, content), Right(Expr.Add(Expr.Lit(1), Expr.Lit(2))))
+  }
+
+  test("TextEdited leaves holes where text does not fit") {
+    val u = TypedDocUpdate(init, TypedDocInput.TextEdited("1 + abc"))
+    val content = Typed.contentId(u.state.doc).get
+    assertEquals(
+      Expr.fromDocument(u.state.doc, content),
+      Right(Expr.Add(Expr.Lit(1), Expr.Hole("abc"))))
+    assert(u.state.status.contains("hole"))
+  }
+
+  test("editor edits re-derive the text and bump the epoch") {
+    val m = init
+    val edited: Document[NodeData] = Build.beginDocument(NodeData.IntData(1))
+    val u = TypedDocUpdate(m, TypedDocInput.FromEditor(EditorOutput.DocChanged(edited)))
+    assertEquals(u.state.textEpoch, m.textEpoch + 1)
+  }
+
+  test("an echo of the pushed doc does not re-derive the text") {
+    val m = TypedDocUpdate(init, TypedDocInput.TextEdited("5")).state
+    val u = TypedDocUpdate(m, TypedDocInput.FromEditor(EditorOutput.DocChanged(m.doc)))
+    assertEquals(u.state.textEpoch, m.textEpoch)
+    assertEquals(u.state.text, "5")
   }
 }
