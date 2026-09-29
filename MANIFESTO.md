@@ -40,10 +40,6 @@ Applications built upon an open language platform should naturally inherit the t
 
 Syntax takes far too much precidence in the software development community. Useless arguments over tabs and spaces waste time. A modern software development tool would ideally allow multiple representations configurable by each individual user to their own preference. The software should translate seamlessly between these various representations so that code can be shared without putting the burden on users to adapt to different coding formats. 
 
-### Monosemantic
-
-Application definitions should have a single canonical meaning/interpretation. It's execution though, might run on multiple platforms and/or modes. In particular, applications should be able to run immediately (interpreted) while also being able to be compiled into a more optimized form.
-
 ## Application
 
 ### Available and Responsive
