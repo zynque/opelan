@@ -4,36 +4,31 @@ A production-ready language workbench built with Scala.js, CodeMirror, and Autom
 
 ## Features
 
-- **Schema-First Design**: Structured data model with projects, definitions, and schemas
-- **Multi-Modal Editing**: Text editor + visualization views for the same underlying data
-- **Typed Gaps**: Progressive typing system inspired by Hazel
-- **Real-Time Collaboration**: Automerge CRDT for collaborative editing
+- **Document Model**: Everything is a versioned, structured tree — programs, documents, and tooling state
+- **Polysyntactic Editing**: Structural editor, text surface, and language-provided derived views over one document
+- **Typed Holes**: Hazel-inspired holes keep incomplete input editable instead of failing
+- **Versioned History**: Version DAG as a document, with LSCA merge-base
 - **Local-First**: Browser-only deployment with IndexedDB persistence
-- **P2P Collaboration**: Pure peer-to-peer with pluggable signaling/backends
-- **Custom DSL**: Expression-oriented language with room for broader language forms
+- **Planned**: Real-time collaboration via Automerge and pure-P2P sync; language definitions as documents
 
 ## Architecture
 
 ```
-foundation/           # Foundation language system
+foundation/           # Pure model layer
 ├── document/         # Persistent document tree model (ported from olw-p4)
 ├── version/          # Version DAG / merge-base machinery (ported from olw-p4)
-├── structure/        # Type system, validation, structures
-├── dsl/              # DSL parser, expressions, interpreter
-├── typing/           # Typed gaps system
-└── project/          # Project management, workspace
+└── language/         # Languages, parsers, and derived views over documents
 
 ui/                   # User interface components
-├── editor/           # Text editing (CodeMirror integration)
-├── visualization/    # Graph/diagram rendering
-├── structure/        # Structure editing UI
-└── collaboration/    # Collaboration UI
+├── fp/               # Elm-style component runtime (+ demo components)
+├── editor/           # Structural document editor + workbench shell
+├── typeddoc/         # Typed-document pane: structure + text + derived views
+└── text/             # CodeMirror integration
 
 data/                 # Data persistence
-├── automerge/        # Automerge CRDT integration
 └── storage/          # IndexedDB persistence
 
-collaboration/        # Collaboration infrastructure
+collaboration/        # Collaboration infrastructure (planned)
 ├── signaling/        # P2P signaling protocols
 ├── backends/         # Pluggable backend adapters
 └── presence/         # User presence and cursors
@@ -101,12 +96,13 @@ See [STATUS.md](STATUS.md) for current development status and next steps.
 
 ## Contributing
 
-This project uses a schema-first approach with structured data. When adding new features:
+This project is built on the document model — new features should represent
+state as `Document[NodeData]` rather than parallel model types. When adding
+new features:
 
-1. Define schemas for new data types
-2. Implement core logic in the appropriate module
-3. Add UI components in the UI layer
-4. Update persistence and collaboration layers as needed
+1. Keep pure logic in `foundation/` and DOM/effect code thin in `ui/`
+2. Implement UI as `ui/fp` components (see `ui/typeddoc` for the pattern)
+3. Add tests for pure logic under `test/`
 
 ## License
 

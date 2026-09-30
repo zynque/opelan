@@ -221,44 +221,51 @@ Thin dynamic-`JSImport` wrapper over CodeMirror 6 (updateListener →
 `onChange` per doc-changing transaction). Comment documents the 6.x-only
 package constraint.
 
-### `ui/editor/Workbench` + `ui/visualization`
+### `ui/editor/Workbench`
 
-`Workbench` is the application shell mounted by `Main`: a sidebar
-(projects/definitions/schemas/gaps) and a toolbar switching between
-**document** (hosts `TypedDoc`), **editor** (a plain textarea DSL stub),
-**visualization** (canvas `DiagramRenderer`), **schema**, and **components**
-(fp demo) views. `Workbench` and `DiagramRenderer` belong to the earlier
-scaffold generation (see §8) — `TypedDoc` is the live part.
+`Workbench` is the application shell mounted by `Main`: a sidebar listing
+project name stubs (persisted in IndexedDB) and a toolbar switching between
+the **document** view (hosts `TypedDoc`) and a **components** view (fp demo).
+Markup lives in `WorkbenchLayout`. The scaffold-era views it once hosted —
+a textarea DSL stub, a static schema panel, a canvas `DiagramRenderer` —
+were removed along with the scaffold model types they were built on.
 
 ## 7. Persistence and collaboration (`data/`, `collaboration/`)
 
-- **`IndexedDBStore`** — Future-based CRUD over five object stores
-  (`projects`, `schemas`, `definitions`, `automerge_docs`, `settings`) using
-  `js.Dynamic` payloads.
-- **`CollaborationManager`** — named for Automerge, but currently a **stub**:
-  a `js.Dynamic` document with change listeners and a naive key-merge.
-  `@automerge/automerge` is a declared npm dependency (with its wasm blob at
-  repo root) but no Scala code calls it yet.
+- **`IndexedDBStore`** — Future-based access over three object stores
+  (`projects`, `automerge_docs`, `settings`) using `js.Dynamic` payloads, so
+  the store stays agnostic about what it persists.
+- **Automerge** — `@automerge/automerge` is a declared npm dependency (with
+  its wasm blob at repo root) but no Scala code calls it yet. The earlier
+  `CollaborationManager` stub — a `js.Dynamic` document with a naive
+  key-merge over scaffold model types — was removed; real integration is
+  part of the operational-layer work (§4).
 - **`collaboration/`** — empty `signaling/`, `backends/`, `presence/`
   directories: placeholders for the planned pure-P2P sync layer (pluggable
   signaling backends, presence/cursors).
 
-## 8. Two generations of code
+## 8. The retired scaffold
 
-The repo contains an earlier scaffold layer alongside the newer design. This
-is important context for reading the codebase:
+The first commits landed a scaffold layer — `foundation/project`
+(`Project`/`Definition`/`Workspace`), `foundation/structure`
+(`Schema`/`SchemaRegistry`), `foundation/typing`
+(`TypedGap`/`TypedGapManager`), `foundation/dsl` (`Expression`/`DSLParser`),
+plus `DiagramRenderer` and a `CollaborationManager` stub — in a
+`js.Dynamic`-heavy, mutable-global style that never interoperated with
+`Document[NodeData]`. It has been deleted rather than integrated, since the
+newer design supersedes each piece:
 
-| Earlier scaffold (first commits) | Newer design (current direction) |
+| Retired scaffold | Superseded / replaced by |
 |---|---|
-| `foundation/project` (`Project`/`Definition`/`Workspace`), `foundation/structure` (`Schema`/`SchemaRegistry`), `foundation/typing` (`TypedGap`/`TypedGapManager`), `foundation/dsl` (`Expression`/`DSLParser`) | `foundation/document`, `foundation/version`, `foundation/language` |
-| `js.Dynamic`-heavy, mutable global singletons, placeholder implementations ("basic implementation — can be extended") | Pure values, `Either` errors, total parsers |
-| `Workbench`, `DiagramRenderer`, `IndexedDBStore`, `CollaborationManager` | `ui/fp` runtime, `DocumentEditor`, `TypedDoc` |
+| `TypedGap`/`TypedGapManager` | `GapData`/`Hole` in `foundation/document` + `foundation/language` |
+| `Expression`/`DSLParser` | `Expr`/`ExprParse`/`Language` in `foundation/language` |
+| `Schema`/`SchemaRegistry` | "Schemas as documents" — future typed-document machinery |
+| `Project`/`Definition`/`Workspace` | Document store + multi-document workspaces — future work |
+| `DiagramRenderer`, `CollaborationManager` stubs | Document-driven visualization and real Automerge integration — future work |
 
-The two models do not interoperate: a `Definition`/`Schema`/`TypedGap` is not
-a `Document[NodeData]`. Expect the scaffold to be gradually displaced —
-schemas/types become typed documents, `GapData`/`Hole` already supersedes
-`TypedGap` in practice, and the DSL parser stub is superseded by
-`ExprParse`-style language parsers.
+When reading early history, treat anything `js.Dynamic`-heavy with mutable
+global singletons and "basic implementation — can be extended" placeholders
+as belonging to this removed generation.
 
 ## 9. Build and test
 

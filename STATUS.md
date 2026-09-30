@@ -43,22 +43,18 @@ implementation plan.
 
 ## In progress / scaffolded
 
-- **Workbench shell** (`ui/editor/Workbench`): sidebar + view switcher work
-  and host the live `TypedDoc` pane in the "document" view; the DSL editor,
-  schema editor, and visualization views are placeholder UIs from the
-  earlier scaffold generation.
-- **IndexedDB persistence** (`data/storage`): generic store works;
-  currently persists project stubs only — documents are not yet saved.
-- **CollaborationManager** (`data/automerge`): a `js.Dynamic` stub with a
-  naive key-merge. `@automerge/automerge` is a declared npm dependency (wasm
-  blob at repo root) but no Scala code calls it yet.
+- **Workbench shell** (`ui/editor/Workbench`): sidebar (project name stubs)
+  + view switcher between the live `TypedDoc` pane ("document") and the fp
+  components demo. The earlier DSL editor, schema editor, and visualization
+  views were retired with the scaffold layer.
+- **IndexedDB persistence** (`data/storage`): generic `js.Dynamic` store
+  over three object stores (`projects`, `automerge_docs`, `settings`);
+  currently persists project name stubs only — documents are not yet saved.
 - **`collaboration/`**: `signaling/`, `backends/`, `presence/` exist as
   empty directories for the planned P2P sync layer.
-- **Scaffold layer** (`foundation/dsl`, `structure`, `typing`, `project`):
-  earlier-generation model types (`Definition`, `Schema`, `TypedGap`,
-  `Expression`) that don't interoperate with `Document[NodeData]`.
-  `GapData`/`Hole` already supersedes `TypedGap`; expect gradual displacement
-  rather than integration.
+- **Automerge**: `@automerge/automerge` is a declared npm dependency (wasm
+  blob at repo root) but no Scala code calls it yet; the earlier
+  `CollaborationManager` stub was retired with the scaffold layer.
 
 ## Not yet wired
 
@@ -68,9 +64,9 @@ implementation plan.
   but there is no document store/resolver to dereference it.
 - **Text edits reparse whole cells**; the parser's span map exists to enable
   finer-grained text-edit → node mapping later.
-- **Schemas** (`foundation/structure`) are disconnected from the
-  typed-document machinery — convergence presumably means "schemas as
-  documents".
+- **Schemas** have no representation yet — the scaffold's
+  `foundation/structure` model was retired; convergence presumably means
+  "schemas as documents".
 
 ## Open design questions
 
@@ -98,13 +94,15 @@ The natural sequence from the current code is:
 3. Real Automerge integration for live sync, then the curated layer on top.
 4. More languages defined as documents — begin the bootstrap; schemas and
    gap/typing machinery folded into the document model.
-5. Retire or absorb the scaffold layer (`dsl`, `structure`, `typing`,
-   `project`) as equivalent document-based concepts land.
+
+The scaffold layer (`dsl`, `structure`, `typing`, `project`, plus the
+`DiagramRenderer` and `CollaborationManager` stubs) has been retired —
+document-based concepts superseded or will replace each piece.
 
 Beyond that sequence, the roadmap also calls for:
 
-- A visual schema editor and interactive diagram editing — the current
-  schema/visualization views are placeholder UIs.
+- A visual schema editor and interactive diagram editing as document
+  views.
 - P2P presence indicators as part of the collaboration layer.
 - A fuller evaluation engine for the DSL beyond the expression language's
   minimal `eval` view.
