@@ -95,30 +95,9 @@ python -m http.server 8080
 
 Then open http://localhost:8080 in your browser.
 
-## Development Status
+## Status
 
-This project is currently in Phase 1 (Foundation & Schema System) of the implementation plan. The current build includes:
-
-- ✅ Working Scala.js + scala-cli + webpack + CodeMirror integration
-- ✅ Modular project structure
-- ✅ Core data models (Project, Definition, Schema)
-- ✅ Typed holes system foundation
-- ✅ DSL parser foundation
-- ✅ Automerge collaboration layer
-- ✅ IndexedDB persistence layer
-- ✅ Basic visualization components
-- ✅ Unified workbench interface
-
-## Next Steps
-
-The following features are planned for implementation:
-
-1. **Enhanced Editor Integration**: Full CodeMirror integration with typed holes
-2. **Schema Editor**: Visual schema definition interface
-3. **Advanced Visualization**: Interactive diagrams with editing capabilities
-4. **Real-Time Collaboration**: P2P synchronization and presence indicators
-5. **DSL Interpreter**: Evaluation engine for the custom DSL
-6. **Testing Framework**: Comprehensive test suite
+See [STATUS.md](STATUS.md) for current development status and next steps.
 
 ## Contributing
 

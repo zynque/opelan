@@ -3,7 +3,10 @@
 Point-in-time state of the Opelan workbench. For architecture and rationale
 see `DESIGN.md`; for principles see `MANIFESTO.md`.
 
-Last updated: 2026-09-29
+Last updated: 2026-09-30
+
+The project is in Phase 1 (foundation & schema system) of the
+implementation plan.
 
 ## Working
 
@@ -87,8 +90,7 @@ Last updated: 2026-09-29
 
 ## Next steps
 
-Reading `README.md`'s next steps against the current code, the natural
-sequence is:
+The natural sequence from the current code is:
 
 1. Document store + external-ref resolution (makes `ExternalNodeRef` real,
    enables multi-document workspaces).
@@ -98,3 +100,12 @@ sequence is:
    gap/typing machinery folded into the document model.
 5. Retire or absorb the scaffold layer (`dsl`, `structure`, `typing`,
    `project`) as equivalent document-based concepts land.
+
+Beyond that sequence, the roadmap also calls for:
+
+- A visual schema editor and interactive diagram editing — the current
+  schema/visualization views are placeholder UIs.
+- P2P presence indicators as part of the collaboration layer.
+- A fuller evaluation engine for the DSL beyond the expression language's
+  minimal `eval` view.
+- Broader test coverage beyond the current ~95 munit tests.

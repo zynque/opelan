@@ -1,5 +1,9 @@
 # The Open Language Application Manifesto
 
+## Overview
+
+This manifesto outlines the core principles for building the next generation of creative and productivity software. It emphasizes openness, language orientation, and application capabilities that empower users and developers alike.
+
 ## Open
 
 ### Open Source
@@ -8,7 +12,7 @@ We are best served by software tools that openly share their source code, so tha
 
 ### Frictionless
 
-Every piece of creativity/productivity software should be trivial to modify. It should come with a full integrated development environment built in, so that the software can be modified from directly within the application itself, without the need to download and configure external tools.
+Simply making source code available is not enough. Every piece of creativity/productivity software should be trivial to modify. It should come with a full integrated development environment built in, so that the software can be modified from directly within the application itself, without the need to download and configure external tools.
 
 ### Transitive
 
@@ -22,7 +26,7 @@ Every piece of software has a language in which its user communicates intent, wh
 
 ### Programmable
 
-*TO BE FILLED IN*
+Software should be designed in a way that allows users to extend and modify its behavior through scripting or configuration.
 
 ### Discoverable
 
@@ -62,6 +66,6 @@ The results of a change to source code should be made immediately visible via sa
 
 Allow users to edit the code interactively in real time.
 
-### Self Documenting
+### Learnable & Self Documenting
 
 Application documentation should be embedded along side the code. Examples should demonstrate usage of each code entity.
