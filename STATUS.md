@@ -37,19 +37,30 @@ implementation plan.
   editor, CodeMirror text cell, and language-provided derived views all live
   over one document; editor state survives view switches; text and structure
   stay in sync without echo loops.
+- **Document store** (`foundation/document/Store`): a pure, immutable,
+  versioned map of documents by URL — `put` appends a version, `resolve`
+  dereferences `url@version#node`, heads are tracked per URL. Persisted in
+  IndexedDB (`documents` object store, one outline-text record per
+  `url@version`) via `data/storage/DocumentRepo`.
+- **Multi-document workspace** (`ui/editor/Workbench` + `Workspace`): the
+  sidebar lists stored documents; New/Save/open flows go through the pure
+  `Workspace` value; Ctrl+Enter on a ref node follows it — internal refs
+  select their target, external refs resolve through the store and open
+  the pinned version at the referenced node.
+- **IndexedDB persistence** (`data/storage`): generic `js.Dynamic` store
+  over four object stores (`projects`, `automerge_docs`, `settings`,
+  `documents`); persists document versions as outline text (the projects
+  list UI was replaced by the documents list).
 - **Build/test pipeline**: `build.bat` produces `bundle.js` (scala-cli →
-  webpack); `test.bat` runs ~95 munit tests covering the pure core and the
+  webpack); `test.bat` runs ~120 munit tests covering the pure core and the
   update functions of the UI layer.
 
 ## In progress / scaffolded
 
-- **Workbench shell** (`ui/editor/Workbench`): sidebar (project name stubs)
-  + view switcher between the live `TypedDoc` pane ("document") and the fp
-  components demo. The earlier DSL editor, schema editor, and visualization
-  views were retired with the scaffold layer.
-- **IndexedDB persistence** (`data/storage`): generic `js.Dynamic` store
-  over three object stores (`projects`, `automerge_docs`, `settings`);
-  currently persists project name stubs only — documents are not yet saved.
+- **Workbench shell** (`ui/editor/Workbench`): documents sidebar backed by
+  the document store + view switcher between the live `TypedDoc` pane
+  ("document") and the fp components demo. The earlier DSL editor, schema
+  editor, and visualization views were retired with the scaffold layer.
 - **`collaboration/`**: `signaling/`, `backends/`, `presence/` exist as
   empty directories for the planned P2P sync layer.
 - **Automerge**: `@automerge/automerge` is a declared npm dependency (wasm
@@ -59,9 +70,12 @@ implementation plan.
 ## Not yet wired
 
 - The **version DAG** is implemented but unused — no branching history UI,
-  and editor undo is a linear stack rather than tree navigation.
-- **`ExternalNodeRef`** defines an addressing scheme (`url@version#node`)
-  but there is no document store/resolver to dereference it.
+  and editor undo is a linear stack rather than tree navigation. (The
+  document store's append-only versions are a simpler, linear history —
+  the curated DAG remains unwired.)
+- **`ExternalNodeRef`s to missing targets** report "unresolved" rather than
+  offering creation; and refs into old pinned versions open read-write —
+  saving an old version appends a new head rather than branching.
 - **Text edits reparse whole cells**; the parser's span map exists to enable
   finer-grained text-edit → node mapping later.
 - **Schemas** have no representation yet — the scaffold's
@@ -88,12 +102,14 @@ implementation plan.
 
 The natural sequence from the current code is:
 
-1. Document store + external-ref resolution (makes `ExternalNodeRef` real,
-   enables multi-document workspaces).
+1. ~~Document store + external-ref resolution~~ — done: `Store` +
+   `DocumentRepo`, documents sidebar, follow-ref navigation.
 2. Wire the version DAG into the editor (branching undo, version-tree view).
 3. Real Automerge integration for live sync, then the curated layer on top.
 4. More languages defined as documents — begin the bootstrap; schemas and
-   gap/typing machinery folded into the document model.
+   gap/typing machinery folded into the document model. (Type refs already
+   resolve through the store — a language definition stored as a document
+   is the first bootstrap candidate.)
 
 The scaffold layer (`dsl`, `structure`, `typing`, `project`, plus the
 `DiagramRenderer` and `CollaborationManager` stubs) has been retired —
@@ -106,4 +122,4 @@ Beyond that sequence, the roadmap also calls for:
 - P2P presence indicators as part of the collaboration layer.
 - A fuller evaluation engine for the DSL beyond the expression language's
   minimal `eval` view.
-- Broader test coverage beyond the current ~95 munit tests.
+- Broader test coverage beyond the current ~120 munit tests.

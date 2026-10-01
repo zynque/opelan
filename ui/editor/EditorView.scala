@@ -59,7 +59,7 @@ object EditorView {
       button("Compact", EditorInput.Compact),
       el("span", style("color: #888; margin-left: 10px;"))(
         text("Enter: sibling · Shift+Enter: child · Tab/S-Tab: indent/outdent · " +
-          "F2/dbl-click: edit · Del: remove · ^X/^C/^V · ^Z/^Y")))
+          "F2/dbl-click: edit · Del: remove · ^X/^C/^V · ^Z/^Y · ^Enter: follow ref")))
 
   private def button(label: String, input: EditorInput): View[EditorInput] =
     el("button", style("margin-right: 6px; padding: 3px 8px;"), events = on("click", input))(

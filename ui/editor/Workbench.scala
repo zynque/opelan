@@ -2,20 +2,18 @@
 
 package opelan.ui.editor
 
-import scala.scalajs.js
 import org.scalajs.dom
 import opelan.data.storage.IndexedDBStore
 import opelan.ui.typeddoc.{TypedDoc, TypedDocInput, TypedDocOutput}
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.util.{Success, Failure}
 
-// Application shell: a projects sidebar backed by IndexedDB and a toolbar
-// switching between the document pane (TypedDoc) and the fp components demo.
-class Workbench {
+// Application shell: a documents sidebar backed by the versioned document
+// store (see WorkbenchDocs) and a toolbar switching between the document
+// pane (TypedDoc) and the fp components demo.
+class Workbench extends WorkbenchDocs {
   private var container: dom.Element = null
   private var isInitialized = false
   private var currentView: String = "document" // document, components
-  private var documentEditor: Option[opelan.ui.fp.Handle[TypedDocInput, TypedDocOutput]] = None
+  protected var documentEditor: Option[opelan.ui.fp.Handle[TypedDocInput, TypedDocOutput]] = None
   private var componentsHandle: Option[opelan.ui.fp.Handle[?, ?]] = None
 
   def initialize(containerId: String): Unit = {
@@ -28,13 +26,14 @@ class Workbench {
       container.innerHTML = WorkbenchLayout.markup
       setupEventHandlers()
       switchView(currentView)
-      initializeStorage()
+      initializeDocuments()
       isInitialized = true
     }
   }
 
   private def setupEventHandlers(): Unit = {
-    onClick("new-project-btn", _ => createNewProject())
+    onClick("new-doc-btn", _ => createNewDocument())
+    onClick("save-doc-btn", _ => saveCurrentDocument())
     onClick("doc-view-btn", _ => switchView("document"))
     onClick("components-view-btn", _ => switchView("components"))
   }
@@ -42,71 +41,6 @@ class Workbench {
   private def onClick(id: String, handler: dom.MouseEvent => Unit): Unit = {
     dom.document.getElementById(id)
       .asInstanceOf[dom.HTMLButtonElement].onclick = handler
-  }
-
-  private def initializeStorage(): Unit = {
-    IndexedDBStore.initialize().onComplete {
-      case Success(_) =>
-        updateStatus("Storage initialized")
-        refreshProjects()
-      case Failure(e) =>
-        updateStatus(s"Storage initialization failed: ${e.getMessage}")
-    }
-  }
-
-  private def refreshProjects(): Unit = {
-    IndexedDBStore.listProjects().onComplete {
-      case Success(projects) => renderProjectList(projects)
-      case Failure(e) => updateStatus(s"Failed to load projects: ${e.getMessage}")
-    }
-  }
-
-  private def createNewProject(): Unit = {
-    val name = dom.window.prompt("Enter project name:", "New Project")
-    if (name != null && name.nonEmpty) {
-      val project = js.Dynamic.literal(
-        "id" -> s"proj_${System.currentTimeMillis()}",
-        "name" -> name,
-        "created" -> new js.Date().toISOString()
-      )
-      IndexedDBStore.storeProject(project).onComplete {
-        case Success(_) =>
-          updateStatus(s"Project '$name' created")
-          selectProject(project)
-          refreshProjects()
-        case Failure(e) =>
-          updateStatus(s"Failed to save project: ${e.getMessage}")
-      }
-    }
-  }
-
-  private def selectProject(project: js.Dynamic): Unit = {
-    val name = project.name.asInstanceOf[String]
-    dom.document.getElementById("current-project-name").textContent = name
-    updateStatus(s"Switched to project: $name")
-  }
-
-  private def renderProjectList(projects: List[js.Dynamic]): Unit = {
-    val listEl = dom.document.getElementById("project-list")
-    listEl.innerHTML = ""
-
-    if (projects.isEmpty) {
-      val empty = dom.document.createElement("div").asInstanceOf[dom.HTMLElement]
-      empty.textContent = "No projects"
-      empty.style.padding = "5px"
-      empty.style.color = "#666"
-      listEl.appendChild(empty)
-    } else {
-      projects.foreach { project =>
-        val item = dom.document.createElement("div").asInstanceOf[dom.HTMLElement]
-        item.textContent = project.name.asInstanceOf[String]
-        item.style.padding = "5px"
-        item.style.cursor = "pointer"
-        item.style.borderBottom = "1px solid #eee"
-        item.onclick = (_: dom.MouseEvent) => selectProject(project)
-        listEl.appendChild(item)
-      }
-    }
   }
 
   private def switchView(view: String): Unit = {
@@ -132,10 +66,7 @@ class Workbench {
     if (documentEditor.isEmpty) {
       val docContainer = dom.document.getElementById("doc-container")
       val handle = opelan.ui.fp.Runtime.mount(docContainer, TypedDoc)
-      handle.outputs.subscribe {
-        case TypedDocOutput.Status(msg) => updateStatus(msg)
-        case _ => ()
-      }
+      handle.outputs.subscribe(docOutput)
       documentEditor = Some(handle)
     }
   }
@@ -150,7 +81,7 @@ class Workbench {
     }
   }
 
-  private def updateStatus(message: String): Unit = {
+  protected def updateStatus(message: String): Unit = {
     dom.document.getElementById("status-message").textContent = message
   }
 

@@ -13,6 +13,7 @@ object EditorKeys {
       case ("arrowdown", false, _) => Some(Move(1))
       case ("arrowup", false, _)   => Some(Move(-1))
       case ("enter", false, false) => Some(InsertSibling)
+      case ("enter", true, _)      => Some(FollowRef)
       case ("enter", false, true)  => Some(InsertChild)
       case ("tab", false, false)   => Some(Indent)
       case ("tab", false, true)    => Some(Outdent)

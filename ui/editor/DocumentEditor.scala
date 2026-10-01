@@ -22,6 +22,7 @@ import opelan.ui.fp._
 //   Delete / Backspace         remove subtree (node remains until compaction)
 //   Ctrl+X / Ctrl+C / Ctrl+V   cut / copy / paste subtree
 //   Ctrl+Z, Ctrl+Y             undo / redo
+//   Ctrl+Enter                 follow the selected node's reference
 //   Escape                     deselect / cancel edit
 //
 // Layout of this component (each file one responsibility):
@@ -63,13 +64,21 @@ object DocumentEditor extends Component[EditorInput, EditorOutput] {
   }
 
   // Parse edited text into node data:
-  //   &5    -> internal ref to node 5
-  //   42    -> int
-  //   1.5   -> float
-  //   ?abc  -> gap holding the text after '?'
-  //   other -> string
+  //   &5              -> internal ref to node 5
+  //   ext:url@v#n     -> external ref to node n of url's version v
+  //   42              -> int
+  //   1.5             -> float
+  //   ?abc            -> gap holding the text after '?'
+  //   other           -> string
   def parseNodeData(text: String): NodeData =
     if (text.matches("&\\d+")) NodeData.InternalNodeRef(text.drop(1).toInt)
+    else if (text.matches("ext:.+@\\d+#\\d+")) {
+      val body = text.drop(4)
+      NodeData.ExternalNodeRef(ExternalNodeReference(
+        body.take(body.lastIndexOf('@')),
+        body.substring(body.lastIndexOf('@') + 1, body.lastIndexOf('#')).toInt,
+        body.drop(body.lastIndexOf('#') + 1).toInt))
+    }
     else if (text.startsWith("?")) NodeData.GapData(text.drop(1))
     else if (text.matches("-?\\d+")) NodeData.IntData(text.toInt)
     else if (text.matches("-?\\d*\\.\\d+")) NodeData.FloatData(text.toDouble)

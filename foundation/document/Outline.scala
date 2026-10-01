@@ -13,6 +13,15 @@ object Outline {
   def render(doc: Document[NodeData]): String =
     renderSubtree(doc, doc.rootId)
 
+  // Parse outline text into a fresh document — the inverse of `render`.
+  // The first line becomes the root's data, deeper lines its subtree.
+  // Nothing else is preserved: node ids are re-assigned, node versions
+  // reset, and unreachable nodes cannot be represented.
+  def parse(text: String): Option[Document[NodeData]] =
+    parseLines(text).map { case (data, children) =>
+      Build.buildDocument(DetachedNode(data, children))
+    }
+
   def renderSubtree(doc: Document[NodeData], nodeId: Int): String = {
     def rows(id: Int, depth: Int): List[String] =
       ("  " * depth + Show.showNodeData(doc.getNode(id).get.data)) ::

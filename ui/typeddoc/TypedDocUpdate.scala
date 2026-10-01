@@ -13,9 +13,10 @@ object TypedDocUpdate {
   def apply(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel, TypedDocOutput] =
     input match {
       case SwitchView(v) => Update(m.copy(view = v))
-      case Load(d)       => load(m, d, "Document loaded")
+      case Load(d, sel)  => load(m, d, sel, "Document loaded")
+      case RequestDoc    => Update(m, Vector(DocChanged(m.doc)))
       case LoadExprSample =>
-        load(m, ExprLanguage.sampleDoc, "Expression sample loaded")
+        load(m, ExprLanguage.sampleDoc, None, "Expression sample loaded")
 
       // A text edit is total: apply returns a new document (with holes
       // where the text doesn't fit) or an error that only touches status.
@@ -27,7 +28,7 @@ object TypedDocUpdate {
               if (holes == 0) "Parsed"
               else s"Parsed — $holes hole${if (holes == 1) "" else "s"}"
             Update(
-              m.copy(doc = d, pushedDoc = d, text = t, status = msg),
+              m.copy(doc = d, pushedDoc = d, pushedSelect = None, text = t, status = msg),
               Vector(DocChanged(d), Status(msg)))
           case Left(err) =>
             Update(m.copy(text = t, status = err), Vector(Status(err)))
@@ -45,6 +46,8 @@ object TypedDocUpdate {
             m.copy(doc = d, text = t, textEpoch = m.textEpoch + bump),
             Vector(DocChanged(d)))
         }
+      case FromEditor(EditorOutput.FollowRef(ref)) =>
+        Update(m, Vector(FollowRef(ref)))
       case FromEditor(EditorOutput.Status(s)) =>
         Update(m.copy(status = s), Vector(Status(s)))
     }
@@ -52,11 +55,13 @@ object TypedDocUpdate {
   private def load(
       m: TypedDocModel,
       d: Document[NodeData],
+      select: Option[Int],
       msg: String): Update[TypedDocModel, TypedDocOutput] =
     Update(
       m.copy(
         doc = d,
         pushedDoc = d,
+        pushedSelect = select.filter(id => d.getNode(id).isDefined),
         text = DocText.render(d),
         textEpoch = m.textEpoch + 1,
         status = msg),

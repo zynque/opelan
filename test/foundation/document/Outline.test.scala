@@ -44,6 +44,25 @@ class OutlineSuite extends munit.FunSuite {
     assertEquals(Outline.render(d), Outline.render(sample))
   }
 
+  test("parse builds a fresh, valid document from outline text") {
+    val d = Outline.parse(Outline.render(sample)).get
+    assertEquals(Outline.render(d), Outline.render(sample))
+    assertEquals(Edit.validate(d), Nil)
+  }
+
+  test("parse round-trips external refs") {
+    val d = Outline.parse("\"root\"\n  ref:opelan:docs/a@2#5").get
+    assertEquals(
+      d.childrenOf(d.rootId).map(id => d.getNode(id).map(_.data)),
+      List(Some(NodeData.ExternalNodeRef(
+        ExternalNodeReference("opelan:docs/a", 2, 5)))))
+  }
+
+  test("parse returns None on empty text") {
+    assertEquals(Outline.parse(""), None)
+    assertEquals(Outline.parse("   \n\n"), None)
+  }
+
   test("gap lines parse to GapData") {
     val d = Outline(
       Build.beginDocument(s("root")),

@@ -53,6 +53,41 @@ class EditorUpdateSuite extends munit.FunSuite {
     assert(u.state.doc == m0.doc)
   }
 
+  test("follow ref selects an internal ref's target") {
+    val m = init
+    val target = m.doc.childrenOf(m.doc.rootId).head
+    val withRef = EditorUpdate(
+      m.copy(editingId = Some(m.doc.rootId)),
+      EditorInput.CommitEdit(s"&$target")).state
+    val u = EditorUpdate(withRef.copy(selectedId = Some(m.doc.rootId)), EditorInput.FollowRef)
+    assertEquals(u.state.selectedId, Some(target))
+  }
+
+  test("follow ref emits an output for an external ref") {
+    val m = init
+    val ref = ExternalNodeReference("opelan:docs/x", 0, 1)
+    val withRef = m.copy(
+      doc = Build.buildDocument(DetachedNode(NodeData.ExternalNodeRef(ref))),
+      selectedId = Some(0))
+    val u = EditorUpdate(withRef, EditorInput.FollowRef)
+    assertEquals(u.out, Vector(EditorOutput.FollowRef(ref)))
+  }
+
+  test("follow ref reports a non-reference node as status") {
+    val u = EditorUpdate(init, EditorInput.FollowRef)
+    assert(u.out.forall(o => !o.isInstanceOf[EditorOutput.FollowRef]))
+    assert(u.state.status.contains("not a reference"))
+  }
+
+  test("sync document applies an optional selection") {
+    val d = Build.buildDocument(
+      DetachedNode(NodeData.StringData("r"), List(DetachedNode.leaf(NodeData.IntData(1)))))
+    val target = d.childrenOf(d.rootId).head
+    val u = EditorUpdate(init, EditorInput.SyncDocument(d, Some(target)))
+    assertEquals(u.state.doc, d)
+    assertEquals(u.state.selectedId, Some(target))
+  }
+
   test("cut then paste reattaches the subtree") {
     val m0 = init
     val childId = m0.doc.childrenOf(m0.doc.rootId).head

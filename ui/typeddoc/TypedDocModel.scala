@@ -24,9 +24,14 @@ enum DocView {
 // text is re-derived from the document (structural edits, loads), which
 // remounts the editor with the new text. TextEdited never bumps it —
 // the cell already holds that text — so typed input never echoes back.
+//
+// `pushedSelect` rides along with `pushedDoc`: a load can name a node to
+// select (e.g. a followed ref's target). It only matters when pushedDoc
+// itself changes — the child input is resent only on change.
 case class TypedDocModel(
     doc: Document[NodeData],
     pushedDoc: Document[NodeData],
+    pushedSelect: Option[Int] = None,
     view: DocView = DocView.Editor,
     text: String = "",
     textEpoch: Int = 0,
@@ -36,7 +41,12 @@ case class TypedDocModel(
 // text edits, and outputs routed up from the editor child.
 enum TypedDocInput {
   case SwitchView(view: DocView)
-  case Load(doc: Document[NodeData])
+  // `selectId` optionally selects a node in the loaded document — the
+  // follow-a-ref jump target.
+  case Load(doc: Document[NodeData], selectId: Option[Int] = None)
+  // Re-emit the current document as DocChanged — lets the owner pull the
+  // live doc (e.g. to save it) without a shadow copy going stale.
+  case RequestDoc
   case LoadExprSample
   case TextEdited(text: String)
   case FromEditor(out: EditorOutput)
@@ -46,4 +56,7 @@ enum TypedDocInput {
 enum TypedDocOutput {
   case DocChanged(doc: Document[NodeData])
   case Status(message: String)
+  // The editor's request to follow an external ref; resolved by whoever
+  // holds the document store.
+  case FollowRef(ref: ExternalNodeReference)
 }

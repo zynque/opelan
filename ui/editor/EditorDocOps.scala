@@ -73,6 +73,21 @@ object EditorDocOps {
       case _ => status(m, "Select a non-root node first")
     }
 
+  // Follow the selected node's reference. Internal refs are followed in
+  // place by selecting the target; external refs resolve through the
+  // document store, which only the component's owner holds — so they are
+  // emitted as an output.
+  def followRef(m: EditorModel): Update[EditorModel, EditorOutput] =
+    m.doc.getNode(m.targetId).map(_.data) match {
+      case Some(NodeData.InternalNodeRef(id)) if m.doc.getNode(id).isDefined =>
+        Update(m.copy(selectedId = Some(id)), Vector(Status(s"Followed ref to #$id")))
+      case Some(NodeData.InternalNodeRef(id)) =>
+        status(m, s"Internal ref target #$id does not exist")
+      case Some(NodeData.ExternalNodeRef(ref)) =>
+        Update(m, Vector(FollowRef(ref)))
+      case _ => status(m, "Selected node is not a reference")
+    }
+
   def compact(m: EditorModel): Update[EditorModel, EditorOutput] = {
     val before = m.doc.nodes.length
     val (compacted, remap) = Edit.compact(m.doc)

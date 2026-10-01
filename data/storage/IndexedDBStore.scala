@@ -11,7 +11,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 // store stays agnostic about what it holds: project stubs, Automerge document
 // bytes, and UI settings. v2 drops the scaffold-era "schemas"/"definitions"
 // object stores — schemas become documents and definitions live in them.
-class IndexedDBStore(dbName: String = "opelan-workbench", version: Int = 2) {
+class IndexedDBStore(dbName: String = "opelan-workbench", version: Int = 3) {
   private var db: js.Dynamic = null
   private var isInitialized = false
   private val initPromise = Promise[Unit]()
@@ -50,6 +50,7 @@ class IndexedDBStore(dbName: String = "opelan-workbench", version: Int = 2) {
         ensureStore("projects", "id")
         ensureStore("automerge_docs", "id")
         ensureStore("settings", "key")
+        ensureStore("documents", "key")
       }
     }
 
@@ -95,6 +96,16 @@ class IndexedDBStore(dbName: String = "opelan-workbench", version: Int = 2) {
     transact("automerge_docs", "readonly", "Failed to get Automerge document")(_.get(docId))(
       result => Option(result).map(_.asInstanceOf[js.Dynamic]))
 
+  // Versioned document records: one row per (url, version), key "url@v",
+  // holding the outline text. Append-only — old versions stay readable so
+  // pinned external refs keep resolving.
+  def storeDocumentRecord(record: js.Dynamic): Future[Unit] =
+    transact("documents", "readwrite", "Failed to store document record")(_.put(record))(_ => ())
+
+  def listDocumentRecords(): Future[List[js.Dynamic]] =
+    transact("documents", "readonly", "Failed to list document records")(_.getAll())(
+      _.asInstanceOf[js.Array[js.Dynamic]].toList)
+
   def storeSetting(key: String, value: js.Any): Future[Unit] =
     transact("settings", "readwrite", "Failed to store setting")(
       _.put(js.Dynamic.literal("key" -> key, "value" -> value)))(_ => ())
@@ -125,6 +136,8 @@ object IndexedDBStore {
   def listProjects(): Future[List[js.Dynamic]] = store.listProjects()
   def storeAutomergeDoc(docId: String, document: js.Dynamic): Future[Unit] = store.storeAutomergeDoc(docId, document)
   def getAutomergeDoc(docId: String): Future[Option[js.Dynamic]] = store.getAutomergeDoc(docId)
+  def storeDocumentRecord(record: js.Dynamic): Future[Unit] = store.storeDocumentRecord(record)
+  def listDocumentRecords(): Future[List[js.Dynamic]] = store.listDocumentRecords()
   def storeSetting(key: String, value: js.Any): Future[Unit] = store.storeSetting(key, value)
   def getSetting(key: String): Future[Option[js.Any]] = store.getSetting(key)
   def close(): Unit = store.close()

@@ -54,7 +54,12 @@ enum EditorInput {
   case LoadDocument(doc: Document[NodeData])
   // Load without echoing DocChanged/Status back to the parent — for
   // parents that push the document down themselves and already know it.
-  case SyncDocument(doc: Document[NodeData])
+  // `select` selects a node after the load (e.g. a followed ref's target).
+  case SyncDocument(doc: Document[NodeData], select: Option[Int] = None)
+  // Follow the selected node's reference: internal refs select their
+  // target in place; external refs are reported via EditorOutput.FollowRef
+  // for the owner (which holds the document store) to resolve.
+  case FollowRef
   case LoadSample
   case Compact
 }
@@ -64,4 +69,7 @@ enum EditorInput {
 enum EditorOutput {
   case DocChanged(doc: Document[NodeData])
   case Status(message: String)
+  // The user asked to follow an external ref; the editor can't resolve
+  // cross-document addresses itself.
+  case FollowRef(ref: ExternalNodeReference)
 }

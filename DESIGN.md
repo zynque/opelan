@@ -98,7 +98,14 @@ The substrate everything is built on — a direct port of olw-p4, extended:
   **`GapData(text)`** — a hole (§5).
 - **`Outline`** — a text codec for raw documents: one line per node,
   indentation encodes nesting, with surface syntax for each `NodeData`
-  variant (`"abc"`, `42`, `1.5`, `ref:5`, `ref:url@v#n`, `?text`).
+  variant (`"abc"`, `42`, `1.5`, `ref:5`, `ref:url@v#n`, `?text`). Doubles
+  as the serialization format for stored documents.
+- **`Store`** — a pure, immutable, versioned document store keyed by URL:
+  `put` appends a version (0, 1, 2, …), `resolve` dereferences
+  `ExternalNodeReference`'s `url@version#node` addressing, and heads are
+  tracked per URL. Append-only, so pinned refs never dangle. This is the
+  resolution half of external refs and the substrate for multi-document
+  workspaces.
 - **`Show`** — debug rendering including node versions and links.
 
 ## 4. Versioning (`foundation/version`)
@@ -224,17 +231,27 @@ package constraint.
 ### `ui/editor/Workbench`
 
 `Workbench` is the application shell mounted by `Main`: a sidebar listing
-project name stubs (persisted in IndexedDB) and a toolbar switching between
-the **document** view (hosts `TypedDoc`) and a **components** view (fp demo).
-Markup lives in `WorkbenchLayout`. The scaffold-era views it once hosted —
-a textarea DSL stub, a static schema panel, a canvas `DiagramRenderer` —
-were removed along with the scaffold model types they were built on.
+stored document heads and a toolbar switching between the **document**
+view (hosts `TypedDoc`) and a **components** view (fp demo). Markup lives
+in `WorkbenchLayout`; document-store decisions live in the pure `Workspace`
+value (open/save/follow-ref) with the DOM and async plumbing in
+`WorkbenchDocs`. Ctrl+Enter on a ref node follows it: internal refs select
+their target in place, external refs bubble up as an output, resolve
+through the `Store`, and open the pinned version at the referenced node —
+the first real use of `ExternalNodeRef`. The scaffold-era views it once
+hosted — a textarea DSL stub, a static schema panel, a canvas
+`DiagramRenderer` — were removed along with the scaffold model types they
+were built on.
 
 ## 7. Persistence and collaboration (`data/`, `collaboration/`)
 
-- **`IndexedDBStore`** — Future-based access over three object stores
-  (`projects`, `automerge_docs`, `settings`) using `js.Dynamic` payloads, so
-  the store stays agnostic about what it persists.
+- **`IndexedDBStore`** — Future-based access over four object stores
+  (`projects`, `automerge_docs`, `settings`, `documents`) using
+  `js.Dynamic` payloads, so the store stays agnostic about what it
+  persists. **`DocumentRepo`** maps the `documents` store to the `Store`:
+  one record per `url@version` holding `Outline.render` text; `loadAll`
+  re-parses every record into a `Store` and derives heads by taking the
+  max version per URL — no separate index to keep consistent.
 - **Automerge** — `@automerge/automerge` is a declared npm dependency (with
   its wasm blob at repo root) but no Scala code calls it yet. The earlier
   `CollaborationManager` stub — a `js.Dynamic` document with a naive

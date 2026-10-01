@@ -1,15 +1,16 @@
 package opelan.ui.editor
 
-// Static markup for the workbench shell: a projects sidebar, a view-switcher
-// toolbar, and the content area hosting the document and components views.
+// Static markup for the workbench shell: a documents sidebar listing the
+// document store's heads, a view-switcher toolbar with save, and the
+// content area hosting the document and components views.
 object WorkbenchLayout {
   val markup: String = """
     <div id="workbench-layout" style="display: flex; height: 100vh; font-family: Arial, sans-serif;">
       <!-- Sidebar -->
       <div id="sidebar" style="width: 250px; border-right: 1px solid #ccc; padding: 10px; background: #f5f5f5;">
-        <h3>Projects</h3>
-        <div id="project-list"></div>
-        <button id="new-project-btn" style="width: 100%; padding: 5px; margin: 5px 0;">New Project</button>
+        <h3>Documents</h3>
+        <div id="document-list"></div>
+        <button id="new-doc-btn" style="width: 100%; padding: 5px; margin: 5px 0;">New Document</button>
       </div>
 
       <!-- Main Content -->
@@ -18,7 +19,8 @@ object WorkbenchLayout {
         <div id="toolbar" style="padding: 10px; border-bottom: 1px solid #ccc; background: #f9f9f9;">
           <button id="doc-view-btn" style="margin-right: 5px; padding: 5px 10px;">Document</button>
           <button id="components-view-btn" style="margin-right: 5px; padding: 5px 10px;">Components</button>
-          <span style="margin-left: 20px;">Project: <span id="current-project-name">None</span></span>
+          <button id="save-doc-btn" style="padding: 5px 10px;">Save</button>
+          <span style="margin-left: 20px;"><span id="current-doc-name">unsaved</span></span>
         </div>
 
         <!-- Content Area -->
