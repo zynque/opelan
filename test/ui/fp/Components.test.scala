@@ -16,28 +16,28 @@ class ComponentSuite extends munit.FunSuite {
     assertEquals(out, Vector(CounterOutput.Changed(42)))
   }
 
-  test("counter list grows its desired structure on add") {
+  test("counter list grows its desired children on add") {
     val s0 = CounterList.init
     val s1 = CounterList.update(s0, CounterListInput.AddCounter).state
     val s2 = CounterList.update(s1, CounterListInput.AddCounter).state
 
-    val children = CounterList.structure(s2)
+    val children = CounterList.children(s2)
     assertEquals(children.map(_.key), Vector("0", "1"))
     assert(children.forall(_.component eq Counter))
   }
 
-  test("counter list shrinks its desired structure on remove") {
+  test("counter list shrinks its desired children on remove") {
     val s0 = CounterList.init
     val s1 = CounterList.update(s0, CounterListInput.AddCounter).state
     val s2 = CounterList.update(s1, CounterListInput.AddCounter).state
     val s3 = CounterList.update(s2, CounterListInput.RemoveCounter(0)).state
 
-    assertEquals(CounterList.structure(s3).map(_.key), Vector("1"))
+    assertEquals(CounterList.children(s3).map(_.key), Vector("1"))
   }
 
   test("child onOutput routes into the parent's input type") {
     val s = CounterList.update(CounterList.init, CounterListInput.AddCounter).state
-    val child = CounterList.structure(s).head
+    val child = CounterList.children(s).head
     val route = child.onOutput.asInstanceOf[CounterOutput => CounterListInput]
     assertEquals(
       route(CounterOutput.Changed(7)),
@@ -49,7 +49,7 @@ class ComponentSuite extends munit.FunSuite {
     val s1 = CounterList.update(s0, CounterListInput.AddCounter).state
     val s2 = CounterList.update(
       s1, CounterListInput.FromCounter(0, CounterOutput.Changed(9))).state
-    val child = CounterList.structure(s2).head
+    val child = CounterList.children(s2).head
     assertEquals(child.input.asInstanceOf[CounterInput], CounterInput.SetValue(9))
   }
 

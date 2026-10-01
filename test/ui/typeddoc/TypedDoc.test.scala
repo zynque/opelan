@@ -10,7 +10,7 @@ class TypedDocSuite extends munit.FunSuite {
   private def init: TypedDocModel = TypedDoc.init
 
   private def editorInput(m: TypedDocModel): EditorInput =
-    TypedDoc.structure(m).head.input.asInstanceOf[EditorInput]
+    TypedDoc.children(m).head.input.asInstanceOf[EditorInput]
 
   test("init loads a typed expression sample") {
     val m = init
@@ -18,7 +18,7 @@ class TypedDocSuite extends munit.FunSuite {
     assertEquals(m.view, DocView.Editor)
   }
 
-  test("structure mounts the document editor with the pushed document") {
+  test("children mounts the document editor with the pushed document") {
     val m = init
     assertEquals(editorInput(m), EditorInput.SyncDocument(m.pushedDoc))
   }

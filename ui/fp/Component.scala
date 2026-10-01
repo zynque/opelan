@@ -20,7 +20,7 @@ trait Component[I, O] {
   // against live children: same key + same component reuses the instance,
   // new keys are created, missing keys are destroyed. Identity and lifetime
   // are reconciliation concerns, not component logic.
-  def structure(state: State): Vector[Child[?, ?, I]] = Vector.empty
+  def children(state: State): Vector[Child[?, ?, I]] = Vector.empty
 }
 
 // The result of processing an input: new state plus outputs to emit.

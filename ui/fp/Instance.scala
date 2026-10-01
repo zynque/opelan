@@ -3,7 +3,7 @@ package opelan.ui.fp
 import org.scalajs.dom
 
 // A live component instance: current state, live DOM, and live children
-// produced by reconciling `structure`. Instances are the nodes of the live
+// produced by reconciling `children`. Instances are the nodes of the live
 // component tree; the Runtime owns the dispatch queue they feed into.
 final class Instance[I, O](
     val component: Component[I, O],
@@ -47,7 +47,7 @@ final class Instance[I, O](
     mountPoint = ctx.mountPoint
     ctx.focusElement.foreach((el, sel) => rt.enqueue(() => focusNow(el, sel)))
     ctx.scrollElement.foreach(el => rt.enqueue(() => Render.scrollIntoView(el)))
-    mountPoint.foreach(mp => Reconcile.reconcile(this, component.structure(state), mp))
+    mountPoint.foreach(mp => Reconcile.reconcile(this, component.children(state), mp))
   }
 
   private def focusNow(el: dom.Element, select: Boolean): Unit = {

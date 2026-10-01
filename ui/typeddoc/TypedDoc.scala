@@ -33,7 +33,7 @@ object TypedDoc extends Component[TypedDocInput, TypedDocOutput] {
 
   def view(state: State): View[TypedDocInput] = TypedDocView.view(state)
 
-  override def structure(state: State): Vector[Child[?, ?, TypedDocInput]] =
+  override def children(state: State): Vector[Child[?, ?, TypedDocInput]] =
     Vector(Child(
       key = "editor",
       component = DocumentEditor,

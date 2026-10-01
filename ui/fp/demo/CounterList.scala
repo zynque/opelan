@@ -16,7 +16,7 @@ case class CounterListState(
     values: Map[Int, Int],
     nextId: Int)
 
-// A dynamic parent: clicks change state, state changes structure, and the
+// A dynamic parent: clicks change state, state changes children, and the
 // reconciler creates/destroys Counter instances to match. Each child's
 // output is routed back as FromCounter, and the child's input is its current
 // value pushed down as props.
@@ -63,7 +63,7 @@ object CounterList extends Component[CounterListInput, CounterListOutput] {
       mount)
   }
 
-  override def structure(state: State): Vector[Child[?, ?, CounterListInput]] =
+  override def children(state: State): Vector[Child[?, ?, CounterListInput]] =
     state.items.map { id =>
       Child(
         key = id.toString,

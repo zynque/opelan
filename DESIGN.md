@@ -175,8 +175,8 @@ whole cells. `Expr.print` round-trips holes.
 A small Elm/Tyrian-style framework (custom-built post-p3):
 
 - `Component[I, O]` — `init`, `update` (pure: state + input → `Update(state,
-  outputs)`), `view` (desired `View[I]` tree), `structure` (desired keyed
-  children). One input channel for everything: view events, parent-pushed
+  outputs)`), `view` (desired `View[I]` tree), `children` (desired keyed
+  child descriptions). One input channel for everything: view events, parent-pushed
   props, routed child outputs. Effects are *output values* interpreted by
   whoever mounts the component.
 - `Runtime` — a single FIFO dispatch queue (no re-entrancy); the queue is the
