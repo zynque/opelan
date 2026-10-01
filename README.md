@@ -1,15 +1,28 @@
 # Opelan Language Workbench
 
-A production-ready language workbench built with Scala.js, CodeMirror, and Automerge for local-first, collaborative language development.
+An experimental prototype exploring language workbench concepts — structured editing, polysyntactic views, typed holes, and local-first documents — built with Scala.js and CodeMirror.
+
+**This is a research prototype, not production software.** It exists to explore ideas from the [MANIFESTO](MANIFESTO.md); expect rough edges, incomplete features, and evolving design. See [STATUS.md](STATUS.md) for an honest accounting of what works and what doesn't.
+
+**A note on AI use**: LLM agents are used generously in this project to accelerate development of the prototype. The design is heavily inspired by previous hand-written prototypes ([olw-p1](https://github.com/zynque/olw-p1) … [olw-p4](https://github.com/zynque/olw-p4)), and the agents are steered carefully by the author to reflect his technical style and preferences.
 
 ## Features
 
+Working today:
+
 - **Document Model**: Everything is a versioned, structured tree — programs, documents, and tooling state
 - **Polysyntactic Editing**: Structural editor, text surface, and language-provided derived views over one document
-- **Typed Holes**: Hazel-inspired holes keep incomplete input editable instead of failing
-- **Versioned History**: Version DAG as a document, with LSCA merge-base
+- **Typed Holes**: Hazel-inspired holes keep incomplete input editable instead of failing (parse-level only)
 - **Local-First**: Browser-only deployment with IndexedDB persistence
-- **Planned**: Real-time collaboration via Automerge and pure-P2P sync; language definitions as documents
+
+Implemented but not yet wired into the UI:
+
+- **Versioned History**: Version DAG as a document, with LSCA merge-base
+
+Planned / exploratory:
+
+- Real-time collaboration via Automerge and pure-P2P sync
+- Language definitions as documents (bootstrap)
 
 ## Architecture
 
