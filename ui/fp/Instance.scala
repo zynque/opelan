@@ -14,7 +14,6 @@ final class Instance[I, O](
 
   private[fp] var node: dom.Node = null
   private var destroyed = false
-  private var mountPoint: Option[dom.Element] = None
   private var currentView: View[I] = null
   private[fp] var liveChildren: Map[String, ChildEntry] = Map.empty
 
@@ -44,10 +43,9 @@ final class Instance[I, O](
     else
       Patch.patch(node, currentView, view, emit, ctx)
     currentView = view
-    mountPoint = ctx.mountPoint
     ctx.focusElement.foreach((el, sel) => rt.enqueue(() => focusNow(el, sel)))
     ctx.scrollElement.foreach(el => rt.enqueue(() => Render.scrollIntoView(el)))
-    mountPoint.foreach(mp => Reconcile.reconcile(this, component.children(state), mp))
+    ctx.mountPoint.foreach(mp => Reconcile.reconcile(this, component.children(state), mp))
   }
 
   private def focusNow(el: dom.Element, select: Boolean): Unit = {

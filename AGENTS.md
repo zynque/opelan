@@ -12,6 +12,10 @@
 - **Pure logic separated from effects**: keep document/tree operations pure
   (`foundation/`) and DOM/event code thin (`ui/`). Pure helpers that tests can
   exercise live on companion objects (e.g. `DocumentEditor.parseNodeData`).
+- **Immutability by default**: prefer `val`s, `case class`es, and immutable
+  collections. Reserve `var`/`mutable` for the effect boundary — DOM nodes,
+  live `Instance`s, the `Runtime` queue — or for local accumulators that
+  don't escape their function (e.g. `Vector.newBuilder`).
 
 ## Build & test
 

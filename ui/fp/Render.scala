@@ -1,10 +1,11 @@
 package opelan.ui.fp
 
 import scala.scalajs.js
+import scala.collection.mutable
 import org.scalajs.dom
 
 // Turns a View into live DOM. Event listeners are attached once per event
-// name; they resolve the current handler from a table stored on the element,
+// name; they resolve the current handler from a table keyed by element,
 // so patching only swaps table entries and never re-binds listeners.
 object Render {
 
@@ -47,17 +48,14 @@ object Render {
     el.asInstanceOf[js.Dynamic]
       .scrollIntoView(js.Dynamic.literal("block" -> "nearest"))
 
-  // The per-element handler table. Kept on the element itself so it survives
-  // patching; listeners look up the current handler at dispatch time.
+  // The per-element handler tables. Weakly keyed so entries die with their
+  // element; listeners look up the current handler at dispatch time.
+  private val handlerStores =
+    mutable.WeakHashMap.empty[dom.Element, mutable.Map[String, dom.Event => Any]]
+
   private[fp] def handlerStore(
-      el: dom.Element): scala.collection.mutable.Map[String, dom.Event => Any] = {
-    val dyn = el.asInstanceOf[js.Dynamic]
-    if (js.isUndefined(dyn.selectDynamic("__fpHandlers")))
-      dyn.updateDynamic("__fpHandlers")(
-        scala.collection.mutable.Map.empty[String, dom.Event => Any].asInstanceOf[js.Any])
-    dyn.selectDynamic("__fpHandlers")
-      .asInstanceOf[scala.collection.mutable.Map[String, dom.Event => Any]]
-  }
+      el: dom.Element): mutable.Map[String, dom.Event => Any] =
+    handlerStores.getOrElseUpdate(el, mutable.Map.empty)
 
   // Sets the current handlers for an element, attaching a dispatcher for any
   // event name not seen before. Handlers absent from `events` are dropped
@@ -67,7 +65,7 @@ object Render {
       events: Map[String, dom.Event => Option[I]],
       emit: I => Unit): Unit = {
     val store = handlerStore(el)
-    store.keys.toList.foreach(name => if (!events.contains(name)) store.remove(name))
+    (store.keys.toSet -- events.keySet).foreach(store.remove)
     events.foreach { (name, f) =>
       if (!store.contains(name))
         el.addEventListener(name, (e: dom.Event) =>
