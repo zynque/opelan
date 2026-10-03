@@ -7,10 +7,10 @@ import opelan.ui.fp._
 // Typed-document pane: the workbench's view onto a typed document.
 //
 // The structural editor is a DocumentEditor child that stays mounted in
-// every view mode, so switching to print/eval and back preserves
+// every surface mode, so switching between editor and text preserves
 // selection, edit state, and undo history. The pane mirrors the child's
-// document (via DocChanged outputs) so derived views always render the
-// current content.
+// document (via DocChanged outputs) so the sidebar's derived views
+// always render the current content.
 //
 //   TypedDocModel.scala   state value + view/input/output types
 //   TypedDocUpdate.scala  pure transitions

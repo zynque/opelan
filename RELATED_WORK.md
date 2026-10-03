@@ -89,6 +89,7 @@ models give curated, branched, truncatable history. We want both, at different l
 - **[Engelbart's NLS/Augment](https://www.dougengelbart.org)** — The 1968 demo: structured documents, versioning, hyperlinks, real-time collaboration. Everything here, fifty years early.
 - **[Project Xanadu](https://en.wikipedia.org/wiki/Project_Xanadu)** — Ted Nelson's hypertext: transclusion, versioned documents, first-class references between documents. `ExternalNodeRef` is a descendant of transclusion.
 - **[HyperCard](https://en.wikipedia.org/wiki/HyperCard)** — Frictionless authoring for non-programmers; the accessibility bar to aim at.
+- **[The Geometer's Sketchpad](https://en.wikipedia.org/wiki/The_Geometer%27s_Sketchpad)** — Dynamic geometry where a construction is a live dependency graph: drag a point and every derived object updates. Direct manipulation of a program's inputs while watching its semantics execute — the interaction model this platform wants everywhere.
 
 ## Papers & Theory
 

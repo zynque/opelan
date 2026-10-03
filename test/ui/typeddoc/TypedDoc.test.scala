@@ -23,9 +23,9 @@ class TypedDocSuite extends munit.FunSuite {
     assertEquals(editorInput(m), EditorInput.SyncDocument(m.pushedDoc))
   }
 
-  test("SwitchView selects a derived view") {
-    val u = TypedDocUpdate(init, TypedDocInput.SwitchView(DocView.Derived("print")))
-    assertEquals(u.state.view, DocView.Derived("print"))
+  test("SwitchView selects the text surface") {
+    val u = TypedDocUpdate(init, TypedDocInput.SwitchView(DocView.Text))
+    assertEquals(u.state.view, DocView.Text)
   }
 
   test("editor edits update the mirrored doc but are not pushed back") {

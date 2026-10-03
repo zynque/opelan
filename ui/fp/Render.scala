@@ -51,11 +51,15 @@ object Render {
   // The per-element handler tables. Weakly keyed so entries die with their
   // element; listeners look up the current handler at dispatch time.
   private val handlerStores =
-    mutable.WeakHashMap.empty[dom.Element, mutable.Map[String, dom.Event => Any]]
+    new JsWeakMap[mutable.Map[String, dom.Event => Any]]()
 
   private[fp] def handlerStore(
       el: dom.Element): mutable.Map[String, dom.Event => Any] =
-    handlerStores.getOrElseUpdate(el, mutable.Map.empty)
+    handlerStores.get(el).getOrElse {
+      val store = mutable.Map.empty[String, dom.Event => Any]
+      handlerStores.set(el, store)
+      store
+    }
 
   // Sets the current handlers for an element, attaching a dispatcher for any
   // event name not seen before. Handlers absent from `events` are dropped

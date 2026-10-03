@@ -3,14 +3,13 @@ package opelan.ui.typeddoc
 import opelan.foundation.document._
 import opelan.ui.editor.EditorOutput
 
-// Which pane of a typed document is showing. Editor is the generic
-// structural editor; Text is a CodeMirror cell over the document's text
-// surface; Derived(name) is a view the document's language provides
-// (e.g. "print", "eval").
+// Which editing surface is showing in the left pane: the generic
+// structural editor or the CodeMirror text cell over the document's
+// text surface. A language's derived views ("print", "eval") are always
+// live in the sidebar — they are not switchable modes.
 enum DocView {
   case Editor
   case Text
-  case Derived(name: String)
 }
 
 // The complete pane state — a pure value. `doc` mirrors the latest

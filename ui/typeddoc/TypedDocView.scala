@@ -6,20 +6,21 @@ import opelan.ui.fp._
 import opelan.ui.fp.Dsl._
 import opelan.ui.text.CodeMirror
 
-// Pure view: a view-switching toolbar, the editor child (kept mounted in
-// every mode so it survives view switches), the text cell, the
-// derived-view panel, and a status bar. The mount sits in an
-// always-present wrapper; hiding it with display:none keeps the child's
-// DOM — and its focus/edit state — intact. The text cell likewise stays
-// mounted; it remounts only when textEpoch changes (external doc edits).
+// Pure view: a toolbar choosing the editing surface, a split body — the
+// structural editor / text cell on the left, the language's live derived
+// views in the sidebar on the right — and a status bar. The editor mount
+// and text cell stay mounted in every mode; hiding with display:none
+// keeps the child's DOM — and its focus/edit state — intact. The text
+// cell remounts only when textEpoch changes (external doc edits).
 object TypedDocView {
 
   def view(m: TypedDocModel): View[TypedDocInput] =
     el("div", style("height: 100%; display: flex; flex-direction: column;"))(
       toolbar(m),
-      editorPane(m),
-      textPane(m),
-      derivedPane(m),
+      el("div", style("flex: 1; display: flex; min-height: 0;"))(
+        editorPane(m),
+        textPane(m),
+        TypedDocSidebar(m)),
       statusBar(m))
 
   private def editorPane(m: TypedDocModel): View[TypedDocInput] =
@@ -33,44 +34,17 @@ object TypedDocView {
         ()
       })
 
-  private def derivedPane(m: TypedDocModel): View[TypedDocInput] = {
-    val body = m.view match {
-      case DocView.Derived(name) =>
-        Vector(el("pre",
-          style("font-family: Consolas, monospace; font-size: 16px; margin: 0;"))(
-          text(derivedText(m, name))))
-      case _ => Vector.empty[View[TypedDocInput]]
-    }
-    els("div",
-      style("flex: 1; overflow: auto; padding: 16px;" +
-        hidden(!m.view.isInstanceOf[DocView.Derived])))(
-      body)
-  }
-
-  private def derivedText(m: TypedDocModel, viewName: String): String =
-    Languages.forDoc(m.doc) match {
-      case Some(lang) =>
-        lang.render(viewName, m.doc).fold(err => s"error: $err", identity)
-      case None =>
-        if (Typed.isTyped(m.doc)) "Unknown document type — no views available"
-        else "Raw document — no derived views"
-    }
-
-  private def toolbar(m: TypedDocModel): View[TypedDocInput] = {
-    val viewButtons = List(
-        viewButton("editor", DocView.Editor, m),
-        viewButton("text", DocView.Text, m)) ++
-      Languages.forDoc(m.doc).toList.flatMap(lang =>
-        lang.views.map(v => viewButton(v, DocView.Derived(v), m)))
+  private def toolbar(m: TypedDocModel): View[TypedDocInput] =
     els("div",
       style("padding: 6px 10px; border-bottom: 1px solid #ddd; background: #f9f9f9; " +
         "font-family: Arial, sans-serif; font-size: 12px;"))(
-      viewButtons ++ Vector(
+      Vector(
+        viewButton("editor", DocView.Editor, m),
+        viewButton("text", DocView.Text, m),
         el("span", style("color: #666; margin: 0 10px;"))(text(s"type: ${typeLabel(m)}")),
         el("button",
           style("padding: 3px 8px; float: right;"),
           events = on("click", TypedDocInput.LoadExprSample))(text("Expr sample"))))
-  }
 
   private def viewButton(label: String, v: DocView, m: TypedDocModel): View[TypedDocInput] = {
     val active = m.view == v
@@ -94,6 +68,6 @@ object TypedDocView {
         "font-family: Arial, sans-serif; font-size: 12px; color: #555;"))(
       text(s"${m.status} — root #${m.doc.rootId}"))
 
-  private def hidden(condition: Boolean): String =
+  private[typeddoc] def hidden(condition: Boolean): String =
     if (condition) " display: none;" else ""
 }
