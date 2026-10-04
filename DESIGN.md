@@ -243,7 +243,113 @@ hosted — a textarea DSL stub, a static schema panel, a canvas
 `DiagramRenderer` — were removed along with the scaffold model types they
 were built on.
 
-## 7. Persistence and collaboration (`data/`, `collaboration/`)
+## 7. Navigation
+
+Navigation follows from two manifesto principles — *polysyntactic* (the same
+gesture interpreted per surface/language) and *language* (keystrokes and
+clicks are a language the software interprets). The design has two layers:
+
+- *Mechanism* — uniform. Every jump reduces to moving a selection within a
+  document or following a ref, and refs are first-class (`InternalNodeRef`,
+  `ExternalNodeRef` with `url@version#node` addressing resolved through the
+  `Store`). A *nav target* is a `(document address, node, view, jump|peek)`
+  tuple, so landing in a particular surface — or peeking inline — is the
+  same machinery, not a special case.
+- *Relations* — per-language. In a typed document the cursor sits on a
+  *name*, and each command asks a different semantic question: what defines
+  it, what types it, what uses it, what exemplifies it. `Language`
+  therefore grows a resolver capability — `resolve(relation, doc,
+  position): List[NavTarget]` alongside `views`/`render`/`parse`. Raw
+  documents are the degenerate case: the "resolver" is the ref literally
+  stored in the node (today's Ctrl+Enter).
+
+The relation vocabulary comes in two tiers. A *foundational* set is fixed
+by the workbench — named, keybound, and guaranteed across languages
+(definition, usages, type-of, examples): the language supplies the
+implementation, but the platform owns the vocabulary, so applications
+inherit it per the *transitive* principle. An *open* set is advertised per
+language like `views` — "go to test", "go to migration" — and enumerated by
+the command palette (*discoverable*). Both tiers resolve through the same
+interface and return ordinary nav targets, so peek, jump history, and
+results-as-documents apply uniformly to language-invented jumps.
+
+**Spatial navigation** — syntax-dependent, per the active surface:
+
+- *Forward/backward* (left/right) and *up/down* move through the projection:
+  by token/line in text, by sibling/parent in the structural editor. Current
+  state: arrow up/down do linear outline traversal; collapse-to-parent and
+  expand-to-child on left/right are the natural additions.
+- *Structural jumps*: go to parent/child, next/previous sibling,
+  next/previous node of the same type or category (next definition, next
+  gap). A raw-document editor is just another surface, so these primitives
+  apply everywhere — raw editing is not a special mode.
+- *Expand/shrink selection* — the selection itself walks the tree.
+
+**Semantic navigation** — distinct commands over the resolver interface:
+
+- *Go to definition* / *find usages*: the binding relation and its inverse.
+  Definition is a resolver query (name under cursor → defining node);
+  usages are an inverse ref index over stored documents — meaning-aware,
+  since refs are structured, not text search.
+- *Go to examples*: the *self-documenting* principle puts examples in
+  documents linked by refs. Links may be stored (a definition doc
+  references its examples) or discovered (inverse index filtered by
+  "example-ness"). Multi-valued relations like usages/examples return a
+  list of targets — presented as its own document, each entry itself a nav
+  target (documents all the way down).
+- *Go to type*: two readings — the *document's* type is its header ref
+  (mechanism-level follow-ref on the first child), while the type of the
+  *named entity* under the cursor is a semantic `type-of` query.
+  *Reveal/hide types* is a projection concern (detail levels below).
+- *Next/previous hole or error*: holey documents (`GapData`) make "next
+  problem" a first-class jump; `holeCount` already surfaces in the status
+  bar.
+- *Provenance navigation*: click a value in an `eval`/rendered view to jump
+  to the node that produced it — navigation upstream along the derivation.
+
+**Cross-surface navigation** — the selection follows the user across views:
+
+- *Go to/from rendering* re-projects the same node into a different view —
+  a nav target carrying a `view`, so it lives at the mechanism layer rather
+  than being a semantic query. Position follows via stable node identity
+  plus the parser's span map (tree path → source range): a node selection
+  in the structural editor lands on the corresponding text range, not the
+  top of the cell — and vice versa.
+- *Peek*: `ExternalNodeRef` is already transclusion-style; peek-definition
+  renders the target inline rather than navigating away.
+
+**Zoom navigation** — two orthogonal axes, both unique-ish to this design:
+
+- *Detail level* (terseness/verbosity): zoom out elides — types hidden,
+  signatures only, bodies folded; zoom in reveals. A per-user projection of
+  the same document, not an edit. Fold/collapse is the degenerate local
+  case.
+- *Scope* (hoist/focus): a subtree becomes the temporary root of the view —
+  the outliner's zoom. Orthogonal to detail level.
+
+**History** — navigation state is data, and eventually a document:
+
+- *Jump history*: back/forward across jumps (browser-back, IDE
+  navigate-back). "Return from example/rendering" is a special case; a
+  general stack makes every jump non-destructive.
+- *Version navigation*: the version DAG is a document, so prev/next
+  version, go to branch point/merge, and "next change in a diff" reuse the
+  same traversal machinery once §4 is wired in.
+
+**Addressing & search**
+
+- *Go to symbol / quick open / command palette*: fuzzy match over names,
+  document URLs, and node ids — every node is already addressable as
+  `url@v#n`, so a jump target is literally a parsed ref. Serves the
+  *discoverable* principle.
+- *Find text*, *bookmarks*, *breadcrumbs* (clickable root→selection path):
+  the mundane floor.
+
+**Collaborative navigation** — once `collaboration/presence` exists,
+"follow collaborator's cursor" and shared selections for pair navigation
+fall out of presence being broadcast state.
+
+## 8. Persistence and collaboration (`data/`, `collaboration/`)
 
 - **`IndexedDBStore`** — Future-based access over four object stores
   (`projects`, `automerge_docs`, `settings`, `documents`) using
@@ -261,7 +367,7 @@ were built on.
   directories: placeholders for the planned pure-P2P sync layer (pluggable
   signaling backends, presence/cursors).
 
-## 8. The retired scaffold
+## 9. The retired scaffold
 
 The first commits landed a scaffold layer — `foundation/project`
 (`Project`/`Definition`/`Workspace`), `foundation/structure`
@@ -284,7 +390,7 @@ When reading early history, treat anything `js.Dynamic`-heavy with mutable
 global singletons and "basic implementation — can be extended" placeholders
 as belonging to this removed generation.
 
-## 9. Build and test
+## 10. Build and test
 
 - Scala 3.3.1 + Scala.js via Scala CLI (`project.scala`), scalajs-dom; ES
   module output → `app.js` → webpack → `bundle.js` → loaded by `index.html`.

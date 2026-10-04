@@ -32,18 +32,31 @@ object Expr {
   }
 
   // Infix text with minimal parentheses: operations are left-associative,
-  // so only a compound right operand ever needs parens. A hole prints its
-  // verbatim text (or '?' when empty), so printed holes reparse as holes.
-  def print(e: Expr): String = e match {
-    case Lit(v)    => v.toString
-    case Add(l, r) => s"${print(l)} + ${printRight(r)}"
-    case Sub(l, r) => s"${print(l)} - ${printRight(r)}"
-    case Hole(t)   => if (t.isEmpty) "?" else t
+  // so only a compound right operand ever needs parens.
+  def print(e: Expr): String = Frag.flatten(printFrags(e))
+
+  // The printed form as fragments: holes stay distinct so views can style
+  // them inline. Flattened, a hole prints its verbatim text (or '?' when
+  // empty), so printed holes reparse as holes.
+  def printFrags(e: Expr): List[Frag] = e match {
+    case Lit(v)    => List(Frag.Text(v.toString))
+    case Add(l, r) => printFrags(l) ++ (Frag.Text(" + ") +: printRightFrags(r))
+    case Sub(l, r) => printFrags(l) ++ (Frag.Text(" - ") +: printRightFrags(r))
+    case Hole(t)   => List(Frag.Hole(t))
   }
 
-  private def printRight(e: Expr): String = e match {
-    case Add(_, _) | Sub(_, _) => s"(${print(e)})"
-    case other                 => print(other)
+  private def printRightFrags(e: Expr): List[Frag] = e match {
+    case Add(_, _) | Sub(_, _) => Frag.Text("(") +: printFrags(e) :+ Frag.Text(")")
+    case other                 => printFrags(e)
+  }
+
+  // The verbatim text of the first hole blocking evaluation — the spot a
+  // view can surface as "waiting on". None when eval succeeds.
+  def blockingHole(e: Expr): Option[String] = e match {
+    case Lit(_)    => None
+    case Add(l, r) => blockingHole(l).orElse(blockingHole(r))
+    case Sub(l, r) => blockingHole(l).orElse(blockingHole(r))
+    case Hole(t)   => Some(t)
   }
 
   def toDetached(e: Expr): DetachedNode[NodeData] = e match {
@@ -55,35 +68,41 @@ object Expr {
       DetachedNode(NodeData.StringData(SubTag), List(toDetached(l), toDetached(r)))
   }
 
-  // Interpret the subtree rooted at nodeId as an expression.
+  // Interpret the subtree rooted at nodeId as an expression. The read is
+  // recovering: nodes that are not valid expression syntax (junk data,
+  // wrong arity, literals with children) read as holes, so malformed
+  // subtrees surface as gaps rather than errors — the same totality the
+  // text parser gives typed input.
   def fromDocument(doc: Document[NodeData], nodeId: Int): Either[String, Expr] =
     doc.getNode(nodeId) match {
       case None => Left(s"Expr: node id $nodeId does not exist in document")
       case Some(node) =>
         node.data match {
           case NodeData.IntData(v) if node.childIds.isEmpty => Right(Lit(v))
-          case NodeData.IntData(_) =>
-            Left(s"Expr: literal node $nodeId has children")
           case NodeData.GapData(t) => Right(Hole(t))
-          case NodeData.StringData(AddTag) => binOp(nodeId, node.childIds, doc, Add.apply)
-          case NodeData.StringData(SubTag) => binOp(nodeId, node.childIds, doc, Sub.apply)
-          case other =>
-            Left(s"Expr: node $nodeId is not an expression (${Show.showNodeData(other)})")
+          case NodeData.StringData(AddTag) if node.childIds.length == 2 =>
+            binOp(nodeId, node.childIds, doc, Add.apply)
+          case NodeData.StringData(SubTag) if node.childIds.length == 2 =>
+            binOp(nodeId, node.childIds, doc, Sub.apply)
+          case other => Right(Hole(holeText(other)))
         }
     }
 
+  // What a malformed node contributes to a hole: its surface text —
+  // strings unquoted, so hole text reparses as the same junk.
+  private def holeText(data: NodeData): String = data match {
+    case NodeData.StringData(s) => s
+    case other                  => Show.showNodeData(other)
+  }
+
+  // Arity is guaranteed by the caller's case guard.
   private def binOp(
       nodeId: Int,
       childIds: List[Int],
       doc: Document[NodeData],
       op: (Expr, Expr) => Expr): Either[String, Expr] =
-    childIds match {
-      case List(l, r) =>
-        for {
-          left <- fromDocument(doc, l)
-          right <- fromDocument(doc, r)
-        } yield op(left, right)
-      case _ =>
-        Left(s"Expr: operator node $nodeId must have exactly 2 children, has ${childIds.length}")
-    }
+    for {
+      left <- fromDocument(doc, childIds(0))
+      right <- fromDocument(doc, childIds(1))
+    } yield op(left, right)
 }

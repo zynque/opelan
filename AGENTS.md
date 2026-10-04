@@ -27,6 +27,10 @@
   and runs webpack to produce `bundle.js`. Packaging to an existing `app.js`
   requires `--force` (build.bat deletes it first).
 
+## Git
+
+- The user reviews and commits changes manually — do not commit or push.
+
 ## Notes
 
 - Public lineage references: prototypes live at

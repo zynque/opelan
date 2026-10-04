@@ -13,11 +13,19 @@ object ExprLanguage extends Language {
 
   def views = List("print", "eval")
 
-  def render(view: String, doc: Document[NodeData]): Either[String, String] =
+  def render(view: String, doc: Document[NodeData]): Either[String, List[Frag]] =
     view match {
-      case "print" => contentExpr(doc).map(Expr.print)
-      case "eval"  => contentExpr(doc).flatMap(e => Expr.eval(e).map(_.toString))
+      case "print" => contentExpr(doc).map(Expr.printFrags)
+      case "eval"  => contentExpr(doc).map(evalFrags)
       case v       => Left(s"$name has no '$v' view")
+    }
+
+  // The value, or the hole evaluation is waiting on — rendered inline
+  // rather than as an error string.
+  private def evalFrags(e: Expr): List[Frag] =
+    Expr.eval(e) match {
+      case Right(v) => List(Frag.Text(v.toString))
+      case Left(_)  => List(Frag.Hole(Expr.blockingHole(e).getOrElse("")))
     }
 
   // The text syntax is total: any input parses, producing holes where the

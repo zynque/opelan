@@ -33,21 +33,31 @@ class ExprSuite extends munit.FunSuite {
     assertEquals(fromDocument(doc, doc.rootId), Right(sample))
   }
 
-  test("fromDocument rejects a non-expression node") {
+  test("fromDocument reads non-expression nodes as holes") {
     val doc = Build.buildDocument(sl("hello"))
-    assert(fromDocument(doc, doc.rootId).isLeft)
+    assertEquals(fromDocument(doc, doc.rootId), Right(Hole("hello")))
   }
 
-  test("fromDocument rejects an operator with the wrong arity") {
+  test("fromDocument reads a wrong-arity operator as a hole") {
     val doc = Build.buildDocument(n(s(Expr.AddTag), il(1)))
-    assert(fromDocument(doc, doc.rootId).isLeft)
+    assertEquals(fromDocument(doc, doc.rootId), Right(Hole(Expr.AddTag)))
   }
 
   test("ExprLanguage evaluates a typed document's content") {
     val doc = ExprLanguage.sampleDoc
     assertEquals(Languages.forDoc(doc), Some(ExprLanguage))
-    assertEquals(ExprLanguage.render("eval", doc), Right("4"))
-    assertEquals(ExprLanguage.render("print", doc), Right("1 + 2 - (3 - 4)"))
+    assertEquals(ExprLanguage.render("eval", doc), Right(List(Frag.Text("4"))))
+    assertEquals(
+      ExprLanguage.render("print", doc).map(Frag.flatten),
+      Right("1 + 2 - (3 - 4)"))
+  }
+
+  test("rendered views keep holes as fragments") {
+    val doc = DocText(ExprLanguage.sampleDoc, "1 + abc").toOption.get
+    assertEquals(
+      ExprLanguage.render("eval", doc),
+      Right(List(Frag.Hole("abc"))))
+    assert(ExprLanguage.render("print", doc).exists(_.contains(Frag.Hole("abc"))))
   }
 
   test("ExprLanguage reports documents without expression content") {

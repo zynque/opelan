@@ -10,7 +10,7 @@ object DocText {
   def render(doc: Document[NodeData]): String =
     Languages.forDoc(doc) match {
       case Some(lang) if lang.views.contains("print") =>
-        lang.render("print", doc).getOrElse(contentOutline(doc))
+        lang.render("print", doc).map(Frag.flatten).getOrElse(contentOutline(doc))
       case _ => contentOutline(doc)
     }
 
