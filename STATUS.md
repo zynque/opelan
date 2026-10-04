@@ -3,7 +3,7 @@
 Point-in-time state of the Opelan workbench. For architecture and rationale
 see `DESIGN.md`; for principles see `MANIFESTO.md`.
 
-Last updated: 2026-09-30
+Last updated: 2026-10-03
 
 The project is in Phase 1 (foundation & schema system) of the
 implementation plan.
@@ -32,7 +32,10 @@ implementation plan.
   widgets (CodeMirror), declarative focus/scroll.
 - **DocumentEditor** (`ui/editor`): keyboard-driven outliner over raw
   documents — navigate, insert sibling/child, indent/outdent, inline edit,
-  subtree cut/copy/paste, undo/redo over document values, compact.
+  subtree cut/copy/paste, compact. History is the version DAG: every edit
+  records a version node, undo branches rather than truncates, and a
+  history column (`EditorHistoryView`) renders the tree — click any
+  version to jump to it.
 - **TypedDoc** (`ui/typeddoc`): the workbench's document pane — structural
   editor, CodeMirror text cell, and language-provided derived views all live
   over one document; editor state survives view switches; text and structure
@@ -69,10 +72,11 @@ implementation plan.
 
 ## Not yet wired
 
-- The **version DAG** is implemented but unused — no branching history UI,
-  and editor undo is a linear stack rather than tree navigation. (The
-  document store's append-only versions are a simpler, linear history —
-  the curated DAG remains unwired.)
+- The **version DAG** is wired for in-session editor history (branching
+  undo, version-tree column) but nothing creates merge versions yet —
+  `VersionTree.merge` is unused — and history is not persisted across
+  sessions. The document store's append-only versions remain a simpler,
+  linear history.
 - **`ExternalNodeRef`s to missing targets** report "unresolved" rather than
   offering creation; and refs into old pinned versions open read-write —
   saving an old version appends a new head rather than branching.
@@ -104,7 +108,9 @@ The natural sequence from the current code is:
 
 1. ~~Document store + external-ref resolution~~ — done: `Store` +
    `DocumentRepo`, documents sidebar, follow-ref navigation.
-2. Wire the version DAG into the editor (branching undo, version-tree view).
+2. ~~Wire the version DAG into the editor~~ — done: branching undo,
+   `GoToVersion`, history column in `DocumentEditor`. Remaining: merges,
+   persisted history.
 3. Real Automerge integration for live sync, then the curated layer on top.
 4. More languages defined as documents — begin the bootstrap; schemas and
    gap/typing machinery folded into the document model. (Type refs already
@@ -119,6 +125,10 @@ Beyond that sequence, the roadmap also calls for:
 
 - A visual schema editor and interactive diagram editing as document
   views.
+- In-workbench help: `USAGE.md` documents shortcuts and views as an
+  interim measure; per the *self documenting* principle this belongs in
+  the workbench itself (a help document rendered as a view — documents
+  all the way down).
 - P2P presence indicators as part of the collaboration layer.
 - A fuller evaluation engine for the DSL beyond the expression language's
   minimal `eval` view.

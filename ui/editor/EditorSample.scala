@@ -29,6 +29,6 @@ object EditorSample {
 
   def model: EditorModel = {
     val d = doc
-    EditorModel(doc = d, selectedId = Some(d.rootId), status = "Sample document loaded")
+    EditorModel.forDocument(d, Some(d.rootId), "Sample document loaded")
   }
 }

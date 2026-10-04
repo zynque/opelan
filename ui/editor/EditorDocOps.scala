@@ -4,7 +4,7 @@ import opelan.foundation.document._
 import opelan.foundation.document.Detached._
 import opelan.ui.fp.Update
 import EditorOutput._
-import EditorUpdate.{applyEdit, status, maxUndo}
+import EditorUpdate.{applyEdit, status}
 
 // Structural and whole-document operations: insert/indent/outdent plus
 // new, load-sample, and compact commands.
@@ -95,10 +95,7 @@ object EditorDocOps {
     val d = compacted.mapData(dd =>
       NodeData.remapInternalRefs(dd, id => remap.getOrElse(id, id)))
     val msg = s"Compacted: $before -> ${d.nodes.length} nodes"
-    val nm = m.copy(
-      doc = d,
-      undoStack = (m.doc :: m.undoStack).take(maxUndo),
-      redoStack = Nil,
+    val nm = EditorHistory.record(m, d, msg).copy(
       selectedId = m.selectedId.flatMap(remap.get).filter(id => d.getNode(id).isDefined),
       detachedNodeId = None,
       status = msg)

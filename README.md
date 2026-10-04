@@ -14,10 +14,7 @@ Working today:
 - **Polysyntactic Editing**: Structural editor, text surface, and language-provided derived views over one document
 - **Typed Holes**: Hazel-inspired holes keep incomplete input editable instead of failing (parse-level only)
 - **Local-First**: Browser-only deployment with IndexedDB persistence
-
-Implemented but not yet wired into the UI:
-
-- **Versioned History**: Version DAG as a document, with LSCA merge-base
+- **Versioned History**: Version DAG as a document — branching undo and a click-to-jump history tree
 
 Planned / exploratory:
 
@@ -101,7 +98,8 @@ npx http-server -p 8080
 python -m http.server 8080
 ```
 
-Then open http://localhost:8080 in your browser.
+Then open http://localhost:8080 in your browser. See [USAGE.md](USAGE.md)
+for keyboard shortcuts and a tour of the views.
 
 ## Status
 

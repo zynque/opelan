@@ -3,10 +3,10 @@ package opelan.ui.editor
 import opelan.foundation.document._
 import opelan.ui.fp.Update
 import EditorOutput._
-import EditorUpdate.{applyEdit, status}
+import EditorUpdate.applyEdit
 
 // Editing-session transitions: selection movement, entering/leaving inline
-// edit mode, loading documents, and undo/redo over the persistent-doc stack.
+// edit mode, and loading documents. History lives in EditorHistory.
 object EditorSession {
 
   def move(m: EditorModel, delta: Int): Update[EditorModel, EditorOutput] = {
@@ -41,7 +41,7 @@ object EditorSession {
 
   def loadDocument(d: Document[NodeData]): Update[EditorModel, EditorOutput] =
     Update(
-      EditorModel(doc = d, status = "Document loaded"),
+      EditorModel.forDocument(d, status = "Document loaded"),
       Vector(DocChanged(d), Status("Document loaded")))
 
   // Parent-driven sync: replace the document without reporting it back.
@@ -50,15 +50,15 @@ object EditorSession {
   def syncDocument(
       d: Document[NodeData],
       select: Option[Int]): Update[EditorModel, EditorOutput] =
-    Update(EditorModel(
-      doc = d,
+    Update(EditorModel.forDocument(
+      d,
       selectedId = select.filter(id => d.getNode(id).isDefined),
       status = "Document synced"))
 
   def newDocument(): Update[EditorModel, EditorOutput] = {
     val d = Build.beginDocument(Detached.s("root"))
     Update(
-      EditorModel(doc = d, selectedId = Some(d.rootId), status = "New document"),
+      EditorModel.forDocument(d, Some(d.rootId), "New document"),
       Vector(DocChanged(d), Status("New document")))
   }
 
@@ -66,32 +66,4 @@ object EditorSession {
     val nm = EditorSample.model
     Update(nm, Vector(DocChanged(nm.doc), Status(nm.status)))
   }
-
-  def undo(m: EditorModel): Update[EditorModel, EditorOutput] =
-    m.undoStack match {
-      case prev :: rest =>
-        val nm = m.copy(
-          doc = prev,
-          redoStack = m.doc :: m.redoStack,
-          undoStack = rest,
-          editingId = None,
-          selectedId = m.selectedId.filter(id => prev.getNode(id).isDefined),
-          status = "Undo")
-        Update(nm, Vector(DocChanged(prev), Status("Undo")))
-      case Nil => status(m, "Nothing to undo")
-    }
-
-  def redo(m: EditorModel): Update[EditorModel, EditorOutput] =
-    m.redoStack match {
-      case next :: rest =>
-        val nm = m.copy(
-          doc = next,
-          undoStack = m.doc :: m.undoStack,
-          redoStack = rest,
-          editingId = None,
-          selectedId = m.selectedId.filter(id => next.getNode(id).isDefined),
-          status = "Redo")
-        Update(nm, Vector(DocChanged(next), Status("Redo")))
-      case Nil => status(m, "Nothing to redo")
-    }
 }

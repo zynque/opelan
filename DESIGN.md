@@ -120,9 +120,13 @@ which each node has 0, 1, or 2 parents (the second via merge).
   Huson, *Information Processing Letters* 110.8-9. `getLsca` walks two
   root-paths in O(h).
 
-Status: ported and tested, but **not yet wired into the editor** — editor
-undo is currently a plain stack of document values (`EditorModel.undoStack`).
-The intended design (per `RELATED_WORK.md`) is two layers:
+Status: wired into the editor as in-session history — `EditorModel` holds
+a `Document[Version[EditorSnapshot]]` plus a `versionId` cursor; every edit
+records a version node, so undo branches rather than truncates
+(`EditorHistory`), and a history column renders the tree with click-to-jump
+(`EditorHistoryView`, `GoToVersion`). `merge` is still unused — nothing
+produces two-parent versions yet — and history is not persisted. The
+intended design (per `RELATED_WORK.md`) is two layers:
 
 - **Operational layer** — a CRDT (Automerge) for live multi-user convergence;
 - **Curated layer** — this version DAG for deliberate, branchable,

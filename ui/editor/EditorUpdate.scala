@@ -9,8 +9,6 @@ import EditorOutput._
 // All document edits funnel through applyEdit, which pushes undo.
 object EditorUpdate {
 
-  val maxUndo = 100
-
   def apply(m: EditorModel, input: EditorInput): Update[EditorModel, EditorOutput] =
     input match {
       case Move(delta)      => EditorSession.move(m, delta)
@@ -28,8 +26,9 @@ object EditorUpdate {
       case Cut              => EditorClip.cut(m)
       case Copy             => EditorClip.copy(m)
       case Paste            => EditorClip.paste(m)
-      case Undo             => EditorSession.undo(m)
-      case Redo             => EditorSession.redo(m)
+      case Undo             => EditorHistory.undo(m)
+      case Redo             => EditorHistory.redo(m)
+      case GoToVersion(v)   => EditorHistory.goTo(m, v, s"Version #$v")
       case NewDocument      => EditorSession.newDocument()
       case LoadDocument(d)  => EditorSession.loadDocument(d)
       case SyncDocument(d, select) => EditorSession.syncDocument(d, select)
@@ -43,7 +42,7 @@ object EditorUpdate {
       m: EditorModel, msg: String): Update[EditorModel, EditorOutput] =
     Update(m.copy(status = msg), Vector(Status(msg)))
 
-  // Shared edit plumbing: on success push undo, clear redo, update
+  // Shared edit plumbing: on success record a version, update
   // selection/status, emit DocChanged + Status; on failure report the error.
   // `extra` adjusts the new model on success only (e.g. entering edit mode).
   private[editor] def applyEdit(
@@ -54,10 +53,7 @@ object EditorUpdate {
       extra: EditorModel => EditorModel = identity): Update[EditorModel, EditorOutput] =
     result match {
       case Right(d) =>
-        val nm = extra(m.copy(
-          doc = d,
-          undoStack = (m.doc :: m.undoStack).take(maxUndo),
-          redoStack = Nil,
+        val nm = extra(EditorHistory.record(m, d, msg).copy(
           selectedId = selectAfter.orElse(m.selectedId),
           status = msg))
         Update(nm, Vector(DocChanged(d), Status(msg)))

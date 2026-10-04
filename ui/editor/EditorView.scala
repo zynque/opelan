@@ -13,7 +13,9 @@ object EditorView {
   def view(m: EditorModel): View[EditorInput] =
     el("div", style("height: 100%; display: flex; flex-direction: column;"))(
       toolbar(),
-      outline(m),
+      el("div", style("flex: 1; display: flex; min-height: 0;"))(
+        outline(m),
+        EditorHistoryView.view(m)),
       statusBar(m))
 
   private def outline(m: EditorModel): View[EditorInput] = {
@@ -47,7 +49,8 @@ object EditorView {
     el("div",
       style("padding: 4px 10px; border-top: 1px solid #ddd; background: #f9f9f9; " +
         "font-family: Arial, sans-serif; font-size: 12px; color: #555;"))(
-      text(s"${m.status} — $reachable nodes$detachedText — root #${m.doc.rootId}"))
+      text(s"${m.status} — $reachable nodes$detachedText — " +
+        s"root #${m.doc.rootId} — v#${m.versionId}"))
   }
 
   private def toolbar(): View[EditorInput] =

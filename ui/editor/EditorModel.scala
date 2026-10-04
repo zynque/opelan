@@ -1,15 +1,20 @@
 package opelan.ui.editor
 
 import opelan.foundation.document._
+import opelan.foundation.version._
 
 // The complete editor state — a pure value, so the update function is
 // testable and history operates on immutable documents.
+//
+// History is a version DAG (see EditorHistory): `history` holds every
+// document the session has produced and `versionId` marks the version the
+// live `doc` belongs to. Undo branches rather than truncates.
 case class EditorModel(
     doc: Document[NodeData],
     selectedId: Option[Int] = None,
     editingId: Option[Int] = None,
-    undoStack: List[Document[NodeData]] = Nil,
-    redoStack: List[Document[NodeData]] = Nil,
+    history: Document[Version[EditorSnapshot]],
+    versionId: Int,
     clipboard: Option[DetachedNode[NodeData]] = None,
     detachedNodeId: Option[Int] = None,
     status: String = "Ready") {
@@ -22,6 +27,18 @@ case class EditorModel(
     (id, depth) :: doc.childrenOf(id).flatMap(cid => rowsFrom(cid, depth + 1))
 
   def flatIds: List[Int] = rowsFrom(doc.rootId).map(_._1)
+}
+
+object EditorModel {
+  // Fresh editor state over a loaded document: history starts at a single
+  // root version holding it.
+  def forDocument(
+      d: Document[NodeData],
+      selectedId: Option[Int] = None,
+      status: String = "Ready"): EditorModel = {
+    val h = EditorHistory.initial(d)
+    EditorModel(d, selectedId, None, h, h.rootId, status = status)
+  }
 }
 
 // Everything that can happen to the editor — view events and inputs pushed
@@ -49,6 +66,8 @@ enum EditorInput {
   // history
   case Undo
   case Redo
+  // Jump directly to a version node in the history DAG.
+  case GoToVersion(versionId: Int)
   // document-level commands
   case NewDocument
   case LoadDocument(doc: Document[NodeData])

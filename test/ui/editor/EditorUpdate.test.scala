@@ -35,14 +35,14 @@ class EditorUpdateSuite extends munit.FunSuite {
     assert(u.state.status.contains("indent"))
   }
 
-  test("commit edit parses text into node data and pushes undo") {
+  test("commit edit parses text into node data and records a version") {
     val m = init
     val editing = m.copy(editingId = Some(m.doc.rootId))
     val u = EditorUpdate(editing, EditorInput.CommitEdit("42"))
     assertEquals(
       u.state.doc.getNode(m.doc.rootId).map(_.data),
       Some(NodeData.IntData(42)))
-    assertEquals(u.state.undoStack.length, 1)
+    assertEquals(u.state.history.nodes.length, m.history.nodes.length + 1)
     assertEquals(u.state.editingId, None)
   }
 
@@ -51,6 +51,35 @@ class EditorUpdateSuite extends munit.FunSuite {
     val m1 = EditorUpdate(m0, EditorInput.InsertChild).state
     val u = EditorUpdate(m1.copy(editingId = None), EditorInput.Undo)
     assert(u.state.doc == m0.doc)
+  }
+
+  test("redo descends to the most recent version") {
+    val m0 = init
+    val m1 = EditorUpdate(m0, EditorInput.InsertChild).state
+    val m2 = EditorUpdate(m1.copy(editingId = None), EditorInput.Undo).state
+    val u = EditorUpdate(m2, EditorInput.Redo)
+    assert(u.state.doc == m1.doc)
+    assertEquals(u.state.versionId, m1.versionId)
+  }
+
+  test("editing after undo branches instead of truncating history") {
+    val m0 = init
+    val m1 = EditorUpdate(m0, EditorInput.InsertChild).state
+    val m2 = EditorUpdate(m1.copy(editingId = None), EditorInput.Undo).state
+    val m3 = EditorUpdate(m2.copy(editingId = None, selectedId = None), EditorInput.InsertChild).state
+    val siblings = m3.history.childrenOf(m0.versionId)
+    assertEquals(siblings.length, 2)
+    // the old branch survives and is reachable via GoToVersion
+    val back = EditorUpdate(m3, EditorInput.GoToVersion(m1.versionId))
+    assert(back.state.doc == m1.doc)
+  }
+
+  test("go to version jumps to an arbitrary version") {
+    val m0 = init
+    val m1 = EditorUpdate(m0, EditorInput.InsertChild).state
+    val u = EditorUpdate(m1.copy(editingId = None), EditorInput.GoToVersion(m0.versionId))
+    assert(u.state.doc == m0.doc)
+    assertEquals(u.state.versionId, m0.versionId)
   }
 
   test("follow ref selects an internal ref's target") {

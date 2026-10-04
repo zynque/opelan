@@ -26,11 +26,13 @@ import opelan.ui.fp._
 // Layout of this component (each file one responsibility):
 //   EditorModel.scala    state value + input/output types
 //   EditorUpdate.scala   dispatch + shared edit plumbing
-//   EditorSession.scala  selection, edit mode, load/new/sample, undo/redo
+//   EditorSession.scala  selection, edit mode, load/new/sample
+//   EditorHistory.scala  version-DAG undo/redo/goTo + snapshot type
+//   EditorHistoryView    the version-tree column beside the outline
 //   EditorDocOps.scala   insert, indent/outdent, compact
 //   EditorClip.scala     remove, cut, copy, paste
 //   EditorKeys.scala     keymap (KeyboardEvent => Option[EditorInput])
-//   EditorView.scala     toolbar, outline, status bar
+//   EditorView.scala     toolbar, outline + history, status bar
 //   EditorRow.scala      per-node row + inline edit input
 //   EditorSample.scala   the manifesto as a sample document
 object DocumentEditor extends Component[EditorInput, EditorOutput] {
