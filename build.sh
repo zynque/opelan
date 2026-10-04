@@ -7,7 +7,7 @@ rm -f app.js bundle.js
 npm install
 
 # Build Scala.js to ES module with all source files
-scala-cli package Main.scala foundation ui data collaboration --js --js-module-kind es -o app.js
+scala-cli package Main.scala project.scala foundation ui data collaboration --js --js-module-kind es -o app.js
 
 if [ $? -ne 0 ]; then
     echo "Scala.js build failed!"

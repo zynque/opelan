@@ -9,7 +9,7 @@ rem Install npm dependencies
 call npm install
 
 rem Build Scala.js to ES module with all source files
-call scala-cli package Main.scala foundation ui data collaboration --js --js-module-kind es -o app.js
+call scala-cli package Main.scala project.scala foundation ui data collaboration --js --js-module-kind es -o app.js
 
 if %errorlevel% neq 0 (
     echo Scala.js build failed!

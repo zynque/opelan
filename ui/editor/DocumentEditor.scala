@@ -1,5 +1,3 @@
-//> using dep org.scala-js:scalajs-dom_sjs1_3:2.8.1
-
 package opelan.ui.editor
 
 import opelan.foundation.document._
