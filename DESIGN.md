@@ -8,7 +8,8 @@ Scala.js, bundled with webpack, and targets local-first operation in the
 browser (IndexedDB persistence, no required server).
 
 This document summarizes the project's goals, lineage, and architecture.
-Companion docs: `MANIFESTO.md` (principles), `ADOPTION.md` (why
+Companion docs: `MANIFESTO.md` (principles), `PRINCIPLES.md` (rationale
+behind them), `ADOPTION.md` (why
 workbenches haven't spread, and the intended answers), `RELATED_WORK.md`
 (survey of related systems), `README.md` (build/run), `STATUS.md` (current
 state and next steps), `AGENTS.md` (code conventions).
@@ -125,14 +126,20 @@ Status: wired into the editor as in-session history — `EditorModel` holds
 a `Document[Version[EditorSnapshot]]` plus a `versionId` cursor; every edit
 records a version node, so undo branches rather than truncates
 (`EditorHistory`), and a history column renders the tree with click-to-jump
-(`EditorHistoryView`, `GoToVersion`). `merge` is still unused — nothing
-produces two-parent versions yet — and history is not persisted. The
-intended design (per `RELATED_WORK.md`) is two layers:
+(`EditorHistoryView`, `GoToVersion`). Remote sync edits record versions
+too, so they undo like local edits — but the DAG is per-session and
+unpersisted, so two synced tabs still see different histories; the unified
+model (§8) makes history a projection of the shared Automerge change graph
+instead. `merge` is still unused — concurrent edits producing two-parent
+versions await that wiring. The design (per `RELATED_WORK.md`) is two
+layers:
 
-- **Operational layer** — a CRDT (Automerge) for live multi-user convergence;
+- **Operational layer** — a CRDT (Automerge) for live multi-user
+  convergence; its change graph doubles as the durable draft history;
 - **Curated layer** — this version DAG for deliberate, branchable,
   truncatable history (Upwelling/Patchwork-style; git's
-  objects/refs/working-tree split is the structural template).
+  objects/refs/working-tree split is the structural template), realized
+  today as the `Store`'s append-only `url@v` checkpoints.
 
 ## 5. Typed documents, languages, and holes
 
@@ -375,7 +382,87 @@ fall out of presence being broadcast state.
   (`SyncTransport` + `BroadcastTransport`, tab-to-tab sync with no
   server), `DocSession` (the session logic). `signaling/` and `presence/`
   are still empty — real P2P needs a signaling transport, and cursors/
-  presence are unbuilt.
+  presence are unbuilt. Incoming remote edits merge into the editor's
+  version history as labeled versions (`RemoteEdit` → `SyncDocument`'s
+  merge path), so a synced change undoes like a local edit instead of
+  resetting history — and undoing one broadcasts the revert to peers.
+
+**Backup and sharing are separate toggles.** Both are realized by the
+same mechanism — Automerge pairwise sync treats every counterparty (a
+server, a sibling tab, a collaborator) as a peer with its own sync
+state — what differs is policy, not plumbing:
+
+- **Backup** is *account-level* infrastructure: once signed in, a private
+  server peer absorbs each document's draft layer. It never initiates
+  changes, so it generates no `onRemoteText` traffic and no history
+  noise; restoring a device is the existing `saved` resume path. Because
+  Automerge sync is transitive — anything received flows to every peer —
+  the server must *not* relay between clients; a per-document ACL keeps
+  "private" from leaking, and enforcement lives in the server, not the
+  sync layer.
+- **Sharing** is a *per-document* act: inviting a peer onto a document
+  (its Automerge doc id is the capability) opens sync to that peer.
+  Today's toolbar toggle — which only controls tab-to-tab
+  BroadcastChannel sync — becomes this per-doc switch once real
+  transports exist.
+- **Local-only** remains available: backup off + not shared reproduces
+  today's toggle-off state, minus durability.
+
+A user experimenting privately runs backup on, sharing off — off-device
+durability without visibility to collaborators. Two implementation paths
+for the server peer: speaking the sync protocol live (incremental and
+multi-device-safe — the intended direction) or, as a stepping stone,
+periodic `Automerge.save` blob snapshots (simple, but last-writer-wins
+across devices). Encrypting the synced bytes would keep the server
+plaintext-blind but demotes it to the blob model, since it could no
+longer participate in merging.
+
+**Unified history.** Two synced tabs currently keep separate session
+history DAGs that diverge — confusing, since there is one shared
+document. The unified model projects the *Automerge change graph itself*
+as the history: every change already carries a hash, an actor id,
+dependency heads, and a timestamp, and all peers converge to the same
+graph by construction. History entries become `(hash, actor, time,
+label)` references — document-at-version is derived via
+`Automerge.view(doc, heads)` (lazy and cacheable) rather than stored
+snapshots. Concurrent edits produce divergent heads, and the change that
+joins them is a genuine two-parent version — `VersionTree.merge`'s first
+real use.
+
+Consequences:
+
+- *Undo becomes revert.* Shared state can't be rewound — peers have
+  already merged forward — so undo appends a compensating change,
+  visible to everyone and itself revertible (git-revert semantics; the
+  mechanism already works this way, the display will now say so). Two
+  gestures stay distinct: *inspect* an old version (`view(heads)`, no
+  change emitted) vs. *restore* (a revert change). An "undo my last
+  change" variant can revert the most recent change by one's own actor
+  even when peers' changes interleave.
+- *Identity.* Changes are tagged by actor id. Until accounts exist, each
+  tab gets an auto-generated display name resolved through an
+  `actorId → name` map synced inside the document — all peers render the
+  same labels, and accounts later re-key the map without touching the
+  mechanism. Each session must take a *unique* actor id on attach: tabs
+  resuming the same persisted bytes would otherwise share an actor and
+  collide on `(actor, seq)` — a latent bug in the current resume path.
+- *Granularity.* A history entry is an Automerge change, not a
+  keystroke. `DocSession` coalesces rapid consecutive local texts into a
+  single change on a short debounce — a typing burst becomes one
+  undoable unit; a remote message, a persist, or session close flushes
+  pending edits immediately.
+- *Visibility.* Peers sharing a document see its full draft history —
+  checkpointing is not a visibility boundary, only the sharing toggle
+  is. Ephemeral state (peer cursors, selections, eventually
+  keystroke-level live preview) belongs to the future `presence/`
+  channel, which broadcasts state without touching the change graph.
+
+**Curated checkpoints.** The `Store`'s append-only `url@v` versions are
+the git-like commit layer over the operational log: a save becomes a
+labeled, deliberate, addressable checkpoint (`url@version#node` refs
+already resolve them). The operational history is complete but unbounded
+— the op log may be compacted between checkpoints — while the curated
+layer holds the meaningful, branchable story.
 
 ## 9. The retired scaffold
 

@@ -67,15 +67,17 @@ trait WorkbenchSync extends WorkbenchDocs {
       }
     }
 
-  // Remote text for the open doc reparses and loads into the pane.
-  // Edits to non-open docs just update the persisted Automerge state.
+  // Remote text for the open doc reparses and merges into the pane — a
+  // RemoteEdit is recorded in the editor's history so it undoes like a
+  // local edit. Edits to non-open docs just update the persisted
+  // Automerge state.
   private def remoteText(url: String, text: String): Unit =
     if (workspace.openUrl.contains(url)) {
       Outline.parse(text) match {
         case Some(d) =>
           workspace = workspace.open(
             url, workspace.openVersion.getOrElse(0), d)
-          documentEditor.foreach(_.send(TypedDocInput.Load(d)))
+          documentEditor.foreach(_.send(TypedDocInput.RemoteEdit(d)))
           updateStatus(s"Synced remote edit — $url")
         case None =>
           updateStatus(s"Remote edit to $url did not parse")

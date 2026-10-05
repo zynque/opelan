@@ -117,6 +117,50 @@ class EditorUpdateSuite extends munit.FunSuite {
     assertEquals(u.state.selectedId, Some(target))
   }
 
+  test("a merged sync records a version instead of resetting history") {
+    val m1 = EditorUpdate(init, EditorInput.InsertChild).state
+    val d = Build.buildDocument(
+      DetachedNode(NodeData.StringData("r"), List(DetachedNode.leaf(NodeData.IntData(7)))))
+    val m2 = EditorUpdate(
+      m1.copy(editingId = None),
+      EditorInput.SyncDocument(d, mergeLabel = Some("Remote edit"))).state
+    assertEquals(m2.doc, d)
+    assertEquals(m2.history.nodes.length, m1.history.nodes.length + 1)
+    // the remote edit undoes like a local one
+    val u = EditorUpdate(m2, EditorInput.Undo)
+    assert(u.state.doc == m1.doc)
+    // and redoes forward again
+    val r = EditorUpdate(u.state, EditorInput.Redo)
+    assert(r.state.doc == d)
+  }
+
+  test("a merged sync of an unchanged document records nothing") {
+    val m = init
+    val u = EditorUpdate(m, EditorInput.SyncDocument(m.doc, mergeLabel = Some("x")))
+    assertEquals(u.state.history.nodes.length, m.history.nodes.length)
+    assertEquals(u.state.versionId, m.versionId)
+  }
+
+  test("a non-merge sync still restarts history") {
+    val m1 = EditorUpdate(init, EditorInput.InsertChild).state
+    val d: Document[NodeData] =
+      Build.buildDocument(DetachedNode.leaf(NodeData.IntData(3)))
+    val u = EditorUpdate(m1.copy(editingId = None), EditorInput.SyncDocument(d))
+    assertEquals(u.state.doc, d)
+    assertEquals(u.state.history.nodes.length, 1)
+  }
+
+  test("a merged sync drops selection when the node is gone") {
+    val m = init
+    val gone = m.doc.childrenOf(m.doc.rootId).head
+    val d: Document[NodeData] =
+      Build.buildDocument(DetachedNode.leaf(NodeData.StringData("new")))
+    val u = EditorUpdate(
+      m.copy(selectedId = Some(gone)),
+      EditorInput.SyncDocument(d, mergeLabel = Some("Remote edit")))
+    assertEquals(u.state.selectedId, None)
+  }
+
   test("cut then paste reattaches the subtree") {
     val m0 = init
     val childId = m0.doc.childrenOf(m0.doc.rootId).head

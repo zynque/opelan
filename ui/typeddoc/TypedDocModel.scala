@@ -27,10 +27,16 @@ enum DocView {
 // `pushedSelect` rides along with `pushedDoc`: a load can name a node to
 // select (e.g. a followed ref's target). It only matters when pushedDoc
 // itself changes — the child input is resent only on change.
+//
+// `pushedMergeLabel` marks a push as the same document updated from
+// outside (a synced remote edit, a text-cell edit): the editor records
+// it as a new history version under that label rather than resetting
+// history for a newly opened document.
 case class TypedDocModel(
     doc: Document[NodeData],
     pushedDoc: Document[NodeData],
     pushedSelect: Option[Int] = None,
+    pushedMergeLabel: Option[String] = None,
     view: DocView = DocView.Editor,
     text: String = "",
     textEpoch: Int = 0,
@@ -43,6 +49,9 @@ enum TypedDocInput {
   // `selectId` optionally selects a node in the loaded document — the
   // follow-a-ref jump target.
   case Load(doc: Document[NodeData], selectId: Option[Int] = None)
+  // A remote-sync update to the open document: pushed down as a merge so
+  // the editor adds it to history — undoable — instead of resetting.
+  case RemoteEdit(doc: Document[NodeData])
   // Re-emit the current document as DocChanged — lets the owner pull the
   // live doc (e.g. to save it) without a shadow copy going stale.
   case RequestDoc

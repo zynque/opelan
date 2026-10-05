@@ -3,7 +3,7 @@
 Point-in-time state of the Opelan workbench. For architecture and rationale
 see `DESIGN.md`; for principles see `MANIFESTO.md`.
 
-Last updated: 2026-10-04
+Last updated: 2026-10-05
 
 The project is in Phase 1 (foundation & schema system) of the
 implementation plan.
@@ -60,7 +60,9 @@ implementation plan.
   `SyncTransport`, and persists the Automerge bytes to IndexedDB. The
   first transport is `BroadcastTransport`: tabs of the same browser share
   edits live with no server. The workbench **Sync** button toggles it.
-  Echoes are suppressed by last-text comparison, not protocol smarts.
+  Remote edits merge into the editor's history as labeled versions, so
+  they undo like local edits. Echoes are suppressed by last-text
+  comparison, not protocol smarts.
 - **Build/test pipeline**: `build.bat` produces `bundle.js` (scala-cli →
   webpack); `test.bat` runs ~130 munit tests covering the pure core and the
   update functions of the UI layer, plus DocSession convergence tests that
@@ -79,29 +81,35 @@ implementation plan.
 ## Not yet wired
 
 - The **version DAG** is wired for in-session editor history (branching
-  undo, version-tree column) but nothing creates merge versions yet —
-  `VersionTree.merge` is unused — and history is not persisted across
-  sessions. The document store's append-only versions remain a simpler,
-  linear history.
+  undo, version-tree column, remote edits recorded as versions) but each
+  synced tab still keeps its own history — the unified design (DESIGN.md
+  §8) projects the shared Automerge change graph instead, which is also
+  where `VersionTree.merge` gets its first real use. History is not
+  persisted across sessions; the document store's append-only versions
+  remain a simpler, linear (and eventually curated-checkpoint) history.
 - **`ExternalNodeRef`s to missing targets** report "unresolved" rather than
   offering creation; and refs into old pinned versions open read-write —
   saving an old version appends a new head rather than branching.
 - **Text edits reparse whole cells**; the parser's span map exists to enable
   finer-grained text-edit → node mapping later.
-- **Remote sync edits arrive as `Load`**, resetting the pane's selection
-  and history — fine for small docs, but finer-grained remote application
-  belongs with the span-map work. Edits made *before first sync contact*
-  can lose: concurrent writes to `text` without a shared ancestor resolve
-  last-writer-wins rather than char-merging (real CRDT semantics).
+- **Remote sync edits merge into history** as labeled versions rather
+  than resetting it — undo walks back over them and broadcasts the
+  revert. Remaining: remote application is still a whole-text reparse
+  (finer-grained application belongs with the span-map work), and edits
+  made *before first sync contact* can lose — concurrent writes to `text`
+  without a shared ancestor resolve last-writer-wins rather than
+  char-merging (real CRDT semantics).
 - **Schemas** have no representation yet — the scaffold's
   `foundation/structure` model was retired; convergence presumably means
   "schemas as documents".
 
 ## Open design questions
 
-1. *Two-layer history.* How the CRDT op layer and the curated version DAG
-   interleave — what triggers a curated commit vs. a live-sync op
-   (Upwelling's draft-layer model is the reference).
+1. *Two-layer history.* Largely settled in design (DESIGN.md §8): the
+   Automerge change graph is the unified operational history — projected
+   into the version-DAG view, actor-tagged, undo-as-revert — and `Store`
+   saves are the curated, git-like checkpoint layer on top. Open: the
+   op-log compaction boundary and the presence channel's shape.
 2. *Bootstrap.* Languages are Scala objects today; the end state is language
    definitions as documents, resolved through `typeRef` — which requires the
    document store and enough language machinery to be self-describing.
@@ -142,7 +150,13 @@ The natural sequence from the current code is:
    `DocSession` + `BroadcastTransport` give live convergence between tabs.
    Remaining: a real network transport (signaling), presence, and the
    curated layer on top.
-4. More languages defined as documents — begin the bootstrap; schemas and
+4. Unified history — project the Automerge change graph into the
+   version-DAG view: change-hash entries tagged with auto-generated
+   per-tab names, concurrent-edit joins as two-parent versions, undo as
+   revert-change, coalesced edit bursts for granularity. Includes giving
+   each tab a unique actor id on attach — resumed tabs currently share
+   the persisted actor, a latent `(actor, seq)` collision.
+5. More languages defined as documents — begin the bootstrap; schemas and
    gap/typing machinery folded into the document model. (Type refs already
    resolve through the store — a language definition stored as a document
    is the first bootstrap candidate.)
@@ -159,8 +173,10 @@ Beyond that sequence, the roadmap also calls for:
   interim measure; per the *self documenting* principle this belongs in
   the workbench itself (a help document rendered as a view — documents
   all the way down).
-- P2P presence indicators (cursors, selections) — the sync envelope and
-  per-peer state are in place; presence is broadcast state on top.
+- P2P presence indicators (cursors, selections, eventually
+  keystroke-level live preview) — the sync envelope and per-peer state
+  are in place; presence is ephemeral broadcast state on top, separate
+  from the change graph.
 - A fuller evaluation engine for the DSL beyond the expression language's
   minimal `eval` view.
 - Broader test coverage beyond the current ~120 munit tests.

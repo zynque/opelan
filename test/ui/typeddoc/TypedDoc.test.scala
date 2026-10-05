@@ -72,6 +72,29 @@ class TypedDocSuite extends munit.FunSuite {
     assertEquals(u.state.textEpoch, m.textEpoch + 1)
   }
 
+  test("RemoteEdit pushes the document as a merge into the editor") {
+    val d: Document[NodeData] = Build.beginDocument(NodeData.StringData("remote"))
+    val u = TypedDocUpdate(init, TypedDocInput.RemoteEdit(d))
+    assertEquals(u.state.doc, d)
+    assertEquals(
+      editorInput(u.state),
+      EditorInput.SyncDocument(d, None, Some("Remote edit")))
+  }
+
+  test("a text edit pushes the document as a merge") {
+    val u = TypedDocUpdate(init, TypedDocInput.TextEdited("1 + 2"))
+    assert(u.state.pushedMergeLabel.isDefined)
+  }
+
+  test("Load after a remote edit pushes a fresh document, not a merge") {
+    val d1: Document[NodeData] = Build.beginDocument(NodeData.StringData("remote"))
+    val m = TypedDocUpdate(init, TypedDocInput.RemoteEdit(d1)).state
+    val d2: Document[NodeData] = Build.beginDocument(NodeData.StringData("other"))
+    val u = TypedDocUpdate(m, TypedDocInput.Load(d2))
+    assertEquals(u.state.pushedMergeLabel, None)
+    assertEquals(editorInput(u.state), EditorInput.SyncDocument(d2))
+  }
+
   test("Load with a selection pushes it through to the editor") {
     val m = init
     val d: Document[NodeData] =

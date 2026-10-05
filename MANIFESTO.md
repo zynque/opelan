@@ -2,7 +2,7 @@
 
 ## Overview
 
-This manifesto outlines the core principles for building the next generation of creative and productivity software. It emphasizes openness, language orientation, and application capabilities that empower users and developers alike.
+This manifesto outlines the core principles for building the next generation of creative and productivity software. It emphasizes openness, language orientation, and application capabilities that empower users and developers alike. `PRINCIPLES.md` expands on the reasoning behind them.
 
 ## Open
 

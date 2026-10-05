@@ -74,7 +74,15 @@ enum EditorInput {
   // Load without echoing DocChanged/Status back to the parent — for
   // parents that push the document down themselves and already know it.
   // `select` selects a node after the load (e.g. a followed ref's target).
-  case SyncDocument(doc: Document[NodeData], select: Option[Int] = None)
+  // A `mergeLabel` means the open document itself changed elsewhere (a
+  // synced remote edit, a text-cell edit): the pushed doc is recorded as
+  // a new version under that label so the update sits in history and
+  // undoes like a local edit. Without it the push is a different document
+  // being opened and history restarts.
+  case SyncDocument(
+      doc: Document[NodeData],
+      select: Option[Int] = None,
+      mergeLabel: Option[String] = None)
   // Follow the selected node's reference: internal refs select their
   // target in place; external refs are reported via EditorOutput.FollowRef
   // for the owner (which holds the document store) to resolve.

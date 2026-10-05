@@ -14,6 +14,8 @@ object TypedDocUpdate {
     input match {
       case SwitchView(v) => Update(m.copy(view = v))
       case Load(d, sel)  => load(m, d, sel, "Document loaded")
+      case RemoteEdit(d) =>
+        load(m, d, None, "Remote edit synced", Some("Remote edit"))
       case RequestDoc    => Update(m, Vector(DocChanged(m.doc)))
       case LoadExprSample =>
         load(m, ExprLanguage.sampleDoc, None, "Expression sample loaded")
@@ -28,7 +30,9 @@ object TypedDocUpdate {
               if (holes == 0) "Parsed"
               else s"Parsed — $holes hole${if (holes == 1) "" else "s"}"
             Update(
-              m.copy(doc = d, pushedDoc = d, pushedSelect = None, text = t, status = msg),
+              m.copy(
+                doc = d, pushedDoc = d, pushedSelect = None,
+                pushedMergeLabel = Some("Text edit"), text = t, status = msg),
               Vector(DocChanged(d), Status(msg)))
           case Left(err) =>
             Update(m.copy(text = t, status = err), Vector(Status(err)))
@@ -56,12 +60,14 @@ object TypedDocUpdate {
       m: TypedDocModel,
       d: Document[NodeData],
       select: Option[Int],
-      msg: String): Update[TypedDocModel, TypedDocOutput] =
+      msg: String,
+      mergeLabel: Option[String] = None): Update[TypedDocModel, TypedDocOutput] =
     Update(
       m.copy(
         doc = d,
         pushedDoc = d,
         pushedSelect = select.filter(id => d.getNode(id).isDefined),
+        pushedMergeLabel = mergeLabel,
         text = DocText.render(d),
         textEpoch = m.textEpoch + 1,
         status = msg),

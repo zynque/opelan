@@ -2,7 +2,8 @@
 
 Why language workbenches and domain-specific languages have not spread to
 domain experts — and how opelan intends to address each blocker. Companion to
-`MANIFESTO.md` (principles), `STATUS.md` (what is built and what is not), and
+`MANIFESTO.md` (principles), `PRINCIPLES.md` (rationale behind them),
+`STATUS.md` (what is built and what is not), and
 `RELATED_WORK.md` (prior art).
 
 JetBrains MPS is the reference point throughout: it is the most capable

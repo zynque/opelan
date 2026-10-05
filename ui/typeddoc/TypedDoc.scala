@@ -37,6 +37,7 @@ object TypedDoc extends Component[TypedDocInput, TypedDocOutput] {
     Vector(Child(
       key = "editor",
       component = DocumentEditor,
-      input = EditorInput.SyncDocument(state.pushedDoc, state.pushedSelect),
+      input = EditorInput.SyncDocument(
+        state.pushedDoc, state.pushedSelect, state.pushedMergeLabel),
       onOutput = TypedDocInput.FromEditor(_)))
 }

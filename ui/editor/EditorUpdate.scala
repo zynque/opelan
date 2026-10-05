@@ -31,7 +31,7 @@ object EditorUpdate {
       case GoToVersion(v)   => EditorHistory.goTo(m, v, s"Version #$v")
       case NewDocument      => EditorSession.newDocument()
       case LoadDocument(d)  => EditorSession.loadDocument(d)
-      case SyncDocument(d, select) => EditorSession.syncDocument(d, select)
+      case SyncDocument(d, sel, ml) => EditorSession.syncDocument(m, d, sel, ml)
       case EditorInput.FollowRef => EditorDocOps.followRef(m)
       case LoadSample       => EditorSession.sample()
       case Compact          => EditorDocOps.compact(m)
