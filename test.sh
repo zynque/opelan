@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# The Scala.js test runner writes the linked .mjs into $TMPDIR; point it
+# inside the project so Node can resolve npm deps (e.g. @automerge).
+mkdir -p .tmp
+export TEMP="$PWD/.tmp"
+export TMP="$PWD/.tmp"
+export TMPDIR="$PWD/.tmp"
+
 # Run tests
 scala-cli test Main.scala project.scala foundation ui data collaboration test
 

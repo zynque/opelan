@@ -19,7 +19,8 @@ object WorkbenchLayout {
         <div id="toolbar" style="padding: 10px; border-bottom: 1px solid #ccc; background: #f9f9f9;">
           <button id="doc-view-btn" style="margin-right: 5px; padding: 5px 10px;">Document</button>
           <button id="components-view-btn" style="margin-right: 5px; padding: 5px 10px;">Components</button>
-          <button id="save-doc-btn" style="padding: 5px 10px;">Save</button>
+          <button id="save-doc-btn" style="margin-right: 5px; padding: 5px 10px;">Save</button>
+          <button id="sync-btn" style="padding: 5px 10px;">Sync</button>
           <span style="margin-left: 20px;"><span id="current-doc-name">unsaved</span></span>
         </div>
 

@@ -75,9 +75,15 @@ class IndexedDBStore(dbName: String = "opelan-workbench", version: Int = 3) {
   def storeProject(project: js.Dynamic): Future[Unit] =
     transact("projects", "readwrite", "Failed to store project")(_.put(project))(_ => ())
 
+  // IndexedDB get() returns undefined for a missing key — Option() alone
+  // only maps null to None, so check explicitly.
+  private def optResult(result: js.Dynamic): Option[js.Dynamic] =
+    if (result == null || js.isUndefined(result)) None
+    else Some(result.asInstanceOf[js.Dynamic])
+
   def getProject(id: String): Future[Option[js.Dynamic]] =
     transact("projects", "readonly", "Failed to get project")(_.get(id))(
-      result => Option(result).map(_.asInstanceOf[js.Dynamic]))
+      optResult)
 
   def listProjects(): Future[List[js.Dynamic]] =
     transact("projects", "readonly", "Failed to list projects")(_.getAll())(
@@ -92,7 +98,7 @@ class IndexedDBStore(dbName: String = "opelan-workbench", version: Int = 3) {
 
   def getAutomergeDoc(docId: String): Future[Option[js.Dynamic]] =
     transact("automerge_docs", "readonly", "Failed to get Automerge document")(_.get(docId))(
-      result => Option(result).map(_.asInstanceOf[js.Dynamic]))
+      optResult)
 
   // Versioned document records: one row per (url, version), key "url@v",
   // holding the outline text. Append-only — old versions stay readable so
@@ -110,7 +116,7 @@ class IndexedDBStore(dbName: String = "opelan-workbench", version: Int = 3) {
 
   def getSetting(key: String): Future[Option[js.Any]] =
     transact("settings", "readonly", "Failed to get setting")(_.get(key))(
-      result => Option(result).map(_.asInstanceOf[js.Dynamic].selectDynamic("value")))
+      result => optResult(result).map(_.selectDynamic("value")))
 
   private def ensureInitialized(): Future[Unit] = {
     if (isInitialized) Future.successful(()) else initialize()

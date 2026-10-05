@@ -22,7 +22,9 @@ Applications built on this platform should inherit its capabilities by default, 
 
 ### Language
 
-Every piece of software has a language in which its user communicates intent, whether textual, visual, or physical. Key presses, mouse clicks, touches, and gestures, arranged in patterns, are all languages in a certain sense. It is up to software to interpret that intent, perform calculations, and produce an appropriate outcome.
+Every piece of software has a language in which its user communicates intent — and we use the term loosely. In a paint program it may be a visual language of brush strokes with varying weights; in a circuit simulator, a language of components and electrical signals. A language may be textual, visual, or physical: key presses, mouse clicks, touches, and gestures arranged in patterns.
+
+User input is one language; the application's screens and displays are another. The user may "speak" in keystrokes while the application "speaks" in diagrams, but a common semantic model underlies both. It is up to software to interpret that intent, perform calculations, and produce an appropriate outcome.
 
 ### Programmable
 
@@ -40,9 +42,19 @@ A type system determines which expressions are valid and sensible. Dynamic typin
 
 Applications built on an open language platform should naturally inherit its type system, or a domain-specific subset or variation.
 
+### Evolvable
+
+Languages change. When a language definition changes, the platform should derive the tooling to migrate every artifact written in that language — not merely flag breakage, but generate the migration itself. Migrations apply automatically by default: because every artifact is versioned, applying one never destroys the previous state, so deferring or reverting is always safe. Users may instead pin a dependency at a version or hold migrations for opt-in review. A language must be free to evolve without stranding its users' existing work.
+
+### Verifiable
+
+Natural language is flexible but ambiguous; a well-defined language gives precision and verifiability that prose cannot. Intent expressed in a structured, typed language can be checked rather than merely interpreted.
+
+This matters doubly in the presence of language models: a constrained language is a constrained output space, so generated artifacts are guaranteed well-formed and checkable — making LLMs more effective where they assist, and reducing the need for them where the language already makes intent unambiguous.
+
 ### Polysyntactic
 
-Syntax takes far too much precedence in software development; surface representation is too often treated as substance. Software should offer multiple representations of the same content, configurable to each user's preference, and translate seamlessly between them — so sharing work never requires adapting to someone else's format.
+Software should offer multiple representations of the same content, configurable to each user's preference, and translate seamlessly between them — so sharing work never requires adapting to someone else's preferred format.
 
 ## Application
 
@@ -60,7 +72,7 @@ Every application should have an undo button. Developers take source control for
 
 ### Reactive
 
-The results of a change should be made immediately visible via live examples (similar to unit tests). Changes to libraries an application depends on should surface unobtrusive notifications describing their severity and nature; opting in should be a single click.
+The results of a change should be made immediately visible via live examples (similar to unit tests). Changes to anything a document depends on — libraries, schemas, the language it is written in — should surface unobtrusive notifications describing their severity and nature; mechanical migrations apply automatically and remain revertible, while riskier changes wait for a single click (see Evolvable).
 
 ### Never Broken
 

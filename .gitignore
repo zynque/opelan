@@ -12,6 +12,7 @@ bundle.js
 .bloop/
 .metals/
 .bsp/
+.tmp/
 
 # IDE
 .idea/

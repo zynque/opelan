@@ -22,7 +22,11 @@
 - Scala CLI is at `C:\Users\Jeremy\AppData\Local\Coursier\data\bin\scala-cli.bat`
   (not on the default bash PATH).
 - Test: `test.bat` or:
-  `scala-cli.bat test --server=false --power project.scala foundation ui data collaboration test`
+  `scala-cli.bat test --server=false --power project.scala foundation ui data collaboration test`.
+  The scripts set `TEMP`/`TMPDIR` to `./.tmp` first — the Scala.js test
+  runner writes the linked .mjs there, and the doc-sync suite needs Node
+  to resolve `node_modules` (`@automerge/automerge`) from it. Without the
+  redirect the tests fail with `ERR_MODULE_NOT_FOUND`.
 - Browser bundle: `build.bat`, which packages Scala.js output to `app.js`
   and runs webpack to produce `bundle.js`. Packaging to an existing `app.js`
   requires `--force` (build.bat deletes it first).

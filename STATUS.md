@@ -3,7 +3,7 @@
 Point-in-time state of the Opelan workbench. For architecture and rationale
 see `DESIGN.md`; for principles see `MANIFESTO.md`.
 
-Last updated: 2026-10-03
+Last updated: 2026-10-04
 
 The project is in Phase 1 (foundation & schema system) of the
 implementation plan.
@@ -54,9 +54,17 @@ implementation plan.
   over four object stores (`projects`, `automerge_docs`, `settings`,
   `documents`); persists document versions as outline text (the projects
   list UI was replaced by the documents list).
+- **Live sync** (`collaboration/`): a real Automerge layer — `DocSession`
+  holds each open document's outline text in a `{text}` CRDT doc (in 3.x
+  strings merge at the character level), syncs it over a pluggable
+  `SyncTransport`, and persists the Automerge bytes to IndexedDB. The
+  first transport is `BroadcastTransport`: tabs of the same browser share
+  edits live with no server. The workbench **Sync** button toggles it.
+  Echoes are suppressed by last-text comparison, not protocol smarts.
 - **Build/test pipeline**: `build.bat` produces `bundle.js` (scala-cli →
-  webpack); `test.bat` runs ~120 munit tests covering the pure core and the
-  update functions of the UI layer.
+  webpack); `test.bat` runs ~130 munit tests covering the pure core and the
+  update functions of the UI layer, plus DocSession convergence tests that
+  run real Automerge under Node.
 
 ## In progress / scaffolded
 
@@ -64,11 +72,9 @@ implementation plan.
   the document store + view switcher between the live `TypedDoc` pane
   ("document") and the fp components demo. The earlier DSL editor, schema
   editor, and visualization views were retired with the scaffold layer.
-- **`collaboration/`**: `signaling/`, `backends/`, `presence/` exist as
-  empty directories for the planned P2P sync layer.
-- **Automerge**: `@automerge/automerge` is a declared npm dependency (wasm
-  blob at repo root) but no Scala code calls it yet; the earlier
-  `CollaborationManager` stub was retired with the scaffold layer.
+- **`collaboration/`**: live sync works tab-to-tab (above). `signaling/`
+  and `presence/` remain empty — real P2P across machines needs a
+  signaling transport and presence is unbuilt.
 
 ## Not yet wired
 
@@ -82,6 +88,11 @@ implementation plan.
   saving an old version appends a new head rather than branching.
 - **Text edits reparse whole cells**; the parser's span map exists to enable
   finer-grained text-edit → node mapping later.
+- **Remote sync edits arrive as `Load`**, resetting the pane's selection
+  and history — fine for small docs, but finer-grained remote application
+  belongs with the span-map work. Edits made *before first sync contact*
+  can lose: concurrent writes to `text` without a shared ancestor resolve
+  last-writer-wins rather than char-merging (real CRDT semantics).
 - **Schemas** have no representation yet — the scaffold's
   `foundation/structure` model was retired; convergence presumably means
   "schemas as documents".
@@ -101,6 +112,14 @@ implementation plan.
 5. *Polysyntactic parity.* The text surface is currently per-language and
    read/write through a full reparse; richer projections (tables, diagrams as
    editors, per-user notation) remain open.
+6. *Migration classes.* Per the *Evolvable* principle, a change to a language
+   definition should derive migration tooling for its artifacts, applied
+   automatically by default. But "automatic" should depend on the migration's
+   class: provably mechanical changes (renames, reorders, added fields with
+   defaults) are categorically safer than semantic ones, and the generator is
+   in a position to know which it produced. How migrations are classified —
+   and whether semantic ones auto-apply with notification or hold for
+   opt-in review — is open.
 
 ## Next steps
 
@@ -111,7 +130,10 @@ The natural sequence from the current code is:
 2. ~~Wire the version DAG into the editor~~ — done: branching undo,
    `GoToVersion`, history column in `DocumentEditor`. Remaining: merges,
    persisted history.
-3. Real Automerge integration for live sync, then the curated layer on top.
+3. ~~Real Automerge integration for live sync~~ — done for the local case:
+   `DocSession` + `BroadcastTransport` give live convergence between tabs.
+   Remaining: a real network transport (signaling), presence, and the
+   curated layer on top.
 4. More languages defined as documents — begin the bootstrap; schemas and
    gap/typing machinery folded into the document model. (Type refs already
    resolve through the store — a language definition stored as a document
@@ -129,7 +151,8 @@ Beyond that sequence, the roadmap also calls for:
   interim measure; per the *self documenting* principle this belongs in
   the workbench itself (a help document rendered as a view — documents
   all the way down).
-- P2P presence indicators as part of the collaboration layer.
+- P2P presence indicators (cursors, selections) — the sync envelope and
+  per-peer state are in place; presence is broadcast state on top.
 - A fuller evaluation engine for the DSL beyond the expression language's
   minimal `eval` view.
 - Broader test coverage beyond the current ~120 munit tests.

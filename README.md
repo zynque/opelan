@@ -15,10 +15,11 @@ Working today:
 - **Typed Holes**: Hazel-inspired holes keep incomplete input editable instead of failing (parse-level only)
 - **Local-First**: Browser-only deployment with IndexedDB persistence
 - **Versioned History**: Version DAG as a document — branching undo and a click-to-jump history tree
+- **Live Sync**: Automerge-backed editing shared live between browser tabs (BroadcastChannel — no server)
 
 Planned / exploratory:
 
-- Real-time collaboration via Automerge and pure-P2P sync
+- Real P2P sync across machines (signaling transport) and presence/cursors
 - Language definitions as documents (bootstrap)
 
 ## Architecture

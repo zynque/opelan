@@ -12,6 +12,10 @@ root, open `index.html`.
   the document workbench and the fp-components demo. **Save** appends a
   new version of the open document to the store (IndexedDB) — every save
   is a new `vN`, old versions are never overwritten.
+- **Sync** — toggles live sync of the open document between tabs of this
+  browser (BroadcastChannel; no server). Edits in either tab appear in the
+  other; concurrent edits merge. Synced documents stay drafts — saving to
+  the store is still explicit.
 - The status bar shows the last action and the current `url@v` label.
 
 ## Document pane (TypedDoc)

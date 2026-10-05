@@ -44,6 +44,7 @@ trait WorkbenchDocs {
           pendingSave = false
           saveDocument(d)
         }
+        documentEdited(d)
       case TypedDocOutput.FollowRef(ref) => followRef(ref)
       case TypedDocOutput.Status(msg)    => updateStatus(msg)
     }
@@ -105,7 +106,13 @@ trait WorkbenchDocs {
     documentEditor.foreach(_.send(TypedDocInput.Load(d, select)))
     updateCurrentDocLabel()
     renderDocumentList()
+    documentOpened(url)
   }
+
+  // Hooks for WorkbenchSync: a document became current / the open document
+  // was edited. Default no-ops keep the shell usable without sync.
+  protected def documentOpened(url: String): Unit = ()
+  protected def documentEdited(d: Document[NodeData]): Unit = ()
 
   // The pane owns the live document; pull it via RequestDoc and save when
   // the DocChanged reply arrives (FIFO dispatch keeps the order correct).

@@ -7,7 +7,7 @@ import opelan.ui.typeddoc.{TypedDoc, TypedDocInput, TypedDocOutput}
 // Application shell: a documents sidebar backed by the versioned document
 // store (see WorkbenchDocs) and a toolbar switching between the document
 // pane (TypedDoc) and the fp components demo.
-class Workbench extends WorkbenchDocs {
+class Workbench extends WorkbenchSync {
   private var container: dom.Element = null
   private var isInitialized = false
   private var currentView: String = "document" // document, components
@@ -32,6 +32,7 @@ class Workbench extends WorkbenchDocs {
   private def setupEventHandlers(): Unit = {
     onClick("new-doc-btn", _ => createNewDocument())
     onClick("save-doc-btn", _ => saveCurrentDocument())
+    onClick("sync-btn", _ => toggleSync())
     onClick("doc-view-btn", _ => switchView("document"))
     onClick("components-view-btn", _ => switchView("components"))
   }
@@ -84,6 +85,7 @@ class Workbench extends WorkbenchDocs {
   }
 
   def cleanup(): Unit = {
+    closeSessions()
     IndexedDBStore.close()
     isInitialized = false
   }

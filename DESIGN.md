@@ -8,9 +8,10 @@ Scala.js, bundled with webpack, and targets local-first operation in the
 browser (IndexedDB persistence, no required server).
 
 This document summarizes the project's goals, lineage, and architecture.
-Companion docs: `MANIFESTO.md` (principles), `RELATED_WORK.md` (survey of
-related systems), `README.md` (build/run), `STATUS.md` (current state and
-next steps), `AGENTS.md` (code conventions).
+Companion docs: `MANIFESTO.md` (principles), `ADOPTION.md` (why
+workbenches haven't spread, and the intended answers), `RELATED_WORK.md`
+(survey of related systems), `README.md` (build/run), `STATUS.md` (current
+state and next steps), `AGENTS.md` (code conventions).
 
 ## 1. Vision
 
@@ -362,14 +363,19 @@ fall out of presence being broadcast state.
   one record per `url@version` holding `Outline.render` text; `loadAll`
   re-parses every record into a `Store` and derives heads by taking the
   max version per URL — no separate index to keep consistent.
-- **Automerge** — `@automerge/automerge` is a declared npm dependency (with
-  its wasm blob at repo root) but no Scala code calls it yet. The earlier
-  `CollaborationManager` stub — a `js.Dynamic` document with a naive
-  key-merge over scaffold model types — was removed; real integration is
-  part of the operational-layer work (§4).
-- **`collaboration/`** — empty `signaling/`, `backends/`, `presence/`
-  directories: placeholders for the planned pure-P2P sync layer (pluggable
-  signaling backends, presence/cursors).
+- **Automerge** — the operational layer is real: `DocSession` holds each
+  open document's outline text in an Automerge `{text}` doc (3.x strings
+  merge per character), exchanges sync messages pairwise per peer over a
+  `SyncTransport`, and persists the bytes to `automerge_docs` so a
+  reloading tab resumes rather than restarts. Synced text reparses into
+  `Document[NodeData]` on arrival — the CRDT syncs the serial form, the
+  document model stays canonical. (The scaffold-era `CollaborationManager`
+  stub never touched the real library; it was deleted, not integrated.)
+- **`collaboration/`** — `automerge/` (the facade), `backends/`
+  (`SyncTransport` + `BroadcastTransport`, tab-to-tab sync with no
+  server), `DocSession` (the session logic). `signaling/` and `presence/`
+  are still empty — real P2P needs a signaling transport, and cursors/
+  presence are unbuilt.
 
 ## 9. The retired scaffold
 
