@@ -131,6 +131,29 @@ that natural language cannot; a constrained language is a constrained output
 space, making LLMs more effective where they assist and unnecessary where
 the language already makes intent unambiguous.
 
+## Fragmentation
+
+A workbench lowers the cost of creating a language — which means it can
+supercharge proliferation. Scala is the cautionary tale: unsynchronized
+expressiveness let every library invent its own idiom with no shared
+substrate. The workbench version is worse — whole languages, each a thin
+ecosystem. Fragmentation is fatal when there is no common ground underneath
+the variants; Unix survived its own because text streams were a shared
+currency.
+
+**Opelan's answer** — one substrate: every language is documents over the
+same tree model — same node types, store, versioning, and
+`url@version#node` addressing — so artifacts reference each other
+structurally rather than living in silos. *Transitively typed* adds shared
+semantics; *Polysyntactic* lowers the cost of reading a foreign DSL;
+*Evolvable* lets dialects converge instead of stranding users.
+
+**Open** — deliberate mechanisms against proliferation: *language
+composition* (extending a language document should be cheaper than
+authoring one — mbeddr succeeded by extending C); a *canonical base
+vocabulary* of shared language fragments; and *semantic interop* — a shared
+value/evaluation model so DSLs compose, not merely link.
+
 ## What no tool fixes
 
 The hardest blocker is not technical: DSL authoring is a design skill, and

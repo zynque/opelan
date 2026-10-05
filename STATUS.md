@@ -120,6 +120,14 @@ implementation plan.
    in a position to know which it produced. How migrations are classified —
    and whether semantic ones auto-apply with notification or hold for
    opt-in review — is open.
+7. *Language composition & interop.* The fragmentation answer
+   (`ADOPTION.md`) depends on mechanisms that don't exist: extending a
+   language document rather than authoring a new one (language
+   inheritance/mixins as document composition), a canonical base vocabulary
+   of language fragments most DSLs share, and a shared value/evaluation
+   model so an artifact in one DSL is semantically meaningful to another —
+   cross-document *linking* exists via refs; cross-language *composition*
+   does not.
 
 ## Next steps
 
