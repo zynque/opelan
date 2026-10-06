@@ -75,14 +75,17 @@ enum EditorInput {
   // parents that push the document down themselves and already know it.
   // `select` selects a node after the load (e.g. a followed ref's target).
   // A `mergeLabel` means the open document itself changed elsewhere (a
-  // synced remote edit, a text-cell edit): the pushed doc is recorded as
-  // a new version under that label so the update sits in history and
-  // undoes like a local edit. Without it the push is a different document
-  // being opened and history restarts.
+  // text-cell edit): the pushed doc is recorded as a new version under
+  // that label so the update sits in history and undoes like a local
+  // edit. A `history` push is the authoritative shared change graph from
+  // a synced session: the version DAG is rebuilt from it wholesale —
+  // identical on every peer — superseding mergeLabel. With neither, the
+  // push is a different document being opened and history restarts.
   case SyncDocument(
       doc: Document[NodeData],
       select: Option[Int] = None,
-      mergeLabel: Option[String] = None)
+      mergeLabel: Option[String] = None,
+      history: Option[SyncedHistory] = None)
   // Follow the selected node's reference: internal refs select their
   // target in place; external refs are reported via EditorOutput.FollowRef
   // for the owner (which holds the document store) to resolve.

@@ -38,6 +38,7 @@ object TypedDoc extends Component[TypedDocInput, TypedDocOutput] {
       key = "editor",
       component = DocumentEditor,
       input = EditorInput.SyncDocument(
-        state.pushedDoc, state.pushedSelect, state.pushedMergeLabel),
+        state.pushedDoc, state.pushedSelect, state.pushedMergeLabel,
+        state.pushedHistory),
       onOutput = TypedDocInput.FromEditor(_)))
 }

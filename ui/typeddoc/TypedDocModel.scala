@@ -1,7 +1,7 @@
 package opelan.ui.typeddoc
 
 import opelan.foundation.document._
-import opelan.ui.editor.EditorOutput
+import opelan.ui.editor.{EditorOutput, SyncedHistory}
 
 // Which editing surface is showing in the left pane: the generic
 // structural editor or the CodeMirror text cell over the document's
@@ -29,14 +29,16 @@ enum DocView {
 // itself changes — the child input is resent only on change.
 //
 // `pushedMergeLabel` marks a push as the same document updated from
-// outside (a synced remote edit, a text-cell edit): the editor records
-// it as a new history version under that label rather than resetting
-// history for a newly opened document.
+// outside (a text-cell edit): the editor records it as a new history
+// version under that label rather than resetting history for a newly
+// opened document. `pushedHistory` is stronger still: the shared change
+// graph from a live-sync session, rebuilt wholesale in the editor.
 case class TypedDocModel(
     doc: Document[NodeData],
     pushedDoc: Document[NodeData],
     pushedSelect: Option[Int] = None,
     pushedMergeLabel: Option[String] = None,
+    pushedHistory: Option[SyncedHistory] = None,
     view: DocView = DocView.Editor,
     text: String = "",
     textEpoch: Int = 0,
@@ -49,9 +51,10 @@ enum TypedDocInput {
   // `selectId` optionally selects a node in the loaded document — the
   // follow-a-ref jump target.
   case Load(doc: Document[NodeData], selectId: Option[Int] = None)
-  // A remote-sync update to the open document: pushed down as a merge so
-  // the editor adds it to history — undoable — instead of resetting.
-  case RemoteEdit(doc: Document[NodeData])
+  // A synced session's change graph grew: push the live doc plus the
+  // shared, author-tagged history — identical on every peer — so the
+  // editor rebuilds its version DAG rather than keeping a private one.
+  case SyncHistory(doc: Document[NodeData], history: SyncedHistory)
   // Re-emit the current document as DocChanged — lets the owner pull the
   // live doc (e.g. to save it) without a shadow copy going stale.
   case RequestDoc

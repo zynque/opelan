@@ -431,14 +431,38 @@ real use.
 
 Consequences:
 
-- *Undo becomes revert.* Shared state can't be rewound — peers have
-  already merged forward — so undo appends a compensating change,
-  visible to everyone and itself revertible (git-revert semantics; the
-  mechanism already works this way, the display will now say so). Two
-  gestures stay distinct: *inspect* an old version (`view(heads)`, no
-  change emitted) vs. *restore* (a revert change). An "undo my last
-  change" variant can revert the most recent change by one's own actor
-  even when peers' changes interleave.
+- *Undo is scoped to one's own changes.* Ctrl+Z means "take back *my*
+  last change," never "rewind the shared log" — the settled answer
+  across collaborative editors (Google Docs transforms inverse ops
+  forward, Yjs un-deletes tombstoned items, Figma scopes undo per user;
+  Etherpad's global undo is the cautionary counterexample). Two cases:
+  at the frontier — my latest change sits at the heads, the common
+  case — the revert is exact (restore the snapshot at its parent deps).
+  Past interleaved remote changes, the revert is instead *anchored at
+  the old heads* via `changeAt` (the `automerge-repo-undo-redo`
+  pattern), so the CRDT merge preserves remote work — accepting that
+  edits overlapping the same region merge rather than invert cleanly;
+  true item-level inversion isn't reachable through Automerge's public
+  API. Each undo is an ordinary labeled change: visible to peers,
+  itself undoable, no sync disruption — repeated undos keep walking
+  back one's own changes even after peers' edits.
+- *Navigation is local.* Clicking a version moves the editor's view
+  only — a `DocViewed` output separate from `DocChanged`, emitting
+  nothing to peers (the current coupling, where `goTo` writes a revert
+  change, is the bug this fixes). The pin survives incoming remote
+  edits via hash-stable version identity, so browsing doesn't get
+  bumped while a peer types.
+- *Editing a checked-out version forks.* A jump into history followed
+  by an edit means "continue from here" — realized as a *branch*: a
+  separate draft seeded at that version's text with a back-ref to its
+  origin change, syncing on its own channel (the Upwelling
+  private-draft pattern — branches sidestep shared-undo ambiguity
+  entirely). The main doc is untouched; collaborators get a "branched
+  at #n — rejoin?" notice on the existing channel and opt in rather
+  than watching their document revert under them. Merge-back is a
+  deliberate later gesture. The gesture carries the intent — no
+  distance heuristic needed: Ctrl+Z is always incremental, checkout +
+  edit is always a fork.
 - *Identity.* Changes are tagged by actor id. Until accounts exist, each
   tab gets an auto-generated display name resolved through an
   `actorId → name` map synced inside the document — all peers render the
@@ -463,6 +487,14 @@ labeled, deliberate, addressable checkpoint (`url@version#node` refs
 already resolve them). The operational history is complete but unbounded
 — the op log may be compacted between checkpoints — while the curated
 layer holds the meaningful, branchable story.
+
+**History of history.** Operations that mutate history itself —
+restores, branch creation, prunes, compactions, curated checkpoints —
+need a synced meta-log, not unilateral deletion: a locally pruned change
+is simply re-offered by any peer that still holds it, so "prune below
+hash X" must itself be a shared, versioned operation peers honor.
+Ephemeral navigation never enters this log; it is the audit trail that
+makes cleanup safe under sync.
 
 ## 9. The retired scaffold
 

@@ -14,8 +14,19 @@ object TypedDocUpdate {
     input match {
       case SwitchView(v) => Update(m.copy(view = v))
       case Load(d, sel)  => load(m, d, sel, "Document loaded")
-      case RemoteEdit(d) =>
-        load(m, d, None, "Remote edit synced", Some("Remote edit"))
+      // The doc plus its shared history both come from the session —
+      // emit no DocChanged echo: the owner already knows, and the echo
+      // would feed back into the session as a local text.
+      case SyncHistory(d, h) =>
+        Update(m.copy(
+          doc = d,
+          pushedDoc = d,
+          pushedSelect = None,
+          pushedMergeLabel = None,
+          pushedHistory = Some(h),
+          text = DocText.render(d),
+          textEpoch = m.textEpoch + 1,
+          status = "Synced"))
       case RequestDoc    => Update(m, Vector(DocChanged(m.doc)))
       case LoadExprSample =>
         load(m, ExprLanguage.sampleDoc, None, "Expression sample loaded")
@@ -32,7 +43,8 @@ object TypedDocUpdate {
             Update(
               m.copy(
                 doc = d, pushedDoc = d, pushedSelect = None,
-                pushedMergeLabel = Some("Text edit"), text = t, status = msg),
+                pushedMergeLabel = Some("Text edit"), pushedHistory = None,
+                text = t, status = msg),
               Vector(DocChanged(d), Status(msg)))
           case Left(err) =>
             Update(m.copy(text = t, status = err), Vector(Status(err)))
@@ -68,6 +80,7 @@ object TypedDocUpdate {
         pushedDoc = d,
         pushedSelect = select.filter(id => d.getNode(id).isDefined),
         pushedMergeLabel = mergeLabel,
+        pushedHistory = None,
         text = DocText.render(d),
         textEpoch = m.textEpoch + 1,
         status = msg),

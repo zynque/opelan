@@ -3,7 +3,7 @@
 Point-in-time state of the Opelan workbench. For architecture and rationale
 see `DESIGN.md`; for principles see `MANIFESTO.md`.
 
-Last updated: 2026-10-05
+Last updated: 2026-10-06
 
 The project is in Phase 1 (foundation & schema system) of the
 implementation plan.
@@ -60,9 +60,13 @@ implementation plan.
   `SyncTransport`, and persists the Automerge bytes to IndexedDB. The
   first transport is `BroadcastTransport`: tabs of the same browser share
   edits live with no server. The workbench **Sync** button toggles it.
-  Remote edits merge into the editor's history as labeled versions, so
-  they undo like local edits. Echoes are suppressed by last-text
-  comparison, not protocol smarts.
+  Each tab gets a unique actor id plus an auto-generated name
+  (sessionStorage), and every change carries the writer's name as its
+  message — the change graph is the shared history: identical on every
+  peer once converged, projected into the editor's version DAG with
+  author labels and real merge versions for concurrent edits. Undo emits
+  a revert change that propagates to peers. Echoes are suppressed by
+  last-text comparison, not protocol smarts.
 - **Build/test pipeline**: `build.bat` produces `bundle.js` (scala-cli →
   webpack); `test.bat` runs ~130 munit tests covering the pure core and the
   update functions of the UI layer, plus DocSession convergence tests that
@@ -81,22 +85,29 @@ implementation plan.
 ## Not yet wired
 
 - The **version DAG** is wired for in-session editor history (branching
-  undo, version-tree column, remote edits recorded as versions) but each
-  synced tab still keeps its own history — the unified design (DESIGN.md
-  §8) projects the shared Automerge change graph instead, which is also
-  where `VersionTree.merge` gets its first real use. History is not
-  persisted across sessions; the document store's append-only versions
-  remain a simpler, linear (and eventually curated-checkpoint) history.
+  undo, version-tree column); for synced documents it is now a projection
+  of the shared Automerge change graph (`EditorSynced`) — author-tagged,
+  two-dep changes render as merge versions via `VersionTree.merge`.
+  Unsynced documents keep the local session DAG, history is not persisted
+  across sessions, and the document store's append-only versions remain
+  the simpler curated-checkpoint layer.
 - **`ExternalNodeRef`s to missing targets** report "unresolved" rather than
   offering creation; and refs into old pinned versions open read-write —
   saving an old version appends a new head rather than branching.
 - **Text edits reparse whole cells**; the parser's span map exists to enable
   finer-grained text-edit → node mapping later.
-- **Remote sync edits merge into history** as labeled versions rather
-  than resetting it — undo walks back over them and broadcasts the
-  revert. Remaining: remote application is still a whole-text reparse
-  (finer-grained application belongs with the span-map work), and edits
-  made *before first sync contact* can lose — concurrent writes to `text`
+- **Synced history is unified and author-tagged**: the pane's version DAG
+  is rebuilt from the Automerge change graph on every growth, so both
+  tabs see the same tree with generated names per change. Today
+  `goTo`/undo still emit a revert change — planned (DESIGN.md §8):
+  navigation becomes a local `DocViewed` (no emit), Ctrl+Z scopes to
+  one's own changes (exact revert at the frontier, `changeAt`-anchored
+  revert past interleaved remote edits), and editing a checked-out
+  version forks a branch draft with a peer rejoin prompt. Remaining:
+  remote application is still a whole-text reparse (finer-grained
+  application belongs with the span-map work); redo is a no-op under
+  revert semantics (a "redo" is just another revert); and edits made
+  *before first sync contact* can lose — concurrent writes to `text`
   without a shared ancestor resolve last-writer-wins rather than
   char-merging (real CRDT semantics).
 - **Schemas** have no representation yet — the scaffold's
@@ -107,9 +118,13 @@ implementation plan.
 
 1. *Two-layer history.* Largely settled in design (DESIGN.md §8): the
    Automerge change graph is the unified operational history — projected
-   into the version-DAG view, actor-tagged, undo-as-revert — and `Store`
-   saves are the curated, git-like checkpoint layer on top. Open: the
-   op-log compaction boundary and the presence channel's shape.
+   into the version-DAG view, actor-tagged — with the gesture split
+   settled: navigation is local (`DocViewed`), undo scopes to one's own
+   changes (frontier revert, then `changeAt`-anchored reverts), and
+   checkout+edit forks a branch draft peers opt into. `Store` saves are
+   the curated, git-like checkpoint layer on top. Open: the op-log
+   compaction boundary, the synced meta-log for history mutation, and
+   the presence channel's shape.
 2. *Bootstrap.* Languages are Scala objects today; the end state is language
    definitions as documents, resolved through `typeRef` — which requires the
    document store and enough language machinery to be self-describing.
@@ -150,12 +165,16 @@ The natural sequence from the current code is:
    `DocSession` + `BroadcastTransport` give live convergence between tabs.
    Remaining: a real network transport (signaling), presence, and the
    curated layer on top.
-4. Unified history — project the Automerge change graph into the
-   version-DAG view: change-hash entries tagged with auto-generated
-   per-tab names, concurrent-edit joins as two-parent versions, undo as
-   revert-change, coalesced edit bursts for granularity. Includes giving
-   each tab a unique actor id on attach — resumed tabs currently share
-   the persisted actor, a latent `(actor, seq)` collision.
+4. ~~Unified history~~ — done for the tab-sync case: the Automerge change
+   graph is projected into the version-DAG view with per-tab actor ids
+   and generated names, merge versions on concurrent edits, and
+   revert-style undo. Remaining: the navigation/undo/branch split
+   (DESIGN.md §8 — `DocViewed`, own-change undo via frontier revert and
+   `changeAt`-anchored reverts, checkout-edit forks + rejoin prompt),
+   debounce-coalesced edit bursts for granularity, durable history beyond
+   the tab's lifetime (the op log already persists via `automerge_docs`),
+   curated checkpoints, and the synced meta-log for history pruning/
+   compaction.
 5. More languages defined as documents — begin the bootstrap; schemas and
    gap/typing machinery folded into the document model. (Type refs already
    resolve through the store — a language definition stored as a document

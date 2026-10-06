@@ -150,6 +150,52 @@ class EditorUpdateSuite extends munit.FunSuite {
     assertEquals(u.state.history.nodes.length, 1)
   }
 
+  test("a synced history push rebuilds a shared, author-tagged DAG") {
+    val d0: Document[NodeData] = Build.beginDocument(NodeData.StringData("a"))
+    val d1: Document[NodeData] = Build.beginDocument(NodeData.StringData("b"))
+    val d2: Document[NodeData] = Build.beginDocument(NodeData.StringData("c"))
+    val h = SyncedHistory(Vector(
+      SyncedEntry("h1", Vector(), "init", d0),
+      SyncedEntry("h2", Vector("h1"), "amber-fox", d1),
+      SyncedEntry("h3", Vector("h2"), "calm-otter", d2)),
+      Vector("h3"))
+    val m = EditorUpdate(init, EditorInput.SyncDocument(d2, history = Some(h))).state
+    assertEquals(m.doc, d2)
+    assertEquals(m.history.nodes.length, 3)
+    assertEquals(m.versionId, 2)
+    assertEquals(
+      m.history.getNode(1).map(_.data.data.label), Some("amber-fox"))
+    // undo restores the previous version — the session turns the emitted
+    // DocChanged into a revert change shared with peers
+    val back = EditorUpdate(m, EditorInput.Undo)
+    assert(back.state.doc == d1)
+  }
+
+  test("a synced history push records two-dep changes as merge versions") {
+    val d: Document[NodeData] = Build.beginDocument(NodeData.StringData("x"))
+    val h = SyncedHistory(Vector(
+      SyncedEntry("h1", Vector(), "init", d),
+      SyncedEntry("h2", Vector("h1"), "amber-fox", d),
+      SyncedEntry("h3", Vector("h1"), "calm-otter", d),
+      SyncedEntry("h4", Vector("h2", "h3"), "amber-fox", d)),
+      Vector("h4"))
+    val m = EditorUpdate(init, EditorInput.SyncDocument(d, history = Some(h))).state
+    assertEquals(m.history.nodes.length, 4)
+    assertEquals(m.history.getNode(3).map(_.data.mergedFromNodeId), Some(Some(2)))
+  }
+
+  test("a synced history push drops selection when the node is gone") {
+    val m = init
+    val gone = m.doc.childrenOf(m.doc.rootId).head
+    val d: Document[NodeData] = Build.beginDocument(NodeData.StringData("new"))
+    val h = SyncedHistory(
+      Vector(SyncedEntry("h1", Vector(), "amber-fox", d)), Vector("h1"))
+    val u = EditorUpdate(
+      m.copy(selectedId = Some(gone)),
+      EditorInput.SyncDocument(d, history = Some(h)))
+    assertEquals(u.state.selectedId, None)
+  }
+
   test("a merged sync drops selection when the node is gone") {
     val m = init
     val gone = m.doc.childrenOf(m.doc.rootId).head

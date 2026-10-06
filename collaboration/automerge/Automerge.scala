@@ -16,25 +16,57 @@ object Automerge {
 
   private val am = AmJs.asInstanceOf[js.Dynamic]
 
-  def create(text: String): js.Dynamic =
-    am.applyDynamic("from")(js.Dynamic.literal("text" -> text))
+  def create(text: String, actorId: String): js.Dynamic =
+    am.applyDynamic("from")(js.Dynamic.literal("text" -> text), actorId)
       .asInstanceOf[js.Dynamic]
+
+  def actorIdOf(doc: js.Dynamic): String =
+    am.getActorId(doc).asInstanceOf[String]
 
   def textOf(doc: js.Dynamic): String = doc.text.toString.asInstanceOf[String]
 
   // Apply a new full text: updateText diffs old->new and splices the
   // minimal change, so concurrent remote edits merge instead of clobber.
-  def setText(doc: js.Dynamic, text: String): js.Dynamic =
-    am.change(doc, js.Any.fromFunction1 { (d: js.Dynamic) =>
-      am.updateText(d, js.Array("text"), text)
-      ()
-    }).asInstanceOf[js.Dynamic]
+  // The message is stored on the change and surfaces in history.
+  def setText(doc: js.Dynamic, text: String, message: String): js.Dynamic =
+    am.change(doc, js.Dynamic.literal("message" -> message),
+      js.Any.fromFunction1 { (d: js.Dynamic) =>
+        am.updateText(d, js.Array("text"), text)
+        ()
+      }).asInstanceOf[js.Dynamic]
 
   def save(doc: js.Dynamic): Uint8Array =
     am.save(doc).asInstanceOf[Uint8Array]
 
-  def load(bytes: Uint8Array): js.Dynamic =
-    am.load(bytes).asInstanceOf[js.Dynamic]
+  // Resuming saved bytes with a fresh actor id: two sessions loading the
+  // same bytes must not share an actor, or their changes collide on
+  // (actor, seq).
+  def load(bytes: Uint8Array, actorId: String): js.Dynamic =
+    am.load(bytes, actorId).asInstanceOf[js.Dynamic]
+
+  // The doc's change graph in dependency order — every change with the
+  // document text right after it. Identical on every peer once converged,
+  // so it doubles as the shared history projection.
+  def historyOf(doc: js.Dynamic): Vector[ChangeInfo] =
+    am.getHistory(doc).asInstanceOf[js.Array[js.Dynamic]].toVector.map { h =>
+      val c = h.change
+      ChangeInfo(
+        hash = c.hash.asInstanceOf[String],
+        actor = c.actor.asInstanceOf[String],
+        seq = c.seq.asInstanceOf[Int],
+        time = c.time.asInstanceOf[Double],
+        message = Option(c.message).map(_.toString),
+        deps = c.deps.asInstanceOf[js.Array[String]].toVector,
+        snapshotText = h.snapshot.text.toString)
+    }
+
+  // Current frontier of the change graph (hashes with no dependents).
+  def headsOf(doc: js.Dynamic): Vector[String] =
+    am.getHeads(doc).asInstanceOf[js.Array[String]].toVector
+
+  // Cheap growth check — much lighter than building historyOf.
+  def changeCount(doc: js.Dynamic): Int =
+    am.getAllChanges(doc).asInstanceOf[js.Array[js.Any]].length
 
   def initSyncState(): js.Dynamic =
     am.initSyncState().asInstanceOf[js.Dynamic]

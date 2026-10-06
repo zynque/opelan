@@ -50,22 +50,42 @@ object EditorSession {
   //
   // A plain push opens a different document, so history restarts at a
   // fresh root. A `mergeLabel` push is the same document updated from
-  // outside (a synced remote edit, a text-cell edit): record it as a new
-  // version on the current history so undo walks back over it. State
-  // bound to node ids (selection, an in-progress edit, a detached cut
-  // node) survives only if the node still exists in the merged document.
+  // outside (e.g. a text-cell edit): record it as a new version on the
+  // current history so undo walks back over it. A `history` push carries
+  // the shared change graph: the version DAG is rebuilt wholesale from
+  // it, `versionId` lands on the current head, and undo of a synced
+  // version emits the prior state — which the session records as a new
+  // (revert) change shared with peers. State bound to node ids
+  // (selection, an in-progress edit, a detached cut node) survives only
+  // if the node still exists in the pushed document.
   def syncDocument(
       m: EditorModel,
       d: Document[NodeData],
       select: Option[Int],
-      mergeLabel: Option[String]): Update[EditorModel, EditorOutput] =
-    mergeLabel match {
-      case None =>
+      mergeLabel: Option[String],
+      history: Option[SyncedHistory]): Update[EditorModel, EditorOutput] =
+    (mergeLabel, history) match {
+      case (_, Some(h)) =>
+        EditorSynced.build(h) match {
+          case Some((hist, versionId)) =>
+            Update(m.copy(
+              doc = d,
+              history = hist,
+              versionId = versionId,
+              selectedId =
+                select.orElse(m.selectedId).filter(id => d.getNode(id).isDefined),
+              editingId = m.editingId.filter(id => d.getNode(id).isDefined),
+              detachedNodeId =
+                m.detachedNodeId.filter(id => d.getNode(id).isDefined),
+              status = "Synced"))
+          case None => Update(m)
+        }
+      case (None, None) =>
         Update(EditorModel.forDocument(
           d,
           selectedId = select.filter(id => d.getNode(id).isDefined),
           status = "Document synced"))
-      case Some(label) =>
+      case (Some(label), None) =>
         if (d == m.doc) Update(m)
         else {
           val nm = EditorHistory.record(m, d, label).copy(
