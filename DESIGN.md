@@ -435,17 +435,21 @@ Consequences:
   last change," never "rewind the shared log" — the settled answer
   across collaborative editors (Google Docs transforms inverse ops
   forward, Yjs un-deletes tombstoned items, Figma scopes undo per user;
-  Etherpad's global undo is the cautionary counterexample). Two cases:
-  at the frontier — my latest change sits at the heads, the common
-  case — the revert is exact (restore the snapshot at its parent deps).
-  Past interleaved remote changes, the revert is instead *anchored at
-  the old heads* via `changeAt` (the `automerge-repo-undo-redo`
-  pattern), so the CRDT merge preserves remote work — accepting that
-  edits overlapping the same region merge rather than invert cleanly;
-  true item-level inversion isn't reachable through Automerge's public
-  API. Each undo is an ordinary labeled change: visible to peers,
-  itself undoable, no sync disruption — repeated undos keep walking
-  back one's own changes even after peers' edits.
+  Etherpad's global undo is the cautionary counterexample). The session
+  keeps a stack of the change hashes it authored; undo appends a revert
+  change computed as an *inverse splice at the current frontier*: the
+  change's before/after texts give its span (longest common
+  prefix/suffix), positions are moved forward through Automerge
+  cursors, and the revert is declined if the span no longer holds
+  exactly what the change inserted — deleting a peer's text inside it
+  would be worse than refusing. This handles both the frontier and
+  interleaved cases uniformly (an anchored revert via `changeAt` was
+  considered and dropped: setting the pre-change text at the old heads
+  is a no-op). Each undo is an ordinary labeled change: visible to
+  peers, itself undoable, no sync disruption — repeated undos keep
+  walking back one's own changes, and the undo change feeds the redo
+  stack rather than the undo stack. Stacks are session-local and empty
+  on resume (rebuilding from actor-tagged history is future work).
 - *Navigation is local.* Clicking a version moves the editor's view
   only — a `DocViewed` output separate from `DocChanged`, emitting
   nothing to peers (the current coupling, where `goTo` writes a revert

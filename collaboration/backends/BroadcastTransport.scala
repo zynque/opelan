@@ -19,7 +19,8 @@ class BroadcastTransport(documentUrl: String) extends SyncTransport {
       "from" -> envelope.from,
       "to" -> envelope.to,
       "hello" -> envelope.hello,
-      "payload" -> envelope.payload.orUndefined))
+      "payload" -> envelope.payload.orUndefined,
+      "branch" -> envelope.branch.orUndefined))
 
   def subscribe(handler: SyncEnvelope => Unit): Unit =
     channel.onmessage = (e: dom.MessageEvent) =>
@@ -29,7 +30,8 @@ class BroadcastTransport(documentUrl: String) extends SyncTransport {
           d.from.asInstanceOf[String],
           d.to.asInstanceOf[String],
           d.hello.asInstanceOf[Boolean],
-          d.payload.asInstanceOf[js.UndefOr[Uint8Array]].toOption))
+          d.payload.asInstanceOf[js.UndefOr[Uint8Array]].toOption,
+          d.branch.asInstanceOf[js.UndefOr[String]].toOption))
       }
 
   def close(): Unit = channel.close()

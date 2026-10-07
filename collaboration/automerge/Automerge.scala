@@ -64,6 +64,35 @@ object Automerge {
   def headsOf(doc: js.Dynamic): Vector[String] =
     am.getHeads(doc).asInstanceOf[js.Array[String]].toVector
 
+  // The document as it was at a point in history — heads are change
+  // hashes. Used for revert computation and history inspection.
+  def view(doc: js.Dynamic, heads: Vector[String]): js.Dynamic =
+    am.view(doc, js.Array(heads: _*)).asInstanceOf[js.Dynamic]
+
+  def textAtHeads(doc: js.Dynamic, heads: Vector[String]): String =
+    if (heads.isEmpty) "" else textOf(view(doc, heads))
+
+  // A positional splice on the `text` field — undo/redo apply an inverse
+  // splice at the current frontier rather than rewriting whole strings.
+  def spliceText(
+      doc: js.Dynamic, pos: Int, del: Int, ins: String,
+      message: String): js.Dynamic =
+    am.change(doc, js.Dynamic.literal("message" -> message),
+      js.Any.fromFunction1 { (d: js.Dynamic) =>
+        am.splice(d, js.Array("text"), pos, del, ins)
+        ()
+      }).asInstanceOf[js.Dynamic]
+
+  // Stable position markers: a cursor created on one view of the doc
+  // resolves to the corresponding index in another, moving past any
+  // concurrent insertions — how an old change's span maps to the
+  // current frontier.
+  def cursorAt(doc: js.Dynamic, index: Int): js.Dynamic =
+    am.getCursor(doc, js.Array("text"), index).asInstanceOf[js.Dynamic]
+
+  def cursorPosition(doc: js.Dynamic, cursor: js.Dynamic): Int =
+    am.getCursorPosition(doc, js.Array("text"), cursor).asInstanceOf[Int]
+
   // Cheap growth check — much lighter than building historyOf.
   def changeCount(doc: js.Dynamic): Int =
     am.getAllChanges(doc).asInstanceOf[js.Array[js.Any]].length

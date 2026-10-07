@@ -50,6 +50,23 @@ object TypedDocUpdate {
             Update(m.copy(text = t, status = err), Vector(Status(err)))
         }
 
+      case FromEditor(EditorOutput.DocViewed(d)) =>
+        // Like DocChanged (mirrors follow what the pane shows) but marked
+        // as navigation so the owner never feeds it to a session.
+        val t = DocText.render(d)
+        val bump = if (t == m.text) 0 else 1
+        Update(
+          m.copy(doc = d, text = t, textEpoch = m.textEpoch + bump),
+          Vector(DocViewed(d)))
+      case FromEditor(EditorOutput.UndoRequested) =>
+        Update(m, Vector(UndoRequested))
+      case FromEditor(EditorOutput.RedoRequested) =>
+        Update(m, Vector(RedoRequested))
+      case FromEditor(EditorOutput.BranchRequested(d)) =>
+        val t = DocText.render(d)
+        Update(
+          m.copy(doc = d, text = t, textEpoch = m.textEpoch + 1),
+          Vector(BranchRequested(d)))
       case FromEditor(EditorOutput.DocChanged(d)) =>
         // The editor echoes the doc we just pushed via SyncDocument; that
         // echo must not re-derive the text cell (it would remount the

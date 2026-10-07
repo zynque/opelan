@@ -27,15 +27,17 @@ import opelan.collaboration.backends.{SyncEnvelope, SyncTransport}
 //   onUpdate — the change graph grew: full history + current heads, for
 //              the pane's shared-history view and the live doc text
 //   onPersist — the Automerge bytes changed: stash them for later reload
+//   onBranch  — a peer announced a forked draft at the given URL
 class DocSession(
     val url: String,
     transport: SyncTransport,
     val actorId: String,
     val name: String,
     onUpdate: (Vector[ChangeInfo], Vector[String]) => Unit,
-    onPersist: Uint8Array => Unit) {
+    onPersist: Uint8Array => Unit,
+    onBranch: String => Unit = _ => ()) extends SessionUndo {
 
-  private var doc: js.Dynamic = null
+  protected var doc: js.Dynamic = null
   private var peers = Map.empty[String, js.Dynamic]
   private var lastText = ""
   private var lastCount = 0
@@ -58,15 +60,29 @@ class DocSession(
   }
 
   // A local edit to the document: apply as a text diff, tag it with this
-  // session's name, and sync out.
+  // session's name, and sync out. The new change is pushed on the undo
+  // stack (SessionUndo) so Ctrl+Z retracts it.
   def localText(text: String): Unit =
     if (doc != null && text != lastText) {
       doc = Automerge.setText(doc, text, name)
-      lastText = text
-      onPersist(Automerge.save(doc))
-      emitUpdate()
-      peers.keys.foreach(sendSync)
+      pushedLocalChange()
+      publish()
     }
+
+  // Shared by localText and undo/redo: every change the session writes
+  // updates lastText, persists, reports history, and syncs to peers.
+  protected def publish(): Unit = {
+    lastText = Automerge.textOf(doc)
+    onPersist(Automerge.save(doc))
+    emitUpdate()
+    peers.keys.foreach(sendSync)
+  }
+
+  // Tell peers on this channel that this session forked its own draft at
+  // `branchUrl` — their call whether to rejoin; the shared doc is untouched.
+  def announce(branchUrl: String): Unit =
+    transport.send(
+      SyncEnvelope(transport.peerId, "*", branch = Some(branchUrl)))
 
   // The session's view of the shared text — for status display and tests.
   def text: String = lastText
@@ -85,6 +101,7 @@ class DocSession(
 
   private def handleEnvelope(env: SyncEnvelope): Unit =
     if (env.from != transport.peerId) {
+      env.branch.foreach(onBranch)
       if (env.hello) {
         peers += env.from -> peers.getOrElse(env.from, Automerge.initSyncState())
         sendSync(env.from)

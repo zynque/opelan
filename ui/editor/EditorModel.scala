@@ -17,6 +17,10 @@ case class EditorModel(
     versionId: Int,
     clipboard: Option[DetachedNode[NodeData]] = None,
     detachedNodeId: Option[Int] = None,
+    // The head version under a synced (shared-change-graph) history.
+    // Some(headId) marks synced mode; `versionId` differing from it means
+    // the user is browsing a checked-out version. None for unsynced docs.
+    syncedHead: Option[Int] = None,
     status: String = "Ready") {
 
   // The node an operation applies to when nothing is explicitly selected.
@@ -98,8 +102,19 @@ enum EditorInput {
 // display) are interpreted by whoever mounts the component.
 enum EditorOutput {
   case DocChanged(doc: Document[NodeData])
+  // The view moved to another version without producing a change — the
+  // owner should update its mirrors but must not feed this to a session.
+  case DocViewed(doc: Document[NodeData])
   case Status(message: String)
   // The user asked to follow an external ref; the editor can't resolve
   // cross-document addresses itself.
   case FollowRef(ref: ExternalNodeReference)
+  // At a synced head: ask the session to revert this actor's last change
+  // / re-apply the last reverted one.
+  case UndoRequested
+  case RedoRequested
+  // An edit was made while checked out on an old version under sync —
+  // the owner should fork a branch draft rather than let it revert the
+  // shared frontier under collaborators' feet.
+  case BranchRequested(doc: Document[NodeData])
 }

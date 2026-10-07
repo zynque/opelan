@@ -165,10 +165,11 @@ class EditorUpdateSuite extends munit.FunSuite {
     assertEquals(m.versionId, 2)
     assertEquals(
       m.history.getNode(1).map(_.data.data.label), Some("amber-fox"))
-    // undo restores the previous version — the session turns the emitted
-    // DocChanged into a revert change shared with peers
+    // at the synced head, undo defers to the session — it reverts this
+    // actor's own change rather than navigating the shared graph
     val back = EditorUpdate(m, EditorInput.Undo)
-    assert(back.state.doc == d1)
+    assertEquals(back.out, Vector(EditorOutput.UndoRequested))
+    assert(back.state.doc == d2)
   }
 
   test("a synced history push records two-dep changes as merge versions") {
@@ -182,6 +183,78 @@ class EditorUpdateSuite extends munit.FunSuite {
     val m = EditorUpdate(init, EditorInput.SyncDocument(d, history = Some(h))).state
     assertEquals(m.history.nodes.length, 4)
     assertEquals(m.history.getNode(3).map(_.data.mergedFromNodeId), Some(Some(2)))
+  }
+
+  test("navigation emits DocViewed, never DocChanged") {
+    val m0 = init
+    val m1 = EditorUpdate(m0, EditorInput.InsertChild).state
+    val u = EditorUpdate(
+      m1.copy(editingId = None), EditorInput.GoToVersion(m0.versionId))
+    assert(u.out.exists(_.isInstanceOf[EditorOutput.DocViewed]))
+    assert(u.out.forall(o => !o.isInstanceOf[EditorOutput.DocChanged]))
+  }
+
+  test("undo while browsing a synced doc still navigates locally") {
+    val d0: Document[NodeData] = Build.beginDocument(NodeData.StringData("a"))
+    val d1: Document[NodeData] = Build.beginDocument(NodeData.StringData("b"))
+    val d2: Document[NodeData] = Build.beginDocument(NodeData.StringData("c"))
+    val h = SyncedHistory(Vector(
+      SyncedEntry("h1", Vector(), "init", d0),
+      SyncedEntry("h2", Vector("h1"), "amber-fox", d1),
+      SyncedEntry("h3", Vector("h2"), "calm-otter", d2)),
+      Vector("h3"))
+    val m = EditorUpdate(init, EditorInput.SyncDocument(d2, history = Some(h))).state
+    // check out the middle version, then undo = a cursor step, not a
+    // session revert
+    val checked =
+      EditorUpdate(m, EditorInput.GoToVersion(1)).state
+    val u = EditorUpdate(checked, EditorInput.Undo)
+    assert(u.state.doc == d0)
+    assert(u.out.exists(_.isInstanceOf[EditorOutput.DocViewed]))
+    assert(u.out.forall(o => o != EditorOutput.UndoRequested))
+  }
+
+  test("editing a checked-out synced version requests a branch") {
+    val d0: Document[NodeData] = Build.beginDocument(NodeData.StringData("a"))
+    val d1: Document[NodeData] = Build.beginDocument(NodeData.StringData("b"))
+    val d2: Document[NodeData] = Build.beginDocument(NodeData.StringData("c"))
+    val h = SyncedHistory(Vector(
+      SyncedEntry("h1", Vector(), "init", d0),
+      SyncedEntry("h2", Vector("h1"), "amber-fox", d1),
+      SyncedEntry("h3", Vector("h2"), "calm-otter", d2)),
+      Vector("h3"))
+    val m = EditorUpdate(init, EditorInput.SyncDocument(d2, history = Some(h))).state
+    val checked = EditorUpdate(m, EditorInput.GoToVersion(1)).state
+    val u = EditorUpdate(
+      checked.copy(selectedId = None), EditorInput.InsertChild)
+    assert(u.out.exists(_.isInstanceOf[EditorOutput.BranchRequested]))
+    assert(u.out.forall(o => !o.isInstanceOf[EditorOutput.DocChanged]))
+    // while at the head, edits still flow as DocChanged
+    val atHead = EditorUpdate(
+      m.copy(selectedId = None), EditorInput.InsertChild)
+    assert(atHead.out.exists(_.isInstanceOf[EditorOutput.DocChanged]))
+  }
+
+  test("a browsing pin survives incoming synced pushes") {
+    val d0: Document[NodeData] = Build.beginDocument(NodeData.StringData("a"))
+    val d1: Document[NodeData] = Build.beginDocument(NodeData.StringData("b"))
+    val d2: Document[NodeData] = Build.beginDocument(NodeData.StringData("c"))
+    val d3: Document[NodeData] = Build.beginDocument(NodeData.StringData("d"))
+    val h = SyncedHistory(Vector(
+      SyncedEntry("h1", Vector(), "init", d0),
+      SyncedEntry("h2", Vector("h1"), "amber-fox", d1),
+      SyncedEntry("h3", Vector("h2"), "calm-otter", d2)),
+      Vector("h3"))
+    val m = EditorUpdate(init, EditorInput.SyncDocument(d2, history = Some(h))).state
+    val checked = EditorUpdate(m, EditorInput.GoToVersion(1)).state
+    // a remote change arrives while browsing — the pin holds by hash
+    val h2 = SyncedHistory(h.entries :+
+      SyncedEntry("h4", Vector("h3"), "calm-otter", d3), Vector("h4"))
+    val u = EditorUpdate(checked, EditorInput.SyncDocument(d3, history = Some(h2)))
+    assert(u.state.doc == d1)
+    assertEquals(u.state.syncedHead, Some(3))
+    assertEquals(u.state.versionId, 1)
+    assert(u.out.exists(_.isInstanceOf[EditorOutput.DocViewed]))
   }
 
   test("a synced history push drops selection when the node is gone") {

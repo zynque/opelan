@@ -108,6 +108,94 @@ class DocSessionSuite extends munit.FunSuite {
     assertEquals(mine.last.snapshotText, "v1")
   }
 
+  test("undo reverts the caller's change at the frontier") {
+    val (ta, tb) = linkedPair()
+    var bHist = Vector.empty[ChangeInfo]
+    val a = new DocSession("u", ta, actor("a"), "amber-fox", (_, _) => (), _ => ())
+    val b = new DocSession("u", tb, actor("b"), "calm-otter", (h, _) => bHist = h, _ => ())
+    a.attach("v0", None)
+    b.attach("v0", None)
+    a.localText("v1")
+    assertEquals(a.undo(), "Undone")
+    assertEquals(a.text, "v0")
+    // the undo is a normal change — the peer converges and sees it tagged
+    assertEquals(b.text, "v0")
+    assert(bHist.last.message.exists(_.contains("undo")))
+    assertEquals(bHist.last.actor, actor("a"))
+  }
+
+  test("undo reverts only the caller's change past a peer's interleaved edit") {
+    // Shared seed so the peers' text edits merge at character level.
+    val seed = automerge.Automerge.save(automerge.Automerge.create("base", actor("5")))
+    val (ta, tb) = linkedPair()
+    val a = new DocSession("u", ta, actor("a"), "amber-fox", (_, _) => (), _ => ())
+    val b = new DocSession("u", tb, actor("b"), "calm-otter", (_, _) => (), _ => ())
+    a.attach("base", Some(seed))
+    b.attach("base", Some(seed))
+    a.localText("baseA")
+    b.localText("baseAB") // b's change lands after a's — a is off-head
+    assertEquals(a.text, "baseAB")
+    assertEquals(a.undo(), "Undone")
+    // a's contribution retracted, b's preserved — on both peers
+    assertEquals(a.text, "baseB")
+    assertEquals(b.text, "baseB")
+  }
+
+  test("a peer cannot undo another's change") {
+    val (ta, tb) = linkedPair()
+    val a = new DocSession("u", ta, actor("a"), "amber-fox", (_, _) => (), _ => ())
+    val b = new DocSession("u", tb, actor("b"), "calm-otter", (_, _) => (), _ => ())
+    a.attach("v0", None)
+    b.attach("v0", None)
+    a.localText("v1")
+    assertEquals(b.undo(), "Nothing to undo") // b authored nothing
+    assertEquals(a.text, "v1")
+  }
+
+  test("multiple undos walk back through the caller's changes, not the undo") {
+    val (ta, _) = linkedPair()
+    val a = new DocSession("u", ta, actor("a"), "amber-fox", (_, _) => (), _ => ())
+    a.attach("v0", None)
+    a.localText("v1")
+    a.localText("v2")
+    assertEquals(a.undo(), "Undone")
+    assertEquals(a.text, "v1")
+    // second undo must step further back — not re-do the first undo
+    assertEquals(a.undo(), "Undone")
+    assertEquals(a.text, "v0")
+    assertEquals(a.undo(), "Nothing to undo")
+  }
+
+  test("redo re-applies an undone change and new edits clear it") {
+    val (ta, tb) = linkedPair()
+    val a = new DocSession("u", ta, actor("a"), "amber-fox", (_, _) => (), _ => ())
+    val b = new DocSession("u", tb, actor("b"), "calm-otter", (_, _) => (), _ => ())
+    a.attach("v0", None)
+    b.attach("v0", None)
+    a.localText("v1")
+    a.undo()
+    assertEquals(a.redo(), "Redone")
+    assertEquals(a.text, "v1")
+    assertEquals(b.text, "v1")
+    a.undo()
+    a.localText("v3")           // a fresh edit clears the redo stack
+    assertEquals(a.redo(), "Nothing to redo")
+  }
+
+  test("a branch announcement reaches the peer, doc untouched") {
+    val (ta, tb) = linkedPair()
+    var got = ""
+    val a = new DocSession("u", ta, actor("a"), "amber-fox", (_, _) => (), _ => ())
+    val b = new DocSession(
+      "u", tb, actor("b"), "calm-otter", (_, _) => (), _ => (),
+      u => got = u)
+    a.attach("v0", None)
+    b.attach("v0", None)
+    a.announce("u~br1")
+    assertEquals(got, "u~br1")
+    assertEquals(b.text, "v0")
+  }
+
   test("editing on divergent heads produces a two-dep merge change") {
     val seed = automerge.Automerge.save(automerge.Automerge.create("AAAA", actor("5")))
     val ta = new TestTransport("A")

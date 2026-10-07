@@ -66,8 +66,18 @@ enum TypedDocInput {
 // What the pane reports outward, interpreted by whoever mounts it.
 enum TypedDocOutput {
   case DocChanged(doc: Document[NodeData])
+  // The editor's view moved to another version without producing a change
+  // — update mirrors (save target, text cell) but never feed a session.
+  case DocViewed(doc: Document[NodeData])
   case Status(message: String)
   // The editor's request to follow an external ref; resolved by whoever
   // holds the document store.
   case FollowRef(ref: ExternalNodeReference)
+  // At a synced head, undo/redo belong to the session (revert this
+  // actor's own change); the pane forwards the request to the owner.
+  case UndoRequested
+  case RedoRequested
+  // The user edited a checked-out version of a synced doc — the owner
+  // forks a branch draft instead of reverting the shared frontier.
+  case BranchRequested(doc: Document[NodeData])
 }

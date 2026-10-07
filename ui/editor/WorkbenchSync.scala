@@ -34,7 +34,7 @@ trait WorkbenchSync extends WorkbenchDocs {
 
   protected def toggleSync(): Unit = {
     syncOn = !syncOn
-    if (syncOn) workspace.openUrl.foreach(attachSync)
+    if (syncOn) workspace.openUrl.foreach(u => attachSync(u))
     else closeSessions()
     updateStatus(
       if (syncOn) "Live sync on — tabs share edits over BroadcastChannel"
@@ -44,6 +44,10 @@ trait WorkbenchSync extends WorkbenchDocs {
   protected def closeSessions(): Unit = {
     sessions.values.foreach(_.close())
     sessions = Map.empty
+    // Leaving sync returns the pane to a local document: reset history so
+    // undo doesn't keep requesting session reverts that can't run.
+    workspace.doc.foreach(d =>
+      documentEditor.foreach(_.send(TypedDocInput.Load(d))))
   }
 
   // WorkbenchDocs hooks (see openDocument / docOutput).
@@ -54,7 +58,45 @@ trait WorkbenchSync extends WorkbenchDocs {
     workspace.openUrl.flatMap(sessions.get)
       .foreach(_.localText(Outline.render(d)))
 
-  private def attachSync(url: String): Unit =
+  // Synced-head undo/redo: the session reverts this actor's own last
+  // change (a new change in the graph — never a rewind of shared state).
+  override protected def undoRequested(): Unit =
+    updateStatus(workspace.openUrl.flatMap(sessions.get)
+      .map(_.undo()).getOrElse("Nothing to undo"))
+
+  override protected def redoRequested(): Unit =
+    updateStatus(workspace.openUrl.flatMap(sessions.get)
+      .map(_.redo()).getOrElse("Nothing to redo"))
+
+  // The user edited a checked-out version: fork a branch draft seeded
+  // with the edited doc rather than reverting the shared frontier.
+  // The main session keeps syncing untouched; peers get a rejoin offer.
+  override protected def branchRequested(d: Document[NodeData]): Unit =
+    workspace.openUrl.filter(sessions.contains).foreach { base =>
+      val branchUrl = s"$base~${Random.alphanumeric.take(6).mkString.toLowerCase}"
+      openDocument(branchUrl, 0, d)
+      sessions.get(base).foreach(_.announce(branchUrl))
+      updateStatus(s"Branched — $branchUrl (peers asked to rejoin)")
+    }
+
+  // A peer forked the shared line into a branch draft: offer to follow
+  // rather than silently switching — the main doc is unaffected either
+  // way. Joining attaches a session with empty seed text so the peer's
+  // branch history arrives whole over sync.
+  private def joinBranch(branchUrl: String): Unit =
+    if (!sessions.contains(branchUrl) &&
+        dom.window.confirm(
+          s"A collaborator started a branch — rejoin at $branchUrl?")) {
+      val placeholder: Document[NodeData] =
+        Build.beginDocument(NodeData.StringData("branch"))
+      workspace = workspace.open(branchUrl, 0, placeholder)
+      documentEditor.foreach(_.send(TypedDocInput.Load(placeholder)))
+      attachSync(branchUrl, Some(""))
+      updateStatus(s"Joined branch $branchUrl")
+    }
+
+  private def attachSync(
+      url: String, seedText: Option[String] = None): Unit =
     if (syncOn && !sessions.contains(url) && !attaching(url)) {
       attaching += url
       IndexedDBStore.getAutomergeDoc(url).onComplete { result =>
@@ -70,10 +112,13 @@ trait WorkbenchSync extends WorkbenchDocs {
           name,
           (entries, heads) => sessionUpdate(url, entries, heads),
           bytes => IndexedDBStore.storeAutomergeDoc(
-            url, bytes.asInstanceOf[js.Dynamic]))
+            url, bytes.asInstanceOf[js.Dynamic]),
+          joinBranch)
         sessions += url -> session
         session.attach(
-          workspace.doc.map(Outline.render).getOrElse(""), saved)
+          seedText.getOrElse(
+            workspace.doc.map(Outline.render).getOrElse("")),
+          saved)
         updateStatus(s"Sync attached — $url ($name)")
       }
     }

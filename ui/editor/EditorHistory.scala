@@ -14,7 +14,14 @@ import EditorUpdate.status
 // Undo walks to the version's parent; redo descends to the newest child
 // (children are prepended on insert, so childIds.head is the most recent
 // branch). Any version is reachable directly via GoToVersion.
-case class EditorSnapshot(doc: Document[NodeData], label: String)
+//
+// `hash` links a version to the Automerge change that produced it under a
+// synced history — the stable identity that keeps a browsing pin intact
+// across history rebuilds (node ids shift each rebuild; hashes don't).
+case class EditorSnapshot(
+    doc: Document[NodeData],
+    label: String,
+    hash: Option[String] = None)
 
 object EditorHistory {
 
@@ -32,22 +39,33 @@ object EditorHistory {
       case Left(_)  => m.copy(doc = newDoc)
     }
 
+  // Synced semantics (see DESIGN.md §8): at the shared head, undo/redo is
+  // the session's business — the editor emits a request and the session
+  // appends a revert change scoped to *this actor's* last change. While
+  // browsing a checked-out version they remain what they've always been:
+  // free, local cursor movement that mutates nothing and reaches no peer.
   def undo(m: EditorModel): Update[EditorModel, EditorOutput] =
-    m.history.parentOf(m.versionId) match {
+    if (m.syncedHead.contains(m.versionId))
+      Update(m, Vector(UndoRequested))
+    else m.history.parentOf(m.versionId) match {
       case Some(parent) => goTo(m, parent, "Undo")
       case None         => status(m, "Nothing to undo")
     }
 
   def redo(m: EditorModel): Update[EditorModel, EditorOutput] =
-    m.history.childrenOf(m.versionId).headOption match {
+    if (m.syncedHead.contains(m.versionId))
+      Update(m, Vector(RedoRequested))
+    else m.history.childrenOf(m.versionId).headOption match {
       case Some(child) => goTo(m, child, "Redo")
       case None        => status(m, "Nothing to redo")
     }
 
   // Jump to an arbitrary version — history-panel clicks and undo/redo all
-  // land here. Selection survives only if the node exists in that version;
-  // an in-progress edit and a detached (cut) node are bound to the old doc
-  // and are dropped.
+  // land here. Navigation is pure view state: it emits DocViewed, which
+  // updates the pane's mirrors without feeding the session — looking at an
+  // old version is never a shared mutation. Selection survives only if the
+  // node exists in that version; an in-progress edit and a detached (cut)
+  // node are bound to the old doc and are dropped.
   def goTo(
       m: EditorModel, versionId: Int, msg: String): Update[EditorModel, EditorOutput] =
     m.history.getNode(versionId).map(_.data.data.doc) match {
@@ -59,7 +77,7 @@ object EditorHistory {
           detachedNodeId = None,
           selectedId = m.selectedId.filter(id => d.getNode(id).isDefined),
           status = msg)
-        Update(nm, Vector(DocChanged(d), Status(msg)))
+        Update(nm, Vector(DocViewed(d), Status(msg)))
       case None => status(m, s"Version #$versionId does not exist")
     }
 }

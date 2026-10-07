@@ -44,8 +44,14 @@ object EditorUpdate {
     Update(m.copy(status = msg), Vector(Status(msg)))
 
   // Shared edit plumbing: on success record a version, update
-  // selection/status, emit DocChanged + Status; on failure report the error.
-  // `extra` adjusts the new model on success only (e.g. entering edit mode).
+  // selection/status, emit the doc output + Status; on failure report the
+  // error. `extra` adjusts the new model on success only (e.g. entering
+  // edit mode).
+  //
+  // An edit made while checked out on an old version of a synced doc is a
+  // fork, not an edit: it emits BranchRequested so the owner can open a
+  // separate draft — applying it to the shared frontier would silently
+  // revert collaborators' work under their feet.
   private[editor] def applyEdit(
       m: EditorModel,
       result: Either[String, Document[NodeData]],
@@ -57,7 +63,11 @@ object EditorUpdate {
         val nm = extra(EditorHistory.record(m, d, msg).copy(
           selectedId = selectAfter.orElse(m.selectedId),
           status = msg))
-        Update(nm, Vector(DocChanged(d), Status(msg)))
+        if (m.syncedHead.exists(_ != m.versionId))
+          Update(nm, Vector(
+            BranchRequested(d), Status("Editing old version — branching")))
+        else
+          Update(nm, Vector(DocChanged(d), Status(msg)))
       case Left(err) =>
         status(m, err)
     }

@@ -45,8 +45,19 @@ trait WorkbenchDocs {
           saveDocument(d)
         }
         documentEdited(d)
-      case TypedDocOutput.FollowRef(ref) => followRef(ref)
-      case TypedDocOutput.Status(msg)    => updateStatus(msg)
+      // History navigation: the mirror tracks what the user sees (saving
+      // checkpoints the viewed version) but no session ever hears of it.
+      case TypedDocOutput.DocViewed(d) =>
+        workspace = workspace.changed(d)
+        if (pendingSave) {
+          pendingSave = false
+          saveDocument(d)
+        }
+      case TypedDocOutput.UndoRequested      => undoRequested()
+      case TypedDocOutput.RedoRequested      => redoRequested()
+      case TypedDocOutput.BranchRequested(d) => branchRequested(d)
+      case TypedDocOutput.FollowRef(ref)     => followRef(ref)
+      case TypedDocOutput.Status(msg)        => updateStatus(msg)
     }
 
   protected def renderDocumentList(): Unit = {
@@ -97,7 +108,7 @@ trait WorkbenchDocs {
   }
 
   // Push a stored document (at a specific version) into the pane.
-  private def openDocument(
+  protected def openDocument(
       url: String,
       version: Int,
       d: Document[NodeData],
@@ -113,6 +124,13 @@ trait WorkbenchDocs {
   // was edited. Default no-ops keep the shell usable without sync.
   protected def documentOpened(url: String): Unit = ()
   protected def documentEdited(d: Document[NodeData]): Unit = ()
+  // Synced-head undo/redo and edit-on-checkout fork requests; WorkbenchSync
+  // overrides these, unsynced shells report nothing to undo.
+  protected def undoRequested(): Unit =
+    updateStatus("Nothing to undo")
+  protected def redoRequested(): Unit =
+    updateStatus("Nothing to redo")
+  protected def branchRequested(d: Document[NodeData]): Unit = ()
 
   // The pane owns the live document; pull it via RequestDoc and save when
   // the DocChanged reply arrives (FIFO dispatch keeps the order correct).

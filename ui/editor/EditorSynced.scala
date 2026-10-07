@@ -31,8 +31,8 @@ object EditorSynced {
       val hist = h.entries.tail.foldLeft(
         Build.beginDocument(
           Version.buildRootVersionNode(
-            EditorSnapshot(first.doc, first.label)))) { (hg, e) =>
-        val snap = EditorSnapshot(e.doc, e.label)
+            EditorSnapshot(first.doc, first.label, Some(first.hash))))) { (hg, e) =>
+        val snap = EditorSnapshot(e.doc, e.label, Some(e.hash))
         val parents = e.deps.flatMap(idxOf.get).distinct
         val written = parents match {
           case Vector()      => // extra root: hang off the previous entry

@@ -53,11 +53,15 @@ object EditorSession {
   // outside (e.g. a text-cell edit): record it as a new version on the
   // current history so undo walks back over it. A `history` push carries
   // the shared change graph: the version DAG is rebuilt wholesale from
-  // it, `versionId` lands on the current head, and undo of a synced
-  // version emits the prior state — which the session records as a new
-  // (revert) change shared with peers. State bound to node ids
-  // (selection, an in-progress edit, a detached cut node) survives only
-  // if the node still exists in the pushed document.
+  // it and `syncedHead` tracks the frontier version — undo at the head is
+  // deferred to the session (UndoRequested) while browsing stays local.
+  //
+  // A browsing pin survives rebuilds by hash — node ids shift on every
+  // push, so the pin resolves through the snapshot's change hash. Pinned,
+  // the pane keeps showing the browsed version (DocViewed updates the
+  // parent's mirrors) rather than being bumped forward by remote edits.
+  // State bound to node ids (selection, an in-progress edit, a detached
+  // cut node) survives only if the node still exists in the shown doc.
   def syncDocument(
       m: EditorModel,
       d: Document[NodeData],
@@ -67,17 +71,32 @@ object EditorSession {
     (mergeLabel, history) match {
       case (_, Some(h)) =>
         EditorSynced.build(h) match {
-          case Some((hist, versionId)) =>
-            Update(m.copy(
-              doc = d,
+          case Some((hist, headId)) =>
+            val pin =
+              if (m.syncedHead.forall(_ == m.versionId)) None
+              else for {
+                n <- m.history.getNode(m.versionId)
+                hash <- n.data.data.hash
+                i <- h.entries.indexWhere(_.hash == hash) match {
+                  case -1 => None
+                  case x  => Some(x)
+                }
+              } yield i
+            val vid = pin.getOrElse(headId)
+            val shown = hist.getNode(vid).map(_.data.data.doc).getOrElse(d)
+            val nm = m.copy(
+              doc = shown,
               history = hist,
-              versionId = versionId,
-              selectedId =
-                select.orElse(m.selectedId).filter(id => d.getNode(id).isDefined),
-              editingId = m.editingId.filter(id => d.getNode(id).isDefined),
+              versionId = vid,
+              syncedHead = Some(headId),
+              selectedId = select.orElse(m.selectedId)
+                .filter(id => shown.getNode(id).isDefined),
+              editingId =
+                m.editingId.filter(id => shown.getNode(id).isDefined),
               detachedNodeId =
-                m.detachedNodeId.filter(id => d.getNode(id).isDefined),
-              status = "Synced"))
+                m.detachedNodeId.filter(id => shown.getNode(id).isDefined),
+              status = "Synced")
+            Update(nm, if (shown != d) Vector(DocViewed(shown)) else Vector.empty)
           case None => Update(m)
         }
       case (None, None) =>
