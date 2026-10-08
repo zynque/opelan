@@ -48,13 +48,14 @@ final class Instance[I, O](
     ctx.mountPoint.foreach(mp => Reconcile.reconcile(this, component.children(state), mp))
   }
 
-  private def focusNow(el: dom.Element, select: Boolean): Unit = {
-    el.asInstanceOf[dom.HTMLElement].focus()
-    (el, select) match {
-      case (in: dom.HTMLInputElement, true) => in.select()
-      case _ => ()
+  private def focusNow(el: dom.Element, select: Boolean): Unit =
+    if (dom.document.activeElement != el) {
+      el.asInstanceOf[dom.HTMLElement].focus()
+      (el, select) match {
+        case (in: dom.HTMLInputElement, true) => in.select()
+        case _ => ()
+      }
     }
-  }
 
   // This instance's root DOM node, rendering on first call.
   def mount(): dom.Node = {

@@ -54,9 +54,12 @@ trait WorkbenchSync extends WorkbenchDocs {
   override protected def documentOpened(url: String): Unit =
     if (syncOn) attachSync(url)
 
-  override protected def documentEdited(d: Document[NodeData]): Unit =
-    workspace.openUrl.flatMap(sessions.get)
+  override protected def documentEdited(d: Document[NodeData]): Unit = {
+    val url = workspace.openUrl
+    dom.console.log(s"[sync] documentEdited url=$url session=${url.exists(sessions.contains)}")
+    url.flatMap(sessions.get)
       .foreach(_.localText(Outline.render(d)))
+  }
 
   // Synced-head undo/redo: the session reverts this actor's own last
   // change (a new change in the graph — never a rewind of shared state).
@@ -71,13 +74,15 @@ trait WorkbenchSync extends WorkbenchDocs {
   // The user edited a checked-out version: fork a branch draft seeded
   // with the edited doc rather than reverting the shared frontier.
   // The main session keeps syncing untouched; peers get a rejoin offer.
-  override protected def branchRequested(d: Document[NodeData]): Unit =
+  override protected def branchRequested(d: Document[NodeData]): Unit = {
+    dom.console.log(s"[sync] branchRequested open=${workspace.openUrl}")
     workspace.openUrl.filter(sessions.contains).foreach { base =>
       val branchUrl = s"$base~${Random.alphanumeric.take(6).mkString.toLowerCase}"
       openDocument(branchUrl, 0, d)
       sessions.get(base).foreach(_.announce(branchUrl))
       updateStatus(s"Branched — $branchUrl (peers asked to rejoin)")
     }
+  }
 
   // A peer forked the shared line into a branch draft: offer to follow
   // rather than silently switching — the main doc is unaffected either
@@ -131,7 +136,8 @@ trait WorkbenchSync extends WorkbenchDocs {
   private def sessionUpdate(
       url: String,
       entries: Vector[ChangeInfo],
-      heads: Vector[String]): Unit =
+      heads: Vector[String]): Unit = {
+    dom.console.log(s"[sync] sessionUpdate url=$url entries=${entries.size} open=${workspace.openUrl.contains(url)}")
     if (workspace.openUrl.contains(url)) {
       sessions.get(url).foreach { session =>
         Outline.parse(session.text) match {
@@ -154,6 +160,7 @@ trait WorkbenchSync extends WorkbenchDocs {
         }
       }
     }
+  }
 
   private def shortActor(actor: String): String =
     s"actor-${actor.take(8)}"

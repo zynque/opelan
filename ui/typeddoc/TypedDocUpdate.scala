@@ -18,14 +18,17 @@ object TypedDocUpdate {
       // emit no DocChanged echo: the owner already knows, and the echo
       // would feed back into the session as a local text.
       case SyncHistory(d, h) =>
+        // Only bump the epoch when the text actually changed — a push
+        // echoing our own edit would remount the text cell mid-typing.
+        val t = DocText.render(d)
         Update(m.copy(
           doc = d,
           pushedDoc = d,
           pushedSelect = None,
           pushedMergeLabel = None,
           pushedHistory = Some(h),
-          text = DocText.render(d),
-          textEpoch = m.textEpoch + 1,
+          text = t,
+          textEpoch = m.textEpoch + (if (t == m.text) 0 else 1),
           status = "Synced"))
       case RequestDoc    => Update(m, Vector(DocChanged(m.doc)))
       case LoadExprSample =>

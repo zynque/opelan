@@ -64,15 +64,21 @@ class DocSession(
   // stack (SessionUndo) so Ctrl+Z retracts it.
   def localText(text: String): Unit =
     if (doc != null && text != lastText) {
+      org.scalajs.dom.console.log(
+        s"[session] localText apply lines=${text.count(_ == '\n') + 1}")
       doc = Automerge.setText(doc, text, name)
       pushedLocalChange()
       publish()
     }
+    else org.scalajs.dom.console.log(
+      s"[session] localText skipped doc=${doc != null} same=${text == lastText}")
 
   // Shared by localText and undo/redo: every change the session writes
   // updates lastText, persists, reports history, and syncs to peers.
   protected def publish(): Unit = {
     lastText = Automerge.textOf(doc)
+    org.scalajs.dom.console.log(
+      s"[session] publish peers=${peers.size} changes=${Automerge.changeCount(doc)}")
     onPersist(Automerge.save(doc))
     emitUpdate()
     peers.keys.foreach(sendSync)

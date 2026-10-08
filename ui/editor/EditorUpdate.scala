@@ -21,7 +21,16 @@ object EditorUpdate {
       case StartEdit(id)    => EditorSession.startEdit(m, id)
       case EditSelected     => EditorSession.editSelected(m)
       case CommitEdit(text) => EditorSession.commitEdit(m, text)
-      case CancelEdit       => Update(m.copy(editingId = None))
+      case DraftEdit(text)  =>
+        Update(m.copy(
+          pendingInsert = m.pendingInsert.map(_.copy(draft = text))))
+      case CancelEdit =>
+        val sel =
+          if (m.selectedId.contains(EditorModel.PendingId))
+            m.pendingInsert.map(_.anchorId)
+          else m.selectedId
+        Update(m.copy(
+          editingId = None, pendingInsert = None, selectedId = sel))
       case Remove           => EditorClip.remove(m)
       case Cut              => EditorClip.cut(m)
       case Copy             => EditorClip.copy(m)
@@ -63,6 +72,8 @@ object EditorUpdate {
         val nm = extra(EditorHistory.record(m, d, msg).copy(
           selectedId = selectAfter.orElse(m.selectedId),
           status = msg))
+        org.scalajs.dom.console.log(
+          s"[editor] applyEdit $msg syncedHead=${m.syncedHead} versionId=${m.versionId}")
         if (m.syncedHead.exists(_ != m.versionId))
           Update(nm, Vector(
             BranchRequested(d), Status("Editing old version — branching")))

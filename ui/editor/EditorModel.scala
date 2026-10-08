@@ -3,6 +3,17 @@ package opelan.ui.editor
 import opelan.foundation.document._
 import opelan.foundation.version._
 
+// Where a pending (not yet committed) insert will land. The phantom node
+// doesn't exist in `doc` — it materializes, with its initial text, as a
+// single history entry when the edit box commits.
+//
+// `parentPos` is the parent's index in the pre-order traversal (flatIds),
+// not its node id: a synced reparse reassigns ids, but a node at the same
+// outline position is overwhelmingly the same node, so the phantom row
+// lands correctly across pushes.
+case class PendingInsert(
+    parentPos: Int, index: Int, anchorId: Int, draft: String = "")
+
 // The complete editor state — a pure value, so the update function is
 // testable and history operates on immutable documents.
 //
@@ -21,6 +32,9 @@ case class EditorModel(
     // Some(headId) marks synced mode; `versionId` differing from it means
     // the user is browsing a checked-out version. None for unsynced docs.
     syncedHead: Option[Int] = None,
+    // An open insert box awaiting its initial text. The phantom row
+    // carries the sentinel PendingId, never a real node id.
+    pendingInsert: Option[PendingInsert] = None,
     status: String = "Ready") {
 
   // The node an operation applies to when nothing is explicitly selected.
@@ -31,9 +45,36 @@ case class EditorModel(
     (id, depth) :: doc.childrenOf(id).flatMap(cid => rowsFrom(cid, depth + 1))
 
   def flatIds: List[Int] = rowsFrom(doc.rootId).map(_._1)
+
+  // Outline rows for the view: the document's pre-order traversal plus a
+  // phantom row for a pending insert spliced at its target position.
+  def outlineRows: List[(Int, Int)] = {
+    val base = rowsFrom(doc.rootId)
+    pendingInsert match {
+      case Some(p) if p.parentPos < base.length =>
+        var pos = p.parentPos + 1
+        doc.childrenOf(base(p.parentPos)._1).take(p.index).foreach { k =>
+          pos += rowsFrom(k).length
+        }
+        base.patch(
+          pos, List((EditorModel.PendingId, base(p.parentPos)._2 + 1)), 0)
+      case _ => base
+    }
+  }
 }
 
 object EditorModel {
+  // Id of a pending insert's phantom row. `nodes.lift(-1)` is always
+  // empty, so no document can ever contain it.
+  val PendingId = -1
+
+  // Pre-order ids of a document — like rowsFrom/flatIds on the model but
+  // for a bare document (e.g. a pushed one pending resolution).
+  def flatIdsOf(d: Document[NodeData]): List[Int] = {
+    def go(id: Int): List[Int] = id :: d.childrenOf(id).flatMap(go)
+    if (d.getNode(d.rootId).isDefined) go(d.rootId) else Nil
+  }
+
   // Fresh editor state over a loaded document: history starts at a single
   // root version holding it.
   def forDocument(
@@ -62,6 +103,9 @@ enum EditorInput {
   case EditSelected
   case CommitEdit(text: String)
   case CancelEdit
+  // Keystrokes in a pending insert's box — tracked so the phantom row can
+  // restore its text if the DOM input is rebuilt by a re-render.
+  case DraftEdit(text: String)
   // clipboard
   case Remove
   case Cut

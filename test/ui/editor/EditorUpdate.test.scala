@@ -12,12 +12,58 @@ class EditorUpdateSuite extends munit.FunSuite {
     assertEquals(m.selectedId, Some(m.doc.rootId))
   }
 
-  test("insert child adds a node and enters edit mode") {
+  // An InsertChild committed with text — the pending node materializes.
+  private def insertCommitted(m: EditorModel, text: String = "x"): EditorModel =
+    EditorUpdate(
+      EditorUpdate(m, EditorInput.InsertChild).state,
+      EditorInput.CommitEdit(text)).state
+
+  test("insert child opens a phantom edit box without touching the document") {
     val m = init
     val u = EditorUpdate(m, EditorInput.InsertChild)
+    assertEquals(u.state.doc, m.doc)
+    assertEquals(u.state.history, m.history)
+    assertEquals(u.state.editingId, Some(EditorModel.PendingId))
+    assert(u.state.pendingInsert.isDefined)
+    assert(u.state.outlineRows.size == m.flatIds.size + 1)
+    assert(u.out.forall(o => !o.isInstanceOf[EditorOutput.DocChanged]))
+  }
+
+  test("committing a pending insert creates the named node as one event") {
+    val m = init
+    val pending = EditorUpdate(m, EditorInput.InsertChild).state
+    val u = EditorUpdate(pending, EditorInput.CommitEdit("intro"))
+    val newId = u.state.doc.nodes.length - 1
     assertEquals(u.state.doc.nodes.length, m.doc.nodes.length + 1)
-    assertEquals(u.state.editingId, Some(m.doc.nodes.length))
+    assertEquals(
+      u.state.doc.getNode(newId).map(_.data),
+      Some(NodeData.StringData("intro")))
+    assertEquals(u.state.editingId, None)
+    assertEquals(u.state.pendingInsert, None)
+    assertEquals(u.state.selectedId, Some(newId))
+    assertEquals(u.state.history.nodes.length, m.history.nodes.length + 1)
     assert(u.out.exists(_.isInstanceOf[EditorOutput.DocChanged]))
+  }
+
+  test("an empty commit abandons a pending insert") {
+    val m = init
+    val pending = EditorUpdate(m, EditorInput.InsertChild).state
+    val u = EditorUpdate(pending, EditorInput.CommitEdit(""))
+    assertEquals(u.state.doc, m.doc)
+    assertEquals(u.state.editingId, None)
+    assertEquals(u.state.pendingInsert, None)
+    assertEquals(u.state.history.nodes.length, m.history.nodes.length)
+    assert(u.out.forall(o => !o.isInstanceOf[EditorOutput.DocChanged]))
+  }
+
+  test("escape cancels a pending insert and restores selection") {
+    val m = init
+    val pending = EditorUpdate(m, EditorInput.InsertChild).state
+    val u = EditorUpdate(pending, EditorInput.CancelEdit)
+    assertEquals(u.state.doc, m.doc)
+    assertEquals(u.state.editingId, None)
+    assertEquals(u.state.pendingInsert, None)
+    assertEquals(u.state.selectedId, Some(m.doc.rootId))
   }
 
   test("move selection walks the outline in pre-order") {
@@ -48,15 +94,15 @@ class EditorUpdateSuite extends munit.FunSuite {
 
   test("undo restores the previous document") {
     val m0 = init
-    val m1 = EditorUpdate(m0, EditorInput.InsertChild).state
-    val u = EditorUpdate(m1.copy(editingId = None), EditorInput.Undo)
+    val m1 = insertCommitted(m0)
+    val u = EditorUpdate(m1, EditorInput.Undo)
     assert(u.state.doc == m0.doc)
   }
 
   test("redo descends to the most recent version") {
     val m0 = init
-    val m1 = EditorUpdate(m0, EditorInput.InsertChild).state
-    val m2 = EditorUpdate(m1.copy(editingId = None), EditorInput.Undo).state
+    val m1 = insertCommitted(m0)
+    val m2 = EditorUpdate(m1, EditorInput.Undo).state
     val u = EditorUpdate(m2, EditorInput.Redo)
     assert(u.state.doc == m1.doc)
     assertEquals(u.state.versionId, m1.versionId)
@@ -64,9 +110,9 @@ class EditorUpdateSuite extends munit.FunSuite {
 
   test("editing after undo branches instead of truncating history") {
     val m0 = init
-    val m1 = EditorUpdate(m0, EditorInput.InsertChild).state
-    val m2 = EditorUpdate(m1.copy(editingId = None), EditorInput.Undo).state
-    val m3 = EditorUpdate(m2.copy(editingId = None, selectedId = None), EditorInput.InsertChild).state
+    val m1 = insertCommitted(m0)
+    val m2 = EditorUpdate(m1, EditorInput.Undo).state
+    val m3 = insertCommitted(m2.copy(selectedId = None))
     val siblings = m3.history.childrenOf(m0.versionId)
     assertEquals(siblings.length, 2)
     // the old branch survives and is reachable via GoToVersion
@@ -76,8 +122,8 @@ class EditorUpdateSuite extends munit.FunSuite {
 
   test("go to version jumps to an arbitrary version") {
     val m0 = init
-    val m1 = EditorUpdate(m0, EditorInput.InsertChild).state
-    val u = EditorUpdate(m1.copy(editingId = None), EditorInput.GoToVersion(m0.versionId))
+    val m1 = insertCommitted(m0)
+    val u = EditorUpdate(m1, EditorInput.GoToVersion(m0.versionId))
     assert(u.state.doc == m0.doc)
     assertEquals(u.state.versionId, m0.versionId)
   }
@@ -118,7 +164,7 @@ class EditorUpdateSuite extends munit.FunSuite {
   }
 
   test("a merged sync records a version instead of resetting history") {
-    val m1 = EditorUpdate(init, EditorInput.InsertChild).state
+    val m1 = insertCommitted(init)
     val d = Build.buildDocument(
       DetachedNode(NodeData.StringData("r"), List(DetachedNode.leaf(NodeData.IntData(7)))))
     val m2 = EditorUpdate(
@@ -142,7 +188,7 @@ class EditorUpdateSuite extends munit.FunSuite {
   }
 
   test("a non-merge sync still restarts history") {
-    val m1 = EditorUpdate(init, EditorInput.InsertChild).state
+    val m1 = insertCommitted(init)
     val d: Document[NodeData] =
       Build.buildDocument(DetachedNode.leaf(NodeData.IntData(3)))
     val u = EditorUpdate(m1.copy(editingId = None), EditorInput.SyncDocument(d))
@@ -187,9 +233,8 @@ class EditorUpdateSuite extends munit.FunSuite {
 
   test("navigation emits DocViewed, never DocChanged") {
     val m0 = init
-    val m1 = EditorUpdate(m0, EditorInput.InsertChild).state
-    val u = EditorUpdate(
-      m1.copy(editingId = None), EditorInput.GoToVersion(m0.versionId))
+    val m1 = insertCommitted(m0)
+    val u = EditorUpdate(m1, EditorInput.GoToVersion(m0.versionId))
     assert(u.out.exists(_.isInstanceOf[EditorOutput.DocViewed]))
     assert(u.out.forall(o => !o.isInstanceOf[EditorOutput.DocChanged]))
   }
@@ -225,14 +270,18 @@ class EditorUpdateSuite extends munit.FunSuite {
       Vector("h3"))
     val m = EditorUpdate(init, EditorInput.SyncDocument(d2, history = Some(h))).state
     val checked = EditorUpdate(m, EditorInput.GoToVersion(1)).state
-    val u = EditorUpdate(
+    // opening the insert box is not yet an edit — the branch request
+    // comes when the pending node's text is committed
+    val pending = EditorUpdate(
       checked.copy(selectedId = None), EditorInput.InsertChild)
+    assert(pending.out.forall(o => !o.isInstanceOf[EditorOutput.BranchRequested]))
+    assert(pending.out.forall(o => !o.isInstanceOf[EditorOutput.DocChanged]))
+    val u = EditorUpdate(pending.state, EditorInput.CommitEdit("x"))
     assert(u.out.exists(_.isInstanceOf[EditorOutput.BranchRequested]))
     assert(u.out.forall(o => !o.isInstanceOf[EditorOutput.DocChanged]))
     // while at the head, edits still flow as DocChanged
-    val atHead = EditorUpdate(
-      m.copy(selectedId = None), EditorInput.InsertChild)
-    assert(atHead.out.exists(_.isInstanceOf[EditorOutput.DocChanged]))
+    val atHead = insertCommitted(m.copy(selectedId = None))
+    assert(atHead.doc.nodes.length == m.doc.nodes.length + 1)
   }
 
   test("a browsing pin survives incoming synced pushes") {
@@ -257,6 +306,41 @@ class EditorUpdateSuite extends munit.FunSuite {
     assert(u.out.exists(_.isInstanceOf[EditorOutput.DocViewed]))
   }
 
+  test("a synced echo of a local edit keeps the live doc and selection") {
+    val m0 = init
+    val m1 = insertCommitted(m0)
+    val newId = m1.doc.nodes.length - 1
+    // the session round-trips the outline text — reparsing reassigns node
+    // ids, so the inserted node no longer sits at `newId` in the pushed doc
+    val pushed = Outline.parse(Outline.render(m1.doc)).get
+    assert(pushed != m1.doc)
+    val h = SyncedHistory(
+      Vector(SyncedEntry("h1", Vector(), "amber-fox", pushed)),
+      Vector("h1"))
+    val u = EditorUpdate(m1, EditorInput.SyncDocument(pushed, history = Some(h)))
+    // the editor keeps its own doc (stable ids), so the new node stays
+    // selected instead of the highlight jumping to a wrong node
+    assertEquals(u.state.doc, m1.doc)
+    assertEquals(u.state.selectedId, Some(newId))
+  }
+
+  test("a synced push keeps an open pending insert box") {
+    val m0 = init
+    val pending = EditorUpdate(m0, EditorInput.InsertChild).state
+    // a remote change arrives while the phantom box is open
+    val d = Build.buildDocument(
+      DetachedNode(NodeData.StringData("r"),
+        List(DetachedNode.leaf(NodeData.IntData(1)))))
+    val h = SyncedHistory(
+      Vector(SyncedEntry("h1", Vector(), "calm-otter", d)), Vector("h1"))
+    val u = EditorUpdate(pending, EditorInput.SyncDocument(d, history = Some(h)))
+    assertEquals(u.state.editingId, Some(EditorModel.PendingId))
+    assert(u.state.pendingInsert.isDefined)
+    // and the phantom can still commit into the pushed document
+    val c = EditorUpdate(u.state, EditorInput.CommitEdit("kept"))
+    assert(c.state.doc.nodes.length == d.nodes.length + 1)
+  }
+
   test("a synced history push drops selection when the node is gone") {
     val m = init
     val gone = m.doc.childrenOf(m.doc.rootId).head
@@ -278,6 +362,64 @@ class EditorUpdateSuite extends munit.FunSuite {
       m.copy(selectedId = Some(gone)),
       EditorInput.SyncDocument(d, mergeLabel = Some("Remote edit")))
     assertEquals(u.state.selectedId, None)
+  }
+
+  // The full local commit → pane → session → peer pipeline, the same
+  // hops a browser tab takes: commit emits DocChanged, the pane forwards
+  // it, the session writes the render into Automerge — broadcast and
+  // persist follow from publish().
+  test("a committed pending insert reaches a synced peer and persists") {
+    import opelan.collaboration.DocSession
+    import opelan.collaboration.backends.{SyncEnvelope, SyncTransport}
+    import opelan.ui.typeddoc.{TypedDocInput, TypedDocOutput, TypedDocUpdate}
+
+    class Pipe(val peerId: String) extends SyncTransport {
+      var handler: SyncEnvelope => Unit = _ => ()
+      var others: List[Pipe] = Nil
+      def send(e: SyncEnvelope): Unit = others.foreach(_.handler(e))
+      def subscribe(h: SyncEnvelope => Unit): Unit = handler = h
+      def close(): Unit = ()
+    }
+    val (ta, tb) = (new Pipe("A"), new Pipe("B"))
+    ta.others = List(tb); tb.others = List(ta)
+    def actor(c: String): String = c * 64
+
+    val m0 = init
+    val h0 = SyncedHistory(
+      Vector(SyncedEntry("h1", Vector(), "init", m0.doc)), Vector("h1"))
+    // editor sees the synced push (marks syncedHead)
+    var m = EditorUpdate(
+      m0, EditorInput.SyncDocument(m0.doc, history = Some(h0))).state
+    // deferred insert committed with its initial text
+    m = EditorUpdate(m, EditorInput.InsertChild).state
+    val committed = EditorUpdate(m, EditorInput.CommitEdit("intro")).out
+      .collect { case EditorOutput.DocChanged(d) => d }.headOption
+    assert(committed.isDefined)
+
+    // the pane forwards DocChanged (it's not the pushed doc)
+    val pane = TypedDocUpdate(
+      TypedDocUpdate(
+        opelan.ui.typeddoc.TypedDoc.init,
+        TypedDocInput.SyncHistory(m0.doc, h0)).state,
+      TypedDocInput.FromEditor(EditorOutput.DocChanged(committed.get)))
+    val paneDoc = pane.out
+      .collect { case TypedDocOutput.DocChanged(d) => d }.headOption
+    assertEquals(paneDoc, Some(committed.get))
+
+    // the session accepts it — it must differ from lastText
+    var persisted = false
+    var remoteText = ""
+    var b: DocSession = null
+    val a = new DocSession("u", ta, actor("a"), "amber-fox",
+      (_, _) => (), _ => persisted = true)
+    b = new DocSession("u", tb, actor("b"), "calm-otter",
+      (_, _) => remoteText = b.text, _ => ())
+    a.attach(Outline.render(m0.doc), None)
+    b.attach(Outline.render(m0.doc), None)
+    a.localText(Outline.render(paneDoc.get))
+    assert(persisted)
+    assertEquals(remoteText, a.text)
+    assert(remoteText.contains("intro"))
   }
 
   test("cut then paste reattaches the subtree") {

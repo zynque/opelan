@@ -74,6 +74,7 @@ object EditorHistory {
           doc = d,
           versionId = versionId,
           editingId = None,
+          pendingInsert = None,
           detachedNodeId = None,
           selectedId = m.selectedId.filter(id => d.getNode(id).isDefined),
           status = msg)

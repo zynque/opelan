@@ -19,7 +19,7 @@ object EditorView {
       statusBar(m))
 
   private def outline(m: EditorModel): View[EditorInput] = {
-    val rows = m.rowsFrom(m.doc.rootId).map { case (id, depth) =>
+    val rows = m.outlineRows.map { case (id, depth) =>
       EditorRow.row(m, id, depth)
     }
     els("div",

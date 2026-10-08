@@ -11,7 +11,9 @@ import EditorInput._
 object EditorRow {
 
   def row(m: EditorModel, id: Int, depth: Int): View[EditorInput] = {
-    val node = m.doc.getNode(id).get
+    // The pending-insert phantom row has no node in the document — it
+    // renders as an empty one, always in edit mode.
+    val node = m.doc.getNode(id).getOrElse(PendingNode)
     val selected = m.selectedId.contains(id)
     View.Elem("div",
       Map(
@@ -25,12 +27,34 @@ object EditorRow {
       Vector(idLabel(id), content(m, id, node)))
   }
 
+  private val PendingNode =
+    Node[NodeData](0, NodeData.StringData(""), List.empty, None)
+
   private def idLabel(id: Int): View[EditorInput] =
     el("span", style("color: #bbb; margin-right: 8px; font-size: 11px;"))(
-      text(s"#$id"))
+      text(if (id == EditorModel.PendingId) "new" else s"#$id"))
 
   private def content(m: EditorModel, id: Int, node: Node[NodeData]): View[EditorInput] =
-    if (m.editingId.contains(id)) editInput(node) else dataLabel(node)
+    if (id == EditorModel.PendingId) pendingInput(m)
+    else if (m.editingId.contains(id)) editInput(node)
+    else dataLabel(node)
+
+  // The phantom row's box: its text is tracked in the model (DraftEdit)
+  // so a remote push that reorders rows — rebuilding this element — can't
+  // lose what was typed.
+  private def pendingInput(m: EditorModel): View[EditorInput] =
+    View.Elem("input",
+      Map(
+        "id" -> "doc-edit-input",
+        "value" -> m.pendingInsert.map(_.draft).getOrElse(""),
+        "style" -> "font-family: Consolas, monospace; font-size: 14px; width: 40ch;",
+        "data-focus" -> "true"),
+      events(
+        onEventOpt("keydown")(keyDown),
+        onEventOpt("input")(e => Some(DraftEdit(valueOf(e)))),
+        onEventOpt("blur")(blurCommit),
+        onEventOpt("click") { e => e.stopPropagation(); None }),
+      Vector.empty)
 
   private def dataLabel(node: Node[NodeData]): View[EditorInput] = {
     val css = node.data match {
@@ -50,7 +74,7 @@ object EditorRow {
         "data-focus" -> "true"),
       events(
         onEventOpt("keydown")(keyDown),
-        onEventOpt("blur")(e => Some(CommitEdit(valueOf(e)))),
+        onEventOpt("blur")(blurCommit),
         onEventOpt("click") { e => e.stopPropagation(); None }),
       Vector.empty)
 
@@ -64,6 +88,14 @@ object EditorRow {
       case _        => None
     }
   }
+
+  // A blur delivered while the input is leaving the document is DOM
+  // teardown (a patch rebuilt the row), not the user moving focus away —
+  // committing it would discard the edit, so only live blurs count.
+  private def blurCommit(e: dom.Event): Option[EditorInput] =
+    if (e.target.asInstanceOf[dom.Element].isConnected)
+      Some(CommitEdit(valueOf(e)))
+    else None
 
   private def valueOf(e: dom.Event): String =
     e.target.asInstanceOf[dom.HTMLInputElement].value

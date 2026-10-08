@@ -108,8 +108,11 @@ implementation plan.
   clobbering a span a collaborator edited inside); and editing a
   checked-out version emits `BranchRequested` — the workbench forks a
   branch draft on its own channel and peers get a confirm-prompt to
-  rejoin. Remaining: remote application is still a whole-text reparse
-  (finer-grained application belongs with the span-map work); text-cell
+  rejoin. A sync push that echoes our own edit (same outline text)
+  keeps the live document — a reparse reassigns node ids, which would
+  otherwise retarget selection/edit state onto wrong nodes. Remaining:
+  remote application is still a whole-text reparse (finer-grained
+  application belongs with the span-map work); text-cell
   edits while browsing still write to the main session (branch
   interception covers structural-editor edits); undo stacks are
   session-local and lost on resume; branch merge-back is manual (a

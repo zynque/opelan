@@ -34,7 +34,15 @@ object Reconcile {
     surplus.values.foreach(_.instance.destroy())
     val entries = ordered.result()
     parent.liveChildren = entries.map(e => e.key -> e).toMap
-    entries.foreach(e => mount.appendChild(e.instance.mount()))
+    // Only move a child when it's actually out of position: appendChild on
+    // an already-correct node still does a remove+insert, and reparenting
+    // a subtree containing the focused element can blur it (e.g. killing
+    // the edit input mid-typing).
+    entries.zipWithIndex.foreach { case (e, i) =>
+      val node = e.instance.mount()
+      if (i >= mount.childNodes.length || mount.childNodes(i) != node)
+        mount.insertBefore(node, mount.childNodes(i))
+    }
   }
 
   private def live(

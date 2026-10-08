@@ -10,31 +10,39 @@ import EditorUpdate.{applyEdit, status}
 // new, load-sample, and compact commands.
 object EditorDocOps {
 
+  // Structural inserts don't create the node immediately: a phantom row
+  // opens in edit mode and the node materializes — one history entry, one
+  // sync change — only when its initial text is committed (see
+  // EditorSession.commitPending). Nothing reaches the document, history,
+  // or peers before that.
   def insertSibling(m: EditorModel): Update[EditorModel, EditorOutput] =
     m.doc.parentOf(m.targetId) match {
       case Some(parentId) =>
         val index = m.doc.childrenOf(parentId).indexOf(m.targetId) + 1
-        val newId = m.doc.nodes.length
-        applyEdit(
-          m,
-          Edit.insertNode(DetachedNode.leaf(s("")), parentId, index, m.doc),
-          "Inserted sibling",
-          Some(newId),
-          _.copy(editingId = Some(newId)))
+        beginInsert(
+          m, PendingInsert(m.flatIds.indexOf(parentId), index, m.targetId))
       case None =>
         insertChild(m) // the root has no siblings; insert a child instead
     }
 
-  def insertChild(m: EditorModel): Update[EditorModel, EditorOutput] = {
-    val newId = m.doc.nodes.length
-    applyEdit(
-      m,
-      Edit.insertNode(
-        DetachedNode.leaf(s("")), m.targetId, m.doc.childrenOf(m.targetId).length, m.doc),
-      "Inserted child",
-      Some(newId),
-      _.copy(editingId = Some(newId)))
-  }
+  def insertChild(m: EditorModel): Update[EditorModel, EditorOutput] =
+    if (m.doc.getNode(m.targetId).isEmpty) status(m, "No node selected")
+    else
+      beginInsert(m, PendingInsert(
+        m.flatIds.indexOf(m.targetId),
+        m.doc.childrenOf(m.targetId).length,
+        m.targetId))
+
+  private def beginInsert(
+      m: EditorModel, p: PendingInsert): Update[EditorModel, EditorOutput] =
+    if (m.editingId.isDefined) Update(m)
+    else Update(
+      m.copy(
+        pendingInsert = Some(p),
+        editingId = Some(EditorModel.PendingId),
+        selectedId = Some(EditorModel.PendingId),
+        status = "New node"),
+      Vector(Status("New node")))
 
   def indent(m: EditorModel): Update[EditorModel, EditorOutput] =
     m.selectedId match {
