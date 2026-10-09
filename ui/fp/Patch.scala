@@ -35,8 +35,11 @@ private def patchNode[I](
       ctx.mountPoint = Some(node.asInstanceOf[dom.Element])
       node
 
-    // Same key: the mounted widget owns its DOM; leave it alone.
-    case (View.Managed(k1, _), View.Managed(k2, _)) if k1 == k2 => node
+    // Same key: the mounted widget owns its contents; the wrapper's own
+    // attributes still patch (e.g. hiding the slot with display:none).
+    case (View.Managed(k1, a1, _), View.Managed(k2, a2, _)) if k1 == k2 =>
+      patchAttrs(node.asInstanceOf[dom.Element], a1, a2)
+      node
 
     case (View.Elem(t1, a1, _, c1), View.Elem(t2, a2, e2, c2)) if t1 == t2 =>
       val el = node.asInstanceOf[dom.Element]

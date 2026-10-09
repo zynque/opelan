@@ -1,11 +1,11 @@
-package opelan.ui.editor
+package opelan.ui.workbench
 
 import opelan.foundation.document._
 
 // The workbench's document workspace — a pure value so the open/save/
 // follow-ref decisions are unit-testable. `store` is the versioned
 // document set; `openUrl`/`openVersion`/`doc` track what the pane is
-// showing. DOM and IndexedDB effects stay in Workbench.
+// showing. DOM and IndexedDB effects stay in WorkbenchShell.
 case class Workspace(
     store: Store = Store.empty,
     openUrl: Option[String] = None,

@@ -45,7 +45,8 @@ object Dsl {
 
   // An imperative widget: mount runs once with the host element and this
   // component's emit; the node is kept while `key` is stable and rebuilt
-  // (re-mounted) when it changes.
-  def managed[I](key: String)(mount: (dom.Element, I => Unit) => Unit): View[I] =
-    View.Managed(key, mount)
+  // (re-mounted) when it changes. `attrs` style the wrapper element.
+  def managed[I](key: String, attrs: Map[String, String] = Map.empty)(
+      mount: (dom.Element, I => Unit) => Unit): View[I] =
+    View.Managed(key, attrs, mount)
 }

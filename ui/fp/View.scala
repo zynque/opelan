@@ -19,6 +19,10 @@ enum View[+I] {
   // An imperative widget mounted under a managed key: Render calls
   // mount(el, emit) once when the node is created; Patch keeps the node
   // while the key is stable and rebuilds it when the key changes.
-  // For widgets like CodeMirror that own their own DOM.
-  case Managed[I](key: String, mount: (dom.Element, I => Unit) => Unit) extends View[I]
+  // For widgets like CodeMirror that own their own DOM. `attrs` style the
+  // wrapper element the widget mounts into.
+  case Managed[I](
+    key: String,
+    attrs: Map[String, String] = Map.empty,
+    mount: (dom.Element, I => Unit) => Unit) extends View[I]
 }

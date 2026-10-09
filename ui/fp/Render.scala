@@ -26,8 +26,9 @@ def renderView[I](view: View[I], emit: I => Unit, ctx: RenderCtx): dom.Node = vi
     ctx.mountPoint = Some(el)
     el
 
-  case View.Managed(_, mount) =>
+  case View.Managed(_, attrs, mount) =>
     val el = dom.document.createElement("div").asInstanceOf[dom.Element]
+    attrs.foreach((k, v) => el.setAttribute(k, v))
     mount(el, emit)
     el
 
