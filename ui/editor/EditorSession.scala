@@ -74,11 +74,6 @@ private def commitPending(
           else m.selectedId))
   }
 
-def loadDocument(d: Document[NodeData]): Update[EditorModel, EditorOutput] =
-  Update(
-    EditorModel.forDocument(d, status = "Document loaded"),
-    Vector(DocChanged(d), Status("Document loaded")))
-
 // Parent-driven sync: replace the document without reporting it back.
 // `select` optionally picks a node in the new document — ignored if the
 // id doesn't exist there.

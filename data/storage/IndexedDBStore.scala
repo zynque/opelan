@@ -45,9 +45,7 @@ class IndexedDBStore(dbName: String = "opelan-workbench", version: Int = 3) {
           }
         }
 
-        ensureStore("projects", "id")
         ensureStore("automerge_docs", "id")
-        ensureStore("settings", "key")
         ensureStore("documents", "key")
       }
     }
@@ -72,22 +70,11 @@ class IndexedDBStore(dbName: String = "opelan-workbench", version: Int = 3) {
     }
   }
 
-  def storeProject(project: js.Dynamic): Future[Unit] =
-    transact("projects", "readwrite", "Failed to store project")(_.put(project))(_ => ())
-
   // IndexedDB get() returns undefined for a missing key — Option() alone
   // only maps null to None, so check explicitly.
   private def optResult(result: js.Dynamic): Option[js.Dynamic] =
     if (result == null || js.isUndefined(result)) None
     else Some(result.asInstanceOf[js.Dynamic])
-
-  def getProject(id: String): Future[Option[js.Dynamic]] =
-    transact("projects", "readonly", "Failed to get project")(_.get(id))(
-      optResult)
-
-  def listProjects(): Future[List[js.Dynamic]] =
-    transact("projects", "readonly", "Failed to list projects")(_.getAll())(
-      _.asInstanceOf[js.Array[js.Dynamic]].toList)
 
   def storeAutomergeDoc(docId: String, document: js.Dynamic): Future[Unit] =
     transact("automerge_docs", "readwrite", "Failed to store Automerge document")(
@@ -110,14 +97,6 @@ class IndexedDBStore(dbName: String = "opelan-workbench", version: Int = 3) {
     transact("documents", "readonly", "Failed to list document records")(_.getAll())(
       _.asInstanceOf[js.Array[js.Dynamic]].toList)
 
-  def storeSetting(key: String, value: js.Any): Future[Unit] =
-    transact("settings", "readwrite", "Failed to store setting")(
-      _.put(js.Dynamic.literal("key" -> key, "value" -> value)))(_ => ())
-
-  def getSetting(key: String): Future[Option[js.Any]] =
-    transact("settings", "readonly", "Failed to get setting")(_.get(key))(
-      result => optResult(result).map(_.selectDynamic("value")))
-
   private def ensureInitialized(): Future[Unit] = {
     if (isInitialized) Future.successful(()) else initialize()
   }
@@ -135,14 +114,9 @@ object IndexedDBStore {
   private val store = new IndexedDBStore()
 
   def initialize(): Future[Unit] = store.initialize()
-  def storeProject(project: js.Dynamic): Future[Unit] = store.storeProject(project)
-  def getProject(id: String): Future[Option[js.Dynamic]] = store.getProject(id)
-  def listProjects(): Future[List[js.Dynamic]] = store.listProjects()
   def storeAutomergeDoc(docId: String, document: js.Dynamic): Future[Unit] = store.storeAutomergeDoc(docId, document)
   def getAutomergeDoc(docId: String): Future[Option[js.Dynamic]] = store.getAutomergeDoc(docId)
   def storeDocumentRecord(record: js.Dynamic): Future[Unit] = store.storeDocumentRecord(record)
   def listDocumentRecords(): Future[List[js.Dynamic]] = store.listDocumentRecords()
-  def storeSetting(key: String, value: js.Any): Future[Unit] = store.storeSetting(key, value)
-  def getSetting(key: String): Future[Option[js.Any]] = store.getSetting(key)
   def close(): Unit = store.close()
 }

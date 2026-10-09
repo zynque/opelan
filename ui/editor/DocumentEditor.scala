@@ -7,7 +7,7 @@ import opelan.ui.fp._
 // Document[NodeData], now as an fp component.
 //
 //   I: EditorInput  — one channel for everything (view events, keyboard,
-//                     parent-pushed commands like LoadDocument)
+//                     parent-pushed commands like SyncDocument)
 //   S: EditorModel  — a pure value (EditorUpdate.scala)
 //   O: EditorOutput — DocChanged / Status, interpreted by whoever mounts it
 //

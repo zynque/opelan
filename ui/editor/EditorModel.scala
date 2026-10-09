@@ -118,7 +118,6 @@ enum EditorInput {
   case GoToVersion(versionId: Int)
   // document-level commands
   case NewDocument
-  case LoadDocument(doc: Document[NodeData])
   // Load without echoing DocChanged/Status back to the parent — for
   // parents that push the document down themselves and already know it.
   // `select` selects a node after the load (e.g. a followed ref's target).

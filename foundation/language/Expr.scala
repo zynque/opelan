@@ -81,9 +81,9 @@ object Expr {
           case NodeData.IntData(v) if node.childIds.isEmpty => Right(Lit(v))
           case NodeData.GapData(t) => Right(Hole(t))
           case NodeData.StringData(AddTag) if node.childIds.length == 2 =>
-            binOp(nodeId, node.childIds, doc, Add.apply)
+            binOp(node.childIds, doc, Add.apply)
           case NodeData.StringData(SubTag) if node.childIds.length == 2 =>
-            binOp(nodeId, node.childIds, doc, Sub.apply)
+            binOp(node.childIds, doc, Sub.apply)
           case other => Right(Hole(holeText(other)))
         }
     }
@@ -97,7 +97,6 @@ object Expr {
 
   // Arity is guaranteed by the caller's case guard.
   private def binOp(
-      nodeId: Int,
       childIds: List[Int],
       doc: Document[NodeData],
       op: (Expr, Expr) => Expr): Either[String, Expr] =

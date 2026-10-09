@@ -1,8 +1,5 @@
 package opelan
 
-import scala.scalajs.js
-import scala.scalajs.js.annotation.JSName
-import org.scalajs.dom
 import opelan.ui.editor.Workbench
 
 // Main entry point for the Opelan Language Workbench

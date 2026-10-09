@@ -37,7 +37,6 @@ def editorUpdate(m: EditorModel, input: EditorInput): Update[EditorModel, Editor
     case Redo             => redo(m)
     case GoToVersion(v)   => goTo(m, v, s"Version #$v")
     case NewDocument      => newDocument()
-    case LoadDocument(d)  => loadDocument(d)
     case SyncDocument(d, sel, ml, h) =>
       syncDocument(m, d, sel, ml, h)
     case EditorInput.FollowRef => followRef(m)
@@ -70,8 +69,6 @@ private[editor] def applyEdit(
       val nm = extra(record(m, d, msg).copy(
         selectedId = selectAfter.orElse(m.selectedId),
         status = msg))
-      org.scalajs.dom.console.log(
-        s"[editor] applyEdit $msg syncedHead=${m.syncedHead} versionId=${m.versionId}")
       if (m.syncedHead.exists(_ != m.versionId))
         Update(nm, Vector(
           BranchRequested(d), Status("Editing old version — branching")))
