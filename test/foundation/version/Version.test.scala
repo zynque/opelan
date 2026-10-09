@@ -1,11 +1,10 @@
 package opelan.foundation.version
 
 import opelan.foundation.document._
-import VersionTree._
 
 class VersionSuite extends munit.FunSuite {
 
-  val initialVersionDoc = Build.beginDocument(Version.buildRootVersionNode("0a"))
+  val initialVersionDoc = beginDocument(Version.buildRootVersionNode("0a"))
 
   //       0("0a")
   //      /        \
@@ -13,22 +12,22 @@ class VersionSuite extends munit.FunSuite {
   //            /      \
   //       4("2b")    3("2a")   -- children prepended: insert index 0
   val largerExample = for {
-    d1 <- update(0, "1a", initialVersionDoc)
-    d2 <- update(0, "1b", d1)
-    d3 <- update(2, "2a", d2)
-    d4 <- update(2, "2b", d3)
+    d1 <- appendVersion(0, "1a", initialVersionDoc)
+    d2 <- appendVersion(0, "1b", d1)
+    d3 <- appendVersion(2, "2a", d2)
+    d4 <- appendVersion(2, "2b", d3)
   } yield d4
 
   test("update extends branch with new version node") {
-    val actual = update(0, "1a", initialVersionDoc)
+    val actual = appendVersion(0, "1a", initialVersionDoc)
       .flatMap(_.getNode(1).toRight("node not found"))
     assertEquals(actual, Right(Node(0, Version(None, "1a", Some(0)), Nil, Some(0))))
   }
 
   test("update adds new branch") {
     val actual = for {
-      d1 <- update(0, "1a", initialVersionDoc)
-      d2 <- update(1, "1b", d1)
+      d1 <- appendVersion(0, "1a", initialVersionDoc)
+      d2 <- appendVersion(1, "1b", d1)
       n2 <- d2.getNode(2).toRight("node not found")
     } yield n2
     assertEquals(actual, Right(Node(0, Version(None, "1b", Some(1)), Nil, Some(1))))
@@ -72,7 +71,7 @@ class VersionSuite extends munit.FunSuite {
   test("lsa of merged node is lsca of parents") {
     val res = for {
       d <- largerExample
-      m <- merge(1, 3, "3a", d)
+      m <- mergeVersions(1, 3, "3a", d)
       v <- getVersion(5, m).toRight("no version")
       lsa <- v.lsaNodeId.toRight("no lsa")
     } yield lsa

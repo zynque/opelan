@@ -5,9 +5,9 @@ import Detached._
 class StoreSuite extends munit.FunSuite {
 
   val docA: Document[NodeData] =
-    Build.buildDocument(n(s("doc A"), sl("x"), il(1)))
+    buildDocument(n(s("doc A"), sl("x"), il(1)))
   val docB: Document[NodeData] =
-    Build.buildDocument(n(s("doc B"), sl("y")))
+    buildDocument(n(s("doc B"), sl("y")))
 
   test("put appends a version and advances the head") {
     val (s1, v0) = Store.empty.put("opelan:docs/a", docA)

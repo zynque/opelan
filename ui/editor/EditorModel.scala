@@ -81,7 +81,7 @@ object EditorModel {
       d: Document[NodeData],
       selectedId: Option[Int] = None,
       status: String = "Ready"): EditorModel = {
-    val h = EditorHistory.initial(d)
+    val h = initialHistory(d)
     EditorModel(d, selectedId, None, h, h.rootId, status = status)
   }
 }

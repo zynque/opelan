@@ -4,7 +4,7 @@ import Expr._
 
 class ExprParseSuite extends munit.FunSuite {
 
-  private def parse(input: String): Expr = ExprParse.parse(input).expr
+  private def parse(input: String): Expr = parseExpr(input).expr
 
   test("parses literals and left-associative operator chains") {
     assertEquals(parse("42"), Lit(42))
@@ -57,9 +57,9 @@ class ExprParseSuite extends munit.FunSuite {
   }
 
   test("span map records every node's source range") {
-    val r = ExprParse.parse("1 + 23")
-    assertEquals(r.spans(Nil), ExprParse.Span(0, 6))
-    assertEquals(r.spans(List(0)), ExprParse.Span(0, 1))
-    assertEquals(r.spans(List(1)), ExprParse.Span(4, 6))
+    val r = parseExpr("1 + 23")
+    assertEquals(r.spans(Nil), ExprSpan(0, 6))
+    assertEquals(r.spans(List(0)), ExprSpan(0, 1))
+    assertEquals(r.spans(List(1)), ExprSpan(4, 6))
   }
 }

@@ -152,7 +152,7 @@ object EchoPane extends opelan.ui.fp.Component[EchoPane.Input, EditorOutput] {
 
   type State = EditorInput.SyncDocument
 
-  def init: State = EditorInput.SyncDocument(EditorSample.doc)
+  def init: State = EditorInput.SyncDocument(sampleDoc)
 
   def update(s: State, i: Input): Update[State, EditorOutput] =
     i match {
@@ -205,7 +205,7 @@ class EditorDomSuite extends munit.FunSuite {
     val h = opelan.ui.fp.Runtime.mount(
       container.asInstanceOf[dom.Element], EchoPane)
     // sync is already active: a history push established syncedHead
-    val d0 = EditorSample.doc
+    val d0 = sampleDoc
     val h0 = SyncedHistory(
       Vector(SyncedEntry("h1", Vector(), "init", d0)), Vector("h1"))
     h.send(EchoPane.Input.Push(
@@ -226,10 +226,10 @@ class EditorDomSuite extends munit.FunSuite {
     // a remote change pushed while the box is open must not close it:
     // the reparsed doc reassigns node ids and the parent refresh
     // reparents the editor subtree — neither may blur the input away
-    val remote = Edit.insertNode(
+    val remote = insertNode(
       DetachedNode.leaf(NodeData.StringData("peer")),
       d0.rootId, 0, d0).toOption.get
-    val pushed = Outline.parse(Outline.render(remote)).get
+    val pushed = parse(render(remote)).get
     val hist = SyncedHistory(
       Vector(SyncedEntry("h1", Vector(), "init", d0),
              SyncedEntry("h2", Vector("h1"), "calm-otter", pushed)),

@@ -1,6 +1,6 @@
 # Opelan Language Workbench
 
-I dream of a world where anyone can "look under the hood" of any program at the click of a button — then edit, tinker, and share their modifications, all without leaving the browser. A world where code takes the shape best suited to its domain — visual, textual, or a mix of both. A world where code is worth reading not just by machines or professional developers, but by anyone and everyone seeking to understand and improve the digital systems that shape our world. That is the next generation of open source development: a platform by all and for all.
+I dream of a world where anyone can "look under the hood" of any program at the click of a button — then edit, tinker, and share their modifications, all without leaving the browser. A world where code takes the shape best suited to its domain — visual, textual, or a mix of both. A world where code is worth reading not just by machines or professional developers, but by anyone and everyone seeking to understand and improve the digital systems that shape our world. This is the next generation of open source software development.
 
 This project is a step toward that vision — an experimental prototype exploring language workbench concepts (structured editing, polysyntactic views, typed holes, and local-first documents) built with Scala.js and CodeMirror. It draws inspiration from prior language workbench and projectional editing systems — MPS, OMeta, and many others — as well as ideas I've gathered over more than 30 years of tinkering and pondering.
 

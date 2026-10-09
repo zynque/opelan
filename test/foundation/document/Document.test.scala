@@ -10,10 +10,10 @@ class DocumentSuite extends munit.FunSuite {
   //                              /      \
   //                            d(2)   3(3)
   val detached = n(s("a"), sl("b"), il(2), n(s("c"), sl("d"), il(3)))
-  val document = Build.buildDocument(detached)
+  val document = buildDocument(detached)
 
   test("beginDocument creates a single root node") {
-    val doc = Build.beginDocument("data")
+    val doc = beginDocument("data")
     assertEquals(doc.getNode(0), Some(Node(0, "data", Nil, None)))
   }
 
@@ -55,13 +55,13 @@ class DocumentSuite extends munit.FunSuite {
   }
 
   test("validate reports no errors on a built document") {
-    assertEquals(Edit.validate(document), Nil)
+    assertEquals(validate(document), Nil)
   }
 
   test("validate detects a broken parent link") {
     val bad = document.copy(
       nodes = document.nodes.updated(2, document.nodes(2).copy(parentId = Some(5)))
     )
-    assert(Edit.validate(bad).nonEmpty)
+    assert(validate(bad).nonEmpty)
   }
 }

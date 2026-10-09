@@ -82,10 +82,10 @@ The substrate everything is built on — a direct port of olw-p4, extended:
   carries `version`, `data`, `childIds`, `parentId`. Pure, immutable, cheap to
   snapshot — which is what makes undo trivial.
 - **`DetachedNode[A]`** — an id-less tree used to construct content before
-  insertion. `Build.buildDocument` assigns ids post-order so each subtree
+  insertion. `buildDocument` assigns ids post-order so each subtree
   occupies a contiguous id range. The `Detached` object provides compact
   builder syntax (`n(s("a"), sl("b"), il(2))`).
-- **`Edit`** — pure edit ops returning `Either[String, Document[A]]`:
+- **`Edit.scala`** — pure edit ops returning `Either[String, Document[A]]`:
   `insertNode`, `cutNode` (unlinks; the node stays in the vector),
   `pasteNode` (re-attach, keeping identity), `moveNode` (atomic cut+paste
   with a cycle check), `extractSubtree`, `updateNodeData`,
@@ -115,7 +115,7 @@ The substrate everything is built on — a direct port of olw-p4, extended:
 Version history is itself a document: a `Document[Version[A]]` is a DAG in
 which each node has 0, 1, or 2 parents (the second via merge).
 
-- `VersionTree.update` appends a child version; `VersionTree.merge` creates a
+- `appendVersion` appends a child version; `mergeVersions` creates a
   merge node pointing at both parents.
 - Merge-base uses the **LSCA** (lowest single common ancestor) via a
   maintained **LSA** (lowest single ancestor) link per node — Fischer &
@@ -176,9 +176,9 @@ tree rather than fail (Hazel-inspired typed holes). The parser emits a
 foundation for mapping future text edits onto nodes instead of reparsing
 whole cells. `Expr.print` round-trips holes.
 
-**`DocText`** unifies the text surface: typed documents use their language's
-`parse`/`print` for the content cell; everything else falls back to
-`Outline`. `holeCount` feeds the status bar.
+**`DocText.scala`** unifies the text surface: typed documents use their
+language's `parse`/`print` for the content cell; everything else falls
+back to `Outline.scala`. `holeCount` feeds the status bar.
 
 ## 6. UI architecture
 
@@ -209,7 +209,7 @@ A small Elm/Tyrian-style framework (custom-built post-p3):
 
 An outliner-style structural editor for raw `Document[NodeData]`, built as an
 fp component and split per the one-concern-per-file convention
-(`EditorModel`, `EditorUpdate` dispatch, `EditorSession`,
+(`EditorModel`, `editorUpdate` dispatch, `EditorSession`,
 `EditorDocOps`, `EditorClip`, `EditorKeys`, `EditorView`, `EditorRow`,
 `EditorSample`). Keyboard-driven (Enter/Shift+Enter insert, Tab indent,
 F2/double-click inline edit, cut/copy/paste of subtrees, undo/redo over
@@ -220,7 +220,7 @@ rendered as a tree — dogfooding content.
 
 The workbench's typed-document pane, composing `DocumentEditor` as a child
 and adding view modes: **editor** (structural), **text** (a `Managed`
-CodeMirror cell bound to `DocText`), and **derived views** offered by the
+CodeMirror cell bound to `docText`/`applyDocText`), and **derived views** offered by the
 document's language (`print`, `eval`). Notable mechanics:
 
 - The editor child stays mounted in every mode (`display:none`), preserving
@@ -366,8 +366,8 @@ fall out of presence being broadcast state.
 - **`IndexedDBStore`** — Future-based access over four object stores
   (`projects`, `automerge_docs`, `settings`, `documents`) using
   `js.Dynamic` payloads, so the store stays agnostic about what it
-  persists. **`DocumentRepo`** maps the `documents` store to the `Store`:
-  one record per `url@version` holding `Outline.render` text; `loadAll`
+  persists. **`DocumentRepo.scala`** maps the `documents` store to the
+  `Store`: one record per `url@version` holding `render` text; `loadAll`
   re-parses every record into a `Store` and derives heads by taking the
   max version per URL — no separate index to keep consistent.
 - **Automerge** — the operational layer is real: `DocSession` holds each
@@ -426,7 +426,7 @@ graph by construction. History entries become `(hash, actor, time,
 label)` references — document-at-version is derived via
 `Automerge.view(doc, heads)` (lazy and cacheable) rather than stored
 snapshots. Concurrent edits produce divergent heads, and the change that
-joins them is a genuine two-parent version — `VersionTree.merge`'s first
+joins them is a genuine two-parent version — `mergeVersions`' first
 real use.
 
 Consequences:

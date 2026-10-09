@@ -39,12 +39,12 @@ object DocumentEditor extends Component[EditorInput, EditorOutput] {
 
   type State = EditorModel
 
-  def init: State = EditorSample.model
+  def init: State = sampleModel
 
   def update(state: State, input: EditorInput): Update[State, EditorOutput] =
-    EditorUpdate(state, input)
+    editorUpdate(state, input)
 
-  def view(state: State): View[EditorInput] = EditorView.view(state)
+  def view(state: State): View[EditorInput] = editorView(state)
 
   // Display text for a node's data in the outline.
   def displayData(data: NodeData): String = data match {

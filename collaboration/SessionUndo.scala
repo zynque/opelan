@@ -1,6 +1,6 @@
 package opelan.collaboration
 
-import opelan.collaboration.automerge.{Automerge, Revert}
+import opelan.collaboration.automerge.{Automerge, inverseOf}
 
 // Per-user undo for a synced session. Ctrl+Z means "take back *my* last
 // change": `undoable` holds the hashes this session authored (in order),
@@ -38,7 +38,7 @@ trait SessionUndo { self: DocSession =>
     else undoable.lastOption match {
       case None => "Nothing to undo"
       case Some(h) =>
-        Revert.inverseOf(doc, h) match {
+        inverseOf(doc, h) match {
           case Some((pos, del, ins)) =>
             doc = Automerge.spliceText(doc, pos, del, ins, s"$name (undo)")
             undoable = undoable.dropRight(1)
@@ -55,7 +55,7 @@ trait SessionUndo { self: DocSession =>
     else redoable.lastOption match {
       case None => "Nothing to redo"
       case Some((undoHash, origHash)) =>
-        Revert.inverseOf(doc, undoHash) match {
+        inverseOf(doc, undoHash) match {
           case Some((pos, del, ins)) =>
             doc = Automerge.spliceText(doc, pos, del, ins, s"$name (redo)")
             redoable = redoable.dropRight(1)

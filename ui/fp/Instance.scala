@@ -37,15 +37,15 @@ final class Instance[I, O](
   // focus/scroll hooks once the node is attached, and reconcile children.
   private def refresh(): Unit = {
     val view = component.view(state)
-    val ctx = new Render.Ctx
+    val ctx = new RenderCtx
     if (node == null)
-      node = Render.render(view, emit, ctx)
+      node = renderView(view, emit, ctx)
     else
-      Patch.patch(node, currentView, view, emit, ctx)
+      patchView(node, currentView, view, emit, ctx)
     currentView = view
     ctx.focusElement.foreach((el, sel) => rt.enqueue(() => focusNow(el, sel)))
-    ctx.scrollElement.foreach(el => rt.enqueue(() => Render.scrollIntoView(el)))
-    ctx.mountPoint.foreach(mp => Reconcile.reconcile(this, component.children(state), mp))
+    ctx.scrollElement.foreach(el => rt.enqueue(() => scrollIntoView(el)))
+    ctx.mountPoint.foreach(mp => reconcile(this, component.children(state), mp))
   }
 
   private def focusNow(el: dom.Element, select: Boolean): Unit =

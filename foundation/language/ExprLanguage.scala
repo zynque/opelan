@@ -31,16 +31,16 @@ object ExprLanguage extends Language {
   // The text syntax is total: any input parses, producing holes where the
   // text does not fit the grammar.
   override def parse(text: String): Option[DetachedNode[NodeData]] =
-    Some(Expr.toDetached(ExprParse.parse(text).expr))
+    Some(Expr.toDetached(parseExpr(text).expr))
 
   private def contentExpr(doc: Document[NodeData]): Either[String, Expr] =
-    Typed.contentId(doc)
+    contentId(doc)
       .toRight(s"$name: typed document has no content")
       .flatMap(Expr.fromDocument(doc, _))
 
   // A typed sample document: (1 + 2) - (3 - 4)  ==  4
   def sampleDoc: Document[NodeData] =
-    Typed.make(
+    makeTyped(
       typeRef,
       NodeData.StringData("expr sample"),
       Expr.toDetached(

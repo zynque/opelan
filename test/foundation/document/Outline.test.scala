@@ -5,18 +5,18 @@ import opelan.foundation.document.Detached._
 class OutlineSuite extends munit.FunSuite {
 
   val sample: Document[NodeData] =
-    Build.buildDocument(n(s("root"), sl("a"), n(s("b"), il(1), il(2)), sl("c")))
+    buildDocument(n(s("root"), sl("a"), n(s("b"), il(1), il(2)), sl("c")))
 
   test("render produces an indented outline") {
     assertEquals(
-      Outline.render(sample),
+      render(sample),
       "\"root\"\n  \"a\"\n  \"b\"\n    1\n    2\n  \"c\"")
   }
 
-  test("apply parses outline text back into the document") {
-    val doc = Build.beginDocument(s("root"))
+  test("applyOutline parses outline text back into the document") {
+    val doc = beginDocument(s("root"))
     val text = "\"root\"\n  \"a\"\n  \"b\"\n    1\n    2\n  \"c\""
-    val d = Outline(doc, text).toOption.get
+    val d = applyOutline(doc, text).toOption.get
     assertEquals(d.getNode(d.rootId).map(_.data), Some(NodeData.StringData("root")))
     assertEquals(
       d.childrenOf(d.rootId).map(id => d.getNode(id).get.data),
@@ -27,31 +27,31 @@ class OutlineSuite extends munit.FunSuite {
       List(NodeData.IntData(1), NodeData.IntData(2)))
   }
 
-  test("apply preserves the root node id") {
-    val doc = Build.beginDocument(s("old"))
-    val d = Outline(doc, "\"new\"\n  \"x\"").toOption.get
+  test("applyOutline preserves the root node id") {
+    val doc = beginDocument(s("old"))
+    val d = applyOutline(doc, "\"new\"\n  \"x\"").toOption.get
     assertEquals(d.rootId, doc.rootId)
     assertEquals(d.getNode(d.rootId).map(_.data), Some(NodeData.StringData("new")))
   }
 
-  test("apply replaces the previous children") {
-    val d = Outline(sample, "\"root\"\n  \"only\"").toOption.get
+  test("applyOutline replaces the previous children") {
+    val d = applyOutline(sample, "\"root\"\n  \"only\"").toOption.get
     assertEquals(d.childrenOf(d.rootId).length, 1)
   }
 
   test("round-trips an outline render") {
-    val d = Outline(sample, Outline.render(sample)).toOption.get
-    assertEquals(Outline.render(d), Outline.render(sample))
+    val d = applyOutline(sample, render(sample)).toOption.get
+    assertEquals(render(d), render(sample))
   }
 
   test("parse builds a fresh, valid document from outline text") {
-    val d = Outline.parse(Outline.render(sample)).get
-    assertEquals(Outline.render(d), Outline.render(sample))
-    assertEquals(Edit.validate(d), Nil)
+    val d = parse(render(sample)).get
+    assertEquals(render(d), render(sample))
+    assertEquals(validate(d), Nil)
   }
 
   test("parse round-trips external refs") {
-    val d = Outline.parse("\"root\"\n  ref:opelan:docs/a@2#5").get
+    val d = parse("\"root\"\n  ref:opelan:docs/a@2#5").get
     assertEquals(
       d.childrenOf(d.rootId).map(id => d.getNode(id).map(_.data)),
       List(Some(NodeData.ExternalNodeRef(
@@ -59,20 +59,20 @@ class OutlineSuite extends munit.FunSuite {
   }
 
   test("parse returns None on empty text") {
-    assertEquals(Outline.parse(""), None)
-    assertEquals(Outline.parse("   \n\n"), None)
+    assertEquals(parse(""), None)
+    assertEquals(parse("   \n\n"), None)
   }
 
   test("gap lines parse to GapData") {
-    val d = Outline(
-      Build.beginDocument(s("root")),
+    val d = applyOutline(
+      beginDocument(s("root")),
       "\"root\"\n  ?some unparsed text").toOption.get
     val child = d.childrenOf(d.rootId).head
     assertEquals(d.getNode(child).map(_.data), Some(NodeData.GapData("some unparsed text")))
   }
 
   test("empty text is an error") {
-    assert(Outline(sample, "").isLeft)
-    assert(Outline(sample, "   \n\n").isLeft)
+    assert(applyOutline(sample, "").isLeft)
+    assert(applyOutline(sample, "   \n\n").isLeft)
   }
 }

@@ -21,32 +21,29 @@ enum Tok {
   case JunkTok(from: Int, to: Int) extends Tok
 }
 
-object ExprLex {
+private def isStructural(c: Char): Boolean =
+  c.isWhitespace || c == '+' || c == '-' || c == '(' || c == ')' || c == '?'
 
-  private def isStructural(c: Char): Boolean =
-    c.isWhitespace || c == '+' || c == '-' || c == '(' || c == ')' || c == '?'
-
-  def lex(input: String): Vector[Tok] = {
-    val toks = Vector.newBuilder[Tok]
-    var i = 0
-    while (i < input.length) {
-      val c = input.charAt(i)
-      if (c.isWhitespace) i += 1
-      else if (c.isDigit) {
-        val from = i
-        while (i < input.length && input.charAt(i).isDigit) i += 1
-        toks += Tok.IntTok(from, i)
-      } else if (c == '+' || c == '-') {
-        toks += Tok.OpTok(c, i, i + 1); i += 1
-      } else if (c == '(') { toks += Tok.LParen(i, i + 1); i += 1 }
-      else if (c == ')') { toks += Tok.RParen(i, i + 1); i += 1 }
-      else if (c == '?') { toks += Tok.HoleTok(i, i + 1); i += 1 }
-      else {
-        val from = i
-        while (i < input.length && !isStructural(input.charAt(i))) i += 1
-        toks += Tok.JunkTok(from, i)
-      }
+def lex(input: String): Vector[Tok] = {
+  val toks = Vector.newBuilder[Tok]
+  var i = 0
+  while (i < input.length) {
+    val c = input.charAt(i)
+    if (c.isWhitespace) i += 1
+    else if (c.isDigit) {
+      val from = i
+      while (i < input.length && input.charAt(i).isDigit) i += 1
+      toks += Tok.IntTok(from, i)
+    } else if (c == '+' || c == '-') {
+      toks += Tok.OpTok(c, i, i + 1); i += 1
+    } else if (c == '(') { toks += Tok.LParen(i, i + 1); i += 1 }
+    else if (c == ')') { toks += Tok.RParen(i, i + 1); i += 1 }
+    else if (c == '?') { toks += Tok.HoleTok(i, i + 1); i += 1 }
+    else {
+      val from = i
+      while (i < input.length && !isStructural(input.charAt(i))) i += 1
+      toks += Tok.JunkTok(from, i)
     }
-    toks.result()
   }
+  toks.result()
 }

@@ -5,7 +5,7 @@ import Detached._
 class TypedSuite extends munit.FunSuite {
 
   val ref = ExternalNodeReference("test:type", 0, 7)
-  val doc = Typed.make(ref, s("doc"), n(s("expr"), il(1), il(2)))
+  val doc = makeTyped(ref, s("doc"), n(s("expr"), il(1), il(2)))
 
   test("make puts the type node first and the content root after it") {
     val children = doc.childrenOf(doc.rootId)
@@ -17,22 +17,22 @@ class TypedSuite extends munit.FunSuite {
   }
 
   test("typeRefOf reads the type reference") {
-    assertEquals(Typed.typeRefOf(doc), Some(ref))
+    assertEquals(typeRefOf(doc), Some(ref))
   }
 
   test("contentId is the child after the type node") {
-    assertEquals(Typed.contentId(doc), doc.childrenOf(doc.rootId).drop(1).headOption)
+    assertEquals(contentId(doc), doc.childrenOf(doc.rootId).drop(1).headOption)
   }
 
   test("a raw document has no type") {
-    val raw = Build.beginDocument(s("root"))
-    assertEquals(Typed.typeRefOf(raw), None)
-    assert(!Typed.isTyped(raw))
+    val raw = beginDocument(s("root"))
+    assertEquals(typeRefOf(raw), None)
+    assert(!isTyped(raw))
   }
 
   test("a first child that is not an external ref is not a type") {
-    val raw = Build.buildDocument(n(s("a"), sl("b"), sl("c")))
-    assertEquals(Typed.typeRefOf(raw), None)
-    assert(!Typed.isTyped(raw))
+    val raw = buildDocument(n(s("a"), sl("b"), sl("c")))
+    assertEquals(typeRefOf(raw), None)
+    assert(!isTyped(raw))
   }
 }

@@ -1,7 +1,7 @@
 package opelan.ui.editor
 
 import org.scalajs.dom
-import opelan.data.storage.{DocumentRepo, IndexedDBStore}
+import opelan.data.storage.{IndexedDBStore, loadAll, persist}
 import opelan.foundation.document._
 import opelan.ui.typeddoc.{TypedDocInput, TypedDocOutput}
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -23,7 +23,7 @@ trait WorkbenchDocs {
   // Hydrate the store, render the sidebar, and reopen the first stored
   // document (restoring the workspace across sessions).
   protected def initializeDocuments(): Unit = {
-    IndexedDBStore.initialize().flatMap(_ => DocumentRepo.loadAll()).onComplete {
+    IndexedDBStore.initialize().flatMap(_ => loadAll()).onComplete {
       case Success(store) =>
         workspace = workspace.copy(store = store)
         updateStatus(s"Storage initialized — ${store.urls.length} document(s)")
@@ -96,11 +96,11 @@ trait WorkbenchDocs {
     val name = dom.window.prompt("Document name:", "untitled")
     if (name != null && name.nonEmpty) {
       val url = workspace.freshUrl(name)
-      val doc: Document[NodeData] = Build.beginDocument(NodeData.StringData(name))
+      val doc: Document[NodeData] = beginDocument(NodeData.StringData(name))
       val (ws, written) = workspace.save(url, doc)
       workspace = ws
       written.foreach { v =>
-        DocumentRepo.persist(url, v, doc)
+        persist(url, v, doc)
         openDocument(url, v, doc)
         updateStatus(s"Created $url@v$v")
       }
@@ -155,7 +155,7 @@ trait WorkbenchDocs {
     workspace = ws
     written match {
       case Some(v) =>
-        DocumentRepo.persist(url, v, d).onComplete {
+        persist(url, v, d).onComplete {
           case Success(_) => updateStatus(s"Saved $url@v$v")
           case Failure(e) => updateStatus(s"Save failed: ${e.getMessage}")
         }

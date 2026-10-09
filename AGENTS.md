@@ -12,6 +12,11 @@
 - **Pure logic separated from effects**: keep document/tree operations pure
   (`foundation/`) and DOM/event code thin (`ui/`). Pure helpers that tests can
   exercise live on companion objects (e.g. `DocumentEditor.parseNodeData`).
+- **Scala 3 top-level definitions**: stateless helpers that aren't tied to a
+  type live at package top level — don't wrap them in an `object` just to
+  hold functions (Scala 2 style). Keep `object` only for companions of a
+  type, singleton implementations (`extends Component`, `Language`),
+  deliberate import namespaces (`Detached`, `Dsl`), and JS interop facades.
 - **Immutability by default**: prefer `val`s, `case class`es, and immutable
   collections. Reserve `var`/`mutable` for the effect boundary — DOM nodes,
   live `Instance`s, the `Runtime` queue — or for local accumulators that

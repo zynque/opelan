@@ -87,7 +87,7 @@ implementation plan.
 - The **version DAG** is wired for in-session editor history (branching
   undo, version-tree column); for synced documents it is now a projection
   of the shared Automerge change graph (`EditorSynced`) — author-tagged,
-  two-dep changes render as merge versions via `VersionTree.merge`.
+  two-dep changes render as merge versions via `mergeVersions`.
   Unsynced documents keep the local session DAG, history is not persisted
   across sessions, and the document store's append-only versions remain
   the simpler curated-checkpoint layer.

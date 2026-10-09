@@ -21,7 +21,7 @@ class Workbench extends WorkbenchSync {
         throw new IllegalArgumentException(s"Container element with id '$containerId' not found")
       }
 
-      container.innerHTML = WorkbenchLayout.markup
+      container.innerHTML = workbenchMarkup
       setupEventHandlers()
       switchView(currentView)
       initializeDocuments()

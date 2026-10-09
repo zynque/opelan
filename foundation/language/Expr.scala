@@ -92,7 +92,7 @@ object Expr {
   // strings unquoted, so hole text reparses as the same junk.
   private def holeText(data: NodeData): String = data match {
     case NodeData.StringData(s) => s
-    case other                  => Show.showNodeData(other)
+    case other                  => showNodeData(other)
   }
 
   // Arity is guaranteed by the caller's case guard.

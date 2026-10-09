@@ -102,7 +102,7 @@ bootstrap):
    infix-expression languages. Eval semantics stay named built-ins
    (`expr-eval`) — honest scaffolding; semantics-as-documents is later
    work, and the demo should say so.
-7. `DocLanguage`: `Languages.forRef` gains Store access, resolves the
+7. `DocLanguage`: `languageForRef` gains Store access, resolves the
    ref to the stored def doc, interprets it into `Language`
    (`views`/`render`/`parse`).
 8. Reactivity: when a def doc version bumps, open documents re-resolve

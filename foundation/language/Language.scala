@@ -54,15 +54,12 @@ object Frag {
 }
 
 // Registry mapping document-type references to languages defined in code.
-object Languages {
+val allLanguages: List[Language] = List(ExprLanguage)
 
-  val all: List[Language] = List(ExprLanguage)
+def languageForRef(ref: ExternalNodeReference): Option[Language] =
+  allLanguages.find(l =>
+    l.typeRef.documentUrl == ref.documentUrl && l.typeRef.nodeId == ref.nodeId)
 
-  def forRef(ref: ExternalNodeReference): Option[Language] =
-    all.find(l =>
-      l.typeRef.documentUrl == ref.documentUrl && l.typeRef.nodeId == ref.nodeId)
-
-  // The language of a typed document, if the type is known.
-  def forDoc(doc: Document[NodeData]): Option[Language] =
-    Typed.typeRefOf(doc).flatMap(forRef)
-}
+// The language of a typed document, if the type is known.
+def languageForDoc(doc: Document[NodeData]): Option[Language] =
+  typeRefOf(doc).flatMap(languageForRef)

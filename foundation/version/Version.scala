@@ -24,42 +24,39 @@ object Version {
     Version(mergedFromNodeId = None, data = data, lsaNodeId = None)
 }
 
-object VersionTree {
+def getVersion[A](nodeId: Int, doc: Document[Version[A]]): Option[Version[A]] =
+  doc.getNode(nodeId).map(_.data)
 
-  def getVersion[A](nodeId: Int, doc: Document[Version[A]]): Option[Version[A]] =
-    doc.getNode(nodeId).map(_.data)
-
-  // Add a new version node as a child of parentNodeId. A single-parent
-  // version inherits its parent as its lowest single ancestor.
-  def update[A](parentNodeId: Int, data: A, doc: Document[Version[A]]): Either[String, Document[Version[A]]] = {
-    val version = Version(mergedFromNodeId = None, data = data, lsaNodeId = Some(parentNodeId))
-    Edit.insertNode(DetachedNode.leaf(version), parentNodeId, index = 0, doc)
-  }
-
-  // Merge two versions: creates a new version under parentNid whose
-  // mergedFromNodeId points at mergedFromNid. The merged node's LSA is the
-  // LSCA of its two parents — all paths to the merged node pass through one
-  // of the parents, so its lowest single ancestor is the lowest ancestor
-  // common to both.
-  def merge[A](parentNid: Int, mergedFromNid: Int, data: A, doc: Document[Version[A]]): Either[String, Document[Version[A]]] = {
-    val lsca = getLsca(parentNid, mergedFromNid, doc)
-    val version = Version(mergedFromNodeId = Some(mergedFromNid), data = data, lsaNodeId = lsca)
-    Edit.insertNode(DetachedNode.leaf(version), parentNid, index = 0, doc)
-  }
-
-  // Lowest single common ancestor of two version nodes.
-  def getLsca[A](nid1: Int, nid2: Int, doc: Document[Version[A]]): Option[Int] =
-    lastCommonElement(lsaPathFromRootTo(nid1, doc), lsaPathFromRootTo(nid2, doc))
-
-  def lsaPathFromRootTo[A](nodeId: Int, doc: Document[Version[A]]): List[Int] =
-    lsaPathToRootFrom(nodeId, doc).reverse
-
-  private def lsaPathToRootFrom[A](nodeId: Int, doc: Document[Version[A]]): List[Int] =
-    getVersion(nodeId, doc).flatMap(_.lsaNodeId) match {
-      case Some(lsaNodeId) => nodeId :: lsaPathToRootFrom(lsaNodeId, doc)
-      case None            => List(nodeId)
-    }
-
-  def lastCommonElement[A](l1: List[A], l2: List[A]): Option[A] =
-    l1.zip(l2).takeWhile { case (a, b) => a == b }.lastOption.map(_._1)
+// Add a new version node as a child of parentNodeId. A single-parent
+// version inherits its parent as its lowest single ancestor.
+def appendVersion[A](parentNodeId: Int, data: A, doc: Document[Version[A]]): Either[String, Document[Version[A]]] = {
+  val version = Version(mergedFromNodeId = None, data = data, lsaNodeId = Some(parentNodeId))
+  insertNode(DetachedNode.leaf(version), parentNodeId, index = 0, doc)
 }
+
+// Merge two versions: creates a new version under parentNid whose
+// mergedFromNodeId points at mergedFromNid. The merged node's LSA is the
+// LSCA of its two parents — all paths to the merged node pass through one
+// of the parents, so its lowest single ancestor is the lowest ancestor
+// common to both.
+def mergeVersions[A](parentNid: Int, mergedFromNid: Int, data: A, doc: Document[Version[A]]): Either[String, Document[Version[A]]] = {
+  val lsca = getLsca(parentNid, mergedFromNid, doc)
+  val version = Version(mergedFromNodeId = Some(mergedFromNid), data = data, lsaNodeId = lsca)
+  insertNode(DetachedNode.leaf(version), parentNid, index = 0, doc)
+}
+
+// Lowest single common ancestor of two version nodes.
+def getLsca[A](nid1: Int, nid2: Int, doc: Document[Version[A]]): Option[Int] =
+  lastCommonElement(lsaPathFromRootTo(nid1, doc), lsaPathFromRootTo(nid2, doc))
+
+def lsaPathFromRootTo[A](nodeId: Int, doc: Document[Version[A]]): List[Int] =
+  lsaPathToRootFrom(nodeId, doc).reverse
+
+private def lsaPathToRootFrom[A](nodeId: Int, doc: Document[Version[A]]): List[Int] =
+  getVersion(nodeId, doc).flatMap(_.lsaNodeId) match {
+    case Some(lsaNodeId) => nodeId :: lsaPathToRootFrom(lsaNodeId, doc)
+    case None            => List(nodeId)
+  }
+
+def lastCommonElement[A](l1: List[A], l2: List[A]): Option[A] =
+  l1.zip(l2).takeWhile { case (a, b) => a == b }.lastOption.map(_._1)

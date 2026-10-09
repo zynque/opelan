@@ -1,6 +1,6 @@
 package opelan.ui.typeddoc
 
-import opelan.foundation.language.ExprLanguage
+import opelan.foundation.language.{ExprLanguage, docText}
 import opelan.ui.editor.{DocumentEditor, EditorInput}
 import opelan.ui.fp._
 
@@ -24,14 +24,14 @@ object TypedDoc extends Component[TypedDocInput, TypedDocOutput] {
     TypedDocModel(
       doc = d,
       pushedDoc = d,
-      text = opelan.foundation.language.DocText.render(d),
+      text = docText(d),
       status = "Expression sample loaded")
   }
 
   def update(state: State, input: TypedDocInput): Update[State, TypedDocOutput] =
-    TypedDocUpdate(state, input)
+    typedDocUpdate(state, input)
 
-  def view(state: State): View[TypedDocInput] = TypedDocView.view(state)
+  def view(state: State): View[TypedDocInput] = typedDocView(state)
 
   override def children(state: State): Vector[Child[?, ?, TypedDocInput]] =
     Vector(Child(

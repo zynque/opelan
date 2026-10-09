@@ -6,7 +6,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Random, Try}
 import org.scalajs.dom
 import opelan.foundation.document._
-import opelan.collaboration.{DocSession, Identity}
+import opelan.collaboration.{DocSession, freshActorId, generateName}
 import opelan.collaboration.automerge.ChangeInfo
 import opelan.collaboration.backends.BroadcastTransport
 import opelan.data.storage.IndexedDBStore
@@ -58,7 +58,7 @@ trait WorkbenchSync extends WorkbenchDocs {
     val url = workspace.openUrl
     dom.console.log(s"[sync] documentEdited url=$url session=${url.exists(sessions.contains)}")
     url.flatMap(sessions.get)
-      .foreach(_.localText(Outline.render(d)))
+      .foreach(_.localText(render(d)))
   }
 
   // Synced-head undo/redo: the session reverts this actor's own last
@@ -93,7 +93,7 @@ trait WorkbenchSync extends WorkbenchDocs {
         dom.window.confirm(
           s"A collaborator started a branch — rejoin at $branchUrl?")) {
       val placeholder: Document[NodeData] =
-        Build.beginDocument(NodeData.StringData("branch"))
+        beginDocument(NodeData.StringData("branch"))
       workspace = workspace.open(branchUrl, 0, placeholder)
       documentEditor.foreach(_.send(TypedDocInput.Load(placeholder)))
       attachSync(branchUrl, Some(""))
@@ -122,7 +122,7 @@ trait WorkbenchSync extends WorkbenchDocs {
         sessions += url -> session
         session.attach(
           seedText.getOrElse(
-            workspace.doc.map(Outline.render).getOrElse("")),
+            workspace.doc.map(render).getOrElse("")),
           saved)
         updateStatus(s"Sync attached — $url ($name)")
       }
@@ -140,12 +140,12 @@ trait WorkbenchSync extends WorkbenchDocs {
     dom.console.log(s"[sync] sessionUpdate url=$url entries=${entries.size} open=${workspace.openUrl.contains(url)}")
     if (workspace.openUrl.contains(url)) {
       sessions.get(url).foreach { session =>
-        Outline.parse(session.text) match {
+        parse(session.text) match {
           case Some(d) =>
             workspace = workspace.open(
               url, workspace.openVersion.getOrElse(0), d)
             val synced = SyncedHistory(
-              entries.flatMap(e => Outline.parse(e.snapshotText).map(doc =>
+              entries.flatMap(e => parse(e.snapshotText).map(doc =>
                 SyncedEntry(e.hash, e.deps,
                   e.message.getOrElse(shortActor(e.actor)), doc))),
               heads)
@@ -176,7 +176,7 @@ trait WorkbenchSync extends WorkbenchDocs {
           Try(dom.window.sessionStorage.setItem(key, v))
           v
         }
-    (stored("opelan:actor", Identity.freshActorId(Random)),
-     stored("opelan:name", Identity.generateName(Random)))
+    (stored("opelan:actor", freshActorId(Random)),
+     stored("opelan:name", generateName(Random)))
   }
 }
