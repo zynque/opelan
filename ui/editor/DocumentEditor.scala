@@ -46,15 +46,9 @@ object DocumentEditor extends Component[EditorInput, EditorOutput] {
 
   def view(state: State): View[EditorInput] = editorView(state)
 
-  // Display text for a node's data in the outline.
-  def displayData(data: NodeData): String = data match {
-    case NodeData.StringData(s)        => s"\"$s\""
-    case NodeData.IntData(i)           => i.toString
-    case NodeData.FloatData(f)         => f.toString
-    case NodeData.InternalNodeRef(id)  => s"&$id"
-    case NodeData.ExternalNodeRef(ref) => s"ext:${ref.documentUrl}@${ref.documentVersionId}#${ref.nodeId}"
-    case NodeData.GapData(t)           => s"?$t"
-  }
+  // Display text for a node's data in the outline — the edit syntax
+  // (&5, ext:url@v#n) of NodeDataText.
+  def displayData(data: NodeData): String = NodeDataText.showEdit(data)
 
   // Initial text when a node enters edit mode.
   def editText(data: NodeData): String = data match {
@@ -63,28 +57,13 @@ object DocumentEditor extends Component[EditorInput, EditorOutput] {
     case other                  => displayData(other)
   }
 
-  // Parse edited text into node data:
+  // Parse edited text into node data — the edit-box syntax of
+  // NodeDataText:
   //   &5              -> internal ref to node 5
   //   ext:url@v#n     -> external ref to node n of url's version v
   //   42              -> int
   //   1.5             -> float
   //   ?abc            -> gap holding the text after '?'
   //   other           -> string
-  def parseNodeData(text: String): NodeData =
-    if (text.matches("&\\d+")) NodeData.InternalNodeRef(text.drop(1).toInt)
-    else if (text.matches("ext:.+@\\d+#\\d+")) {
-      val body = text.drop(4)
-      NodeData.ExternalNodeRef(ExternalNodeReference(
-        body.take(body.lastIndexOf('@')),
-        body.substring(body.lastIndexOf('@') + 1, body.lastIndexOf('#')).toInt,
-        body.drop(body.lastIndexOf('#') + 1).toInt))
-    }
-    else if (text.startsWith("?")) NodeData.GapData(text.drop(1))
-    else if (text.matches("-?\\d+")) NodeData.IntData(text.toInt)
-    else if (text.matches("-?\\d*\\.\\d+")) NodeData.FloatData(text.toDouble)
-    else NodeData.StringData(text)
-
-  // Total number of nodes in a detached tree.
-  def subtreeSize[A](detached: DetachedNode[A]): Int =
-    1 + detached.children.map(subtreeSize).sum
+  def parseNodeData(text: String): NodeData = NodeDataText.parseEdit(text)
 }

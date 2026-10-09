@@ -29,7 +29,7 @@ def copy(m: EditorModel): Update[EditorModel, EditorOutput] =
         case Right(detached) =>
           status(
             m.copy(clipboard = Some(detached)),
-            s"Copied subtree (${DocumentEditor.subtreeSize(detached)} nodes)")
+            s"Copied subtree (${detached.size} nodes)")
         case Left(err) => status(m, err)
       }
     case None => status(m, "Select a node first")
@@ -44,7 +44,7 @@ def paste(m: EditorModel): Update[EditorModel, EditorOutput] = {
     case None =>
       m.clipboard match {
         case Some(detached) =>
-          val newId = m.doc.nodes.length + DocumentEditor.subtreeSize(detached) - 1
+          val newId = m.doc.nodes.length + detached.size - 1
           applyEdit(m, insertNode(detached, m.targetId, index, m.doc),
             "Pasted copy", Some(newId))
         case None => status(m, "Nothing to paste")

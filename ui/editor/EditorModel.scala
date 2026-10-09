@@ -40,21 +40,18 @@ case class EditorModel(
   // The node an operation applies to when nothing is explicitly selected.
   def targetId: Int = selectedId.getOrElse(doc.rootId)
 
-  // Pre-order outline traversal as (nodeId, depth) pairs.
-  def rowsFrom(id: Int, depth: Int = 0): List[(Int, Int)] =
-    (id, depth) :: doc.childrenOf(id).flatMap(cid => rowsFrom(cid, depth + 1))
-
-  def flatIds: List[Int] = rowsFrom(doc.rootId).map(_._1)
+  // Pre-order outline traversal as node ids.
+  def flatIds: List[Int] = doc.subtreeIds(doc.rootId)
 
   // Outline rows for the view: the document's pre-order traversal plus a
   // phantom row for a pending insert spliced at its target position.
   def outlineRows: List[(Int, Int)] = {
-    val base = rowsFrom(doc.rootId)
+    val base = doc.preorder(doc.rootId)
     pendingInsert match {
       case Some(p) if p.parentPos < base.length =>
         var pos = p.parentPos + 1
         doc.childrenOf(base(p.parentPos)._1).take(p.index).foreach { k =>
-          pos += rowsFrom(k).length
+          pos += doc.preorder(k).length
         }
         base.patch(
           pos, List((EditorModel.PendingId, base(p.parentPos)._2 + 1)), 0)
@@ -68,12 +65,10 @@ object EditorModel {
   // empty, so no document can ever contain it.
   val PendingId = -1
 
-  // Pre-order ids of a document — like rowsFrom/flatIds on the model but
-  // for a bare document (e.g. a pushed one pending resolution).
-  def flatIdsOf(d: Document[NodeData]): List[Int] = {
-    def go(id: Int): List[Int] = id :: d.childrenOf(id).flatMap(go)
-    if (d.getNode(d.rootId).isDefined) go(d.rootId) else Nil
-  }
+  // Pre-order ids of a bare document (e.g. a pushed one pending
+  // resolution) — the model-free counterpart of `flatIds`.
+  def flatIdsOf(d: Document[NodeData]): List[Int] =
+    d.subtreeIds(d.rootId)
 
   // Fresh editor state over a loaded document: history starts at a single
   // root version holding it.

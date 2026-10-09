@@ -37,9 +37,9 @@ class DocumentEditorSuite extends munit.FunSuite {
     )
   }
 
-  test("subtreeSize counts a detached tree") {
+  test("a detached tree reports its size") {
     import Detached._
-    assertEquals(DocumentEditor.subtreeSize(sl("x")), 1)
-    assertEquals(DocumentEditor.subtreeSize(n(s("a"), sl("b"), n(s("c"), il(1)))), 4)
+    assertEquals(sl("x").size, 1)
+    assertEquals(n(s("a"), sl("b"), n(s("c"), il(1))).size, 4)
   }
 }

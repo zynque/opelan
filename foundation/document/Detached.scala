@@ -3,7 +3,10 @@ package opelan.foundation.document
 // "Detached" trees: nodes not yet assigned ids and without history, arranged
 // as an actual tree structure rather than the document's indexed node store.
 // Used to construct new subtrees before inserting them into a document.
-case class DetachedNode[A](data: A, children: List[DetachedNode[A]] = Nil)
+case class DetachedNode[A](data: A, children: List[DetachedNode[A]] = Nil) {
+  // Total number of nodes in this tree.
+  def size: Int = 1 + children.map(_.size).sum
+}
 
 object DetachedNode {
   def leaf[A](data: A): DetachedNode[A] = DetachedNode(data, Nil)

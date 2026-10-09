@@ -80,15 +80,8 @@ def updateNodeChildIds[A](nodeId: Int, newChildIds: List[Int], document: Documen
   transformNode(nodeId, n => n.copy(version = n.version + 1, childIds = newChildIds), document)
 
 // Ids of all nodes reachable from the document root.
-def reachableIds[A](document: Document[A]): Set[Int] = {
-  def go(id: Int, acc: Set[Int]): Set[Int] =
-    document.getNode(id) match {
-      case Some(node) if !acc.contains(id) =>
-        node.childIds.foldLeft(acc + id)((a, cid) => go(cid, a))
-      case _ => acc
-    }
-  go(document.rootId, Set.empty)
-}
+def reachableIds[A](document: Document[A]): Set[Int] =
+  document.preorder(document.rootId).map(_._1).toSet
 
 // Removes nodes that are unreachable from the root (e.g. detached by
 // cutNode), preserving the relative order of survivors. Returns the

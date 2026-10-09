@@ -4,7 +4,7 @@ package opelan.foundation.document
 // nesting (outliner-style). The first line is the root; a node owns every
 // following line indented deeper than itself.
 //
-// Line payloads use showNodeData's surface syntax:
+// Line payloads use NodeDataText's outline syntax:
 //   "abc"   string      42 / 1.5      int / float
 //   ref:5   internal    ref:url@v#n   external ref
 //   ?text   gap         bare          string
@@ -23,7 +23,7 @@ def parse(text: String): Option[Document[NodeData]] =
 
 def renderSubtree(doc: Document[NodeData], nodeId: Int): String = {
   def rows(id: Int, depth: Int): List[String] =
-    ("  " * depth + showNodeData(doc.getNode(id).get.data)) ::
+    ("  " * depth + NodeDataText.show(doc.getNode(id).get.data)) ::
       doc.childrenOf(id).flatMap(cid => rows(cid, depth + 1))
   rows(nodeId, 0).mkString("\n")
 }
@@ -32,11 +32,7 @@ def renderSubtree(doc: Document[NodeData], nodeId: Int): String = {
 // rest its subtree. The root node id — and so document identity — is
 // preserved.
 def applyOutline(doc: Document[NodeData], text: String): Either[String, Document[NodeData]] =
-  parseLines(text) match {
-    case None => Left("Outline: no content")
-    case Some((rootData, children)) =>
-      replaceSubtree(doc, doc.rootId, rootData, children)
-  }
+  applyOutlineToSubtree(doc, doc.rootId, text)
 
 // Replace one node's data and children from outline text whose first
 // line is that node's data.
@@ -68,7 +64,7 @@ private def parseLines(text: String): Option[(NodeData, List[DetachedNode[NodeDa
     .filter(_.trim.nonEmpty)
     .map { line =>
       val indent = line.takeWhile(c => c == ' ' || c == '\t').length
-      (indent, parseData(line.trim))
+      (indent, NodeDataText.parse(line.trim))
     }
   entries match {
     case Nil           => None
@@ -84,19 +80,3 @@ private def block(entries: List[(Int, NodeData)]): List[DetachedNode[NodeData]] 
       val (kids, rest) = tail.span(_._1 > indent)
       DetachedNode(data, block(kids)) :: block(rest)
   }
-
-private def parseData(text: String): NodeData = text match {
-  case s if s.length >= 2 && s.startsWith("\"") && s.endsWith("\"") =>
-    NodeData.StringData(s.substring(1, s.length - 1))
-  case s if s.startsWith("?") => NodeData.GapData(s.drop(1))
-  case s if s.matches("ref:\\d+") => NodeData.InternalNodeRef(s.drop(4).toInt)
-  case s if s.matches("ref:.+@\\d+#\\d+") =>
-    val body = s.drop(4)
-    NodeData.ExternalNodeRef(ExternalNodeReference(
-      body.take(body.lastIndexOf('@')),
-      body.substring(body.lastIndexOf('@') + 1, body.lastIndexOf('#')).toInt,
-      body.drop(body.lastIndexOf('#') + 1).toInt))
-  case s if s.matches("-?\\d+")        => NodeData.IntData(s.toInt)
-  case s if s.matches("-?\\d*\\.\\d+") => NodeData.FloatData(s.toDouble)
-  case s                             => NodeData.StringData(s)
-}
