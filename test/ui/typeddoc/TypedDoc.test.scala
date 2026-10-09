@@ -3,7 +3,7 @@ package opelan.ui.typeddoc
 import opelan.foundation.document._
 import opelan.foundation.document.Detached._
 import opelan.foundation.language.{Expr, ExprLanguage}
-import opelan.ui.editor.{EditorInput, EditorOutput, SyncedEntry, SyncedHistory}
+import opelan.ui.editor.{DocPush, EditorInput, EditorOutput, SyncedEntry, SyncedHistory}
 
 class TypedDocSuite extends munit.FunSuite {
 
@@ -78,18 +78,17 @@ class TypedDocSuite extends munit.FunSuite {
       Vector(SyncedEntry("h1", Vector(), "amber-fox", d)), Vector("h1"))
     val u = typedDocUpdate(init, TypedDocInput.SyncHistory(d, h))
     assertEquals(u.state.doc, d)
-    assertEquals(u.state.pushedHistory, Some(h))
+    assertEquals(u.state.pushMode, DocPush.Synced(h))
     assertEquals(
       editorInput(u.state),
-      EditorInput.SyncDocument(d, None, None, Some(h)))
+      EditorInput.SyncDocument(d, None, DocPush.Synced(h)))
     // no DocChanged echo — the push came from the session owner
     assert(u.out.forall(o => !o.isInstanceOf[TypedDocOutput.DocChanged]))
   }
 
   test("a text edit pushes the document as a merge") {
     val u = typedDocUpdate(init, TypedDocInput.TextEdited("1 + 2"))
-    assert(u.state.pushedMergeLabel.isDefined)
-    assertEquals(u.state.pushedHistory, None)
+    assertEquals(u.state.pushMode, DocPush.Merge("Text edit"))
   }
 
   test("Load after a synced push resets to a fresh document") {
@@ -99,8 +98,7 @@ class TypedDocSuite extends munit.FunSuite {
     val m = typedDocUpdate(init, TypedDocInput.SyncHistory(d1, h)).state
     val d2: Document[NodeData] = beginDocument(NodeData.StringData("other"))
     val u = typedDocUpdate(m, TypedDocInput.Load(d2))
-    assertEquals(u.state.pushedMergeLabel, None)
-    assertEquals(u.state.pushedHistory, None)
+    assertEquals(u.state.pushMode, DocPush.Open)
     assertEquals(editorInput(u.state), EditorInput.SyncDocument(d2))
   }
 

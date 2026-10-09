@@ -44,20 +44,15 @@ private def beginInsert(
 def indent(m: EditorModel): Update[EditorModel, EditorOutput] =
   m.selectedId match {
     case Some(id) if id != m.doc.rootId =>
-      m.doc.parentOf(id) match {
-        case Some(parentId) =>
-          val siblings = m.doc.childrenOf(parentId)
-          val index = siblings.indexOf(id)
-          if (index <= 0) status(m, "Cannot indent the first child")
-          else {
-            val newParent = siblings(index - 1)
-            applyEdit(
-              m,
-              moveNode(id, newParent, m.doc.childrenOf(newParent).length, m.doc),
-              "Indented",
-              Some(id))
-          }
-        case None => status(m, "Node has no parent")
+      val siblings = m.doc.parentOf(id).toList.flatMap(m.doc.childrenOf)
+      siblings.lift(siblings.indexOf(id) - 1) match {
+        case Some(newParent) =>
+          applyEdit(
+            m,
+            moveNode(id, newParent, m.doc.childrenOf(newParent).length, m.doc),
+            "Indented",
+            Some(id))
+        case None => status(m, "Cannot indent the first child")
       }
     case _ => status(m, "Select a non-root node first")
   }
@@ -65,14 +60,14 @@ def indent(m: EditorModel): Update[EditorModel, EditorOutput] =
 def outdent(m: EditorModel): Update[EditorModel, EditorOutput] =
   m.selectedId match {
     case Some(id) if id != m.doc.rootId =>
-      m.doc.parentOf(id).flatMap(m.doc.parentOf) match {
-        case Some(grandparentId) =>
-          val index = m.doc.childrenOf(grandparentId).indexOf(m.doc.parentOf(id).get)
-          applyEdit(
-            m,
-            moveNode(id, grandparentId, index + 1, m.doc),
-            "Outdented",
-            Some(id))
+      val target = for {
+        parentId <- m.doc.parentOf(id)
+        grandparentId <- m.doc.parentOf(parentId)
+      } yield (grandparentId, m.doc.childrenOf(grandparentId).indexOf(parentId) + 1)
+      target match {
+        case Some((grandparentId, index)) =>
+          applyEdit(m, moveNode(id, grandparentId, index, m.doc),
+            "Outdented", Some(id))
         case None => status(m, "Cannot outdent a top-level node")
       }
     case _ => status(m, "Select a non-root node first")

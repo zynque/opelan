@@ -37,8 +37,8 @@ def editorUpdate(m: EditorModel, input: EditorInput): Update[EditorModel, Editor
     case Redo             => redo(m)
     case GoToVersion(v)   => goTo(m, v, s"Version #$v")
     case NewDocument      => newDocument()
-    case SyncDocument(d, sel, ml, h) =>
-      syncDocument(m, d, sel, ml, h)
+    case SyncDocument(d, sel, push) =>
+      syncDocument(m, d, sel, push)
     case EditorInput.FollowRef => followRef(m)
     case LoadSample       => loadSample()
     case Compact          => compactDoc(m)
@@ -58,6 +58,11 @@ private[editor] def status(
 // fork, not an edit: it emits BranchRequested so the owner can open a
 // separate draft — applying it to the shared frontier would silently
 // revert collaborators' work under their feet.
+
+// True while the user is browsing a checked-out version of a synced doc.
+private[editor] def browsingStaleVersion(m: EditorModel): Boolean =
+  m.syncedHead.exists(_ != m.versionId)
+
 private[editor] def applyEdit(
     m: EditorModel,
     result: Either[String, Document[NodeData]],
@@ -69,7 +74,7 @@ private[editor] def applyEdit(
       val nm = extra(record(m, d, msg).copy(
         selectedId = selectAfter.orElse(m.selectedId),
         status = msg))
-      if (m.syncedHead.exists(_ != m.versionId))
+      if (browsingStaleVersion(m))
         Update(nm, Vector(
           BranchRequested(d), Status("Editing old version — branching")))
       else

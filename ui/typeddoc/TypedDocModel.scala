@@ -1,7 +1,7 @@
 package opelan.ui.typeddoc
 
 import opelan.foundation.document._
-import opelan.ui.editor.{EditorOutput, SyncedHistory}
+import opelan.ui.editor.{DocPush, EditorOutput, SyncedHistory}
 
 // Which editing surface is showing in the left pane: the generic
 // structural editor or the CodeMirror text cell over the document's
@@ -28,17 +28,15 @@ enum DocView {
 // select (e.g. a followed ref's target). It only matters when pushedDoc
 // itself changes — the child input is resent only on change.
 //
-// `pushedMergeLabel` marks a push as the same document updated from
-// outside (a text-cell edit): the editor records it as a new history
-// version under that label rather than resetting history for a newly
-// opened document. `pushedHistory` is stronger still: the shared change
-// graph from a live-sync session, rebuilt wholesale in the editor.
+// `pushMode` says how the pushed doc relates to the one shown: Open
+// restarts history, Merge records it as a version under a label
+// (text-cell edits), Synced rebuilds the DAG from the session's shared
+// change graph — identical on every peer.
 case class TypedDocModel(
     doc: Document[NodeData],
     pushedDoc: Document[NodeData],
     pushedSelect: Option[Int] = None,
-    pushedMergeLabel: Option[String] = None,
-    pushedHistory: Option[SyncedHistory] = None,
+    pushMode: DocPush = DocPush.Open,
     view: DocView = DocView.Editor,
     text: String = "",
     textEpoch: Int = 0,

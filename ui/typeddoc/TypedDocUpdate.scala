@@ -2,7 +2,7 @@ package opelan.ui.typeddoc
 
 import opelan.foundation.document._
 import opelan.foundation.language.{ExprLanguage, applyDocText, docText, holeCount}
-import opelan.ui.editor.EditorOutput
+import opelan.ui.editor.{DocPush, EditorOutput}
 import opelan.ui.fp.Update
 import TypedDocInput._
 import TypedDocOutput._
@@ -23,8 +23,7 @@ def typedDocUpdate(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel
         doc = d,
         pushedDoc = d,
         pushedSelect = None,
-        pushedMergeLabel = None,
-        pushedHistory = Some(h),
+        pushMode = DocPush.Synced(h),
         text = t,
         textEpoch = m.textEpoch + (if (t == m.text) 0 else 1),
         status = "Synced"))
@@ -44,7 +43,7 @@ def typedDocUpdate(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel
           Update(
             m.copy(
               doc = d, pushedDoc = d, pushedSelect = None,
-              pushedMergeLabel = Some("Text edit"), pushedHistory = None,
+              pushMode = DocPush.Merge("Text edit"),
               text = t, status = msg),
             Vector(DocChanged(d), Status(msg)))
         case Left(err) =>
@@ -54,16 +53,13 @@ def typedDocUpdate(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel
     case FromEditor(EditorOutput.DocViewed(d)) =>
       // Like DocChanged (mirrors follow what the pane shows) but marked
       // as navigation so the owner never feeds it to a session.
-      val t = docText(d)
-      val bump = if (t == m.text) 0 else 1
-      Update(
-        m.copy(doc = d, text = t, textEpoch = m.textEpoch + bump),
-        Vector(DocViewed(d)))
+      mirrorDoc(m, d, Vector(DocViewed(d)))
     case FromEditor(EditorOutput.UndoRequested) =>
       Update(m, Vector(UndoRequested))
     case FromEditor(EditorOutput.RedoRequested) =>
       Update(m, Vector(RedoRequested))
     case FromEditor(EditorOutput.BranchRequested(d)) =>
+      // Force the remount: the pane is about to reopen at a branch URL.
       val t = docText(d)
       Update(
         m.copy(doc = d, text = t, textEpoch = m.textEpoch + 1),
@@ -73,32 +69,37 @@ def typedDocUpdate(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel
       // echo must not re-derive the text (it would remount the
       // editor mid-typing). A doc equal to ours is such an echo.
       if (d == m.doc) Update(m)
-      else {
-        val t = docText(d)
-        val bump = if (t == m.text) 0 else 1
-        Update(
-          m.copy(doc = d, text = t, textEpoch = m.textEpoch + bump),
-          Vector(DocChanged(d)))
-      }
+      else mirrorDoc(m, d, Vector(DocChanged(d)))
     case FromEditor(EditorOutput.FollowRef(ref)) =>
       Update(m, Vector(FollowRef(ref)))
     case FromEditor(EditorOutput.Status(s)) =>
       Update(m.copy(status = s), Vector(Status(s)))
   }
 
+// Mirror a document the editor is showing: re-derive its text, bumping
+// the epoch when it changed (the bump remounts the text cell).
+private def mirrorDoc(
+    m: TypedDocModel,
+    d: Document[NodeData],
+    out: Vector[TypedDocOutput]): Update[TypedDocModel, TypedDocOutput] = {
+  val t = docText(d)
+  Update(
+    m.copy(doc = d, text = t,
+      textEpoch = m.textEpoch + (if (t == m.text) 0 else 1)),
+    out)
+}
+
 private def load(
     m: TypedDocModel,
     d: Document[NodeData],
     select: Option[Int],
-    msg: String,
-    mergeLabel: Option[String] = None): Update[TypedDocModel, TypedDocOutput] =
+    msg: String): Update[TypedDocModel, TypedDocOutput] =
   Update(
     m.copy(
       doc = d,
       pushedDoc = d,
       pushedSelect = select.filter(id => d.getNode(id).isDefined),
-      pushedMergeLabel = mergeLabel,
-      pushedHistory = None,
+      pushMode = DocPush.Open,
       text = docText(d),
       textEpoch = m.textEpoch + 1,
       status = msg),

@@ -81,6 +81,21 @@ object EditorModel {
   }
 }
 
+// How a document pushed down by the parent (via SyncDocument) relates to
+// the one being shown — the push decides what happens to history.
+enum DocPush {
+  // A different document being opened: history restarts at a fresh root.
+  case Open
+  // The same document updated from outside (e.g. a text-cell edit): the
+  // pushed doc is recorded as a new version under `label` so it sits in
+  // history and undoes like a local edit.
+  case Merge(label: String)
+  // The authoritative shared change graph from a synced session: the
+  // version DAG is rebuilt from it wholesale — identical on every peer —
+  // superseding Merge.
+  case Synced(history: SyncedHistory)
+}
+
 // Everything that can happen to the editor — view events and inputs pushed
 // by a parent — arrives through this one channel.
 enum EditorInput {
@@ -113,21 +128,14 @@ enum EditorInput {
   case GoToVersion(versionId: Int)
   // document-level commands
   case NewDocument
-  // Load without echoing DocChanged/Status back to the parent — for
-  // parents that push the document down themselves and already know it.
-  // `select` selects a node after the load (e.g. a followed ref's target).
-  // A `mergeLabel` means the open document itself changed elsewhere (a
-  // text-cell edit): the pushed doc is recorded as a new version under
-  // that label so the update sits in history and undoes like a local
-  // edit. A `history` push is the authoritative shared change graph from
-  // a synced session: the version DAG is rebuilt from it wholesale —
-  // identical on every peer — superseding mergeLabel. With neither, the
-  // push is a different document being opened and history restarts.
+  // Push a document down from the parent without echoing DocChanged back
+  // — for parents that push the document themselves and already know it.
+  // `select` selects a node after the push (e.g. a followed ref's target);
+  // `push` says how the doc relates to the one being shown (see DocPush).
   case SyncDocument(
       doc: Document[NodeData],
       select: Option[Int] = None,
-      mergeLabel: Option[String] = None,
-      history: Option[SyncedHistory] = None)
+      push: DocPush = DocPush.Open)
   // Follow the selected node's reference: internal refs select their
   // target in place; external refs are reported via EditorOutput.FollowRef
   // for the owner (which holds the document store) to resolve.

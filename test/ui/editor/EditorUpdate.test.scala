@@ -169,7 +169,7 @@ class EditorUpdateSuite extends munit.FunSuite {
       DetachedNode(NodeData.StringData("r"), List(DetachedNode.leaf(NodeData.IntData(7)))))
     val m2 = editorUpdate(
       m1.copy(editingId = None),
-      EditorInput.SyncDocument(d, mergeLabel = Some("Remote edit"))).state
+      EditorInput.SyncDocument(d, push = DocPush.Merge("Remote edit"))).state
     assertEquals(m2.doc, d)
     assertEquals(m2.history.nodes.length, m1.history.nodes.length + 1)
     // the remote edit undoes like a local one
@@ -182,7 +182,7 @@ class EditorUpdateSuite extends munit.FunSuite {
 
   test("a merged sync of an unchanged document records nothing") {
     val m = init
-    val u = editorUpdate(m, EditorInput.SyncDocument(m.doc, mergeLabel = Some("x")))
+    val u = editorUpdate(m, EditorInput.SyncDocument(m.doc, push = DocPush.Merge("x")))
     assertEquals(u.state.history.nodes.length, m.history.nodes.length)
     assertEquals(u.state.versionId, m.versionId)
   }
@@ -205,7 +205,7 @@ class EditorUpdateSuite extends munit.FunSuite {
       SyncedEntry("h2", Vector("h1"), "amber-fox", d1),
       SyncedEntry("h3", Vector("h2"), "calm-otter", d2)),
       Vector("h3"))
-    val m = editorUpdate(init, EditorInput.SyncDocument(d2, history = Some(h))).state
+    val m = editorUpdate(init, EditorInput.SyncDocument(d2, push = DocPush.Synced(h))).state
     assertEquals(m.doc, d2)
     assertEquals(m.history.nodes.length, 3)
     assertEquals(m.versionId, 2)
@@ -226,7 +226,7 @@ class EditorUpdateSuite extends munit.FunSuite {
       SyncedEntry("h3", Vector("h1"), "calm-otter", d),
       SyncedEntry("h4", Vector("h2", "h3"), "amber-fox", d)),
       Vector("h4"))
-    val m = editorUpdate(init, EditorInput.SyncDocument(d, history = Some(h))).state
+    val m = editorUpdate(init, EditorInput.SyncDocument(d, push = DocPush.Synced(h))).state
     assertEquals(m.history.nodes.length, 4)
     assertEquals(m.history.getNode(3).map(_.data.mergedFromNodeId), Some(Some(2)))
   }
@@ -248,7 +248,7 @@ class EditorUpdateSuite extends munit.FunSuite {
       SyncedEntry("h2", Vector("h1"), "amber-fox", d1),
       SyncedEntry("h3", Vector("h2"), "calm-otter", d2)),
       Vector("h3"))
-    val m = editorUpdate(init, EditorInput.SyncDocument(d2, history = Some(h))).state
+    val m = editorUpdate(init, EditorInput.SyncDocument(d2, push = DocPush.Synced(h))).state
     // check out the middle version, then undo = a cursor step, not a
     // session revert
     val checked =
@@ -268,7 +268,7 @@ class EditorUpdateSuite extends munit.FunSuite {
       SyncedEntry("h2", Vector("h1"), "amber-fox", d1),
       SyncedEntry("h3", Vector("h2"), "calm-otter", d2)),
       Vector("h3"))
-    val m = editorUpdate(init, EditorInput.SyncDocument(d2, history = Some(h))).state
+    val m = editorUpdate(init, EditorInput.SyncDocument(d2, push = DocPush.Synced(h))).state
     val checked = editorUpdate(m, EditorInput.GoToVersion(1)).state
     // opening the insert box is not yet an edit — the branch request
     // comes when the pending node's text is committed
@@ -294,12 +294,12 @@ class EditorUpdateSuite extends munit.FunSuite {
       SyncedEntry("h2", Vector("h1"), "amber-fox", d1),
       SyncedEntry("h3", Vector("h2"), "calm-otter", d2)),
       Vector("h3"))
-    val m = editorUpdate(init, EditorInput.SyncDocument(d2, history = Some(h))).state
+    val m = editorUpdate(init, EditorInput.SyncDocument(d2, push = DocPush.Synced(h))).state
     val checked = editorUpdate(m, EditorInput.GoToVersion(1)).state
     // a remote change arrives while browsing — the pin holds by hash
     val h2 = SyncedHistory(h.entries :+
       SyncedEntry("h4", Vector("h3"), "calm-otter", d3), Vector("h4"))
-    val u = editorUpdate(checked, EditorInput.SyncDocument(d3, history = Some(h2)))
+    val u = editorUpdate(checked, EditorInput.SyncDocument(d3, push = DocPush.Synced(h2)))
     assert(u.state.doc == d1)
     assertEquals(u.state.syncedHead, Some(3))
     assertEquals(u.state.versionId, 1)
@@ -317,7 +317,7 @@ class EditorUpdateSuite extends munit.FunSuite {
     val h = SyncedHistory(
       Vector(SyncedEntry("h1", Vector(), "amber-fox", pushed)),
       Vector("h1"))
-    val u = editorUpdate(m1, EditorInput.SyncDocument(pushed, history = Some(h)))
+    val u = editorUpdate(m1, EditorInput.SyncDocument(pushed, push = DocPush.Synced(h)))
     // the editor keeps its own doc (stable ids), so the new node stays
     // selected instead of the highlight jumping to a wrong node
     assertEquals(u.state.doc, m1.doc)
@@ -333,7 +333,7 @@ class EditorUpdateSuite extends munit.FunSuite {
         List(DetachedNode.leaf(NodeData.IntData(1)))))
     val h = SyncedHistory(
       Vector(SyncedEntry("h1", Vector(), "calm-otter", d)), Vector("h1"))
-    val u = editorUpdate(pending, EditorInput.SyncDocument(d, history = Some(h)))
+    val u = editorUpdate(pending, EditorInput.SyncDocument(d, push = DocPush.Synced(h)))
     assertEquals(u.state.editingId, Some(EditorModel.PendingId))
     assert(u.state.pendingInsert.isDefined)
     // and the phantom can still commit into the pushed document
@@ -349,7 +349,7 @@ class EditorUpdateSuite extends munit.FunSuite {
       Vector(SyncedEntry("h1", Vector(), "amber-fox", d)), Vector("h1"))
     val u = editorUpdate(
       m.copy(selectedId = Some(gone)),
-      EditorInput.SyncDocument(d, history = Some(h)))
+      EditorInput.SyncDocument(d, push = DocPush.Synced(h)))
     assertEquals(u.state.selectedId, None)
   }
 
@@ -360,7 +360,7 @@ class EditorUpdateSuite extends munit.FunSuite {
       buildDocument(DetachedNode.leaf(NodeData.StringData("new")))
     val u = editorUpdate(
       m.copy(selectedId = Some(gone)),
-      EditorInput.SyncDocument(d, mergeLabel = Some("Remote edit")))
+      EditorInput.SyncDocument(d, push = DocPush.Merge("Remote edit")))
     assertEquals(u.state.selectedId, None)
   }
 
@@ -389,7 +389,7 @@ class EditorUpdateSuite extends munit.FunSuite {
       Vector(SyncedEntry("h1", Vector(), "init", m0.doc)), Vector("h1"))
     // editor sees the synced push (marks syncedHead)
     var m = editorUpdate(
-      m0, EditorInput.SyncDocument(m0.doc, history = Some(h0))).state
+      m0, EditorInput.SyncDocument(m0.doc, push = DocPush.Synced(h0))).state
     // deferred insert committed with its initial text
     m = editorUpdate(m, EditorInput.InsertChild).state
     val committed = editorUpdate(m, EditorInput.CommitEdit("intro")).out

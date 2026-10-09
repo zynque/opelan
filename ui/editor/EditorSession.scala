@@ -76,99 +76,101 @@ private def commitPending(
 
 // Parent-driven sync: replace the document without reporting it back.
 // `select` optionally picks a node in the new document — ignored if the
-// id doesn't exist there.
-//
-// A plain push opens a different document, so history restarts at a
-// fresh root. A `mergeLabel` push is the same document updated from
-// outside (e.g. a text-cell edit): record it as a new version on the
-// current history so undo walks back over it. A `history` push carries
-// the shared change graph: the version DAG is rebuilt wholesale from
-// it and `syncedHead` tracks the frontier version — undo at the head is
-// deferred to the session (UndoRequested) while browsing stays local.
+// id doesn't exist there. `push` says how the doc relates to the one
+// being shown (see DocPush).
+def syncDocument(
+    m: EditorModel,
+    d: Document[NodeData],
+    select: Option[Int],
+    push: DocPush): Update[EditorModel, EditorOutput] =
+  push match {
+    case DocPush.Synced(h) => syncShared(m, d, select, h)
+    case DocPush.Open =>
+      Update(EditorModel.forDocument(
+        d,
+        selectedId = select.filter(id => d.getNode(id).isDefined),
+        status = "Document synced"))
+    case DocPush.Merge(label) =>
+      // The same document updated from outside (a text-cell edit) is
+      // recorded as a version so undo walks it; an unchanged push is
+      // just the echo of our own doc.
+      if (d == m.doc) Update(m)
+      else Update(retarget(record(m, d, label), d, select).copy(status = label))
+  }
+
+// A shared-history push: rebuild the version DAG from the change graph
+// and track its frontier in `syncedHead` — undo at the head defers to
+// the session (UndoRequested) while browsing stays local.
 //
 // A browsing pin survives rebuilds by hash — node ids shift on every
 // push, so the pin resolves through the snapshot's change hash. Pinned,
 // the pane keeps showing the browsed version (DocViewed updates the
 // parent's mirrors) rather than being bumped forward by remote edits.
-// State bound to node ids (selection, an in-progress edit, a detached
-// cut node) survives only if the node still exists in the shown doc.
-def syncDocument(
+private def syncShared(
     m: EditorModel,
     d: Document[NodeData],
     select: Option[Int],
-    mergeLabel: Option[String],
-    history: Option[SyncedHistory]): Update[EditorModel, EditorOutput] =
-  (mergeLabel, history) match {
-    case (_, Some(h)) =>
-      buildSyncedHistory(h) match {
-        case Some((hist, headId)) =>
-          val pin =
-            if (m.syncedHead.forall(_ == m.versionId)) None
-            else for {
-              n <- m.history.getNode(m.versionId)
-              hash <- n.data.data.hash
-              i <- h.entries.indexWhere(_.hash == hash) match {
-                case -1 => None
-                case x  => Some(x)
-              }
-            } yield i
-          val vid = pin.getOrElse(headId)
-          val pushed =
-            if (pin.isDefined)
-              hist.getNode(vid).map(_.data.data.doc).getOrElse(d)
-            else d
-          // A push carrying the same outline text the editor already
-          // has is the echo of our own local edit — keep the live doc:
-          // a whole-text reparse reassigns node ids, which would orphan
-          // the selection and in-progress edit (id 5 on a reparse isn't
-          // the id-5 node we inserted).
-          val shown =
-            if (render(pushed) == render(m.doc)) m.doc
-            else pushed
-          // A pending insert's phantom row is local-only — it survives
-          // a push as long as the pushed outline still has a row at the
-          // parent's position (ids shift on reparse; positions don't).
-          val pending = m.pendingInsert.filter(p =>
-            EditorModel.flatIdsOf(shown).isDefinedAt(p.parentPos))
-          val keep = (id: Int) =>
-            if (id == EditorModel.PendingId) pending.isDefined
-            else shown.getNode(id).isDefined
-          val nm = m.copy(
-            doc = shown,
-            history = hist,
-            versionId = vid,
-            syncedHead = Some(headId),
-            selectedId = select.orElse(m.selectedId).filter(keep),
-            editingId = m.editingId.filter(keep),
-            pendingInsert = pending,
-            detachedNodeId =
-              m.detachedNodeId.filter(id => shown.getNode(id).isDefined),
-            status = "Synced")
-          Update(nm, if (shown != d) Vector(DocViewed(shown)) else Vector.empty)
-        case None => Update(m)
-      }
-    case (None, None) =>
-      Update(EditorModel.forDocument(
-        d,
-        selectedId = select.filter(id => d.getNode(id).isDefined),
-        status = "Document synced"))
-    case (Some(label), None) =>
-      if (d == m.doc) Update(m)
-      else {
-        val pending = m.pendingInsert.filter(p =>
-          EditorModel.flatIdsOf(d).isDefinedAt(p.parentPos))
-        val keep = (id: Int) =>
-          if (id == EditorModel.PendingId) pending.isDefined
-          else d.getNode(id).isDefined
-        val nm = record(m, d, label).copy(
-          selectedId = select.orElse(m.selectedId).filter(keep),
-          editingId = m.editingId.filter(keep),
-          pendingInsert = pending,
-          detachedNodeId = m.detachedNodeId.filter(id => d.getNode(id).isDefined),
-          status = label)
-        Update(nm)
-      }
+    h: SyncedHistory): Update[EditorModel, EditorOutput] =
+  buildSyncedHistory(h) match {
+    case Some((hist, headId)) =>
+      val pin = browsePin(m, h)
+      val vid = pin.getOrElse(headId)
+      val pushed =
+        if (pin.isDefined)
+          hist.getNode(vid).map(_.data.data.doc).getOrElse(d)
+        else d
+      // A push carrying the same outline text the editor already has is
+      // the echo of our own local edit — keep the live doc: a whole-text
+      // reparse reassigns node ids, which would orphan the selection and
+      // in-progress edit (id 5 on a reparse isn't the id-5 node we
+      // inserted).
+      val shown =
+        if (render(pushed) == render(m.doc)) m.doc
+        else pushed
+      val nm = retarget(m.copy(
+        doc = shown,
+        history = hist,
+        versionId = vid,
+        syncedHead = Some(headId),
+        status = "Synced"), shown, select)
+      Update(nm, if (shown != d) Vector(DocViewed(shown)) else Vector.empty)
+    case None => Update(m)
   }
+
+// The index in `h` of the change the user is currently pinned on, if
+// browsing an old version — the pin follows its change hash across
+// rebuilds (node ids shift every push; hashes don't). None while at the
+// head, so a synced push follows the frontier.
+private def browsePin(m: EditorModel, h: SyncedHistory): Option[Int] =
+  if (m.syncedHead.forall(_ == m.versionId)) None
+  else for {
+    n <- m.history.getNode(m.versionId)
+    hash <- n.data.data.hash
+    i = h.entries.indexWhere(_.hash == hash)
+    if i >= 0
+  } yield i
+
+// Retarget id-bound state onto a pushed document: selection, an
+// in-progress edit, and a detached (cut) node survive only if their node
+// still exists in `d`; a pending insert's phantom row is local-only and
+// survives while the pushed outline still has a row at the parent's
+// position (ids shift on reparse; positions don't). `select`, when
+// present, overrides the carried selection.
+private def retarget(
+    m: EditorModel,
+    d: Document[NodeData],
+    select: Option[Int]): EditorModel = {
+  val pending = m.pendingInsert.filter(p =>
+    EditorModel.flatIdsOf(d).isDefinedAt(p.parentPos))
+  val keep = (id: Int) =>
+    if (id == EditorModel.PendingId) pending.isDefined
+    else d.getNode(id).isDefined
+  m.copy(
+    selectedId = select.orElse(m.selectedId).filter(keep),
+    editingId = m.editingId.filter(keep),
+    pendingInsert = pending,
+    detachedNodeId = m.detachedNodeId.filter(id => d.getNode(id).isDefined))
+}
 
 def newDocument(): Update[EditorModel, EditorOutput] = {
   val d = beginDocument(Detached.s("root"))

@@ -209,7 +209,7 @@ class EditorDomSuite extends munit.FunSuite {
     val h0 = SyncedHistory(
       Vector(SyncedEntry("h1", Vector(), "init", d0)), Vector("h1"))
     h.send(EchoPane.Input.Push(
-      EditorInput.SyncDocument(d0, history = Some(h0))))
+      EditorInput.SyncDocument(d0, push = DocPush.Synced(h0))))
     // Enter opens the phantom edit box — the node is not created yet
     val outline = findId(container.asInstanceOf[dom.Node], "doc-outline").get
     keydown(outline, "Enter")
@@ -235,7 +235,7 @@ class EditorDomSuite extends munit.FunSuite {
              SyncedEntry("h2", Vector("h1"), "calm-otter", pushed)),
       Vector("h2"))
     h.send(EchoPane.Input.Push(
-      EditorInput.SyncDocument(pushed, history = Some(hist))))
+      EditorInput.SyncDocument(pushed, push = DocPush.Synced(hist))))
     val input1 = findId(container.asInstanceOf[dom.Node], "doc-edit-input")
     if (input1.isEmpty) println(dump(container.asInstanceOf[dom.Node]))
     assert(input1.isDefined, "edit box should survive a remote push")

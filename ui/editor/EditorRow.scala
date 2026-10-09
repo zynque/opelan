@@ -41,18 +41,9 @@ private def content(m: EditorModel, id: Int, node: Node[NodeData]): View[EditorI
 // so a remote push that reorders rows — rebuilding this element — can't
 // lose what was typed.
 private def pendingInput(m: EditorModel): View[EditorInput] =
-  View.Elem("input",
-    Map(
-      "id" -> "doc-edit-input",
-      "value" -> m.pendingInsert.map(_.draft).getOrElse(""),
-      "style" -> "font-family: Consolas, monospace; font-size: 14px; width: 40ch;",
-      "data-focus" -> "true"),
-    events(
-      onEventOpt("keydown")(keyDown),
-      onEventOpt("input")(e => Some(DraftEdit(valueOf(e)))),
-      onEventOpt("blur")(blurCommit),
-      onEventOpt("click") { e => e.stopPropagation(); None }),
-    Vector.empty)
+  editBox(
+    m.pendingInsert.map(_.draft).getOrElse(""),
+    onEventOpt("input")(e => Some(DraftEdit(valueOf(e)))))
 
 private def dataLabel(node: Node[NodeData]): View[EditorInput] = {
   val css = node.data match {
@@ -64,16 +55,24 @@ private def dataLabel(node: Node[NodeData]): View[EditorInput] = {
 }
 
 private def editInput(node: Node[NodeData]): View[EditorInput] =
+  editBox(DocumentEditor.editText(node.data))
+
+// The shared inline-edit box: an initial value plus any extra events
+// (the pending box tracks keystrokes as DraftEdit). Enter commits,
+// Escape cancels, blur commits if the element is still live.
+private def editBox(
+    value: String,
+    extraEvents: Map[String, dom.Event => Option[EditorInput]] = Map.empty): View[EditorInput] =
   View.Elem("input",
     Map(
       "id" -> "doc-edit-input",
-      "value" -> DocumentEditor.editText(node.data),
+      "value" -> value,
       "style" -> "font-family: Consolas, monospace; font-size: 14px; width: 40ch;",
       "data-focus" -> "true"),
     events(
       onEventOpt("keydown")(keyDown),
       onEventOpt("blur")(blurCommit),
-      onEventOpt("click") { e => e.stopPropagation(); None }),
+      onEventOpt("click") { e => e.stopPropagation(); None }) ++ extraEvents,
     Vector.empty)
 
 // Enter commits, Escape cancels; all other keys are swallowed here so they
