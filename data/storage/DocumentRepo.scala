@@ -13,7 +13,7 @@ import opelan.foundation.document._
 // Write one version record. The caller's in-memory Store assigns the
 // version number (Store.put) before persisting.
 def persist(url: String, version: Int, doc: Document[NodeData]): Future[Unit] =
-  IndexedDBStore.storeDocumentRecord(js.Dynamic.literal(
+  IndexedDBStore.put("documents", js.Dynamic.literal(
     "key" -> s"$url@$version",
     "url" -> url,
     "version" -> version,
@@ -22,7 +22,7 @@ def persist(url: String, version: Int, doc: Document[NodeData]): Future[Unit] =
 // Rebuild the whole store from persisted version records. Records that
 // fail to parse are skipped rather than failing the load.
 def loadAll(): Future[Store] =
-  IndexedDBStore.listDocumentRecords().map { records =>
+  IndexedDBStore.getAll("documents").map { records =>
     records.foldLeft(Store.empty) { (store, r) =>
       parse(r.outline.asInstanceOf[String]) match {
         case Some(doc) =>

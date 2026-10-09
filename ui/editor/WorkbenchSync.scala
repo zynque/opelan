@@ -1,15 +1,13 @@
 package opelan.ui.editor
 
-import scala.scalajs.js
-import scala.scalajs.js.typedarray.Uint8Array
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.util.{Random, Try}
+import scala.util.Random
 import org.scalajs.dom
 import opelan.foundation.document._
-import opelan.collaboration.{DocSession, freshActorId, generateName}
+import opelan.collaboration.{DocSession, sessionIdentity}
 import opelan.collaboration.automerge.ChangeInfo
 import opelan.collaboration.backends.BroadcastTransport
-import opelan.data.storage.IndexedDBStore
+import opelan.data.storage.{loadSyncDoc, saveSyncDoc}
 import opelan.ui.typeddoc.TypedDocInput
 
 // Live-sync plumbing for the workbench shell: a DocSession per document
@@ -99,11 +97,9 @@ trait WorkbenchSync extends WorkbenchDocs {
       url: String, seedText: Option[String] = None): Unit =
     if (syncOn && !sessions.contains(url) && !attaching(url)) {
       attaching += url
-      IndexedDBStore.getAutomergeDoc(url).onComplete { result =>
+      loadSyncDoc(url).onComplete { result =>
         attaching -= url
         val saved = result.toOption.flatten
-          .filterNot(r => js.isUndefined(r.document))
-          .map(_.document.asInstanceOf[Uint8Array])
         val (actor, name) = sessionIdentity()
         val session = new DocSession(
           url,
@@ -111,8 +107,7 @@ trait WorkbenchSync extends WorkbenchDocs {
           actor,
           name,
           (entries, heads) => sessionUpdate(url, entries, heads),
-          bytes => IndexedDBStore.storeAutomergeDoc(
-            url, bytes.asInstanceOf[js.Dynamic]),
+          bytes => saveSyncDoc(url, bytes),
           joinBranch)
         sessions += url -> session
         session.attach(
@@ -157,19 +152,4 @@ trait WorkbenchSync extends WorkbenchDocs {
 
   private def shortActor(actor: String): String =
     s"actor-${actor.take(8)}"
-
-  // Per-tab identity, stable across that tab's reloads; falls back to
-  // ephemeral ids when storage is unavailable.
-  private def sessionIdentity(): (String, String) = {
-    def stored(key: String, gen: => String): String =
-      Try(Option(dom.window.sessionStorage.getItem(key))
-          .filter(_.nonEmpty)).toOption.flatten
-        .getOrElse {
-          val v = gen
-          Try(dom.window.sessionStorage.setItem(key, v))
-          v
-        }
-    (stored("opelan:actor", freshActorId(Random)),
-     stored("opelan:name", generateName(Random)))
-  }
 }

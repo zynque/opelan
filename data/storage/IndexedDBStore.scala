@@ -5,10 +5,12 @@ import org.scalajs.dom
 import scala.concurrent.{Future, Promise}
 import scala.concurrent.ExecutionContext.Implicits.global
 
-// IndexedDB persistence for the workbench. Payloads are js.Dynamic so the
-// store stays agnostic about what it holds: project stubs, Automerge document
-// bytes, and UI settings. v2 drops the scaffold-era "schemas"/"definitions"
-// object stores — schemas become documents and definitions live in them.
+// IndexedDB persistence for the workbench — a generic record store over
+// named object stores. Record shapes live in the per-store repos:
+// `documents` in DocumentRepo (versioned outline text) and
+// `automerge_docs` in AutomergeRepo (sync op-log bytes). v2 dropped the
+// scaffold-era "schemas"/"definitions" object stores — schemas become
+// documents and definitions live in them.
 class IndexedDBStore(dbName: String = "opelan-workbench", version: Int = 3) {
   private var db: js.Dynamic = null
   private var isInitialized = false
@@ -76,26 +78,17 @@ class IndexedDBStore(dbName: String = "opelan-workbench", version: Int = 3) {
     if (result == null || js.isUndefined(result)) None
     else Some(result.asInstanceOf[js.Dynamic])
 
-  def storeAutomergeDoc(docId: String, document: js.Dynamic): Future[Unit] =
-    transact("automerge_docs", "readwrite", "Failed to store Automerge document")(
-      _.put(js.Dynamic.literal(
-        "id" -> docId,
-        "document" -> document,
-        "lastModified" -> new js.Date().toISOString())))(_ => ())
+  def put(storeName: String, record: js.Dynamic): Future[Unit] =
+    transact(storeName, "readwrite", s"Failed to write to $storeName")(
+      _.put(record))(_ => ())
 
-  def getAutomergeDoc(docId: String): Future[Option[js.Dynamic]] =
-    transact("automerge_docs", "readonly", "Failed to get Automerge document")(_.get(docId))(
-      optResult)
+  def get(storeName: String, key: String): Future[Option[js.Dynamic]] =
+    transact(storeName, "readonly", s"Failed to read from $storeName")(
+      _.get(key))(optResult)
 
-  // Versioned document records: one row per (url, version), key "url@v",
-  // holding the outline text. Append-only — old versions stay readable so
-  // pinned external refs keep resolving.
-  def storeDocumentRecord(record: js.Dynamic): Future[Unit] =
-    transact("documents", "readwrite", "Failed to store document record")(_.put(record))(_ => ())
-
-  def listDocumentRecords(): Future[List[js.Dynamic]] =
-    transact("documents", "readonly", "Failed to list document records")(_.getAll())(
-      _.asInstanceOf[js.Array[js.Dynamic]].toList)
+  def getAll(storeName: String): Future[List[js.Dynamic]] =
+    transact(storeName, "readonly", s"Failed to list $storeName")(
+      _.getAll())(_.asInstanceOf[js.Array[js.Dynamic]].toList)
 
   private def ensureInitialized(): Future[Unit] = {
     if (isInitialized) Future.successful(()) else initialize()
@@ -109,14 +102,8 @@ class IndexedDBStore(dbName: String = "opelan-workbench", version: Int = 3) {
   }
 }
 
-// Global IndexedDB store instance
+// Global IndexedDB store instance.
 object IndexedDBStore {
   private val store = new IndexedDBStore()
-
-  def initialize(): Future[Unit] = store.initialize()
-  def storeAutomergeDoc(docId: String, document: js.Dynamic): Future[Unit] = store.storeAutomergeDoc(docId, document)
-  def getAutomergeDoc(docId: String): Future[Option[js.Dynamic]] = store.getAutomergeDoc(docId)
-  def storeDocumentRecord(record: js.Dynamic): Future[Unit] = store.storeDocumentRecord(record)
-  def listDocumentRecords(): Future[List[js.Dynamic]] = store.listDocumentRecords()
-  def close(): Unit = store.close()
+  export store.{initialize, put, get, getAll, close}
 }

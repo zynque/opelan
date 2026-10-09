@@ -1,7 +1,5 @@
 package opelan.collaboration.automerge
 
-import scala.scalajs.js
-
 // Inverse-splice computation for "undo my change": what a given change did
 // to the doc's `text`, expressed at the doc's *current* frontier. The
 // change's before/after texts are diffed to a single span (longest common
@@ -15,7 +13,7 @@ import scala.scalajs.js
 // (pos, delLen, insert) to apply at the current frontier to undo the
 // named change. None when the change had no text effect, the hash is
 // unknown, or the span can't be reverted without clobbering a peer.
-def inverseOf(doc: js.Dynamic, hash: String): Option[(Int, Int, String)] =
+def inverseOf(doc: Automerge.Doc, hash: String): Option[(Int, Int, String)] =
   Automerge.historyOf(doc).find(_.hash == hash).flatMap { entry =>
     val before = Automerge.textAtHeads(doc, entry.deps)
     val afterDoc = Automerge.view(doc, Vector(hash))
@@ -56,6 +54,6 @@ private def commonEdges(a: String, b: String): (Int, Int) = {
 // live doc. Cursor lookup can fail on degenerate positions (e.g. empty
 // text) — fall back to the raw index clamped into range.
 private def elementPosition(
-    afterDoc: js.Dynamic, doc: js.Dynamic, index: Int): Int =
+    afterDoc: Automerge.Doc, doc: Automerge.Doc, index: Int): Int =
   try Automerge.cursorPosition(doc, Automerge.cursorAt(afterDoc, index))
   catch { case _: Throwable => math.min(index, Automerge.textOf(doc).length) }

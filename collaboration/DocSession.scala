@@ -1,6 +1,5 @@
 package opelan.collaboration
 
-import scala.scalajs.js
 import scala.scalajs.js.typedarray.Uint8Array
 import opelan.collaboration.automerge.{Automerge, ChangeInfo}
 import opelan.collaboration.backends.{SyncEnvelope, SyncTransport}
@@ -37,8 +36,8 @@ class DocSession(
     onPersist: Uint8Array => Unit,
     onBranch: String => Unit = _ => ()) extends SessionUndo {
 
-  protected var doc: js.Dynamic = null
-  private var peers = Map.empty[String, js.Dynamic]
+  protected var doc: Automerge.Doc = null
+  private var peers = Map.empty[String, Automerge.SyncState]
   private var lastText = ""
   private var lastCount = 0
 

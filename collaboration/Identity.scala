@@ -1,6 +1,7 @@
 package opelan.collaboration
 
-import scala.util.Random
+import scala.util.{Random, Try}
+import org.scalajs.dom
 
 // Session identity until accounts exist: a unique Automerge actor id per
 // session (tabs resuming the same persisted bytes must not share one —
@@ -23,4 +24,19 @@ def generateName(rng: Random = Random): String = {
   val a = adjectives(rng.nextInt(adjectives.length))
   val n = animals(rng.nextInt(animals.length))
   s"$a-$n"
+}
+
+// Per-tab identity, stable across that tab's reloads; falls back to
+// ephemeral values when storage is unavailable.
+def sessionIdentity(rng: Random = Random): (String, String) = {
+  def stored(key: String, gen: => String): String =
+    Try(Option(dom.window.sessionStorage.getItem(key))
+        .filter(_.nonEmpty)).toOption.flatten
+      .getOrElse {
+        val v = gen
+        Try(dom.window.sessionStorage.setItem(key, v))
+        v
+      }
+  (stored("opelan:actor", freshActorId(rng)),
+   stored("opelan:name", generateName(rng)))
 }
