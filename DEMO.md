@@ -41,8 +41,10 @@ Sidebar documents: `Household budget`, `lang: sheet`, `lang: expression`.
    is not in the grammar. The app still works; every other cell
    computes. (*Never Broken.*)
 3. Click a `line total` cell → the document pane opens with that formula
-   node selected. Edit `price` → the grid recomputes in place.
-   (*Reactive*, provenance navigation per DESIGN §7.)
+   node selected. Then edit `price` *in the grid itself* — the cell is a
+   projection: typing a new value rewrites the source node and the grid
+   recomputes in place. (*Reactive*, provenance navigation per DESIGN §7,
+   projectional editing.)
 4. Flip to the text surface: `qty * price` as text, the structural
    editor shows the same subtree. (*Polysyntactic* — already works.)
 
@@ -104,21 +106,31 @@ bootstrap):
    `SelectSource` → the editor child selects the producing node (a
    same-doc `SyncDocument` push records no version). App surface stays
    read-only; editing happens in existing panes — key scope cut.
-5. Seed the three demo docs; store a *descriptive* `lang: expr` doc
+5. ~~Projectional cell editing~~ — done: an `input` element in the view
+   vocabulary (first child is a `SourceRef` naming the node it edits —
+   the provenance convention, semanticized). The sheet view emits one
+   per leaf cell (labels, literals, holes — refs and formulas stay
+   read-only computed values); the `formulas` view makes every cell an
+   input showing `cellText` (so formulas edit as `ref:N * ref:M` text).
+   Commit parses via `Language.parseCell` and rewrites the node *in
+   place* (`replaceNodeContent`) — the id survives, so `ref:N` cells
+   pointing at it keep working and the grid recomputes; an unchanged
+   commit is a no-op, so blur can't churn versions.
+6. Seed the three demo docs; store a *descriptive* `lang: expr` doc
    under the type ref so under-the-hood navigation lands somewhere real
    even before it is authoritative.
 
 **M2 — the bootstrap bet:**
 
-6. Define the language-definition document format: node-kind schema +
+7. Define the language-definition document format: node-kind schema +
    view spec + a minimal declarative grammar sufficient for
    infix-expression languages. Eval semantics stay named built-ins
    (`expr-eval`) — honest scaffolding; semantics-as-documents is later
    work, and the demo should say so.
-7. `DocLanguage`: `languageForRef` gains Store access, resolves the
+8. `DocLanguage`: `languageForRef` gains Store access, resolves the
    ref to the stored def doc, interprets it into `Language`
    (`views`/`render`/`parse`).
-8. Reactivity: when a def doc version bumps, open documents re-resolve
+9. Reactivity: when a def doc version bumps, open documents re-resolve
    their language and re-render — the wiring behind act-2 step 7.
 
 **M3 — flex:** version-pin upgrade path, tab-sync in the demo script,

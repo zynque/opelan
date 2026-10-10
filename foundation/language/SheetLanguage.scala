@@ -25,6 +25,11 @@ object SheetLanguage extends Language {
   private def content(doc: Document[NodeData]): Either[String, Int] =
     contentId(doc).toRight(s"$name: typed document has no content")
 
+  // Cells are editable projections: committed text parses per the
+  // sheet's cell grammar (formula, ref, literal, hole, or label).
+  override def parseCell(text: String): Option[DetachedNode[NodeData]] =
+    Some(parseCellText(text))
+
   // The demo's app: a small household budget. Cells are positional;
   // formula refs are InternalNodeRefs to other cells, seeded here with
   // "r:<row>,<col>" placeholders resolved against the built document.

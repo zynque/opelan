@@ -40,6 +40,13 @@ expression-language document; **Sheet sample** loads the typed
 cells (`qty * price`, a summed total, `total / people`) whose `sheet`
 view computes values and whose `formulas` view shows the expressions.
 
+Sheet cells are projected editors: value cells (labels, numbers, holes)
+and every cell in the `formulas` view show a text box — edit in place,
+Enter or click-away commits, Escape reverts. A commit rewrites the
+source node in place, so formulas referencing the cell recompute.
+Typing `?` writes a hole; text that parses as an expression (numbers,
+`ref:N`, `a * b`) becomes formula content; anything else is a label.
+
 ## Structural editor keys
 
 With the outline focused:

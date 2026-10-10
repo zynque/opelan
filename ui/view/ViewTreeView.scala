@@ -4,6 +4,7 @@ import opelan.foundation.document._
 import opelan.foundation.view.ViewTree
 import opelan.ui.fp._
 import opelan.ui.fp.Dsl._
+import org.scalajs.dom
 
 // The single interpreter from view trees — the detached document trees
 // Language.render produces — to fp Views. Every derived view of every
@@ -15,32 +16,42 @@ import opelan.ui.fp.Dsl._
 //
 // Provenance: an element whose first child is a SourceRef leaf is tagged
 // — it renders with a click handler emitting `onSource(id)`, so the host
-// can navigate to the producing node.
-def viewTree[I](t: DetachedNode[NodeData], onSource: Int => I): View[I] = {
+// can navigate to the producing node. ("input" elements are the one
+// exception: their SourceRef names the node they edit, not provenance.)
+def viewTree[I](
+    t: DetachedNode[NodeData],
+    onSource: Int => I,
+    onEdit: (Int, String) => I): View[I] = {
   val (src, kids) = t.children match {
     case DetachedNode(NodeData.SourceRef(id), Nil) :: rest => (Some(id), rest)
     case _ => (None, t.children)
   }
-  val v = content(t.data, kids, onSource)
-  src.fold(v)(id => annotated(v, id, onSource))
+  if (t.data == NodeData.StringData("input"))
+    src.fold(holeView("?input"))(id => inputView(id, kids, onEdit))
+  else {
+    val v = content(t.data, kids, onSource, onEdit)
+    src.fold(v)(id => annotated(v, id, onSource))
+  }
 }
 
 private def content[I](
     data: NodeData,
     kids: List[DetachedNode[NodeData]],
-    onSource: Int => I): View[I] =
+    onSource: Int => I,
+    onEdit: (Int, String) => I): View[I] =
   data match {
     case NodeData.StringData(tag) if ViewTree.tags(tag) =>
-      element(tag, kids.map(k => viewTree(k, onSource)))
+      element(tag, kids.map(k => viewTree(k, onSource, onEdit)))
     case NodeData.StringData(tag) if kids.nonEmpty =>
       // An unrecognized element: surface the tag as a hole, children
       // still render.
-      element("block", holeView(s"?$tag") +: kids.map(k => viewTree(k, onSource)))
+      element("block",
+        holeView(s"?$tag") +: kids.map(k => viewTree(k, onSource, onEdit)))
     case NodeData.StringData(s) => text(s)
     case NodeData.GapData(t) =>
       val chip = holeView(if (t.isEmpty) "?" else t)
       if (kids.isEmpty) chip
-      else els("span")(chip +: kids.map(k => viewTree(k, onSource)))
+      else els("span")(chip +: kids.map(k => viewTree(k, onSource, onEdit)))
     case other =>
       // Scalars render as text; refs and stray SourceRefs become holes.
       val lead = other match {
@@ -49,7 +60,8 @@ private def content[I](
         case d                     => holeView(NodeDataText.show(d))
       }
       if (kids.isEmpty) lead
-      else element("block", lead +: kids.map(k => viewTree(k, onSource)))
+      else element("block",
+        lead +: kids.map(k => viewTree(k, onSource, onEdit)))
   }
 
 private def element[I](tag: String, kids: Iterable[View[I]]): View[I] =
@@ -70,6 +82,57 @@ private def element[I](tag: String, kids: Iterable[View[I]]): View[I] =
   }
 
 private val cellCss = "border: 1px solid #ddd; padding: 2px 8px;"
+
+// A projected text box over a document node: the box shows the node's
+// surface text; Enter or blur commits `onEdit(id, text)` and Escape
+// reverts — the same contract as the structural editor's inline edit.
+private def inputView[I](
+    id: Int,
+    display: List[DetachedNode[NodeData]],
+    onEdit: (Int, String) => I): View[I] = {
+  val current = display.map(ViewTree.flatten).mkString
+  el("input",
+    Map(
+      "type"  -> "text",
+      "value" -> current,
+      "style" -> ("border: none; background: transparent; font: inherit; " +
+        s"padding: 0; margin: 0; min-width: 4ch; width: ${math.max(4, current.length + 1)}ch;")),
+    events(
+      onEventOpt("keydown")(keyDown(id, current, onEdit)),
+      onEventOpt("blur")(blurCommit(id, onEdit))))()
+}
+
+private def keyDown[I](id: Int, current: String, onEdit: (Int, String) => I)(
+    e: dom.Event): Option[I] = {
+  e.stopPropagation()
+  e.asInstanceOf[dom.KeyboardEvent].key match {
+    case "Enter" =>
+      e.preventDefault()
+      blur(e)
+      Some(onEdit(id, valueOf(e)))
+    case "Escape" =>
+      e.preventDefault()
+      e.target.asInstanceOf[dom.HTMLInputElement].value = current
+      blur(e)
+      None
+    case _ => None
+  }
+}
+
+private def blur(e: dom.Event): Unit =
+  e.target.asInstanceOf[dom.HTMLInputElement].blur()
+
+private def valueOf(e: dom.Event): String =
+  e.target.asInstanceOf[dom.HTMLInputElement].value
+
+// A blur delivered while the input is leaving the document is DOM
+// teardown (a patch rebuilt the view), not the user moving focus away —
+// committing it would write a stale value, so only live blurs count.
+private def blurCommit[I](id: Int, onEdit: (Int, String) => I)(
+    e: dom.Event): Option[I] =
+  if (e.target.asInstanceOf[dom.Element].isConnected)
+    Some(onEdit(id, valueOf(e)))
+  else None
 
 // Recover invalid table structure: grid children that aren't rows get
 // wrapped in one, row children that aren't cells likewise — a <div>

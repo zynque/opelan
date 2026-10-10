@@ -52,34 +52,62 @@ private def cellView(
 private def formulaCell(
     doc: Document[NodeData], cellId: Int,
     header: Boolean): DetachedNode[NodeData] =
-  mkCell(header, cellId,
-    if (isLabel(doc, cellId)) txt(labelOf(doc, cellId))
-    else printTree(readLocExpr(doc, cellId)))
+  mkCell(header, cellId, input(cellId, txt(cellText(doc, cellId))))
 
 private def mkCell(
     header: Boolean, cellId: Int,
     content: DetachedNode[NodeData]*): DetachedNode[NodeData] =
   if (header) hcell((src(cellId) +: content)*) else cell((src(cellId) +: content)*)
 
-// A cell's displayed value: labels show their text; expression cells
-// evaluate, and a blocked cell shows the hole it's waiting on — linked
-// to the blocking node, which may be inside a referenced cell.
+// A cell's displayed value. Leaf cells — labels, literals, holes — are
+// editable projections (`input`): typing a new value rewrites the source
+// node. Refs and formulas stay read-only: their displayed value is the
+// evaluation, with a hole linked to the blocking node when they can't
+// compute.
 private def valueOf(
     doc: Document[NodeData], cellId: Int): DetachedNode[NodeData] =
-  if (isLabel(doc, cellId)) txt(labelOf(doc, cellId))
-  else
-    evalLoc(readLocExpr(doc, cellId), docResolver(doc, Set(cellId))) match {
-      case Right(n)           => txt(Num.show(n))
-      case Left((msg, srcId)) => from(srcId, hole(msg))
+  doc.getNode(cellId) match {
+    case Some(node)
+        if node.childIds.isEmpty &&
+           !node.data.isInstanceOf[NodeData.InternalNodeRef] =>
+      input(cellId, txt(cellText(doc, cellId)))
+    case _ => evalCell(doc, cellId)
+  }
+
+private def evalCell(
+    doc: Document[NodeData], cellId: Int): DetachedNode[NodeData] =
+  evalLoc(readLocExpr(doc, cellId), docResolver(doc, Set(cellId))) match {
+    case Right(n)           => txt(Num.show(n))
+    case Left((msg, srcId)) => from(srcId, hole(msg))
+  }
+
+// The surface text a cell's projected editor shows — in both views —
+// matching what parseCellText produces on commit, so an unchanged edit
+// is a genuine no-op: labels show bare, holes show `?text`, refs show
+// `ref:N`, and formulas show their printed expression.
+def cellText(doc: Document[NodeData], cellId: Int): String =
+  doc.getNode(cellId) match {
+    case Some(node) if node.childIds.isEmpty => node.data match {
+      case NodeData.StringData(t)      => t
+      case NodeData.IntData(i)         => i.toString
+      case NodeData.FloatData(f)       => Num.show(Num.F(f))
+      case NodeData.GapData(t)         => s"?$t"
+      case NodeData.InternalNodeRef(n) => s"ref:$n"
+      case other                       => NodeDataText.show(other)
     }
+    case _ => ViewTree.flatten(printTree(readLocExpr(doc, cellId)))
+  }
 
-// A plain string leaf is a label. (An op-tag leaf like "add" alone is
-// also a label here — a bare tag is a label that happens to be named.)
-private def isLabel(doc: Document[NodeData], cellId: Int): Boolean =
-  doc.getNode(cellId).exists(n =>
-    n.childIds.isEmpty && n.data.isInstanceOf[NodeData.StringData])
-
-private def labelOf(doc: Document[NodeData], cellId: Int): String =
-  doc.getNode(cellId).map(_.data).collect {
-    case NodeData.StringData(t) => t
-  }.getOrElse("")
+// The sheet's cell grammar (Language.parseCell): text committed in a
+// cell's box becomes the cell's new content. A leading '?' writes a hole
+// (matching the outline codec's `?text` gaps); otherwise a full
+// expression parses to its subtree — numbers, refs, whole formulas;
+// and anything that doesn't parse at all is a label — in a sheet, plain
+// text is a string value, not an error.
+def parseCellText(text: String): DetachedNode[NodeData] =
+  if (text.startsWith("?")) DetachedNode.leaf(NodeData.GapData(text.drop(1)))
+  else if (text.trim.isEmpty) DetachedNode.leaf(NodeData.StringData(""))
+  else parseExpr(text).expr match {
+    case _: Expr.Hole => DetachedNode.leaf(NodeData.StringData(text))
+    case e            => exprToDetached(e)
+  }

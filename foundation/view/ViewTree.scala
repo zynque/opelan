@@ -13,6 +13,9 @@ import opelan.foundation.document.Detached._
 //                               leaf gets when it needs provenance)
 //   "heading"                   emphasized line
 //   "grid" / "row" / "cell" / "hcell"   a table, its rows, its cells
+//   "input"                     an editable text region: its SourceRef
+//                               first child names the node it edits;
+//                               remaining children are the display text
 //   leaves    StringData/IntData/FloatData render as text runs;
 //             GapData renders as a hole chip
 //   src:n     a SourceRef LEAF as an element's first child is its
@@ -25,7 +28,7 @@ import opelan.foundation.document.Detached._
 // Broken): unknown containers show their tag as a hole.
 object ViewTree {
 
-  val tags = Set("block", "flow", "heading", "grid", "row", "cell", "hcell")
+  val tags = Set("block", "flow", "heading", "grid", "row", "cell", "hcell", "input")
 
   private def tagged(tag: String, children: Seq[DetachedNode[NodeData]]) =
     DetachedNode(NodeData.StringData(tag), children.toList)
@@ -49,6 +52,12 @@ object ViewTree {
   // A provenance annotation: valid as an element's first child.
   def src(nodeId: Int): DetachedNode[NodeData] =
     DetachedNode.leaf(NodeData.SourceRef(nodeId))
+
+  // An editable text region: `nodeId` is the document node whose content
+  // a commit rewrites (via the language's cell grammar); the children
+  // are the text shown in the box.
+  def input(nodeId: Int, display: DetachedNode[NodeData]*) =
+    tagged("input", src(nodeId) +: display)
 
   // Wrap children in a flow carrying provenance — how a leaf gets a
   // source node, since a leaf cannot carry children of its own.

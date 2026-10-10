@@ -70,6 +70,9 @@ enum TypedDocInput {
   // A provenance-tagged fragment of a derived view was clicked: select
   // the source node in the structural editor.
   case SelectSource(nodeId: Int)
+  // A projected cell editor committed text: parse it through the
+  // language's cell grammar and rewrite the node in place.
+  case CommitCellText(nodeId: Int, text: String)
   case FromEditor(out: EditorOutput)
 }
 

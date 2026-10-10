@@ -76,6 +76,25 @@ def extractSubtree[A](nodeId: Int, document: Document[A]): Either[String, Detach
 def updateNodeData[A](nodeId: Int, newData: A, document: Document[A]): Either[String, Document[A]] =
   transformNode(nodeId, n => n.copy(version = n.version + 1, data = newData), document)
 
+// Replace a node's data and children in place: the node keeps its id —
+// so refs targeting it keep working — while old child subtrees detach
+// (staying in the node sequence until compaction) and the detached
+// tree's children insert fresh. How a projected surface commits an edit
+// without breaking references into the node.
+def replaceNodeContent[A](
+    nodeId: Int,
+    detached: DetachedNode[A],
+    document: Document[A]): Either[String, Document[A]] =
+  for {
+    d1 <- updateNodeData(nodeId, detached.data, document)
+    d2 <- document.childrenOf(nodeId).foldLeft[Either[String, Document[A]]](Right(d1)) {
+      (acc, cid) => acc.flatMap(cutNode(cid, _))
+    }
+    d3 <- detached.children.zipWithIndex.foldLeft[Either[String, Document[A]]](Right(d2)) {
+      (acc, ci) => acc.flatMap(insertNode(ci._1, nodeId, ci._2, _))
+    }
+  } yield d3
+
 def updateNodeChildIds[A](nodeId: Int, newChildIds: List[Int], document: Document[A]): Either[String, Document[A]] =
   transformNode(nodeId, n => n.copy(version = n.version + 1, childIds = newChildIds), document)
 

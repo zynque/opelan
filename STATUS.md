@@ -36,17 +36,22 @@ implementation plan.
   labels, literals, and formula cells (expressions over refs to other
   cells). `sheet` and `formulas` views render evaluated/source grids;
   cells compose through the document resolver so a hole or cycle in a
-  referenced cell degrades the dependents, all with provenance. A seeded
+  referenced cell degrades the dependents, all with provenance. Cells
+  are projected editors — labels, literals, and formulas edit in place,
+  committing through the cell grammar back into the document. A seeded
   "Household budget" sample loads from the toolbar.
 - **View trees** (`foundation/view` + `ui/view`): a derived view is
   detached document data — `block`/`flow`/`heading`/`grid`/`row`/`cell`
-  containers, scalar leaves as text runs, `GapData` as holes, a `SourceRef`
-  first child tagging an element's provenance. One recovering interpreter
-  (`viewTree`) renders any view tree to an fp `View`; unknown structure
-  degrades to hole chips. `Language.render` produces these; the sidebar's
-  provenance clicks select the producing node (`SelectSource` rides the
-  ordinary `SyncDocument` push — a same-doc push carrying a selection
-  records no version).
+  containers, scalar leaves as text runs, `GapData` as holes, `input`
+  editable text regions, a `SourceRef` first child tagging an element's
+  provenance (for `input`, naming the node it edits). One recovering
+  interpreter (`viewTree`) renders any view tree to an fp `View`; unknown
+  structure degrades to hole chips. `Language.render` produces these;
+  the sidebar's provenance clicks select the producing node
+  (`SelectSource` rides the ordinary `SyncDocument` push — a same-doc
+  push carrying a selection records no version), and `input` commits
+  rewrite the source node via `Language.parseCell` +
+  `replaceNodeContent` — an id-preserving edit, so refs keep resolving.
 - **fp component runtime** (`ui/fp`): Elm-style `Component[I,O]` with pure
   update, single FIFO dispatch queue, positional DOM patching that preserves
   focus, keyed child reconciliation, `Managed` escape hatch for imperative

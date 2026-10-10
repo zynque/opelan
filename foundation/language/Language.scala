@@ -34,6 +34,11 @@ trait Language {
   // subtree. Recovering parsers return Some even for malformed input,
   // embedding holes (GapData nodes) where the text does not fit.
   def parse(text: String): Option[DetachedNode[NodeData]] = None
+
+  // Cell grammar, if the language's views emit "input" elements: parse
+  // text committed in a projected editor into a replacement subtree for
+  // the node it edits. None = the language's views are read-only.
+  def parseCell(text: String): Option[DetachedNode[NodeData]] = None
 }
 
 // Registry mapping document-type references to languages defined in code.

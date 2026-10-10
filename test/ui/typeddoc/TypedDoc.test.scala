@@ -112,6 +112,35 @@ class TypedDocSuite extends munit.FunSuite {
     assertEquals(editorInput(u.state), EditorInput.SyncDocument(d, Some(target)))
   }
 
+  private def cellId(doc: Document[NodeData], r: Int, c: Int): Int = {
+    val sheet = contentId(doc).get
+    doc.childrenOf(doc.childrenOf(sheet)(r))(c)
+  }
+
+  test("CommitCellText rewrites the node in place and pushes the doc") {
+    val m = typedDocUpdate(init, TypedDocInput.LoadSheetSample).state
+    val price = cellId(m.doc, 1, 2) // Apples' price
+    val u = typedDocUpdate(m, TypedDocInput.CommitCellText(price, "1.50"))
+    assertEquals(
+      u.state.doc.getNode(price).map(_.data), Some(NodeData.FloatData(1.5)))
+    assertEquals(u.state.pushedDoc, u.state.doc)
+    assert(u.out.contains(TypedDocOutput.DocChanged(u.state.doc)))
+  }
+
+  test("an unchanged CommitCellText is a no-op") {
+    val m = typedDocUpdate(init, TypedDocInput.LoadSheetSample).state
+    val price = cellId(m.doc, 1, 2)
+    val u = typedDocUpdate(m, TypedDocInput.CommitCellText(price, "1.2"))
+    assertEquals(u.state, m)
+    assert(u.out.isEmpty)
+  }
+
+  test("CommitCellText on a doc with no cell grammar reports it") {
+    val u = typedDocUpdate(init, TypedDocInput.CommitCellText(0, "x"))
+    assert(u.state.status.contains("cell grammar"))
+    assert(u.out.exists(_.isInstanceOf[TypedDocOutput.Status]))
+  }
+
   test("SelectSource pushes a selection into the editor") {
     val m = init
     val target = contentId(m.doc).get

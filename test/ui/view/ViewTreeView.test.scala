@@ -2,24 +2,28 @@ package opelan.ui.view
 
 import opelan.foundation.document._
 import opelan.foundation.document.Detached._
+import opelan.foundation.view.ViewTree
 import opelan.foundation.view.ViewTree._
 import opelan.ui.fp.View
 
 class ViewTreeViewSuite extends munit.FunSuite {
 
+  private def vt(t: DetachedNode[NodeData]) =
+    viewTree[Int](t, identity, (id, _) => -id)
+
   test("elements map to their tags; leaves render as text") {
-    viewTree(cell(txt("x")), identity[Int]) match {
+    vt(cell(txt("x"))) match {
       case View.Elem(tag, _, _, kids) =>
         assertEquals(tag, "td")
         assertEquals(kids, Vector(View.Text("x")))
       case other => fail(s"expected cell element, got $other")
     }
-    assertEquals(viewTree(txt("hi"), identity[Int]), View.Text("hi"))
-    assertEquals(viewTree(il(3), identity[Int]), View.Text("3"))
+    assertEquals(vt(txt("hi")), View.Text("hi"))
+    assertEquals(vt(il(3)), View.Text("3"))
   }
 
   test("a SourceRef first child annotates the element with a click") {
-    viewTree(flow(src(7), txt("x")), identity[Int]) match {
+    vt(flow(src(7), txt("x"))) match {
       case View.Elem(_, attrs, evs, _) =>
         assert(evs.contains("click"))
         assertEquals(attrs("title"), "node #7")
@@ -28,14 +32,14 @@ class ViewTreeViewSuite extends munit.FunSuite {
   }
 
   test("a provenance-tagged leaf gets wrapped in a clickable span") {
-    viewTree(from(3, il(4)), identity[Int]) match {
+    vt(from(3, il(4))) match {
       case View.Elem("span", _, evs, _) => assert(evs.contains("click"))
       case other => fail(s"expected span, got $other")
     }
   }
 
   test("grids render tables; stray children get wrapped in cells") {
-    viewTree(grid(row(cell(txt("a"))), txt("stray")), identity[Int]) match {
+    vt(grid(row(cell(txt("a"))), txt("stray"))) match {
       case View.Elem("table", _, _, Vector(tbody)) =>
         tbody match {
           case View.Elem("tbody", _, _, rows) =>
@@ -51,7 +55,7 @@ class ViewTreeViewSuite extends munit.FunSuite {
   }
 
   test("an unknown tag degrades to a hole chip plus rendered children") {
-    viewTree(n(s("mystery"), sl("inner")), identity[Int]) match {
+    vt(n(s("mystery"), sl("inner"))) match {
       case View.Elem("div", _, _, kids) =>
         assertEquals(kids.length, 2)
         assert(kids.head match {
@@ -64,8 +68,25 @@ class ViewTreeViewSuite extends munit.FunSuite {
   }
 
   test("a gap leaf renders as a hole chip") {
-    viewTree(hole("abc"), identity[Int]) match {
+    vt(hole("abc")) match {
       case View.Elem("span", _, _, Vector(View.Text("abc"))) => ()
+      case other => fail(s"expected hole chip, got $other")
+    }
+  }
+
+  test("an input renders a text box carrying its display and commit events") {
+    vt(ViewTree.input(7, txt("42"))) match {
+      case View.Elem("input", attrs, evs, _) =>
+        assertEquals(attrs("value"), "42")
+        assert(evs.contains("keydown"))
+        assert(evs.contains("blur"))
+      case other => fail(s"expected input element, got $other")
+    }
+  }
+
+  test("an input without a source ref degrades to a hole") {
+    vt(n(s("input"), sl("42"))) match {
+      case View.Elem("span", _, _, Vector(View.Text("?input"))) => ()
       case other => fail(s"expected hole chip, got $other")
     }
   }

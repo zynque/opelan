@@ -168,15 +168,22 @@ trait Language {
 A derived view is itself document data: a **view tree** — a detached tree
 in a minimal presentational vocabulary (`foundation/view`): `block`,
 `flow`, `heading`, `grid`/`row`/`cell`/`hcell` containers, scalar leaves
-as text runs, `GapData` as holes. One recovering interpreter
-(`ui/view/ViewTreeView`) turns any view tree into an fp `View`, so
-languages emit data, never DOM; unrecognized structure degrades to hole
-chips rather than failing. A `SourceRef` leaf as an element's first child
-tags it with provenance — the source node it was derived from — making
-"click a rendered value to select its producer" uniform machinery, not
-per-language behavior. The vocabulary is also what a language document's
-view spec will eventually encode (the bootstrap path), and a stored view
-tree could be inspected or edited like any other document.
+as text runs, `GapData` as holes, and `input` — an editable text region.
+One recovering interpreter (`ui/view/ViewTreeView`) turns any view tree
+into an fp `View`, so languages emit data, never DOM; unrecognized
+structure degrades to hole chips rather than failing. A `SourceRef` leaf
+as an element's first child tags it with provenance — the source node it
+was derived from — making "click a rendered value to select its
+producer" uniform machinery, not per-language behavior. The `input`
+element reuses the same convention with the pointer semanticized: its
+`SourceRef` names the node the text box *edits* — a commit parses via
+the language's cell grammar (`Language.parseCell`) and rewrites that
+node in place (`replaceNodeContent` — the node keeps its id, so refs
+into it keep resolving). This is the workbench's first projected
+editor: the view isn't just derived from the document, it writes back.
+The vocabulary is also what a language document's view spec will
+eventually encode (the bootstrap path), and a stored view tree could be
+inspected or edited like any other document.
 
 `Languages` is a registry keyed by `typeRef`. Language implementations are
 Scala code today; `typeRef` values like `opelan:languages/int-expression`

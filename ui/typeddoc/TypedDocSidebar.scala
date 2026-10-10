@@ -39,6 +39,9 @@ private def section(
 private def body(
     r: Either[String, DetachedNode[NodeData]]): View[TypedDocInput] =
   r match {
-    case Right(tree) => viewTree(tree, id => TypedDocInput.SelectSource(id))
+    case Right(tree) =>
+      viewTree(tree,
+        id => TypedDocInput.SelectSource(id),
+        (id, t) => TypedDocInput.CommitCellText(id, t))
     case Left(err)   => el("span", style("color: #b00;"))(text(s"error: $err"))
   }

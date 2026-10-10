@@ -1,7 +1,7 @@
 package opelan.ui.typeddoc
 
 import opelan.foundation.document._
-import opelan.foundation.language.{ExprLanguage, SheetLanguage, applyDocText, docText, holeCount}
+import opelan.foundation.language.{ExprLanguage, SheetLanguage, applyDocText, docText, holeCount, languageForDoc}
 import opelan.ui.editor.{DocPush, EditorOutput}
 import opelan.ui.fp.Update
 import TypedDocInput._
@@ -106,6 +106,35 @@ def typedDocUpdate(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel
           },
           view = DocView.Editor))
       else Update(m)
+
+    // A projected cell edit: parse through the doc's language and rewrite
+    // the node in place (the id survives, so refs into it keep working).
+    // An unchanged commit — e.g. a blur with no edit — is a no-op, so
+    // projections can't churn versions.
+    case CommitCellText(id, t) =>
+      languageForDoc(m.doc).flatMap(_.parseCell(t)) match {
+        case Some(content)
+            if m.doc.getNode(id).isDefined &&
+               extractSubtree(id, m.doc).toOption.contains(content) =>
+          Update(m)
+        case Some(content) =>
+          replaceNodeContent(id, content, m.doc) match {
+            case Right(d) =>
+              val msg = "Cell updated"
+              Update(
+                m.copy(
+                  doc = d, pushedDoc = d, pushedSelect = None,
+                  pushMode = DocPush.Merge("Cell edit"),
+                  text = docText(d), textEpoch = m.textEpoch + 1,
+                  status = msg),
+                Vector(DocChanged(d), Status(msg)))
+            case Left(err) =>
+              Update(m.copy(status = err), Vector(Status(err)))
+          }
+        case None =>
+          Update(m.copy(status = "No cell grammar"),
+            Vector(Status("No cell grammar")))
+      }
   }
 
 // Mirror a document the editor is showing: re-derive its text, bumping
