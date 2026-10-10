@@ -1,7 +1,7 @@
 package opelan.ui.typeddoc
 
 import opelan.foundation.document._
-import opelan.ui.editor.{DocPush, EditorOutput, SyncedHistory}
+import opelan.ui.editor.{DocPush, EditorOutput, SelectTarget, SyncedHistory}
 
 // Which editing surface is showing in the left pane: the generic
 // structural editor or the CodeMirror text cell over the document's
@@ -35,7 +35,7 @@ enum DocView {
 case class TypedDocModel(
     doc: Document[NodeData],
     pushedDoc: Document[NodeData],
-    pushedSelect: Option[Int] = None,
+    pushedSelect: Option[SelectTarget] = None,
     pushMode: DocPush = DocPush.Open,
     view: DocView = DocView.Editor,
     text: String = "",

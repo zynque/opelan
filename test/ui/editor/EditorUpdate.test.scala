@@ -33,10 +33,42 @@ class EditorUpdateSuite extends munit.FunSuite {
     val m = init
     val target = m.flatIds(1)
     val u = editorUpdate(
-      m, EditorInput.SyncDocument(m.doc, Some(target), DocPush.Merge("Select")))
+      m, EditorInput.SyncDocument(
+        m.doc, Some(SelectTarget(target)), DocPush.Merge("Select")))
     assertEquals(u.state.selectedId, Some(target))
+    assert(u.state.claimFocus)
     assertEquals(u.state.history, m.history)
     assert(u.out.isEmpty)
+  }
+
+  test("a silent select highlights the node without claiming focus") {
+    val m = init
+    val target = m.flatIds(1)
+    val u = editorUpdate(
+      m, EditorInput.SyncDocument(
+        m.doc, Some(SelectTarget(target, focus = false)),
+        DocPush.Merge("Select")))
+    assertEquals(u.state.selectedId, Some(target))
+    assert(!u.state.claimFocus)
+    assertEquals(u.state.history, m.history)
+    assert(u.out.isEmpty)
+  }
+
+  test("a focusing push reclaims focus and a local gesture restores it") {
+    val m = init
+    val target = m.flatIds(1)
+    val silent = editorUpdate(
+      m, EditorInput.SyncDocument(
+        m.doc, Some(SelectTarget(target, focus = false)),
+        DocPush.Merge("Select"))).state
+    // a pushed select that asks for focus claims it again
+    val pushed = editorUpdate(
+      silent, EditorInput.SyncDocument(
+        silent.doc, Some(SelectTarget(target)), DocPush.Merge("Select")))
+    assert(pushed.state.claimFocus)
+    // and a local gesture (a row click, a key) reclaims it too
+    val local = editorUpdate(silent, EditorInput.Select(target))
+    assert(local.state.claimFocus)
   }
 
   test("committing a pending insert creates the named node as one event") {
@@ -168,7 +200,8 @@ class EditorUpdateSuite extends munit.FunSuite {
     val d = buildDocument(
       DetachedNode(NodeData.StringData("r"), List(DetachedNode.leaf(NodeData.IntData(1)))))
     val target = d.childrenOf(d.rootId).head
-    val u = editorUpdate(init, EditorInput.SyncDocument(d, Some(target)))
+    val u = editorUpdate(
+      init, EditorInput.SyncDocument(d, Some(SelectTarget(target))))
     assertEquals(u.state.doc, d)
     assertEquals(u.state.selectedId, Some(target))
   }

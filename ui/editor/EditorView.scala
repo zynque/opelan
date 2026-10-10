@@ -26,7 +26,8 @@ private def outline(m: EditorModel): View[EditorInput] = {
       "tabindex" -> "0",
       "style" -> ("flex: 1; overflow: auto; padding: 8px; outline: none; " +
         "font-family: Consolas, monospace; font-size: 14px; cursor: default;")) ++
-      (if (m.editingId.isEmpty) Map("data-focus" -> "true") else Map.empty),
+      (if (m.editingId.isEmpty && m.claimFocus)
+        Map("data-focus" -> "true") else Map.empty),
     events = Map("keydown" -> keyHandler(m)))(rows)
 }
 

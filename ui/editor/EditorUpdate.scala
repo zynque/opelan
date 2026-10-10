@@ -7,7 +7,14 @@ import EditorOutput._
 
 // The pure transition function: (model, input) => new model + outputs.
 // All document edits funnel through applyEdit, which pushes undo.
-def editorUpdate(m: EditorModel, input: EditorInput): Update[EditorModel, EditorOutput, EditorInput] =
+def editorUpdate(m0: EditorModel, input: EditorInput): Update[EditorModel, EditorOutput, EditorInput] = {
+  // A pushed document carries its own focus intent (a silent select
+  // highlights without stealing focus); every local gesture reclaims
+  // the outline's focus.
+  val m = input match {
+    case _: SyncDocument => m0
+    case _               => m0.copy(claimFocus = true)
+  }
   input match {
     case Move(delta)      => move(m, delta)
     case Select(id)       => Update(m.copy(selectedId = Some(id)))
@@ -43,6 +50,7 @@ def editorUpdate(m: EditorModel, input: EditorInput): Update[EditorModel, Editor
     case LoadSample       => loadSample()
     case Compact          => compactDoc(m)
   }
+}
 
 // A status-only update.
 private[editor] def status(

@@ -2,7 +2,7 @@ package opelan.ui.typeddoc
 
 import opelan.foundation.document._
 import opelan.foundation.language.{ExprLanguage, SheetLanguage, applyDocText, docText, holeCount, languageForDoc}
-import opelan.ui.editor.{DocPush, EditorOutput}
+import opelan.ui.editor.{DocPush, EditorOutput, SelectTarget}
 import opelan.ui.fp.Update
 import TypedDocInput._
 import TypedDocOutput._
@@ -93,13 +93,16 @@ def typedDocUpdate(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel
     // Provenance navigation: select the producing node in the editor
     // child. The selection rides the ordinary push channel — a push of
     // the live doc carrying a selection records no version (see
-    // syncDocument) — and the structural editor becomes the visible
-    // surface, since selection is a structural concept.
+    // syncDocument) — and it is a silent select: the node highlights
+    // without the outline claiming focus, so a click in a projected
+    // editor (a sheet cell's box) keeps focus where the user put it.
+    // The structural editor becomes the visible surface, since
+    // selection is a structural concept.
     case SelectSource(id) =>
       if (m.doc.getNode(id).isDefined)
         Update(m.copy(
           pushedDoc = m.doc,
-          pushedSelect = Some(id),
+          pushedSelect = Some(SelectTarget(id, focus = false)),
           pushMode = m.pushMode match {
             case DocPush.Open => DocPush.Merge("Select")
             case p            => p
@@ -159,7 +162,7 @@ private def load(
     m.copy(
       doc = d,
       pushedDoc = d,
-      pushedSelect = select.filter(id => d.getNode(id).isDefined),
+      pushedSelect = select.filter(id => d.getNode(id).isDefined).map(SelectTarget(_)),
       pushMode = DocPush.Open,
       text = docText(d),
       textEpoch = m.textEpoch + 1,

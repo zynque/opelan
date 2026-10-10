@@ -76,28 +76,31 @@ private def commitPending(
 
 // Parent-driven sync: replace the document without reporting it back.
 // `select` optionally picks a node in the new document — ignored if the
-// id doesn't exist there. `push` says how the doc relates to the one
-// being shown (see DocPush).
+// id doesn't exist there — and says whether the outline should claim
+// focus for it. `push` says how the doc relates to the one being shown
+// (see DocPush).
 def syncDocument(
     m: EditorModel,
     d: Document[NodeData],
-    select: Option[Int],
+    select: Option[SelectTarget],
     push: DocPush): Update[EditorModel, EditorOutput, EditorInput] =
   push match {
     case DocPush.Synced(h) => syncShared(m, d, select, h)
     case DocPush.Open =>
       Update(EditorModel.forDocument(
         d,
-        selectedId = select.filter(id => d.getNode(id).isDefined),
-        status = "Document synced"))
+        selectedId = select.map(_.nodeId).filter(id => d.getNode(id).isDefined),
+        status = "Document synced").copy(
+        claimFocus = select.forall(_.focus)))
     case DocPush.Merge(label) =>
       // The same document updated from outside (a text-cell edit) is
       // recorded as a version so undo walks it. An unchanged push is
       // just the echo of our own doc — but a selection it carries is
       // still news: pure navigation, no version recorded.
       if (d == m.doc)
-        select.filter(id => d.getNode(id).isDefined)
-          .map(id => Update(m.copy(selectedId = Some(id))))
+        select.filter(t => d.getNode(t.nodeId).isDefined)
+          .map(t => Update(m.copy(
+            selectedId = Some(t.nodeId), claimFocus = t.focus)))
           .getOrElse(Update(m))
       else Update(retarget(record(m, d, label), d, select).copy(status = label))
   }
@@ -113,7 +116,7 @@ def syncDocument(
 private def syncShared(
     m: EditorModel,
     d: Document[NodeData],
-    select: Option[Int],
+    select: Option[SelectTarget],
     h: SyncedHistory): Update[EditorModel, EditorOutput, EditorInput] =
   buildSyncedHistory(h) match {
     case Some((hist, headId)) =>
@@ -159,21 +162,22 @@ private def browsePin(m: EditorModel, h: SyncedHistory): Option[Int] =
 // still exists in `d`; a pending insert's phantom row is local-only and
 // survives while the pushed outline still has a row at the parent's
 // position (ids shift on reparse; positions don't). `select`, when
-// present, overrides the carried selection.
+// present, overrides the carried selection and the focus claim.
 private def retarget(
     m: EditorModel,
     d: Document[NodeData],
-    select: Option[Int]): EditorModel = {
+    select: Option[SelectTarget]): EditorModel = {
   val pending = m.pendingInsert.filter(p =>
     EditorModel.flatIdsOf(d).isDefinedAt(p.parentPos))
   val keep = (id: Int) =>
     if (id == EditorModel.PendingId) pending.isDefined
     else d.getNode(id).isDefined
   m.copy(
-    selectedId = select.orElse(m.selectedId).filter(keep),
+    selectedId = select.map(_.nodeId).orElse(m.selectedId).filter(keep),
     editingId = m.editingId.filter(keep),
     pendingInsert = pending,
-    detachedNodeId = m.detachedNodeId.filter(id => d.getNode(id).isDefined))
+    detachedNodeId = m.detachedNodeId.filter(id => d.getNode(id).isDefined),
+    claimFocus = select.map(_.focus).getOrElse(m.claimFocus))
 }
 
 def newDocument(): Update[EditorModel, EditorOutput, EditorInput] = {

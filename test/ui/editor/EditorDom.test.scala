@@ -260,6 +260,30 @@ class EditorDomSuite extends munit.FunSuite {
       "committed node should appear with its text")
   }
 
+  test("a silent select push leaves focus alone; a focusing push claims it") {
+    if (!FakeDom.installed) FakeDom.install()
+    val container = new FakeElement("div")
+    FakeDom.registerRoot(container.asInstanceOf[dom.Node])
+    val h = opelan.ui.fp.Runtime.mount(
+      container.asInstanceOf[dom.Element], EchoPane)
+    val d = sampleDoc
+    val target = d.childrenOf(d.rootId).head
+    val outline = findId(container.asInstanceOf[dom.Node], "doc-outline").get
+    // A surface outside the editor — a sheet cell's edit box, say —
+    // holds focus.
+    val outside = new FakeElement("input").asInstanceOf[dom.HTMLElement]
+    outside.focus()
+    assertEquals(FakeDom.active, outside.asInstanceOf[dom.Node])
+    // Provenance navigation: the node selects but focus stays outside.
+    h.send(EchoPane.Input.Push(EditorInput.SyncDocument(
+      d, Some(SelectTarget(target, focus = false)), DocPush.Merge("Select"))))
+    assertEquals(FakeDom.active, outside.asInstanceOf[dom.Node])
+    // A select that asks for focus claims the outline as before.
+    h.send(EchoPane.Input.Push(EditorInput.SyncDocument(
+      d, Some(SelectTarget(target)), DocPush.Merge("Select"))))
+    assertEquals(FakeDom.active, outline.asInstanceOf[dom.Node])
+  }
+
   private def dump(root: dom.Node, indent: String = ""): String =
     (root: Any) match {
       case e: FakeElement =>

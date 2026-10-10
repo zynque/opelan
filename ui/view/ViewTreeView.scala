@@ -154,19 +154,53 @@ private def holeView[I](t: String): View[I] =
       "border-radius: 3px; padding: 0 4px;"))(
     text(t))
 
-// Tag a rendered fragment with provenance: click emits onSource(id).
-private def annotated[I](v: View[I], id: Int, onSource: Int => I): View[I] =
+// Tag a rendered fragment with provenance: click emits onSource(id) —
+// and if the fragment contains an editor, the click lands in it, so one
+// click goes straight to editing rather than needing a second click on
+// the box itself.
+private def annotated[I](v: View[I], id: Int, onSource: Int => I): View[I] = {
+  val hasInput = containsInput(v)
+  val click: dom.Event => Option[I] = e => {
+    if (hasInput) focusContainedInput(e)
+    Some(onSource(id))
+  }
   v match {
     case View.Elem(tag, attrs, evs, kids) =>
       View.Elem(tag,
         attrs
           .updated("title", s"node #$id")
           .updated("style", attrs.getOrElse("style", "") + " cursor: pointer;"),
-        evs ++ on("click", onSource(id)),
+        evs + ("click" -> click),
         kids)
     case other =>
       el("span",
         Map("title" -> s"node #$id", "style" -> "cursor: pointer;"),
-        on("click", onSource(id)))(
+        Map("click" -> click))(
         other)
   }
+}
+
+private def containsInput[I](v: View[I]): Boolean = v match {
+  case View.Elem("input", _, _, _)  => true
+  case View.Elem(_, _, _, kids)     => kids.exists(containsInput)
+  case _                            => false
+}
+
+// Focus the fragment's editor. The provenance navigation this same
+// click emits is a silent select — the outline highlights the node but
+// doesn't claim focus — so focusing here is safe: nothing takes it
+// back. Clicks off the input (the cell's padding) focus + select-all so
+// typing replaces, sheet-style; a click on the input itself just
+// ensures focus (a mousedown blur elsewhere may have stolen it) and
+// keeps the browser's cursor placement.
+private def focusContainedInput(e: dom.Event): Unit = {
+  val clicked = e.target.asInstanceOf[dom.Element]
+  val box =
+    if (clicked.isInstanceOf[dom.HTMLInputElement]) clicked
+    else e.currentTarget.asInstanceOf[dom.Element].querySelector("input")
+  if (box != null) {
+    val inp = box.asInstanceOf[dom.HTMLInputElement]
+    inp.focus()
+    if (box != clicked) inp.select()
+  }
+}

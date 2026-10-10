@@ -35,6 +35,12 @@ case class EditorModel(
     // An open insert box awaiting its initial text. The phantom row
     // carries the sentinel PendingId, never a real node id.
     pendingInsert: Option[PendingInsert] = None,
+    // Whether the outline declares DOM focus on the next render. True
+    // while the user is working in the editor (the default); a select
+    // push with focus=false clears it — a provenance navigation
+    // highlights the node without stealing focus from the surface the
+    // click came from (a cell's edit box, say).
+    claimFocus: Boolean = true,
     status: String = "Ready") {
 
   // The node an operation applies to when nothing is explicitly selected.
@@ -96,6 +102,12 @@ enum DocPush {
   case Synced(history: SyncedHistory)
 }
 
+// A selection carried by a pushed document: the node to select plus
+// whether the outline should claim DOM focus for it. focus=false is a
+// silent select — provenance navigation from a derived view highlights
+// the source node while the derived surface keeps focus.
+case class SelectTarget(nodeId: Int, focus: Boolean = true)
+
 // Everything that can happen to the editor — view events and inputs pushed
 // by a parent — arrives through this one channel.
 enum EditorInput {
@@ -134,7 +146,7 @@ enum EditorInput {
   // `push` says how the doc relates to the one being shown (see DocPush).
   case SyncDocument(
       doc: Document[NodeData],
-      select: Option[Int] = None,
+      select: Option[SelectTarget] = None,
       push: DocPush = DocPush.Open)
   // Follow the selected node's reference: internal refs select their
   // target in place; external refs are reported via EditorOutput.FollowRef

@@ -3,7 +3,8 @@ package opelan.ui.typeddoc
 import opelan.foundation.document._
 import opelan.foundation.document.Detached._
 import opelan.foundation.language.{Expr, ExprLanguage, exprFromDocument}
-import opelan.ui.editor.{DocPush, EditorInput, EditorOutput, SyncedEntry, SyncedHistory}
+import opelan.ui.editor.{
+  DocPush, EditorInput, EditorOutput, SelectTarget, SyncedEntry, SyncedHistory}
 
 class TypedDocSuite extends munit.FunSuite {
 
@@ -108,8 +109,10 @@ class TypedDocSuite extends munit.FunSuite {
       buildDocument(n(s("r"), sl("a")))
     val target = d.childrenOf(d.rootId).head
     val u = typedDocUpdate(m, TypedDocInput.Load(d, Some(target)))
-    assertEquals(u.state.pushedSelect, Some(target))
-    assertEquals(editorInput(u.state), EditorInput.SyncDocument(d, Some(target)))
+    assertEquals(u.state.pushedSelect, Some(SelectTarget(target)))
+    assertEquals(
+      editorInput(u.state),
+      EditorInput.SyncDocument(d, Some(SelectTarget(target))))
   }
 
   private def cellId(doc: Document[NodeData], r: Int, c: Int): Int = {
@@ -141,14 +144,17 @@ class TypedDocSuite extends munit.FunSuite {
     assert(u.out.exists(_.isInstanceOf[TypedDocOutput.Status]))
   }
 
-  test("SelectSource pushes a selection into the editor") {
+  test("SelectSource pushes a focus-less selection into the editor") {
     val m = init
     val target = contentId(m.doc).get
     val u = typedDocUpdate(m, TypedDocInput.SelectSource(target))
-    assertEquals(u.state.pushedSelect, Some(target))
+    assertEquals(
+      u.state.pushedSelect, Some(SelectTarget(target, focus = false)))
     assertEquals(
       editorInput(u.state),
-      EditorInput.SyncDocument(m.doc, Some(target), DocPush.Merge("Select")))
+      EditorInput.SyncDocument(
+        m.doc, Some(SelectTarget(target, focus = false)),
+        DocPush.Merge("Select")))
     assertEquals(u.state.view, DocView.Editor)
   }
 
