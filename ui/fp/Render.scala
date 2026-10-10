@@ -8,10 +8,11 @@ import org.scalajs.dom
 // name; they resolve the current handler from a table keyed by element,
 // so patching only swaps table entries and never re-binds listeners.
 
-// Per-render accumulator: where children mount, and post-render hooks for
-// declarative focus/scroll (applied after the node is attached).
+// Per-render accumulator: where children mount (keyed by slot), and
+// post-render hooks for declarative focus/scroll (applied after the node
+// is attached).
 final class RenderCtx {
-  var mountPoint: Option[dom.Element] = None
+  val mountPoints = mutable.Map.empty[String, dom.Element]
   var focusElement: Option[(dom.Element, Boolean)] = None // (el, select text)
   var scrollElement: Option[dom.Element] = None
 }
@@ -20,10 +21,10 @@ def renderView[I](view: View[I], emit: I => Unit, ctx: RenderCtx): dom.Node = vi
   case View.Text(value) =>
     dom.document.createTextNode(value)
 
-  case View.Mount =>
+  case View.Mount(slot) =>
     val el = dom.document.createElement("div").asInstanceOf[dom.Element]
     el.setAttribute("style", "display:contents")
-    ctx.mountPoint = Some(el)
+    ctx.mountPoints(slot) = el
     el
 
   case View.Managed(_, attrs, mount) =>

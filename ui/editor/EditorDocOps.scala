@@ -12,7 +12,7 @@ import EditorOutput._
 // sync change — only when its initial text is committed (see
 // commitPending in EditorSession). Nothing reaches the document, history,
 // or peers before that.
-def insertSibling(m: EditorModel): Update[EditorModel, EditorOutput] =
+def insertSibling(m: EditorModel): Update[EditorModel, EditorOutput, EditorInput] =
   m.doc.parentOf(m.targetId) match {
     case Some(parentId) =>
       val index = m.doc.childrenOf(parentId).indexOf(m.targetId) + 1
@@ -22,7 +22,7 @@ def insertSibling(m: EditorModel): Update[EditorModel, EditorOutput] =
       insertChild(m) // the root has no siblings; insert a child instead
   }
 
-def insertChild(m: EditorModel): Update[EditorModel, EditorOutput] =
+def insertChild(m: EditorModel): Update[EditorModel, EditorOutput, EditorInput] =
   if (m.doc.getNode(m.targetId).isEmpty) status(m, "No node selected")
   else
     beginInsert(m, PendingInsert(
@@ -31,7 +31,7 @@ def insertChild(m: EditorModel): Update[EditorModel, EditorOutput] =
       m.targetId))
 
 private def beginInsert(
-    m: EditorModel, p: PendingInsert): Update[EditorModel, EditorOutput] =
+    m: EditorModel, p: PendingInsert): Update[EditorModel, EditorOutput, EditorInput] =
   if (m.editingId.isDefined) Update(m)
   else Update(
     m.copy(
@@ -41,7 +41,7 @@ private def beginInsert(
       status = "New node"),
     Vector(Status("New node")))
 
-def indent(m: EditorModel): Update[EditorModel, EditorOutput] =
+def indent(m: EditorModel): Update[EditorModel, EditorOutput, EditorInput] =
   m.selectedId match {
     case Some(id) if id != m.doc.rootId =>
       val siblings = m.doc.parentOf(id).toList.flatMap(m.doc.childrenOf)
@@ -57,7 +57,7 @@ def indent(m: EditorModel): Update[EditorModel, EditorOutput] =
     case _ => status(m, "Select a non-root node first")
   }
 
-def outdent(m: EditorModel): Update[EditorModel, EditorOutput] =
+def outdent(m: EditorModel): Update[EditorModel, EditorOutput, EditorInput] =
   m.selectedId match {
     case Some(id) if id != m.doc.rootId =>
       val target = for {
@@ -77,7 +77,7 @@ def outdent(m: EditorModel): Update[EditorModel, EditorOutput] =
 // place by selecting the target; external refs resolve through the
 // document store, which only the component's owner holds — so they are
 // emitted as an output.
-def followRef(m: EditorModel): Update[EditorModel, EditorOutput] =
+def followRef(m: EditorModel): Update[EditorModel, EditorOutput, EditorInput] =
   m.doc.getNode(m.targetId).map(_.data) match {
     case Some(NodeData.InternalNodeRef(id)) if m.doc.getNode(id).isDefined =>
       Update(m.copy(selectedId = Some(id)), Vector(Status(s"Followed ref to #$id")))
@@ -88,7 +88,7 @@ def followRef(m: EditorModel): Update[EditorModel, EditorOutput] =
     case _ => status(m, "Selected node is not a reference")
   }
 
-def compactDoc(m: EditorModel): Update[EditorModel, EditorOutput] = {
+def compactDoc(m: EditorModel): Update[EditorModel, EditorOutput, EditorInput] = {
   val before = m.doc.nodes.length
   val (compacted, remap) = compact(m.doc)
   // Remap internal refs in node data; refs to removed nodes stay dangling.

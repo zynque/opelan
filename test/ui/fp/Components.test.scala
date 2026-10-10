@@ -5,13 +5,13 @@ import opelan.ui.fp.demo._
 class ComponentSuite extends munit.FunSuite {
 
   test("counter increments and emits its new value") {
-    val Update(next, out) = Counter.update(3, CounterInput.Increment)
+    val Update(next, out, _) = Counter.update(3, CounterInput.Increment)
     assertEquals(next, 4)
     assertEquals(out, Vector(CounterOutput.Changed(4)))
   }
 
   test("counter accepts external input as props") {
-    val Update(next, out) = Counter.update(0, CounterInput.SetValue(42))
+    val Update(next, out, _) = Counter.update(0, CounterInput.SetValue(42))
     assertEquals(next, 42)
     assertEquals(out, Vector(CounterOutput.Changed(42)))
   }

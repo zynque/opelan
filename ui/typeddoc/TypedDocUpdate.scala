@@ -8,7 +8,7 @@ import TypedDocInput._
 import TypedDocOutput._
 
 // The pure transition function for the typed-document pane.
-def typedDocUpdate(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel, TypedDocOutput] =
+def typedDocUpdate(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel, TypedDocOutput, TypedDocInput] =
   input match {
     case SwitchView(v) => Update(m.copy(view = v))
     case Load(d, sel)  => load(m, d, sel, "Document loaded")
@@ -28,6 +28,19 @@ def typedDocUpdate(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel
         textEpoch = m.textEpoch + (if (t == m.text) 0 else 1),
         status = "Synced"))
     case RequestDoc    => Update(m, Vector(DocChanged(m.doc)))
+
+    // The owner's props: apply the push when its serial is new; emit the
+    // live doc when the pull serial moved. The push recurses into this
+    // same update — its outputs propagate, its inputs stay internal.
+    case Pane(push, pushSeq, pull) =>
+      val applying = push.filter(_ => pushSeq != m.appliedPushSeq)
+      val u = applying.map(in => typedDocUpdate(m, in)).getOrElse(Update(m))
+      val m2 = u.state.copy(
+        appliedPushSeq = if (applying.isDefined) pushSeq else m.appliedPushSeq,
+        appliedPullSeq = pull)
+      Update(m2, u.out ++
+        (if (pull != m.appliedPullSeq) Vector(DocChanged(m2.doc))
+         else Vector.empty))
     case LoadExprSample =>
       load(m, ExprLanguage.sampleDoc, None, "Expression sample loaded")
 
@@ -81,7 +94,7 @@ def typedDocUpdate(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel
 private def mirrorDoc(
     m: TypedDocModel,
     d: Document[NodeData],
-    out: Vector[TypedDocOutput]): Update[TypedDocModel, TypedDocOutput] = {
+    out: Vector[TypedDocOutput]): Update[TypedDocModel, TypedDocOutput, TypedDocInput] = {
   val t = docText(d)
   Update(
     m.copy(doc = d, text = t,
@@ -93,7 +106,7 @@ private def load(
     m: TypedDocModel,
     d: Document[NodeData],
     select: Option[Int],
-    msg: String): Update[TypedDocModel, TypedDocOutput] =
+    msg: String): Update[TypedDocModel, TypedDocOutput, TypedDocInput] =
   Update(
     m.copy(
       doc = d,

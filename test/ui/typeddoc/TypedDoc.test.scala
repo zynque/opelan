@@ -119,6 +119,27 @@ class TypedDocSuite extends munit.FunSuite {
     assertEquals(u.state, m)
   }
 
+  test("a Pane push applies per serial; a pull re-emits the live doc") {
+    val d: Document[NodeData] = beginDocument(NodeData.StringData("remote"))
+    val p = TypedDocInput.Pane(Some(TypedDocInput.Load(d)), 1, 0)
+    val u1 = typedDocUpdate(init, p)
+    assertEquals(u1.state.doc, d)
+    // The owner edited locally — the same props re-delivered do not reload.
+    val other: Document[NodeData] = beginDocument(NodeData.IntData(9))
+    val edited = typedDocUpdate(
+      u1.state, TypedDocInput.FromEditor(EditorOutput.DocChanged(other))).state
+    val u2 = typedDocUpdate(edited, p)
+    assertEquals(u2.state.doc, other)
+    // A bumped push serial re-applies even the identical push.
+    val u3 = typedDocUpdate(
+      u2.state, TypedDocInput.Pane(Some(TypedDocInput.Load(d)), 2, 0))
+    assertEquals(u3.state.doc, d)
+    // A bumped pull serial re-emits DocChanged.
+    val u4 = typedDocUpdate(
+      u3.state, TypedDocInput.Pane(Some(TypedDocInput.Load(d)), 2, 1))
+    assertEquals(u4.out, Vector(TypedDocOutput.DocChanged(d)))
+  }
+
   test("editor FollowRef outputs are passed through") {
     val ref = ExternalNodeReference("opelan:docs/x", 0, 1)
     val u = typedDocUpdate(init, TypedDocInput.FromEditor(EditorOutput.FollowRef(ref)))

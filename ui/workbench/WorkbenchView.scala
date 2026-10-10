@@ -6,11 +6,11 @@ import opelan.ui.fp.Dsl._
 import WorkbenchInput._
 
 // The workbench's chrome as a pure view: a documents sidebar listing the
-// store's heads, a view-switcher toolbar with save and sync, two managed
-// pane slots (the document pane and the components demo — both stay
-// mounted, hidden not unmounted, so their state survives switching), and
-// the status bar. The pane contents live in their own runtimes, mounted
-// by the shell into the Managed slots.
+// store's heads, a view-switcher toolbar with save and sync, two named
+// pane mounts (document and components demo — both stay mounted, hidden
+// not unmounted, so their state survives switching), the status bar, and
+// a mount for the invisible seam children (storage, prompt, random,
+// sync) at the end.
 def workbenchView(m: WorkbenchModel): View[WorkbenchInput] =
   el("div",
     style("display: flex; height: 100vh; font-family: Arial, sans-serif;"))(
@@ -18,7 +18,8 @@ def workbenchView(m: WorkbenchModel): View[WorkbenchInput] =
     el("div", style("flex: 1; display: flex; flex-direction: column;"))(
       toolbar(m),
       content(m),
-      statusBar(m)))
+      statusBar(m),
+      mount))
 
 private def sidebar(m: WorkbenchModel): View[WorkbenchInput] =
   el("div",
@@ -69,13 +70,13 @@ private def viewButton(
 
 private def content(m: WorkbenchModel): View[WorkbenchInput] =
   el("div", style("flex: 1; padding: 10px; overflow: auto;"))(
-    managed("doc-pane",
+    el("div",
       style("height: 100%;" + hidden(m.view != ShellView.Document)))(
-      (el, emit) => WorkbenchShell.docPaneMount(el, emit)),
-    managed("components-pane",
+      mountIn("doc")),
+    el("div",
       style("height: 100%; border: 1px solid #ccc; padding: 10px;" +
         hidden(m.view != ShellView.Components)))(
-      (el, emit) => WorkbenchShell.componentsPaneMount(el, emit)))
+      mountIn("demo")))
 
 private def statusBar(m: WorkbenchModel): View[WorkbenchInput] =
   el("div",

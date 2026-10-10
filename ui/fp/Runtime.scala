@@ -25,21 +25,33 @@ final class Runtime {
 }
 
 // The outside handle to a mounted component: push inputs, subscribe to
-// outputs. The component's in/out streams, exposed plainly.
+// outputs, dispose to tear the whole tree down (children, unmount hooks,
+// seam resources). The component's in/out streams, exposed plainly.
 final class Handle[I, O](
     sendInput: I => Unit,
-    val outputs: Subject[O]) {
+    val outputs: Subject[O],
+    disposeFn: () => Unit) {
   def send(input: I): Unit = sendInput(input)
+  def dispose(): Unit = disposeFn()
 }
 
 object Runtime {
 
   // Mount a component as the root of a live tree under `container`.
-  def mount[I, O](container: dom.Element, component: Component[I, O]): Handle[I, O] = {
+  // `initial` inputs are applied before the first render — the way the
+  // root is bootstrapped without anyone holding a Handle.
+  def mount[I, O](
+      container: dom.Element,
+      component: Component[I, O],
+      initial: I*): Handle[I, O] = {
     val rt = new Runtime
     val outputs = new Subject[O]
     val root = new Instance[I, O](component, outputs.emit, rt)
+    initial.foreach(i => rt.enqueue(() => root.receive(i)))
     rt.enqueue(() => container.appendChild(root.mount()))
-    new Handle[I, O](i => rt.enqueue(() => root.receive(i)), outputs)
+    new Handle[I, O](
+      i => rt.enqueue(() => root.receive(i)),
+      outputs,
+      () => root.destroy())
   }
 }

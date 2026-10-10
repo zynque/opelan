@@ -40,7 +40,11 @@ case class TypedDocModel(
     view: DocView = DocView.Editor,
     text: String = "",
     textEpoch: Int = 0,
-    status: String = "Ready")
+    status: String = "Ready",
+    // Props bookkeeping for the Pane input: which push/pull serials were
+    // already applied, so re-delivery of unchanged props is a no-op.
+    appliedPushSeq: Int = -1,
+    appliedPullSeq: Int = 0)
 
 // Everything that can happen to the pane — view events, view switching,
 // text edits, and outputs routed up from the editor child.
@@ -56,6 +60,10 @@ enum TypedDocInput {
   // Re-emit the current document as DocChanged — lets the owner pull the
   // live doc (e.g. to save it) without a shadow copy going stale.
   case RequestDoc
+  // Owner-driven props: `push` is desired state (a load/sync push),
+  // applied when `pushSeq` is new — same-doc re-delivery can't reload;
+  // bump `pushSeq` to force a re-push. A `pull` bump re-emits DocChanged.
+  case Pane(push: Option[TypedDocInput], pushSeq: Int, pull: Int)
   case LoadExprSample
   case TextEdited(text: String)
   case FromEditor(out: EditorOutput)

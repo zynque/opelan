@@ -7,7 +7,7 @@ import EditorOutput._
 
 // The pure transition function: (model, input) => new model + outputs.
 // All document edits funnel through applyEdit, which pushes undo.
-def editorUpdate(m: EditorModel, input: EditorInput): Update[EditorModel, EditorOutput] =
+def editorUpdate(m: EditorModel, input: EditorInput): Update[EditorModel, EditorOutput, EditorInput] =
   input match {
     case Move(delta)      => move(m, delta)
     case Select(id)       => Update(m.copy(selectedId = Some(id)))
@@ -46,7 +46,7 @@ def editorUpdate(m: EditorModel, input: EditorInput): Update[EditorModel, Editor
 
 // A status-only update.
 private[editor] def status(
-    m: EditorModel, msg: String): Update[EditorModel, EditorOutput] =
+    m: EditorModel, msg: String): Update[EditorModel, EditorOutput, EditorInput] =
   Update(m.copy(status = msg), Vector(Status(msg)))
 
 // Shared edit plumbing: on success record a version, update
@@ -68,7 +68,7 @@ private[editor] def applyEdit(
     result: Either[String, Document[NodeData]],
     msg: String,
     selectAfter: Option[Int] = None,
-    extra: EditorModel => EditorModel = identity): Update[EditorModel, EditorOutput] =
+    extra: EditorModel => EditorModel = identity): Update[EditorModel, EditorOutput, EditorInput] =
   result match {
     case Right(d) =>
       val nm = extra(record(m, d, msg).copy(

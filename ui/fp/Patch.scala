@@ -31,8 +31,8 @@ private def patchNode[I](
       if (a != b) node.textContent = b
       node
 
-    case (View.Mount, View.Mount) =>
-      ctx.mountPoint = Some(node.asInstanceOf[dom.Element])
+    case (View.Mount(s1), View.Mount(s2)) if s1 == s2 =>
+      ctx.mountPoints(s2) = node.asInstanceOf[dom.Element]
       node
 
     // Same key: the mounted widget owns its contents; the wrapper's own

@@ -40,8 +40,10 @@ object Dsl {
 
   def style(css: String): Map[String, String] = Map("style" -> css)
 
-  // Where this component's children render.
-  val mount: View[Nothing] = View.Mount
+  // Where this component's children render. `mountIn` selects a named
+  // slot so a view can place children at several positions.
+  val mount: View[Nothing] = View.Mount()
+  def mountIn(slot: String): View[Nothing] = View.Mount(slot)
 
   // An imperative widget: mount runs once with the host element and this
   // component's emit; the node is kept while `key` is stable and rebuilt

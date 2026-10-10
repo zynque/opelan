@@ -10,7 +10,12 @@ trait Component[I, O] {
 
   def init: State
 
-  def update(state: State, input: I): Update[State, O]
+  def update(state: State, input: I): Update[State, O, I]
+
+  // Called when the instance is destroyed — release resources the state
+  // owns (sessions, subscriptions). Unmounting a child is how its effects
+  // end: mount is subscribe, unmount is unsubscribe.
+  def unmount(state: State): Unit = ()
 
   // The desired DOM for the current state; events produce this component's I.
   // View.Mount marks where this component's children attach.
@@ -23,12 +28,17 @@ trait Component[I, O] {
   def children(state: State): Vector[Child[?, ?, I]] = Vector.empty
 }
 
-// The result of processing an input: new state plus outputs to emit.
-case class Update[S, O](state: S, out: Vector[O] = Vector.empty)
+// The result of processing an input: new state, outputs to emit upward,
+// and deferred effects that may produce inputs back into this component.
+case class Update[S, +O, +I](
+  state: S,
+  out: Vector[O] = Vector.empty,
+  cmds: Vector[Cmd[I]] = Vector.empty)
 
 // Description of a child instance the parent wants to exist.
 //
 //   key        identity for reconciliation
+//   slot       which View.Mount in the parent's view the child attaches to
 //   component  what to instantiate
 //   input      current props; sent on creation and whenever it changes
 //   onOutput   adapts the child's output type into the parent's input type
@@ -39,4 +49,5 @@ case class Child[CI, CO, PI](
   key: String,
   component: Component[CI, CO],
   input: CI,
-  onOutput: CO => PI)
+  onOutput: CO => PI,
+  slot: String = "")

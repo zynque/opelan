@@ -17,7 +17,7 @@ object Counter extends Component[CounterInput, CounterOutput] {
 
   def init: State = 0
 
-  def update(state: State, input: CounterInput): Update[State, CounterOutput] =
+  def update(state: State, input: CounterInput): Update[State, CounterOutput, CounterInput] =
     input match {
       case CounterInput.Increment =>
         val next = state + 1

@@ -28,7 +28,7 @@ object TypedDoc extends Component[TypedDocInput, TypedDocOutput] {
       status = "Expression sample loaded")
   }
 
-  def update(state: State, input: TypedDocInput): Update[State, TypedDocOutput] =
+  def update(state: State, input: TypedDocInput): Update[State, TypedDocOutput, TypedDocInput] =
     typedDocUpdate(state, input)
 
   def view(state: State): View[TypedDocInput] = typedDocView(state)

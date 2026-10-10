@@ -45,6 +45,11 @@ class DocSession(
   // previously persisted Automerge doc (preserving change history); its
   // text is immediately overwritten with the live text, so the local view
   // wins on (re)entry.
+  //
+  // Persisting at attach matters for convergence, not just reload: a tab
+  // attaching later resumes these bytes instead of writing its own seed
+  // change — two fresh seeds of the same doc would be concurrent
+  // updateText splices, which merge by interleaving and garble the text.
   def attach(initialText: String, saved: Option[Uint8Array]): Unit = {
     doc = saved.flatMap(bytes =>
         try Option(Automerge.load(bytes, actorId))
@@ -55,6 +60,7 @@ class DocSession(
     lastText = initialText
     transport.subscribe(handleEnvelope)
     transport.send(SyncEnvelope(transport.peerId, "*", hello = true))
+    onPersist(Automerge.save(doc))
     emitUpdate()
   }
 

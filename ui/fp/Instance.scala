@@ -19,13 +19,14 @@ final class Instance[I, O](
 
   private val emit: I => Unit = i => rt.enqueue(() => receive(i))
 
-  // Apply the input to state and emit outputs, without touching the DOM.
+  // Apply the input to state, emit outputs, then run deferred effects.
   // Used at creation so a child's first input lands before its first render.
   private[fp] def step(input: I): Unit =
     if (!destroyed) {
       val u = component.update(state, input)
       state = u.state
       u.out.foreach(outputSink)
+      u.cmds.foreach(_.run(emit))
     }
 
   def receive(input: I): Unit = {
@@ -45,7 +46,19 @@ final class Instance[I, O](
     currentView = view
     ctx.focusElement.foreach((el, sel) => rt.enqueue(() => focusNow(el, sel)))
     ctx.scrollElement.foreach(el => rt.enqueue(() => scrollIntoView(el)))
-    ctx.mountPoint.foreach(mp => reconcile(this, component.children(state), mp))
+    val desired = component.children(state)
+    ctx.mountPoints.foreach { (slot, mp) =>
+      reconcile(this, slot, desired.filter(_.slot == slot), mp)
+    }
+    // A mount that vanished from the view orphans its slot's children —
+    // destroy them so their lifetimes track the view, not just the list.
+    val orphanKeys = liveChildren.collect {
+      case (k, e) if !ctx.mountPoints.contains(e.slot) => k
+    }
+    orphanKeys.foreach { k =>
+      liveChildren(k).instance.destroy()
+      liveChildren -= k
+    }
   }
 
   private def focusNow(el: dom.Element, select: Boolean): Unit =
@@ -68,6 +81,7 @@ final class Instance[I, O](
       destroyed = true
       liveChildren.values.foreach(_.instance.destroy())
       liveChildren = Map.empty
+      component.unmount(state)
       if (node != null) Option(node.parentNode).foreach(_.removeChild(node))
     }
 }
@@ -76,6 +90,7 @@ final class Instance[I, O](
 // together from one typed Child[CI, CO, PI], so the casts stay coherent.
 private[fp] final class ChildEntry(
     val key: String,
+    val slot: String,
     val component: Component[?, ?],
     val instance: Instance[?, ?],
     val send: Any => Unit,

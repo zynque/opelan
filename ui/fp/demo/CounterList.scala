@@ -4,6 +4,9 @@ import opelan.ui.fp._
 import opelan.ui.fp.Dsl._
 
 enum CounterListInput:
+  // The neutral input — a parent embedding this as a child sends Noop
+  // as its constant props.
+  case Noop
   case AddCounter
   case RemoveCounter(id: Int)
   case FromCounter(id: Int, output: CounterOutput)
@@ -25,8 +28,11 @@ object CounterList extends Component[CounterListInput, CounterListOutput] {
 
   def init: State = CounterListState(Vector.empty, Map.empty, 0)
 
-  def update(state: State, input: CounterListInput): Update[State, CounterListOutput] =
+  def update(state: State, input: CounterListInput): Update[State, CounterListOutput, CounterListInput] =
     input match {
+      case CounterListInput.Noop =>
+        Update(state)
+
       case CounterListInput.AddCounter =>
         changed(state.copy(
           items = state.items :+ state.nextId,
@@ -41,7 +47,7 @@ object CounterList extends Component[CounterListInput, CounterListOutput] {
         changed(state.copy(values = state.values + (id -> v)))
     }
 
-  private def changed(state: State): Update[State, CounterListOutput] =
+  private def changed(state: State): Update[State, CounterListOutput, CounterListInput] =
     Update(state, Vector(CounterListOutput.Summary(
       state.values.values.sum, state.items.length)))
 

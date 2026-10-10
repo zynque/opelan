@@ -7,14 +7,14 @@ import opelan.ui.fp.Update
 // Cut keeps the node id for re-attach (pasteNode); copy produces a detached
 // duplicate which gets fresh ids on insert.
 
-def remove(m: EditorModel): Update[EditorModel, EditorOutput] =
+def remove(m: EditorModel): Update[EditorModel, EditorOutput, EditorInput] =
   m.selectedId match {
     case Some(id) if id != m.doc.rootId =>
       applyEdit(m, cutNode(id, m.doc), "Removed subtree", m.doc.parentOf(id))
     case _ => status(m, "Select a non-root node first")
   }
 
-def cut(m: EditorModel): Update[EditorModel, EditorOutput] =
+def cut(m: EditorModel): Update[EditorModel, EditorOutput, EditorInput] =
   m.selectedId match {
     case Some(id) if id != m.doc.rootId =>
       applyEdit(m, cutNode(id, m.doc), "Cut subtree", m.doc.parentOf(id),
@@ -22,7 +22,7 @@ def cut(m: EditorModel): Update[EditorModel, EditorOutput] =
     case _ => status(m, "Select a non-root node first")
   }
 
-def copy(m: EditorModel): Update[EditorModel, EditorOutput] =
+def copy(m: EditorModel): Update[EditorModel, EditorOutput, EditorInput] =
   m.selectedId match {
     case Some(id) =>
       extractSubtree(id, m.doc) match {
@@ -35,7 +35,7 @@ def copy(m: EditorModel): Update[EditorModel, EditorOutput] =
     case None => status(m, "Select a node first")
   }
 
-def paste(m: EditorModel): Update[EditorModel, EditorOutput] = {
+def paste(m: EditorModel): Update[EditorModel, EditorOutput, EditorInput] = {
   val index = m.doc.childrenOf(m.targetId).length
   m.detachedNodeId match {
     case Some(nodeId) =>

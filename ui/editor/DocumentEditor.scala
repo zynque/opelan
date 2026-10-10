@@ -41,7 +41,7 @@ object DocumentEditor extends Component[EditorInput, EditorOutput] {
 
   def init: State = sampleModel
 
-  def update(state: State, input: EditorInput): Update[State, EditorOutput] =
+  def update(state: State, input: EditorInput): Update[State, EditorOutput, EditorInput] =
     editorUpdate(state, input)
 
   def view(state: State): View[EditorInput] = editorView(state)

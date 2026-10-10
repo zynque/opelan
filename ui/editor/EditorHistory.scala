@@ -41,7 +41,7 @@ def record(
 // appends a revert change scoped to *this actor's* last change. While
 // browsing a checked-out version they remain what they've always been:
 // free, local cursor movement that mutates nothing and reaches no peer.
-def undo(m: EditorModel): Update[EditorModel, EditorOutput] =
+def undo(m: EditorModel): Update[EditorModel, EditorOutput, EditorInput] =
   if (m.syncedHead.contains(m.versionId))
     Update(m, Vector(UndoRequested))
   else m.history.parentOf(m.versionId) match {
@@ -49,7 +49,7 @@ def undo(m: EditorModel): Update[EditorModel, EditorOutput] =
     case None         => status(m, "Nothing to undo")
   }
 
-def redo(m: EditorModel): Update[EditorModel, EditorOutput] =
+def redo(m: EditorModel): Update[EditorModel, EditorOutput, EditorInput] =
   if (m.syncedHead.contains(m.versionId))
     Update(m, Vector(RedoRequested))
   else m.history.childrenOf(m.versionId).headOption match {
@@ -64,7 +64,7 @@ def redo(m: EditorModel): Update[EditorModel, EditorOutput] =
 // node exists in that version; an in-progress edit and a detached (cut)
 // node are bound to the old doc and are dropped.
 def goTo(
-    m: EditorModel, versionId: Int, msg: String): Update[EditorModel, EditorOutput] =
+    m: EditorModel, versionId: Int, msg: String): Update[EditorModel, EditorOutput, EditorInput] =
   m.history.getNode(versionId).map(_.data.data.doc) match {
     case Some(d) =>
       val nm = m.copy(

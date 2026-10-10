@@ -154,7 +154,7 @@ object EchoPane extends opelan.ui.fp.Component[EchoPane.Input, EditorOutput] {
 
   def init: State = EditorInput.SyncDocument(sampleDoc)
 
-  def update(s: State, i: Input): Update[State, EditorOutput] =
+  def update(s: State, i: Input): Update[State, EditorOutput, Input] =
     i match {
       case Input.Push(sd)     => Update(sd)
       case Input.FromEditor(o) => Update(s, Vector(o))

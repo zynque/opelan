@@ -7,7 +7,7 @@ import EditorOutput._
 // Editing-session transitions: selection movement, entering/leaving inline
 // edit mode, and loading documents. History lives in EditorHistory.
 
-def move(m: EditorModel, delta: Int): Update[EditorModel, EditorOutput] = {
+def move(m: EditorModel, delta: Int): Update[EditorModel, EditorOutput, EditorInput] = {
   val ids = m.flatIds
   if (ids.isEmpty) Update(m)
   else {
@@ -19,14 +19,14 @@ def move(m: EditorModel, delta: Int): Update[EditorModel, EditorOutput] = {
   }
 }
 
-def startEdit(m: EditorModel, id: Int): Update[EditorModel, EditorOutput] =
+def startEdit(m: EditorModel, id: Int): Update[EditorModel, EditorOutput, EditorInput] =
   if (m.doc.getNode(id).isDefined) Update(m.copy(editingId = Some(id)))
   else Update(m)
 
-def editSelected(m: EditorModel): Update[EditorModel, EditorOutput] =
+def editSelected(m: EditorModel): Update[EditorModel, EditorOutput, EditorInput] =
   m.selectedId.map(id => startEdit(m, id)).getOrElse(Update(m))
 
-def commitEdit(m: EditorModel, text: String): Update[EditorModel, EditorOutput] =
+def commitEdit(m: EditorModel, text: String): Update[EditorModel, EditorOutput, EditorInput] =
   m.editingId match {
     case Some(EditorModel.PendingId) => commitPending(m, text)
     case Some(id) =>
@@ -50,7 +50,7 @@ def commitEdit(m: EditorModel, text: String): Update[EditorModel, EditorOutput] 
 // phantom — nothing reaches the document — which also makes a stray
 // blur incapable of materializing an empty node.
 private def commitPending(
-    m: EditorModel, text: String): Update[EditorModel, EditorOutput] =
+    m: EditorModel, text: String): Update[EditorModel, EditorOutput, EditorInput] =
   m.pendingInsert.flatMap(p =>
     m.flatIds.lift(p.parentPos).map(p -> _)) match {
     case Some((p, parentId)) if text.trim.nonEmpty =>
@@ -82,7 +82,7 @@ def syncDocument(
     m: EditorModel,
     d: Document[NodeData],
     select: Option[Int],
-    push: DocPush): Update[EditorModel, EditorOutput] =
+    push: DocPush): Update[EditorModel, EditorOutput, EditorInput] =
   push match {
     case DocPush.Synced(h) => syncShared(m, d, select, h)
     case DocPush.Open =>
@@ -110,7 +110,7 @@ private def syncShared(
     m: EditorModel,
     d: Document[NodeData],
     select: Option[Int],
-    h: SyncedHistory): Update[EditorModel, EditorOutput] =
+    h: SyncedHistory): Update[EditorModel, EditorOutput, EditorInput] =
   buildSyncedHistory(h) match {
     case Some((hist, headId)) =>
       val pin = browsePin(m, h)
@@ -172,14 +172,14 @@ private def retarget(
     detachedNodeId = m.detachedNodeId.filter(id => d.getNode(id).isDefined))
 }
 
-def newDocument(): Update[EditorModel, EditorOutput] = {
+def newDocument(): Update[EditorModel, EditorOutput, EditorInput] = {
   val d = beginDocument(Detached.s("root"))
   Update(
     EditorModel.forDocument(d, Some(d.rootId), "New document"),
     Vector(DocChanged(d), Status("New document")))
 }
 
-def loadSample(): Update[EditorModel, EditorOutput] = {
+def loadSample(): Update[EditorModel, EditorOutput, EditorInput] = {
   val nm = sampleModel
   Update(nm, Vector(DocChanged(nm.doc), Status(nm.status)))
 }
