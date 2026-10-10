@@ -28,13 +28,17 @@ Three surfaces over one document:
   the outline format. Edits reparse the whole cell; malformed input
   becomes holes, not errors.
 - **Sidebar** — the language's derived views (e.g. `print`, `eval` for the
-  expression language), re-rendered live on each change. Holes render as
+  expression language; `sheet`, `formulas` for the sheet language),
+  re-rendered live on each change. Holes render as
   yellow chips. Fragments tagged with a source node show a `node #n`
   tooltip and select that node in the structural editor when clicked.
 
 Toolbar also shows the document's type label ("raw document", the
 language name, or `unknown:` ref). **Expr sample** loads a typed
-expression-language document.
+expression-language document; **Sheet sample** loads the typed
+"Household budget" spreadsheet — rows of label, literal, and formula
+cells (`qty * price`, a summed total, `total / people`) whose `sheet`
+view computes values and whose `formulas` view shows the expressions.
 
 ## Structural editor keys
 

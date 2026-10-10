@@ -2,7 +2,7 @@ package opelan.ui.typeddoc
 
 import opelan.foundation.document._
 import opelan.foundation.document.Detached._
-import opelan.foundation.language.{Expr, ExprLanguage}
+import opelan.foundation.language.{Expr, ExprLanguage, exprFromDocument}
 import opelan.ui.editor.{DocPush, EditorInput, EditorOutput, SyncedEntry, SyncedHistory}
 
 class TypedDocSuite extends munit.FunSuite {
@@ -53,14 +53,14 @@ class TypedDocSuite extends munit.FunSuite {
     assertEquals(u.state.text, "1 + 2")
     assertEquals(u.state.textEpoch, m.textEpoch)
     val content = contentId(u.state.doc).get
-    assertEquals(Expr.fromDocument(u.state.doc, content), Right(Expr.Add(Expr.Lit(1), Expr.Lit(2))))
+    assertEquals(exprFromDocument(u.state.doc, content), Right(Expr.Add(Expr.Lit(1), Expr.Lit(2))))
   }
 
   test("TextEdited leaves holes where text does not fit") {
     val u = typedDocUpdate(init, TypedDocInput.TextEdited("1 + abc"))
     val content = contentId(u.state.doc).get
     assertEquals(
-      Expr.fromDocument(u.state.doc, content),
+      exprFromDocument(u.state.doc, content),
       Right(Expr.Add(Expr.Lit(1), Expr.Hole("abc"))))
     assert(u.state.status.contains("hole"))
   }

@@ -2,93 +2,87 @@ package opelan.foundation.language
 
 import opelan.foundation.document._
 
-// The abstract syntax of the integer-expression language: literals plus
-// addition and subtraction. Grouping is structural — the document tree
-// itself is the parenthesization — so the AST needs no paren node.
+// The abstract syntax of the expression language: int/float literals,
+// the four arithmetic operations, references to other nodes in the
+// enclosing document (a cell pulls the referenced node's value), and
+// holes. Grouping is structural — the document tree itself is the
+// parenthesization — so the AST needs no paren node.
 //
 // Hole is a typed gap: text that did not parse, kept verbatim so the cell
 // can heal on later edits (see ExprParse). An empty hole means "operand
 // expected here".
 enum Expr {
   case Lit(value: Int)
+  case FLit(value: Double)
   case Add(left: Expr, right: Expr)
   case Sub(left: Expr, right: Expr)
+  case Mul(left: Expr, right: Expr)
+  case Div(left: Expr, right: Expr)
+  // Stored as InternalNodeRef in the document; evaluated via a resolver
+  // since Expr itself cannot see the document.
+  case Ref(nodeId: Int)
   case Hole(text: String)
 }
 
 object Expr {
-  // Content encoding: an IntData leaf is a literal; a "add"/"sub" node
+  // Content encoding: an IntData/FloatData leaf is a literal; an
+  // InternalNodeRef leaf is a reference; an "add"/"sub"/"mul"/"div" node
   // with exactly two children is a binary operation; a GapData node is a
   // hole.
   val AddTag = "add"
   val SubTag = "sub"
+  val MulTag = "mul"
+  val DivTag = "div"
 
-  // Evaluation is partial: a hole anywhere in the expression blocks it.
-  def eval(e: Expr): Either[String, Int] = e match {
-    case Lit(v)    => Right(v)
-    case Add(l, r) => for { a <- eval(l); b <- eval(r) } yield a + b
-    case Sub(l, r) => for { a <- eval(l); b <- eval(r) } yield a - b
+  // Evaluation is partial: a hole anywhere blocks it; a Ref blocks it
+  // unless the resolver (which can see the document) supplies the
+  // referenced node's value; division by zero fails.
+  def eval(
+      e: Expr,
+      resolve: Int => Option[Num] = _ => None): Either[String, Num] = e match {
+    case Lit(v)    => Right(Num.I(v))
+    case FLit(v)   => Right(Num.F(v))
+    case Ref(id)   => resolve(id).toRight(s"unresolved ref: $id")
+    case Add(l, r) => bin(l, r, resolve, Num.add)
+    case Sub(l, r) => bin(l, r, resolve, Num.sub)
+    case Mul(l, r) => bin(l, r, resolve, Num.mul)
+    case Div(l, r) =>
+      for {
+        a <- eval(l, resolve); b <- eval(r, resolve)
+        q <- Num.div(a, b).toRight("division by zero")
+      } yield q
     case Hole(t)   => Left(s"expression contains a hole${if (t.isEmpty) "" else s": $t"}")
   }
 
-  // Infix text with minimal parentheses: operations are left-associative,
-  // so only a compound right operand ever needs parens. A hole prints its
-  // verbatim text (or '?' when empty), so printed holes reparse as holes.
-  def print(e: Expr): String = e match {
-    case Lit(v)    => v.toString
-    case Add(l, r) => s"${print(l)} + ${printRight(r)}"
-    case Sub(l, r) => s"${print(l)} - ${printRight(r)}"
-    case Hole(t)   => if (t.isEmpty) "?" else t
+  private def bin(l: Expr, r: Expr, resolve: Int => Option[Num],
+      f: (Num, Num) => Num): Either[String, Num] =
+    for { a <- eval(l, resolve); b <- eval(r, resolve) } yield f(a, b)
+
+  // Infix text with minimal parentheses: `*` and `/` bind tighter than
+  // `+` and `-`, and every level is left-associative, so a compound right
+  // operand at the same or lower precedence needs parens. A hole prints
+  // its verbatim text (or '?' when empty), so printed holes reparse.
+  def print(e: Expr): String = pp(e, 0)
+
+  private def prec(e: Expr): Int = e match {
+    case Add(_, _) | Sub(_, _) => 1
+    case Mul(_, _) | Div(_, _) => 2
+    case _                     => 3
   }
 
-  private def printRight(e: Expr): String = e match {
-    case Add(_, _) | Sub(_, _) => s"(${print(e)})"
-    case other                 => print(other)
-  }
-
-  def toDetached(e: Expr): DetachedNode[NodeData] = e match {
-    case Lit(v)   => DetachedNode.leaf(NodeData.IntData(v))
-    case Hole(t)  => DetachedNode.leaf(NodeData.GapData(t))
-    case Add(l, r) =>
-      DetachedNode(NodeData.StringData(AddTag), List(toDetached(l), toDetached(r)))
-    case Sub(l, r) =>
-      DetachedNode(NodeData.StringData(SubTag), List(toDetached(l), toDetached(r)))
-  }
-
-  // Interpret the subtree rooted at nodeId as an expression. The read is
-  // recovering: nodes that are not valid expression syntax (junk data,
-  // wrong arity, literals with children) read as holes, so malformed
-  // subtrees surface as gaps rather than errors — the same totality the
-  // text parser gives typed input.
-  def fromDocument(doc: Document[NodeData], nodeId: Int): Either[String, Expr] =
-    doc.getNode(nodeId) match {
-      case None => Left(s"Expr: node id $nodeId does not exist in document")
-      case Some(node) =>
-        node.data match {
-          case NodeData.IntData(v) if node.childIds.isEmpty => Right(Lit(v))
-          case NodeData.GapData(t) => Right(Hole(t))
-          case NodeData.StringData(AddTag) if node.childIds.length == 2 =>
-            binOp(node.childIds, doc, Add.apply)
-          case NodeData.StringData(SubTag) if node.childIds.length == 2 =>
-            binOp(node.childIds, doc, Sub.apply)
-          case other => Right(Hole(holeText(other)))
-        }
+  // `ctx` is the precedence a nested expression must meet to stand
+  // unparenthesized: own level for left operands, one tighter for right.
+  private def pp(e: Expr, ctx: Int): String = {
+    val body = e match {
+      case Lit(v)    => v.toString
+      case FLit(v)   => v.toString
+      case Ref(id)   => s"ref:$id"
+      case Hole(t)   => if (t.isEmpty) "?" else t
+      case Add(l, r) => s"${pp(l, 1)} + ${pp(r, 2)}"
+      case Sub(l, r) => s"${pp(l, 1)} - ${pp(r, 2)}"
+      case Mul(l, r) => s"${pp(l, 2)} * ${pp(r, 3)}"
+      case Div(l, r) => s"${pp(l, 2)} / ${pp(r, 3)}"
     }
-
-  // What a malformed node contributes to a hole: its surface text —
-  // strings unquoted, so hole text reparses as the same junk.
-  private[language] def holeText(data: NodeData): String = data match {
-    case NodeData.StringData(s) => s
-    case other                  => NodeDataText.show(other)
+    if (prec(e) < ctx) s"($body)" else body
   }
-
-  // Arity is guaranteed by the caller's case guard.
-  private def binOp(
-      childIds: List[Int],
-      doc: Document[NodeData],
-      op: (Expr, Expr) => Expr): Either[String, Expr] =
-    for {
-      left <- fromDocument(doc, childIds(0))
-      right <- fromDocument(doc, childIds(1))
-    } yield op(left, right)
 }

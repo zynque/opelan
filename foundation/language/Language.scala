@@ -37,7 +37,7 @@ trait Language {
 }
 
 // Registry mapping document-type references to languages defined in code.
-val allLanguages: List[Language] = List(ExprLanguage)
+val allLanguages: List[Language] = List(ExprLanguage, SheetLanguage)
 
 def languageForRef(ref: ExternalNodeReference): Option[Language] =
   allLanguages.find(l =>

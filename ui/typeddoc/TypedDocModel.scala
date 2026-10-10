@@ -65,6 +65,7 @@ enum TypedDocInput {
   // bump `pushSeq` to force a re-push. A `pull` bump re-emits DocChanged.
   case Pane(push: Option[TypedDocInput], pushSeq: Int, pull: Int)
   case LoadExprSample
+  case LoadSheetSample
   case TextEdited(text: String)
   // A provenance-tagged fragment of a derived view was clicked: select
   // the source node in the structural editor.

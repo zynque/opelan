@@ -1,7 +1,7 @@
 package opelan.ui.typeddoc
 
 import opelan.foundation.document._
-import opelan.foundation.language.{ExprLanguage, applyDocText, docText, holeCount}
+import opelan.foundation.language.{ExprLanguage, SheetLanguage, applyDocText, docText, holeCount}
 import opelan.ui.editor.{DocPush, EditorOutput}
 import opelan.ui.fp.Update
 import TypedDocInput._
@@ -43,6 +43,8 @@ def typedDocUpdate(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel
          else Vector.empty))
     case LoadExprSample =>
       load(m, ExprLanguage.sampleDoc, None, "Expression sample loaded")
+    case LoadSheetSample =>
+      load(m, SheetLanguage.sampleDoc, None, "Sheet sample loaded")
 
     // A text edit is total: apply returns a new document (with holes
     // where the text doesn't fit) or an error that only touches status.

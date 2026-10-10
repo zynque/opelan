@@ -86,12 +86,20 @@ bootstrap):
    `NodeData.SourceRef` first-children carry producing node ids; one
    recovering interpreter (`ui/view`) renders them in `TypedDocSidebar`.
    The same vocabulary is what a language doc's view spec will encode.
-2. Extend `Expr`: `*`, `/`, `FloatData` (money), `Ref` — text `A1` ↔
-   `InternalNodeRef`; eval takes a ref-resolver over the enclosing doc.
-   Bonus: "go to definition" on a cell ref is already the internal-ref
-   jump.
-3. `SheetLanguage` in Scala: rows/cells schema, `sheet` view (computed
-   grid), `formulas` view.
+2. ~~Extend `Expr`: `*`, `/`, `FloatData` (money), `Ref`~~ — done:
+   `Mul`/`Div`/`FLit`/`Ref` cases; `Num` keeps ints integral and floats
+   decimal (display-rounded); precedence-aware lexer/parser/print; eval
+   takes a ref-resolver over the enclosing doc with cycle detection.
+   Ref text is `ref:N` (matching the outline codec) rather than `A1` —
+   `A1` needs row/col naming machinery, deferred. Bonus delivered:
+   "go to definition" on a cell ref is the ordinary internal-ref jump.
+3. ~~`SheetLanguage` in Scala: rows/cells schema, `sheet` view (computed
+   grid), `formulas` view~~ — done: `sheet > row/hrow > cell` schema;
+   `sheet` view evaluates each cell (labels pass through, formulas
+   resolve through the document), `formulas` prints each cell's
+   expression; a blocked or cycling ref degrades only the dependent
+   cells. Seeded "Household budget" behind the **Sheet sample** toolbar
+   button.
 4. ~~Click-in-app → select source node~~ — done: `SourceRef` provenance →
    `SelectSource` → the editor child selects the producing node (a
    same-doc `SyncDocument` push records no version). App surface stays

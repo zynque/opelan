@@ -40,9 +40,13 @@ private def toolbar(m: TypedDocModel): View[TypedDocInput] =
       viewButton("editor", DocView.Editor, m),
       viewButton("text", DocView.Text, m),
       el("span", style("color: #666; margin: 0 10px;"))(text(s"type: ${typeLabel(m)}")),
-      el("button",
-        style("padding: 3px 8px; float: right;"),
-        events = on("click", TypedDocInput.LoadExprSample))(text("Expr sample"))))
+      el("span", style("float: right;"))(
+        el("button",
+          style("padding: 3px 8px; margin-left: 6px;"),
+          events = on("click", TypedDocInput.LoadExprSample))(text("Expr sample")),
+        el("button",
+          style("padding: 3px 8px; margin-left: 6px;"),
+          events = on("click", TypedDocInput.LoadSheetSample))(text("Sheet sample")))))
 
 private def viewButton(label: String, v: DocView, m: TypedDocModel): View[TypedDocInput] = {
   val active = m.view == v

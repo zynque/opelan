@@ -183,17 +183,34 @@ Scala code today; `typeRef` values like `opelan:languages/int-expression`
 name the *future* documents that will hold the definitions — the bootstrap
 path toward languages-defined-as-documents.
 
-**Expression language** (`ExprLanguage`, `Expr`, `ExprLex`, `ExprParse`,
-`ExprView`): the demonstration language — integer literals, `+`, `−`,
+**Expression language** (`ExprLanguage`, `Expr`/`ExprDoc`, `ExprLex`,
+`ExprParse`, `ExprView`): the demonstration language — int and float
+literals (`Num`: `I`/`I` arithmetic stays integral, division and floats
+are decimal, `Num.show` display-rounds float noise), `+`, `−`, `*`, `/`
+with precedence-aware printing, `ref:N` references stored as
+`InternalNodeRef` (so "go to definition" is the ordinary ref jump),
 grouping by tree structure. Provides `print` and `eval` views and a
 **total, recovering parser**: every input parses; text that fits no
 production becomes a `Hole`/`GapData` node holding the verbatim text, so
 ongoing edits "heal" the tree rather than fail (Hazel-inspired typed
 holes). The views render through `LocExpr` — a located read that keeps
 each node's id — so every emitted piece of the view tree carries its
-source id. The parser emits a **span map** (`Map[List[Int], Span]` — tree
-path → source range), the foundation for mapping future text edits onto
+source id. Evaluation resolves refs through the enclosing document: a
+referenced cell's own subtree evaluates (formulas compose), and a
+visiting set reports ref cycles as holes instead of diverging. The
+parser emits a **span map** (`Map[List[Int], Span]` — tree path →
+source range), the foundation for mapping future text edits onto
 nodes instead of reparsing whole cells. `Expr.print` round-trips holes.
+
+**Sheet language** (`Sheet`, `SheetLanguage`): the demo app — a typed
+document whose content subtree is `sheet > row/hrow > cell`: label
+cells (plain string leaves) pass through; every other cell is read as
+an expression and evaluated, with `InternalNodeRef` leaves addressing
+sibling cells. `sheet` renders the computed grid; `formulas` renders
+each cell's expression instead of its value. A hole or cycle in a
+referenced cell propagates only to the cells that use it — the app is
+recovering like the documents it is made of. `sampleDoc` seeds the
+demo's household budget.
 
 **`DocText.scala`** unifies the text surface: typed documents use their
 language's `parse`/`print` for the content cell; everything else falls

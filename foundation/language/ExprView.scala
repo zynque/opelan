@@ -6,70 +6,83 @@ import opelan.foundation.view.ViewTree
 import opelan.foundation.view.ViewTree._
 
 // View-tree renderings for the expression language ("print", "eval").
-// Both walk a *located* read of the content subtree — every node carries
-// the id it was read from — so the emitted tree is fully tagged with
-// SourceRef provenance: any part of the derived view can navigate to the
-// document node that produced it.
-
-// An expression read out of a document with the source node id on every
-// node.
-enum LocExpr {
-  def src: Int
-  case LocLit(src: Int, value: Int)
-  case LocAdd(src: Int, left: LocExpr, right: LocExpr)
-  case LocSub(src: Int, left: LocExpr, right: LocExpr)
-  case LocHole(src: Int, text: String)
-}
-
-// Read the subtree at nodeId as an expression, keeping node ids.
-// Recovering like Expr.fromDocument: malformed nodes read as holes.
-def readLocExpr(doc: Document[NodeData], nodeId: Int): LocExpr =
-  doc.getNode(nodeId) match {
-    case None => LocExpr.LocHole(nodeId, "missing")
-    case Some(node) => node.data match {
-      case NodeData.IntData(v) if node.childIds.isEmpty =>
-        LocExpr.LocLit(nodeId, v)
-      case NodeData.GapData(t) =>
-        LocExpr.LocHole(nodeId, t)
-      case NodeData.StringData(Expr.AddTag) if node.childIds.length == 2 =>
-        LocExpr.LocAdd(nodeId,
-          readLocExpr(doc, node.childIds(0)), readLocExpr(doc, node.childIds(1)))
-      case NodeData.StringData(Expr.SubTag) if node.childIds.length == 2 =>
-        LocExpr.LocSub(nodeId,
-          readLocExpr(doc, node.childIds(0)), readLocExpr(doc, node.childIds(1)))
-      case other => LocExpr.LocHole(nodeId, Expr.holeText(other))
-    }
-  }
+// Both walk a located read of the content subtree (LocExpr), so the
+// emitted tree is fully tagged with SourceRef provenance: any part of a
+// derived view can navigate to the document node that produced it.
 
 // The "print" view: infix text as a provenance-tagged flow.
-def printTree(e: LocExpr): DetachedNode[NodeData] = e match {
-  case LocExpr.LocLit(id, v)  => from(id, il(v))
-  case LocExpr.LocHole(id, t) => from(id, hole(t))
-  case LocExpr.LocAdd(id, l, r) =>
-    flow(src(id), printTree(l), txt(" + "), printRight(r))
-  case LocExpr.LocSub(id, l, r) =>
-    flow(src(id), printTree(l), txt(" - "), printRight(r))
+def printTree(e: LocExpr): DetachedNode[NodeData] = child(e, 0)
+
+private def prec(e: LocExpr): Int = e match {
+  case LocExpr.LocAdd(_, _, _) | LocExpr.LocSub(_, _, _) => 1
+  case LocExpr.LocMul(_, _, _) | LocExpr.LocDiv(_, _, _) => 2
+  case _                                               => 3
 }
 
-private def printRight(e: LocExpr): DetachedNode[NodeData] = e match {
-  case _: (LocExpr.LocAdd | LocExpr.LocSub) =>
-    flow(txt("("), printTree(e), txt(")"))
-  case _ => printTree(e)
+// `ctx` is the precedence a nested expression must meet to stand
+// unparenthesized, as in Expr.print.
+private def child(e: LocExpr, ctx: Int): DetachedNode[NodeData] =
+  if (prec(e) < ctx) flow(txt("("), bare(e), txt(")")) else bare(e)
+
+private def bare(e: LocExpr): DetachedNode[NodeData] = e match {
+  case LocExpr.LocLit(id, v)     => from(id, il(v))
+  case LocExpr.LocFLit(id, f)    => from(id, fl(f))
+  case LocExpr.LocHole(id, t)    => from(id, hole(t))
+  case LocExpr.LocRef(id, t)     => from(id, txt(s"ref:$t"))
+  case LocExpr.LocAdd(id, l, r)  => op(id, l, " + ", r, 1)
+  case LocExpr.LocSub(id, l, r)  => op(id, l, " - ", r, 1)
+  case LocExpr.LocMul(id, l, r)  => op(id, l, " * ", r, 2)
+  case LocExpr.LocDiv(id, l, r)  => op(id, l, " / ", r, 2)
 }
+
+private def op(
+    id: Int, l: LocExpr, sym: String, r: LocExpr,
+    p: Int): DetachedNode[NodeData] =
+  flow(src(id), child(l, p), txt(sym), child(r, p + 1))
 
 // The "eval" view: the value, or the hole evaluation is waiting on —
 // tagged with the blocking node's id so the view points at the gap.
-def evalTree(e: LocExpr): DetachedNode[NodeData] = evalLoc(e) match {
-  case Right(v) => from(e.src, il(v))
-  case Left(h)  => from(h.src, hole(h.text))
-}
+// Refs resolve through `doc`: a referenced cell's own subtree is
+// evaluated, so formulas compose; the visiting set catches ref cycles.
+def evalTree(doc: Document[NodeData], e: LocExpr): DetachedNode[NodeData] =
+  evalLoc(e, docResolver(doc, Set(e.src))) match {
+    case Right(n)        => from(e.src, txt(Num.show(n)))
+    case Left((msg, id)) => from(id, hole(msg))
+  }
 
-// Left carries the blocking hole itself — with its provenance.
-private def evalLoc(e: LocExpr): Either[LocExpr.LocHole, Int] = e match {
-  case LocExpr.LocLit(_, v)    => Right(v)
-  case h: LocExpr.LocHole      => Left(h)
-  case LocExpr.LocAdd(_, l, r) =>
-    for { a <- evalLoc(l); b <- evalLoc(r) } yield a + b
-  case LocExpr.LocSub(_, l, r) =>
-    for { a <- evalLoc(l); b <- evalLoc(r) } yield a - b
-}
+// Left carries (message, source id) — the display text and the node to
+// point at, which is not necessarily the node eval failed on: a blocked
+// ref points at the hole inside its target.
+private[language] def evalLoc(
+    e: LocExpr,
+    resolve: Int => Either[(String, Int), Num]): Either[(String, Int), Num] =
+  e match {
+    case LocExpr.LocLit(_, v)      => Right(Num.I(v))
+    case LocExpr.LocFLit(_, v)     => Right(Num.F(v))
+    case LocExpr.LocHole(id, t)    => Left((t, id))
+    case LocExpr.LocRef(_, target) => resolve(target)
+    case LocExpr.LocAdd(id, l, r)  => bin(l, r, id, resolve, Num.add)
+    case LocExpr.LocSub(id, l, r)  => bin(l, r, id, resolve, Num.sub)
+    case LocExpr.LocMul(id, l, r)  => bin(l, r, id, resolve, Num.mul)
+    case LocExpr.LocDiv(id, l, r)  =>
+      for {
+        a <- evalLoc(l, resolve); b <- evalLoc(r, resolve)
+        q <- Num.div(a, b).toRight(("division by zero", id))
+      } yield q
+  }
+
+private def bin(
+    l: LocExpr, r: LocExpr, id: Int,
+    resolve: Int => Either[(String, Int), Num],
+    f: (Num, Num) => Num): Either[(String, Int), Num] =
+  for { a <- evalLoc(l, resolve); b <- evalLoc(r, resolve) } yield f(a, b)
+
+// Resolve a ref by evaluating the referenced node's subtree in the same
+// document. `visiting` is the chain of nodes already on the stack —
+// following a ref back into it reports a cycle instead of diverging.
+def docResolver(
+    doc: Document[NodeData],
+    visiting: Set[Int]): Int => Either[(String, Int), Num] =
+  target =>
+    if (visiting(target)) Left(("cycle", target))
+    else evalLoc(readLocExpr(doc, target), docResolver(doc, visiting + target))

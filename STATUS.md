@@ -23,11 +23,21 @@ implementation plan.
 - **Typed documents** (`foundation/document/Typed`): type-ref first child +
   content subtree convention, mirroring the olw-p1/p2 header convention.
 - **Expression language** (`foundation/language`): the demonstration
-  language — integer literals, `+`/`−`, structural grouping — with a total,
-  recovering parser (holes hold verbatim unparsed text), `print`/`eval`
-  derived views rendered as provenance-tagged view trees (`ExprView`'s
-  `LocExpr` keeps each node's source id), and a span map (tree path →
-  source range).
+  language — int/float literals (`Num` keeps integers integral, division
+  floats), `+`/`−`/`*`/`/` with precedence-aware printing, `ref:N` cell
+  references (stored as `InternalNodeRef`), structural grouping — with a
+  total, recovering parser (holes hold verbatim unparsed text),
+  `print`/`eval` derived views rendered as provenance-tagged view trees
+  (`ExprView`'s `LocExpr` keeps each node's source id), resolver-based
+  evaluation with cycle detection, and a span map (tree path → source
+  range).
+- **Sheet language** (`foundation/language/Sheet*`): the demo app — a
+  typed document whose content is `sheet > row/hrow > cell` rows of
+  labels, literals, and formula cells (expressions over refs to other
+  cells). `sheet` and `formulas` views render evaluated/source grids;
+  cells compose through the document resolver so a hole or cycle in a
+  referenced cell degrades the dependents, all with provenance. A seeded
+  "Household budget" sample loads from the toolbar.
 - **View trees** (`foundation/view` + `ui/view`): a derived view is
   detached document data — `block`/`flow`/`heading`/`grid`/`row`/`cell`
   containers, scalar leaves as text runs, `GapData` as holes, a `SourceRef`
@@ -80,7 +90,7 @@ implementation plan.
   a revert change that propagates to peers. Echoes are suppressed by
   last-text comparison, not protocol smarts.
 - **Build/test pipeline**: `build.bat` produces `bundle.js` (scala-cli →
-  webpack); `test.bat` runs ~130 munit tests covering the pure core and the
+  webpack); `test.bat` runs ~170 munit tests covering the pure core and the
   update functions of the UI layer, plus DocSession convergence tests that
   run real Automerge under Node.
 
@@ -220,4 +230,4 @@ Beyond that sequence, the roadmap also calls for:
   from the change graph.
 - A fuller evaluation engine for the DSL beyond the expression language's
   minimal `eval` view.
-- Broader test coverage beyond the current ~120 munit tests.
+- Broader test coverage beyond the current ~170 munit tests.
