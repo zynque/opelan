@@ -13,19 +13,11 @@ object ExprLanguage extends Language {
 
   def views = List("print", "eval")
 
-  def render(view: String, doc: Document[NodeData]): Either[String, List[Frag]] =
+  def render(view: String, doc: Document[NodeData]): Either[String, DetachedNode[NodeData]] =
     view match {
-      case "print" => contentExpr(doc).map(Expr.printFrags)
-      case "eval"  => contentExpr(doc).map(evalFrags)
+      case "print" => content(doc).map(id => printTree(readLocExpr(doc, id)))
+      case "eval"  => content(doc).map(id => evalTree(readLocExpr(doc, id)))
       case v       => Left(s"$name has no '$v' view")
-    }
-
-  // The value, or the hole evaluation is waiting on — rendered inline
-  // rather than as an error string.
-  private def evalFrags(e: Expr): List[Frag] =
-    Expr.eval(e) match {
-      case Right(v) => List(Frag.Text(v.toString))
-      case Left(_)  => List(Frag.Hole(Expr.blockingHole(e).getOrElse("")))
     }
 
   // The text syntax is total: any input parses, producing holes where the
@@ -33,10 +25,8 @@ object ExprLanguage extends Language {
   override def parse(text: String): Option[DetachedNode[NodeData]] =
     Some(Expr.toDetached(parseExpr(text).expr))
 
-  private def contentExpr(doc: Document[NodeData]): Either[String, Expr] =
-    contentId(doc)
-      .toRight(s"$name: typed document has no content")
-      .flatMap(Expr.fromDocument(doc, _))
+  private def content(doc: Document[NodeData]): Either[String, Int] =
+    contentId(doc).toRight(s"$name: typed document has no content")
 
   // A typed sample document: (1 + 2) - (3 - 4)  ==  4
   def sampleDoc: Document[NodeData] =

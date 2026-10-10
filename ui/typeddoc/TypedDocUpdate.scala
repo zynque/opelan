@@ -87,6 +87,23 @@ def typedDocUpdate(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel
       Update(m, Vector(FollowRef(ref)))
     case FromEditor(EditorOutput.Status(s)) =>
       Update(m.copy(status = s), Vector(Status(s)))
+
+    // Provenance navigation: select the producing node in the editor
+    // child. The selection rides the ordinary push channel — a push of
+    // the live doc carrying a selection records no version (see
+    // syncDocument) — and the structural editor becomes the visible
+    // surface, since selection is a structural concept.
+    case SelectSource(id) =>
+      if (m.doc.getNode(id).isDefined)
+        Update(m.copy(
+          pushedDoc = m.doc,
+          pushedSelect = Some(id),
+          pushMode = m.pushMode match {
+            case DocPush.Open => DocPush.Merge("Select")
+            case p            => p
+          },
+          view = DocView.Editor))
+      else Update(m)
   }
 
 // Mirror a document the editor is showing: re-derive its text, bumping

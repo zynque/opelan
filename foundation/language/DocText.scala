@@ -1,6 +1,7 @@
 package opelan.foundation.language
 
 import opelan.foundation.document._
+import opelan.foundation.view.ViewTree
 
 // The text surface of a document: typed documents use their language's
 // syntax for the content cell; everything else falls back to the outline
@@ -9,7 +10,7 @@ import opelan.foundation.document._
 def docText(doc: Document[NodeData]): String =
   languageForDoc(doc) match {
     case Some(lang) if lang.views.contains("print") =>
-      lang.render("print", doc).map(Frag.flatten).getOrElse(contentOutline(doc))
+      lang.render("print", doc).map(ViewTree.flatten).getOrElse(contentOutline(doc))
     case _ => contentOutline(doc)
   }
 

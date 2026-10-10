@@ -58,6 +58,13 @@ class OutlineSuite extends munit.FunSuite {
         ExternalNodeReference("opelan:docs/a", 2, 5)))))
   }
 
+  test("parse round-trips source refs") {
+    val d = parse("\"root\"\n  src:7").get
+    assertEquals(
+      d.childrenOf(d.rootId).map(id => d.getNode(id).map(_.data)),
+      List(Some(NodeData.SourceRef(7))))
+  }
+
   test("parse returns None on empty text") {
     assertEquals(parse(""), None)
     assertEquals(parse("   \n\n"), None)

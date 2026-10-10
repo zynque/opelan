@@ -1,15 +1,18 @@
 package opelan.ui.typeddoc
 
 import opelan.foundation.document._
-import opelan.foundation.language.{Frag, Language, languageForDoc}
+import opelan.foundation.language.{Language, languageForDoc}
 import opelan.ui.fp._
 import opelan.ui.fp.Dsl._
+import opelan.ui.view._
 
 // The live right-hand column: every derived view the document's language
 // provides, stacked and re-rendered on each document change — print on
-// top, eval below for the expression language. Holes render as inline
-// chips so incomplete input reads as "waiting", not "error". Hidden for
-// raw/untyped documents, which have no language and thus no views.
+// top, eval below for the expression language. Views render through the
+// single view-tree interpreter: holes show as chips, and fragments tagged
+// with SourceRef provenance select their producing node when clicked.
+// Hidden for raw/untyped documents, which have no language and thus no
+// views.
 def typedDocSidebar(m: TypedDocModel): View[TypedDocInput] = {
   val sections = languageForDoc(m.doc).toList.flatMap(lang =>
     lang.views.map(v => section(lang, v, m)))
@@ -28,22 +31,14 @@ private def section(
         style("font-family: Arial, sans-serif; font-size: 11px; color: #999; " +
           "text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px;"))(
         text(viewName)),
-      els("div",
+      el("div",
         style("font-family: Consolas, monospace; font-size: 16px; " +
           "white-space: pre-wrap;"))(
         body(lang.render(viewName, m.doc)))))
 
-private def body(r: Either[String, List[Frag]]): Vector[View[TypedDocInput]] =
+private def body(
+    r: Either[String, DetachedNode[NodeData]]): View[TypedDocInput] =
   r match {
-    case Right(frags) => frags.toVector.map(fragView)
-    case Left(err)    => Vector(el("span", style("color: #b00;"))(text(s"error: $err")))
+    case Right(tree) => viewTree(tree, id => TypedDocInput.SelectSource(id))
+    case Left(err)   => el("span", style("color: #b00;"))(text(s"error: $err"))
   }
-
-private def fragView(f: Frag): View[TypedDocInput] = f match {
-  case Frag.Text(t) => text(t)
-  case Frag.Hole(t) =>
-    el("span",
-      style("background: #fdf3d7; color: #8a6d1a; border: 1px solid #e8d48a; " +
-        "border-radius: 3px; padding: 0 4px;"))(
-      text(if (t.isEmpty) "?" else t))
-}

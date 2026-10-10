@@ -5,12 +5,14 @@ package opelan.foundation.document
 //   outline — the persisted surface syntax of Outline.render/parse:
 //     "abc"   string      42 / 1.5      int / float
 //     ref:5   internal    ref:url@v#n   external ref
-//     ?text   gap         bare          string
+//     src:5   source      ?text         gap
+//     bare    string
 //
 //   edit    — the editor's row display and edit-box syntax:
 //     "abc"   string      42 / 1.5      int / float
 //     &5      internal    ext:url@v#n   external ref
-//     ?text   gap         bare          string
+//     src:5   source      ?text         gap
+//     bare    string
 //
 // The syntaxes differ only in ref spelling; scalars are shared.
 object NodeDataText {
@@ -23,6 +25,7 @@ object NodeDataText {
     case NodeData.FloatData(f)         => f.toString
     case NodeData.InternalNodeRef(id)  => s"ref:$id"
     case NodeData.ExternalNodeRef(ref) => s"ref:${refText(ref)}"
+    case NodeData.SourceRef(id)        => s"src:$id"
     case NodeData.GapData(text)        => s"?$text"
   }
 
@@ -33,6 +36,7 @@ object NodeDataText {
     case s if s.matches("ref:\\d+") => NodeData.InternalNodeRef(s.drop(4).toInt)
     case s if s.matches("ref:.+@\\d+#\\d+") =>
       NodeData.ExternalNodeRef(parseRef(s.drop(4)))
+    case s if s.matches("src:\\d+") => NodeData.SourceRef(s.drop(4).toInt)
     case s => scalar(s)
   }
 
@@ -48,6 +52,7 @@ object NodeDataText {
     if (text.matches("&\\d+")) NodeData.InternalNodeRef(text.drop(1).toInt)
     else if (text.matches("ext:.+@\\d+#\\d+"))
       NodeData.ExternalNodeRef(parseRef(text.drop(4)))
+    else if (text.matches("src:\\d+")) NodeData.SourceRef(text.drop(4).toInt)
     else if (text.startsWith("?")) NodeData.GapData(text.drop(1))
     else scalar(text)
 

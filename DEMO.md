@@ -79,18 +79,23 @@ compiled.
 **M1 — the app, impl still in code** (de-risks everything but the
 bootstrap):
 
-1. Extend `Frag`/`render` into a small styled tree (text, hole,
-   table/grid, heading) where fragments carry producing node ids; render
-   in `TypedDocSidebar`. Pure, testable.
+1. ~~Extend `Frag`/`render` into a small styled tree where fragments
+   carry producing node ids~~ — done as **view trees**: `render` returns
+   a `DetachedNode[NodeData]` in the `foundation/view` vocabulary
+   (block/flow/heading/grid/row/cell, text leaves, `GapData` holes);
+   `NodeData.SourceRef` first-children carry producing node ids; one
+   recovering interpreter (`ui/view`) renders them in `TypedDocSidebar`.
+   The same vocabulary is what a language doc's view spec will encode.
 2. Extend `Expr`: `*`, `/`, `FloatData` (money), `Ref` — text `A1` ↔
    `InternalNodeRef`; eval takes a ref-resolver over the enclosing doc.
    Bonus: "go to definition" on a cell ref is already the internal-ref
    jump.
 3. `SheetLanguage` in Scala: rows/cells schema, `sheet` view (computed
    grid), `formulas` view.
-4. Click-in-app → select source node (frag provenance → selection). App
-   surface stays read-only; editing happens in existing panes — key
-   scope cut.
+4. ~~Click-in-app → select source node~~ — done: `SourceRef` provenance →
+   `SelectSource` → the editor child selects the producing node (a
+   same-doc `SyncDocument` push records no version). App surface stays
+   read-only; editing happens in existing panes — key scope cut.
 5. Seed the three demo docs; store a *descriptive* `lang: expr` doc
    under the type ref so under-the-hood navigation lands somewhere real
    even before it is authoritative.

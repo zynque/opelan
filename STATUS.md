@@ -24,8 +24,19 @@ implementation plan.
   content subtree convention, mirroring the olw-p1/p2 header convention.
 - **Expression language** (`foundation/language`): the demonstration
   language — integer literals, `+`/`−`, structural grouping — with a total,
-  recovering parser (holes hold verbatim unparsed text), a `print`/`eval`
-  derived views, and a span map (tree path → source range).
+  recovering parser (holes hold verbatim unparsed text), `print`/`eval`
+  derived views rendered as provenance-tagged view trees (`ExprView`'s
+  `LocExpr` keeps each node's source id), and a span map (tree path →
+  source range).
+- **View trees** (`foundation/view` + `ui/view`): a derived view is
+  detached document data — `block`/`flow`/`heading`/`grid`/`row`/`cell`
+  containers, scalar leaves as text runs, `GapData` as holes, a `SourceRef`
+  first child tagging an element's provenance. One recovering interpreter
+  (`viewTree`) renders any view tree to an fp `View`; unknown structure
+  degrades to hole chips. `Language.render` produces these; the sidebar's
+  provenance clicks select the producing node (`SelectSource` rides the
+  ordinary `SyncDocument` push — a same-doc push carrying a selection
+  records no version).
 - **fp component runtime** (`ui/fp`): Elm-style `Component[I,O]` with pure
   update, single FIFO dispatch queue, positional DOM patching that preserves
   focus, keyed child reconciliation, `Managed` escape hatch for imperative
@@ -39,7 +50,8 @@ implementation plan.
 - **TypedDoc** (`ui/typeddoc`): the workbench's document pane — structural
   editor, CodeMirror text cell, and language-provided derived views all live
   over one document; editor state survives view switches; text and structure
-  stay in sync without echo loops.
+  stay in sync without echo loops; clicking a provenance-tagged fragment of
+  a derived view selects the producing node in the editor.
 - **Document store** (`foundation/document/Store`): a pure, immutable,
   versioned map of documents by URL — `put` appends a version, `resolve`
   dereferences `url@version#node`, heads are tracked per URL. Persisted in

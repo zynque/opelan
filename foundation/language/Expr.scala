@@ -32,31 +32,18 @@ object Expr {
   }
 
   // Infix text with minimal parentheses: operations are left-associative,
-  // so only a compound right operand ever needs parens.
-  def print(e: Expr): String = Frag.flatten(printFrags(e))
-
-  // The printed form as fragments: holes stay distinct so views can style
-  // them inline. Flattened, a hole prints its verbatim text (or '?' when
-  // empty), so printed holes reparse as holes.
-  def printFrags(e: Expr): List[Frag] = e match {
-    case Lit(v)    => List(Frag.Text(v.toString))
-    case Add(l, r) => printFrags(l) ++ (Frag.Text(" + ") +: printRightFrags(r))
-    case Sub(l, r) => printFrags(l) ++ (Frag.Text(" - ") +: printRightFrags(r))
-    case Hole(t)   => List(Frag.Hole(t))
+  // so only a compound right operand ever needs parens. A hole prints its
+  // verbatim text (or '?' when empty), so printed holes reparse as holes.
+  def print(e: Expr): String = e match {
+    case Lit(v)    => v.toString
+    case Add(l, r) => s"${print(l)} + ${printRight(r)}"
+    case Sub(l, r) => s"${print(l)} - ${printRight(r)}"
+    case Hole(t)   => if (t.isEmpty) "?" else t
   }
 
-  private def printRightFrags(e: Expr): List[Frag] = e match {
-    case Add(_, _) | Sub(_, _) => Frag.Text("(") +: printFrags(e) :+ Frag.Text(")")
-    case other                 => printFrags(e)
-  }
-
-  // The verbatim text of the first hole blocking evaluation — the spot a
-  // view can surface as "waiting on". None when eval succeeds.
-  def blockingHole(e: Expr): Option[String] = e match {
-    case Lit(_)    => None
-    case Add(l, r) => blockingHole(l).orElse(blockingHole(r))
-    case Sub(l, r) => blockingHole(l).orElse(blockingHole(r))
-    case Hole(t)   => Some(t)
+  private def printRight(e: Expr): String = e match {
+    case Add(_, _) | Sub(_, _) => s"(${print(e)})"
+    case other                 => print(other)
   }
 
   def toDetached(e: Expr): DetachedNode[NodeData] = e match {
@@ -90,7 +77,7 @@ object Expr {
 
   // What a malformed node contributes to a hole: its surface text —
   // strings unquoted, so hole text reparses as the same junk.
-  private def holeText(data: NodeData): String = data match {
+  private[language] def holeText(data: NodeData): String = data match {
     case NodeData.StringData(s) => s
     case other                  => NodeDataText.show(other)
   }

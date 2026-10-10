@@ -2,6 +2,7 @@ package opelan.foundation.language
 
 import opelan.foundation.document._
 import opelan.foundation.document.Detached._
+import opelan.foundation.view.ViewTree
 import Expr._
 
 class ExprSuite extends munit.FunSuite {
@@ -46,19 +47,41 @@ class ExprSuite extends munit.FunSuite {
   test("ExprLanguage evaluates a typed document's content") {
     val doc = ExprLanguage.sampleDoc
     assertEquals(languageForDoc(doc), Some(ExprLanguage))
-    assertEquals(ExprLanguage.render("eval", doc), Right(List(Frag.Text("4"))))
     assertEquals(
-      ExprLanguage.render("print", doc).map(Frag.flatten),
+      ExprLanguage.render("eval", doc).map(ViewTree.flatten),
+      Right("4"))
+    assertEquals(
+      ExprLanguage.render("print", doc).map(ViewTree.flatten),
       Right("1 + 2 - (3 - 4)"))
   }
 
-  test("rendered views keep holes as fragments") {
+  test("rendered views keep holes as gap nodes") {
     val doc = applyDocText(ExprLanguage.sampleDoc, "1 + abc").toOption.get
     assertEquals(
-      ExprLanguage.render("eval", doc),
-      Right(List(Frag.Hole("abc"))))
-    assert(ExprLanguage.render("print", doc).exists(_.contains(Frag.Hole("abc"))))
+      gaps(ExprLanguage.render("eval", doc).toOption.get), List("abc"))
+    assertEquals(
+      gaps(ExprLanguage.render("print", doc).toOption.get), List("abc"))
   }
+
+  test("view trees tag emitted pieces with their source nodes") {
+    val doc = ExprLanguage.sampleDoc
+    val cid = contentId(doc).get
+    assertEquals(
+      ExprLanguage.render("eval", doc),
+      Right(ViewTree.from(cid, il(4))))
+    // A hole blocking eval points at the node holding it.
+    val holey = applyDocText(ExprLanguage.sampleDoc, "1 + abc").toOption.get
+    val gapId = holey.nodes.indexWhere(_.data == NodeData.GapData("abc"))
+    assertEquals(
+      ExprLanguage.render("eval", holey),
+      Right(ViewTree.from(gapId, ViewTree.hole("abc"))))
+  }
+
+  private def gaps(t: DetachedNode[NodeData]): List[String] =
+    (t.data match {
+      case NodeData.GapData(text) => List(text)
+      case _                    => Nil
+    }) ++ t.children.flatMap(gaps)
 
   test("ExprLanguage reports documents without expression content") {
     val raw = beginDocument(s("root"))

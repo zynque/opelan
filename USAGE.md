@@ -29,7 +29,8 @@ Three surfaces over one document:
   becomes holes, not errors.
 - **Sidebar** — the language's derived views (e.g. `print`, `eval` for the
   expression language), re-rendered live on each change. Holes render as
-  yellow chips.
+  yellow chips. Fragments tagged with a source node show a `node #n`
+  tooltip and select that node in the structural editor when clicked.
 
 Toolbar also shows the document's type label ("raw document", the
 language name, or `unknown:` ref). **Expr sample** loads a typed

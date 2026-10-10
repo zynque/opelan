@@ -112,6 +112,22 @@ class TypedDocSuite extends munit.FunSuite {
     assertEquals(editorInput(u.state), EditorInput.SyncDocument(d, Some(target)))
   }
 
+  test("SelectSource pushes a selection into the editor") {
+    val m = init
+    val target = contentId(m.doc).get
+    val u = typedDocUpdate(m, TypedDocInput.SelectSource(target))
+    assertEquals(u.state.pushedSelect, Some(target))
+    assertEquals(
+      editorInput(u.state),
+      EditorInput.SyncDocument(m.doc, Some(target), DocPush.Merge("Select")))
+    assertEquals(u.state.view, DocView.Editor)
+  }
+
+  test("SelectSource on a missing node changes nothing") {
+    val u = typedDocUpdate(init, TypedDocInput.SelectSource(999))
+    assertEquals(u.state.pushedSelect, None)
+  }
+
   test("RequestDoc re-emits the current document") {
     val m = typedDocUpdate(init, TypedDocInput.TextEdited("7")).state
     val u = typedDocUpdate(m, TypedDocInput.RequestDoc)

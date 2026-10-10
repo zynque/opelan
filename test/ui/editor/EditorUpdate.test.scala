@@ -29,6 +29,16 @@ class EditorUpdateSuite extends munit.FunSuite {
     assert(u.out.forall(o => !o.isInstanceOf[EditorOutput.DocChanged]))
   }
 
+  test("a same-doc merge push carrying a selection navigates, recording no version") {
+    val m = init
+    val target = m.flatIds(1)
+    val u = editorUpdate(
+      m, EditorInput.SyncDocument(m.doc, Some(target), DocPush.Merge("Select")))
+    assertEquals(u.state.selectedId, Some(target))
+    assertEquals(u.state.history, m.history)
+    assert(u.out.isEmpty)
+  }
+
   test("committing a pending insert creates the named node as one event") {
     val m = init
     val pending = editorUpdate(m, EditorInput.InsertChild).state

@@ -92,9 +92,13 @@ def syncDocument(
         status = "Document synced"))
     case DocPush.Merge(label) =>
       // The same document updated from outside (a text-cell edit) is
-      // recorded as a version so undo walks it; an unchanged push is
-      // just the echo of our own doc.
-      if (d == m.doc) Update(m)
+      // recorded as a version so undo walks it. An unchanged push is
+      // just the echo of our own doc — but a selection it carries is
+      // still news: pure navigation, no version recorded.
+      if (d == m.doc)
+        select.filter(id => d.getNode(id).isDefined)
+          .map(id => Update(m.copy(selectedId = Some(id))))
+          .getOrElse(Update(m))
       else Update(retarget(record(m, d, label), d, select).copy(status = label))
   }
 

@@ -96,8 +96,12 @@ The substrate everything is built on — a direct port of olw-p4, extended:
   boundary**: callers must remap `InternalNodeRef`s in node data.
 - **`NodeData`** — the concrete payload type: `StringData`, `IntData`,
   `FloatData`, `InternalNodeRef(nodeId)`, `ExternalNodeRef(documentUrl,
-  versionId, nodeId)` (transclusion-style cross-document references), and
-  **`GapData(text)`** — a hole (§5).
+  versionId, nodeId)` (transclusion-style cross-document references),
+  **`GapData(text)`** — a hole (§5), and **`SourceRef(nodeId)`** — a
+  provenance back-pointer meaningful only in derived trees (§5): the node
+  in the *source* document this node was produced from. Unlike
+  `InternalNodeRef` it is never remapped by `compact` — the source
+  document is a different address space.
 - **`Outline`** — a text codec for raw documents: one line per node,
   indentation encodes nesting, with surface syntax for each `NodeData`
   variant (`"abc"`, `42`, `1.5`, `ref:5`, `ref:url@v#n`, `?text`). Doubles
@@ -156,25 +160,40 @@ trait Language {
   def typeRef: ExternalNodeReference          // identity
   def name: String
   def views: List[String]                     // derived views, e.g. "print", "eval"
-  def render(view, doc): Either[String, String]
+  def render(view, doc): Either[String, DetachedNode[NodeData]]  // a view tree
   def parse(text): Option[DetachedNode[NodeData]]   // optional text syntax
 }
 ```
+
+A derived view is itself document data: a **view tree** — a detached tree
+in a minimal presentational vocabulary (`foundation/view`): `block`,
+`flow`, `heading`, `grid`/`row`/`cell`/`hcell` containers, scalar leaves
+as text runs, `GapData` as holes. One recovering interpreter
+(`ui/view/ViewTreeView`) turns any view tree into an fp `View`, so
+languages emit data, never DOM; unrecognized structure degrades to hole
+chips rather than failing. A `SourceRef` leaf as an element's first child
+tags it with provenance — the source node it was derived from — making
+"click a rendered value to select its producer" uniform machinery, not
+per-language behavior. The vocabulary is also what a language document's
+view spec will eventually encode (the bootstrap path), and a stored view
+tree could be inspected or edited like any other document.
 
 `Languages` is a registry keyed by `typeRef`. Language implementations are
 Scala code today; `typeRef` values like `opelan:languages/int-expression`
 name the *future* documents that will hold the definitions — the bootstrap
 path toward languages-defined-as-documents.
 
-**Expression language** (`ExprLanguage`, `Expr`, `ExprLex`, `ExprParse`): the
-demonstration language — integer literals, `+`, `−`, grouping by tree
-structure. Provides `print` and `eval` views and a **total, recovering
-parser**: every input parses; text that fits no production becomes a
-`Hole`/`GapData` node holding the verbatim text, so ongoing edits "heal" the
-tree rather than fail (Hazel-inspired typed holes). The parser emits a
-**span map** (`Map[List[Int], Span]` — tree path → source range), the
-foundation for mapping future text edits onto nodes instead of reparsing
-whole cells. `Expr.print` round-trips holes.
+**Expression language** (`ExprLanguage`, `Expr`, `ExprLex`, `ExprParse`,
+`ExprView`): the demonstration language — integer literals, `+`, `−`,
+grouping by tree structure. Provides `print` and `eval` views and a
+**total, recovering parser**: every input parses; text that fits no
+production becomes a `Hole`/`GapData` node holding the verbatim text, so
+ongoing edits "heal" the tree rather than fail (Hazel-inspired typed
+holes). The views render through `LocExpr` — a located read that keeps
+each node's id — so every emitted piece of the view tree carries its
+source id. The parser emits a **span map** (`Map[List[Int], Span]` — tree
+path → source range), the foundation for mapping future text edits onto
+nodes instead of reparsing whole cells. `Expr.print` round-trips holes.
 
 **`DocText.scala`** unifies the text surface: typed documents use their
 language's `parse`/`print` for the content cell; everything else falls
