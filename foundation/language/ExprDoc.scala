@@ -46,6 +46,29 @@ def exprFromDocument(doc: Document[NodeData], nodeId: Int): Either[String, Expr]
       }
   }
 
+// The detached-tree counterpart of exprFromDocument — same recovery:
+// anything that is not valid expression syntax reads as a hole.
+def exprFromDetached(t: DetachedNode[NodeData]): Expr = t.data match {
+  case NodeData.IntData(v) if t.children.isEmpty   => Lit(v)
+  case NodeData.FloatData(v) if t.children.isEmpty => FLit(v)
+  case NodeData.InternalNodeRef(id) if t.children.isEmpty => Ref(id)
+  case NodeData.GapData(x) => Hole(x)
+  case NodeData.StringData(Expr.AddTag) if t.children.length == 2 =>
+    bin(t.children, Add.apply)
+  case NodeData.StringData(Expr.SubTag) if t.children.length == 2 =>
+    bin(t.children, Sub.apply)
+  case NodeData.StringData(Expr.MulTag) if t.children.length == 2 =>
+    bin(t.children, Mul.apply)
+  case NodeData.StringData(Expr.DivTag) if t.children.length == 2 =>
+    bin(t.children, Div.apply)
+  case other => Hole(holeText(other))
+}
+
+private def bin(
+    children: List[DetachedNode[NodeData]],
+    op: (Expr, Expr) => Expr): Expr =
+  op(exprFromDetached(children(0)), exprFromDetached(children(1)))
+
 // What a malformed node contributes to a hole: its surface text —
 // strings unquoted, so hole text reparses as the same junk.
 private[language] def holeText(data: NodeData): String = data match {

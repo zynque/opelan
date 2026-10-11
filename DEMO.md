@@ -131,18 +131,36 @@ bootstrap):
    `lang: expression` via an `ext:` ref, so act-2 steps 5–6 are
    navigable now — descriptive, not yet authoritative (that's M2).
 
-**M2 — the bootstrap bet:**
+**M2 — the bootstrap bet** (combinator-grammar direction: a precedence
+table is just one meta-combinator — `precedenceTable(atom, levels)`
+folds `chainLeft` over op sets — so the grammar format composes named
+combinators and grows toward general parsing rather than hardcoding
+operator tables. The twist vs Haskell-style combinators: ours are
+*total* — they produce `GapData` holes instead of failing, since a
+holey document must still parse (Never Broken)):
 
-7. Define the language-definition document format: node-kind schema +
-   view spec + a minimal declarative grammar sufficient for
-   infix-expression languages. Eval semantics stay named built-ins
-   (`expr-eval`) — honest scaffolding; semantics-as-documents is later
-   work, and the demo should say so.
-8. `DocLanguage`: `languageForRef` gains Store access, resolves the
-   ref to the stored def doc, interprets it into `Language`
-   (`views`/`render`/`parse`).
-9. Reactivity: when a def doc version bumps, open documents re-resolve
-   their language and re-render — the wiring behind act-2 step 7.
+7. ~~Recovering parser combinators (`foundation/grammar`): atoms, choice,
+   sequencing, `chainLeft`, `precedenceTable`, `parens`, `phrase` over
+   generic tokens, producing `DetachedNode[NodeData]` trees with spans.
+   The expression grammar is re-expressed as a combinator composition~~ —
+   done: `ExprParse` is now `phrase(precedenceTable(atom, levels))` over
+   `GTok`s, where `atom = int | float | ref | '?' | parens | signum |
+   junk` and `levels` is the tightest-first op→tag table. All parser
+   tests pass unchanged — identical trees and spans prove the machinery.
+8. `LanguageDef` + `DefLanguage` + builtins: the in-memory ADT a def
+   describes (schema, grammar-as-combinator-composition, view bindings
+   to named built-ins like `expr-eval` — eval semantics stay in code,
+   honest scaffolding), interpreted into a `Language`.
+9. The def-doc format: recovering `langDefFromDocument` /
+   `langDefToDetached`; the seeded `lang:` docs regenerate in the real
+   format. The sheet's cell grammar names the expression language *by
+   ref*, so editing `lang: expression` heals both surfaces.
+10. `DocLanguage`: `languageForRef` gains Store access — resolve the
+    ref to the stored def doc, interpret it into `Language`; the Scala
+    registry stays the fallback.
+11. Reactivity: resolution reads the current store per render/push, so
+    returning to the budget after editing `lang: expression` re-heals
+    its holes — mostly free once step 10 lands.
 
 **M3 — flex:** version-pin upgrade path, tab-sync in the demo script,
 USAGE/demo notes.

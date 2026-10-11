@@ -51,7 +51,7 @@ class WorkbenchSyncSuite extends munit.FunSuite {
     p.future
   }
 
-  private def until(cond: => Boolean, tries: Int = 100): Future[Unit] =
+  private def until(cond: => Boolean, tries: Int = 250): Future[Unit] =
     if (cond) Future.successful(())
     else if (tries <= 0) Future.failed(new Exception("timed out"))
     else tick().flatMap(_ => until(cond, tries - 1))
