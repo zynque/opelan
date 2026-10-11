@@ -2,6 +2,7 @@ package opelan.ui.workbench
 
 import opelan.collaboration.automerge.ChangeInfo
 import opelan.foundation.document._
+import opelan.foundation.language.{ExprLanguage, SheetLanguage}
 import opelan.ui.fx._
 import opelan.ui.typeddoc.{TypedDocInput, TypedDocOutput}
 import opelan.ui.workbench.WorkbenchInput._
@@ -33,11 +34,52 @@ class WorkbenchUpdateSuite extends munit.FunSuite {
     val (store, _) = Store.empty.put("opelan:docs/alpha", d)
     val m = workbenchUpdate(init, Boot).state
     val u = workbenchUpdate(m, FromStorage(StorageEv.Hydrated(store)))
-    // the loaded store is installed — it's what the sidebar lists
-    assertEquals(u.state.workspace.store, store)
+    // the loaded store is installed — plus the demo seeds it lacked
+    assertEquals(u.state.workspace.store.head("opelan:docs/alpha"), Some(0 -> d))
     assertEquals(u.state.workspace.openUrl, Some("opelan:docs/alpha"))
     assertEquals(u.state.panePush, Some(TypedDocInput.Load(d, None)))
-    assert(u.state.storageQ.isEmpty)
+    // the Hydrate popped; the seeds queue their persistence
+    assert(u.state.storageQ.forall(_.isInstanceOf[StorageReq.Persist]))
+  }
+
+  test("hydration seeds the demo lineup into an empty store") {
+    val m = workbenchUpdate(init, Boot).state
+    val u = workbenchUpdate(m, FromStorage(StorageEv.Hydrated(Store.empty)))
+    val st = u.state.workspace.store
+    assertEquals(st.urls, List(
+      "opelan:docs/household-budget",
+      "opelan:languages/int-expression",
+      "opelan:languages/sheet"))
+    // the budget opens first — sorted before the language URLs
+    assertEquals(u.state.workspace.openUrl, Some("opelan:docs/household-budget"))
+    // each language's type ref resolves to its descriptive doc at v0
+    assertEquals(
+      st.resolve(ExprLanguage.typeRef).map(_._1), Some(ExprLanguage.langDoc))
+    assertEquals(
+      st.resolve(SheetLanguage.typeRef).map(_._1), Some(SheetLanguage.langDoc))
+    // every seed is queued for persistence at version 0
+    assertEquals(u.state.storageQ.length, 3)
+    assert(u.state.storageQ.forall {
+      case StorageReq.Persist(_, _, 0, _) => true
+      case _                              => false
+    })
+  }
+
+  test("seeding never overwrites documents the store already has") {
+    val mine = doc("my sheet")
+    val (store, _) = Store.empty.put("opelan:languages/sheet", mine)
+    val m = workbenchUpdate(init, Boot).state
+    val u = workbenchUpdate(m, FromStorage(StorageEv.Hydrated(store)))
+    val st = u.state.workspace.store
+    // the user's doc at a seed URL is untouched — no new version, no persist
+    assertEquals(st.head("opelan:languages/sheet"), Some(0 -> mine))
+    assert(!u.state.storageQ.exists {
+      case StorageReq.Persist(_, "opelan:languages/sheet", _, _) => true
+      case _                                                   => false
+    })
+    // the missing seeds still arrive
+    assert(st.head("opelan:languages/int-expression").isDefined)
+    assert(st.head("opelan:docs/household-budget").isDefined)
   }
 
   test("NewDocument asks the prompt; its reply creates and persists") {

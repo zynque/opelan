@@ -40,8 +40,9 @@ private class FakePane extends Component[TypedDocInput, TypedDocOutput] {
 
 // The user's real scenario end-to-end: two mounted Workbenches (two
 // "tabs") sharing one in-memory indexedDB and a real BroadcastChannel.
-// Both hydrate the same seeded document, both toggle sync on, then a
-// pane edit reported by tab 1 must land in tab 2's pane.
+// Both hydrate the persisted document plus the demo lineup, both open
+// the test doc and toggle sync on, then a pane edit reported by tab 1
+// must land in tab 2's pane.
 class WorkbenchSyncSuite extends munit.FunSuite {
 
   private def tick(): Future[Unit] = {
@@ -73,8 +74,15 @@ class WorkbenchSyncSuite extends munit.FunSuite {
     val wb2 = Runtime.mount(c2, new Workbench(pane2), Boot)
 
     until(
-      FakeBrowser.hasText(c1, s"$url@v0") &&
-      FakeBrowser.hasText(c2, s"$url@v0")).flatMap { _ =>
+      FakeBrowser.hasText(c1, "Household budget") &&
+      FakeBrowser.hasText(c2, "Household budget")).flatMap { _ =>
+      // Hydration opens the first sorted doc (a demo seed) — open the
+      // test doc in both tabs, like clicking its sidebar entry.
+      wb1.send(SelectDocument(url))
+      wb2.send(SelectDocument(url))
+      until(FakeBrowser.hasText(c1, s"$url@v0") &&
+        FakeBrowser.hasText(c2, s"$url@v0"))
+    }.flatMap { _ =>
       // Staggered attach, like real tabs: tab 2 resumes the persisted
       // seed bytes rather than racing a concurrent seed write.
       wb1.send(ToggleSync)

@@ -116,9 +116,15 @@ bootstrap):
    place* (`replaceNodeContent`) — the id survives, so `ref:N` cells
    pointing at it keep working and the grid recomputes; an unchanged
    commit is a no-op, so blur can't churn versions.
-6. Seed the three demo docs; store a *descriptive* `lang: expr` doc
-   under the type ref so under-the-hood navigation lands somewhere real
-   even before it is authoritative.
+6. ~~Seed the three demo docs; store a *descriptive* `lang: expr` doc
+   under the type ref~~ — done: `Language.langDoc` makes every
+   registered language self-describing; hydration seeds each `langDoc`
+   at the URL its `typeRef` names (version 0 — the pinned version) plus
+   the budget at `opelan:docs/household-budget`, never overwriting a
+   URL the store already holds. Ctrl+Enter on the budget's type ref
+   lands on `lang: sheet`; its "formula" cell kind links on to
+   `lang: expression` via an `ext:` ref, so act-2 steps 5–6 are
+   navigable now — descriptive, not yet authoritative (that's M2).
 
 **M2 — the bootstrap bet:**
 

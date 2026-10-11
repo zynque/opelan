@@ -72,14 +72,24 @@ private[workbench] def sessionCmd(
 private[workbench] def fromStorage(m: WorkbenchModel, ev: StorageEv): Upd =
   ev match {
     case StorageEv.Hydrated(store) =>
-      val m2 = m.copy(
-        workspace = m.workspace.copy(store = store),
-        storageQ = m.storageQ.tail,
-        status = s"Storage initialized — ${store.urls.length} document(s)")
-      store.urls.headOption
-        .flatMap(u => store.head(u).map((u, _, _))) match {
-        case Some((url, v, d)) => open(m2, url, v, d)
-        case None => up(m2)
+      // Install the hydrated store plus the demo seeds it's missing —
+      // each seed becomes version 0 of its URL (the version type refs
+      // pin) and is queued for persistence.
+      val (m2, seeded, persists) =
+        missingSeeds(store).foldLeft((m, store, Vector.empty[StorageReq])) {
+          case ((mm, s, ps), (url, d)) =>
+            val (s2, v) = s.put(url, d)
+            val (mm2, id) = nextReq(mm)
+            (mm2, s2, ps :+ StorageReq.Persist(id, url, v, d))
+        }
+      val m3 = m2.copy(
+        workspace = m2.workspace.copy(store = seeded),
+        storageQ = m2.storageQ.tail ++ persists,
+        status = s"Storage initialized — ${seeded.urls.length} document(s)")
+      seeded.urls.headOption
+        .flatMap(u => seeded.head(u).map((u, _, _))) match {
+        case Some((url, v, d)) => open(m3, url, v, d)
+        case None => up(m3)
       }
     case StorageEv.HydrateFailed(msg) =>
       up(m.copy(storageQ = m.storageQ.tail,

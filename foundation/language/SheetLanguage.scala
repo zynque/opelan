@@ -73,4 +73,21 @@ object SheetLanguage extends Language {
       n(s(RowTag), sl("people"), il(2), sl(""), sl("")),
       n(s(RowTag), sl("per person"), sl(""), sl(""),
         n(s("div"), ref(4, 3), ref(5, 1))))
+
+  def langDoc: Document[NodeData] =
+    buildDocument(n(s("lang: sheet"),
+      sl("the spreadsheet language — a grid of cells"),
+      n(s("schema"),
+        sl("sheet — the grid; its children are rows"),
+        sl("hrow — a header row of label cells"),
+        sl("row — a row of cells")),
+      n(s("cells"),
+        sl("label — plain text"),
+        sl("literal — an integer or decimal number"),
+        sl("ref — an internal reference to another cell"),
+        n(s("formula — an expression tree, defined in"),
+          erl(ExprLanguage.typeRef))),
+      n(s("views"),
+        sl("sheet — the evaluated grid; value cells edit in place"),
+        sl("formulas — the cell machinery; every cell is editable"))))
 }

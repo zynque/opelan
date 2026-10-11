@@ -39,6 +39,14 @@ trait Language {
   // text committed in a projected editor into a replacement subtree for
   // the node it edits. None = the language's views are read-only.
   def parseCell(text: String): Option[DetachedNode[NodeData]] = None
+
+  // The document `typeRef` names: a readable description of this
+  // language, seeded into the document store so following a typed
+  // document's type ref lands on a real node. Descriptive, not
+  // authoritative — the registry still resolves the ref to this
+  // implementation — until the definition format arrives (M2) and the
+  // document *becomes* the language.
+  def langDoc: Document[NodeData]
 }
 
 // Registry mapping document-type references to languages defined in code.

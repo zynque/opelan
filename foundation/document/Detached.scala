@@ -30,7 +30,11 @@ object Detached {
   def i(value: Int): NodeData = NodeData.IntData(value)
   def f(value: Double): NodeData = NodeData.FloatData(value)
 
+  def er(ref: ExternalNodeReference): NodeData = NodeData.ExternalNodeRef(ref)
+
   def sl(value: String): DetachedNode[NodeData] = DetachedNode.leaf(s(value))
   def il(value: Int): DetachedNode[NodeData] = DetachedNode.leaf(i(value))
   def fl(value: Double): DetachedNode[NodeData] = DetachedNode.leaf(f(value))
+  def erl(ref: ExternalNodeReference): DetachedNode[NodeData] =
+    DetachedNode.leaf(er(ref))
 }

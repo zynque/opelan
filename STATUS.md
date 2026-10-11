@@ -49,7 +49,9 @@ implementation plan.
   structure degrades to hole chips. `Language.render` produces these;
   the sidebar's provenance clicks select the producing node
   (`SelectSource` rides the ordinary `SyncDocument` push — a same-doc
-  push carrying a selection records no version), and `input` commits
+  push carrying a selection records no version — as a *silent select*:
+  `SelectTarget` carries a focus flag so the outline highlights without
+  claiming DOM focus and the cell's edit box keeps it), and `input` commits
   rewrite the source node via `Language.parseCell` +
   `replaceNodeContent` — an id-preserving edit, so refs keep resolving.
 - **fp component runtime** (`ui/fp`): Elm-style `Component[I,O]` with pure
@@ -76,7 +78,14 @@ implementation plan.
   sidebar lists stored documents; New/Save/open flows go through the pure
   `Workspace` value; Ctrl+Enter on a ref node follows it — internal refs
   select their target, external refs resolve through the store and open
-  the pinned version at the referenced node.
+  the pinned version at the referenced node. First hydration seeds the
+  demo lineup (`ui/workbench/DemoDocs`): each registered language's
+  `langDoc` — a descriptive outline of the language — lands at the URL
+  its `typeRef` names (v0, the version refs pin), plus the Household
+  budget at `opelan:docs/household-budget`; a URL the store already
+  holds is never overwritten. Following the budget's type ref thus lands
+  on `lang: sheet`, whose formula cell kind links on to
+  `lang: expression` — descriptive today, authoritative in M2.
 - **IndexedDB persistence** (`data/storage`): generic `js.Dynamic` store
   over four object stores (`projects`, `automerge_docs`, `settings`,
   `documents`); persists document versions as outline text (the projects
@@ -95,7 +104,7 @@ implementation plan.
   a revert change that propagates to peers. Echoes are suppressed by
   last-text comparison, not protocol smarts.
 - **Build/test pipeline**: `build.bat` produces `bundle.js` (scala-cli →
-  webpack); `test.bat` runs ~170 munit tests covering the pure core and the
+  webpack); `test.bat` runs ~190 munit tests covering the pure core and the
   update functions of the UI layer, plus DocSession convergence tests that
   run real Automerge under Node.
 
