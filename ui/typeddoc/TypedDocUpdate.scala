@@ -96,8 +96,9 @@ def typedDocUpdate(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel
     // syncDocument) — and it is a silent select: the node highlights
     // without the outline claiming focus, so a click in a projected
     // editor (a sheet cell's box) keeps focus where the user put it.
-    // The structural editor becomes the visible surface, since
-    // selection is a structural concept.
+    // On a derived-view surface the click also stays there — the app
+    // must not be yanked away by its own provenance — while on the
+    // other surfaces the structural editor shows the selection.
     case SelectSource(id) =>
       if (m.doc.getNode(id).isDefined)
         Update(m.copy(
@@ -107,8 +108,21 @@ def typedDocUpdate(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel
             case DocPush.Open => DocPush.Merge("Select")
             case p            => p
           },
-          view = DocView.Editor))
+          view = m.view match {
+            case DocView.Derived(_) => m.view
+            case _                  => DocView.Editor
+          }))
       else Update(m)
+
+    // Go to definition: the document's type ref names the language
+    // document; the owner resolves it through the store.
+    case GoToDefinition =>
+      typeRefOf(m.doc) match {
+        case Some(ref) => Update(m, Vector(FollowRef(ref)))
+        case None =>
+          Update(m.copy(status = "Untyped document"),
+            Vector(Status("Untyped document")))
+      }
 
     // A projected cell edit: parse through the doc's language and rewrite
     // the node in place (the id survives, so refs into it keep working).

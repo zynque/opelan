@@ -35,27 +35,32 @@ Sidebar documents: `Household budget`, `lang: sheet`, `lang: expression`.
 
 **Act 1 — the app.**
 
-1. Open `Household budget` — renders as a grid. Not a program: a
+1. Open `Household budget`, switch to the `sheet` view — the spreadsheet
+   alone fills the pane; no outline, no machinery. Not a program: a
    document; everything on screen is a derived view.
 2. One cell shows `?` — formula `total / people` is a hole because `/`
    is not in the grammar. The app still works; every other cell
    computes. (*Never Broken.*)
-3. Click a `line total` cell → the document pane opens with that formula
-   node selected. Then edit `price` *in the grid itself* — the cell is a
-   projection: typing a new value rewrites the source node and the grid
+3. Click a `line total` cell → its formula node is selected in the
+   (hidden) editor. Then edit `price` *in the grid itself* — the cell is
+   a projection: typing a new value rewrites the source node and the grid
    recomputes in place. (*Reactive*, provenance navigation per DESIGN §7,
    projectional editing.)
-4. Flip to the text surface: `qty * price` as text, the structural
-   editor shows the same subtree. (*Polysyntactic* — already works.)
+4. Two navigations out of the app surface: **Raw** shows this document's
+   own representation (the outline editor, where the last-clicked cell's
+   source node is selected); **Definition (F12)** follows the document's
+   type ref — "go to definition" for the app itself.
 
 **Act 2 — under the hood.**
 
-5. Follow the document's type ref (Ctrl+Enter machinery exists) → lands
-   on `opelan:lang/sheet`, a *document*: node kinds, cell formulas typed
-   by `opelan:lang/expr`, the view declaration — editable in the same
-   editor.
-6. Follow the formula's type ref → `opelan:lang/expr`, the grammar
-   document.
+5. From the sheet: F12 or the **Definition** button follows the type ref
+   → lands on `opelan:languages/sheet`, a *document*: node kinds, cell
+   formulas typed by `opelan:languages/expr`, the view declarations —
+   editable in the same editor. (Today it lands on the descriptive
+   outline; when the definition format gets its own UI, go-to-definition
+   jumps straight to it — same gesture, deeper landing.)
+6. Follow the formula's `ext:` ref → `opelan:languages/int-expression`,
+   the expression language's document.
 7. Add the `/` production. Return to the budget: the `total / people`
    hole has healed — the cell computes. No rebuild, no redeploy; a
    running application's language changed by editing a document. **The

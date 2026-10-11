@@ -3,13 +3,15 @@ package opelan.ui.typeddoc
 import opelan.foundation.document._
 import opelan.ui.editor.{DocPush, EditorOutput, SelectTarget, SyncedHistory}
 
-// Which editing surface is showing in the left pane: the generic
-// structural editor or the CodeMirror text cell over the document's
-// text surface. A language's derived views ("print", "eval") are always
-// live in the sidebar — they are not switchable modes.
+// Which surface fills the pane: the generic structural editor, the
+// CodeMirror text cell over the document's text surface, or one of the
+// language's derived views shown alone (the "app" surface — the
+// spreadsheet without the machinery). Derived views also stay live in
+// the sidebar while editing.
 enum DocView {
   case Editor
   case Text
+  case Derived(name: String)
 }
 
 // The complete pane state — a pure value. `doc` mirrors the latest
@@ -73,6 +75,9 @@ enum TypedDocInput {
   // A projected cell editor committed text: parse it through the
   // language's cell grammar and rewrite the node in place.
   case CommitCellText(nodeId: Int, text: String)
+  // Go to definition: follow the document's type ref — the owner opens
+  // the language document it names (the app's "implementation").
+  case GoToDefinition
   case FromEditor(out: EditorOutput)
 }
 

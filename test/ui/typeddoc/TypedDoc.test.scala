@@ -163,6 +163,29 @@ class TypedDocSuite extends munit.FunSuite {
     assertEquals(u.state.pushedSelect, None)
   }
 
+  test("SelectSource inside a derived view stays on the app surface") {
+    val m = typedDocUpdate(
+      init, TypedDocInput.SwitchView(DocView.Derived("print"))).state
+    val target = contentId(m.doc).get
+    val u = typedDocUpdate(m, TypedDocInput.SelectSource(target))
+    assertEquals(u.state.view, DocView.Derived("print"))
+    assertEquals(
+      u.state.pushedSelect, Some(SelectTarget(target, focus = false)))
+  }
+
+  test("GoToDefinition follows the document's type ref") {
+    val u = typedDocUpdate(init, TypedDocInput.GoToDefinition)
+    assert(u.out.contains(TypedDocOutput.FollowRef(ExprLanguage.typeRef)))
+  }
+
+  test("GoToDefinition on an untyped document reports it") {
+    val raw =
+      typedDocUpdate(init, TypedDocInput.Load(buildDocument(n(s("r"))))).state
+    val u = typedDocUpdate(raw, TypedDocInput.GoToDefinition)
+    assert(u.out.forall(o => !o.isInstanceOf[TypedDocOutput.FollowRef]))
+    assertEquals(u.state.status, "Untyped document")
+  }
+
   test("RequestDoc re-emits the current document") {
     val m = typedDocUpdate(init, TypedDocInput.TextEdited("7")).state
     val u = typedDocUpdate(m, TypedDocInput.RequestDoc)

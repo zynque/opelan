@@ -68,7 +68,10 @@ implementation plan.
   editor, CodeMirror text cell, and language-provided derived views all live
   over one document; editor state survives view switches; text and structure
   stay in sync without echo loops; clicking a provenance-tagged fragment of
-  a derived view selects the producing node in the editor.
+  a derived view selects the producing node in the editor. A derived view
+  can also fill the pane alone (`DocView.Derived`) — the app surface —
+  with **Raw** (this document's representation) and **Definition (F12)**
+  (the type ref's target — the app's implementation) as its exits.
 - **Document store** (`foundation/document/Store`): a pure, immutable,
   versioned map of documents by URL — `put` appends a version, `resolve`
   dereferences `url@version#node`, heads are tracked per URL. Persisted in

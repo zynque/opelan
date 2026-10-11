@@ -104,8 +104,11 @@ private def inputView[I](
 
 private def keyDown[I](id: Int, current: String, onEdit: (Int, String) => I)(
     e: dom.Event): Option[I] = {
-  e.stopPropagation()
-  e.asInstanceOf[dom.KeyboardEvent].key match {
+  val key = e.asInstanceOf[dom.KeyboardEvent].key
+  // Function keys are never text input — let them bubble so a container
+  // shortcut (e.g. F12 go-to-definition) works while a box is focused.
+  if (!key.startsWith("F")) e.stopPropagation()
+  key match {
     case "Enter" =>
       e.preventDefault()
       blur(e)

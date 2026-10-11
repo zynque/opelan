@@ -11,15 +11,16 @@ import opelan.ui.view._
 // top, eval below for the expression language. Views render through the
 // single view-tree interpreter: holes show as chips, and fragments tagged
 // with SourceRef provenance select their producing node when clicked.
-// Hidden for raw/untyped documents, which have no language and thus no
-// views.
 def typedDocSidebar(m: TypedDocModel): View[TypedDocInput] = {
   val sections = languageForDoc(m.doc).toList.flatMap(lang =>
     lang.views.map(v => section(lang, v, m)))
+  // Hidden when a derived view fills the pane — the app is alone — and
+  // for raw/untyped documents, which have no language and thus no views.
+  val solo = m.view.isInstanceOf[DocView.Derived]
   els("div",
     style("width: 220px; flex-shrink: 0; border-left: 1px solid #ddd; " +
       "overflow: auto; background: #fafafa;" +
-      hidden(sections.isEmpty)))(
+      hidden(sections.isEmpty || solo)))(
     sections)
 }
 
@@ -36,7 +37,7 @@ private def section(
           "white-space: pre-wrap;"))(
         body(lang.render(viewName, m.doc)))))
 
-private def body(
+private[typeddoc] def body(
     r: Either[String, DetachedNode[NodeData]]): View[TypedDocInput] =
   r match {
     case Right(tree) =>
