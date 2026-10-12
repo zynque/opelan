@@ -93,4 +93,12 @@ object FakeBrowser {
       case n: FakeNode  => Option(n.textContent).exists(_.contains(s))
       case _            => false
     }
+
+  // All rendered text under a root — for diagnosing what a timed-out
+  // test actually saw.
+  def textOf(root: dom.Node): String = (root: Any) match {
+    case e: FakeElement => e.children.map(textOf).mkString(" ")
+    case n: FakeNode  => Option(n.textContent).getOrElse("")
+    case _            => ""
+  }
 }

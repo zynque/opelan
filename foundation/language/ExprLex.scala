@@ -69,3 +69,20 @@ private def refAt(input: String, i: Int): Int =
     while (j < input.length && input.charAt(j).isDigit) j += 1
     if (j > i + 4) j else -1
   } else -1
+
+// The generic-token view of an expr lex — the builtin "expr" lexer in
+// the language-def registry. Kinds are the grammar's vocabulary.
+def exprGToks(input: String): Vector[opelan.foundation.grammar.GTok] =
+  lex(input).map { t =>
+    val kind = t match {
+      case _: Tok.IntTok   => "int"
+      case _: Tok.FloatTok => "float"
+      case _: Tok.RefTok   => "ref"
+      case _: Tok.OpTok    => "op"
+      case _: Tok.LParen   => "lpar"
+      case _: Tok.RParen   => "rpar"
+      case _: Tok.HoleTok  => "hole"
+      case _: Tok.JunkTok  => "junk"
+    }
+    opelan.foundation.grammar.GTok(kind, input.substring(t.from, t.to), t.from, t.to)
+  }

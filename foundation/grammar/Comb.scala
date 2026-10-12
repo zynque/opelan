@@ -80,6 +80,25 @@ def junk(start: Set[String], run: Set[String]): Parser =
     case _ => emptyHole(in, pos)
   }
 
+// A sign fused with a numeric literal: "+4" / "-4" / "- 4.5" — the
+// sign token and the number need not be adjacent.
+def signum: Parser =
+  seq(
+    tokWhere("op")(t => t.text == "+" || t.text == "-")(
+      t => NodeData.StringData(t.text)),
+    choice(
+      tok("int")(t => NodeData.IntData(t.text.toInt)),
+      tok("float")(t => NodeData.FloatData(t.text.toDouble))))(
+    (op, num) => {
+      val neg = op.text == "-"
+      val data = num.data match {
+        case NodeData.IntData(v)   => NodeData.IntData(if (neg) -v else v)
+        case NodeData.FloatData(v) => NodeData.FloatData(if (neg) -v else v)
+        case d                     => d
+      }
+      PTree(data, op.text + num.text, op.from, num.to)
+    })
+
 // Strip the spans: a PTree becomes ordinary detached document data.
 def toDetached(t: PTree): DetachedNode[NodeData] =
   DetachedNode(t.data, t.kids.map(toDetached))

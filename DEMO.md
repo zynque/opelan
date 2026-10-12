@@ -147,10 +147,16 @@ holey document must still parse (Never Broken)):
    `GTok`s, where `atom = int | float | ref | '?' | parens | signum |
    junk` and `levels` is the tightest-first op→tag table. All parser
    tests pass unchanged — identical trees and spans prove the machinery.
-8. `LanguageDef` + `DefLanguage` + builtins: the in-memory ADT a def
+8. ~~`LanguageDef` + `DefLanguage` + builtins: the in-memory ADT a def
    describes (schema, grammar-as-combinator-composition, view bindings
    to named built-ins like `expr-eval` — eval semantics stay in code,
-   honest scaffolding), interpreted into a `Language`.
+   honest scaffolding), interpreted into a `Language`~~ — done:
+   `GrammarDef` is the data twin of the combinator set (`Named`/`Ref`
+   encode recursion), `interpret` walks it to a `Parser`, and the
+   builtins registry names the code-resident semantics (`expr-print`,
+   `expr-eval`, `sheet-grid`, `sheet-formulas`, the `expr` lexer,
+   `sheet-cell`). `DefLanguage(exprDef)` is proven identical to
+   `ExprLanguage` — parse/print/eval agree on a 28-input battery.
 9. The def-doc format: recovering `langDefFromDocument` /
    `langDefToDetached`; the seeded `lang:` docs regenerate in the real
    format. The sheet's cell grammar names the expression language *by

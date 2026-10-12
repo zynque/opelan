@@ -15,9 +15,8 @@ import Expr._
 //   levels := ["*"->mul, "/"->div] then ["+"->add, "-"->sub]
 //             (tightest first — the last level binds loosest)
 //
-// The combinator vocabulary is the point: the grammar is a value, so a
-// language document can describe one (M2's healing moment is editing
-// the `levels` list in `lang: expression`).
+// The combinator vocabulary is the point: the same grammar is written
+// as data in langdef/Defs.scala — the interpretation must agree.
 
 // Spans now come from the grammar package; keep the old name working.
 type ExprSpan = Span
@@ -29,7 +28,7 @@ val ExprSpan = Span
 case class ExprParseResult(expr: Expr, spans: Map[List[Int], ExprSpan])
 
 def parseExpr(input: String): ExprParseResult = {
-  val r = exprGrammar(In(input, gtoks(input)), 0)
+  val r = exprGrammar(In(input, exprGToks(input)), 0)
   ExprParseResult(exprFromDetached(toDetached(r.tree)), spansOf(r.tree))
 }
 
@@ -53,37 +52,3 @@ private def atom: Parser = choice(
   junk(
     Set("op", "junk"),
     Set("int", "float", "ref", "junk", "hole")))
-
-// A sign applied to a numeric literal: "+4" / "-4" / "- 4.5" — the sign
-// and number need not be adjacent.
-private def signum: Parser =
-  seq(
-    tokWhere("op")(t => t.text == "+" || t.text == "-")(
-      t => NodeData.StringData(t.text)),
-    choice(
-      tok("int")(t => NodeData.IntData(t.text.toInt)),
-      tok("float")(t => NodeData.FloatData(t.text.toDouble))))(
-    (op, num) => {
-      val neg = op.text == "-"
-      val data = num.data match {
-        case NodeData.IntData(v)   => NodeData.IntData(if (neg) -v else v)
-        case NodeData.FloatData(v) => NodeData.FloatData(if (neg) -v else v)
-        case d                     => d
-      }
-      PTree(data, op.text + num.text, op.from, num.to)
-    })
-
-private def gtoks(input: String): Vector[GTok] =
-  lex(input).map { t =>
-    val kind = t match {
-      case _: Tok.IntTok   => "int"
-      case _: Tok.FloatTok => "float"
-      case _: Tok.RefTok   => "ref"
-      case _: Tok.OpTok    => "op"
-      case _: Tok.LParen   => "lpar"
-      case _: Tok.RParen   => "rpar"
-      case _: Tok.HoleTok  => "hole"
-      case _: Tok.JunkTok  => "junk"
-    }
-    GTok(kind, input.substring(t.from, t.to), t.from, t.to)
-  }
