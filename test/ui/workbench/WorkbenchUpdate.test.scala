@@ -240,6 +240,20 @@ class WorkbenchUpdateSuite extends munit.FunSuite {
     assertEquals(no.state.workspace.openUrl, None)
   }
 
+  test("reset asks for confirmation, then issues the wipe+reload cmd") {
+    val m = workbenchUpdate(init, ResetStorage).state
+    assert(m.prompt.exists(_.isInstanceOf[PromptReq.Confirm]))
+    assertEquals(m.promptFor, Some(PromptFor.ResetAll))
+    // Confirmed: a Cmd is queued (it clears both stores, then reloads).
+    val yes = workbenchUpdate(m, FromPrompt(PromptEv.Decided(0, true)))
+    assertEquals(yes.state.prompt, None)
+    assert(yes.cmds.nonEmpty)
+    // Declined: prompt cleared, no cmd.
+    val no = workbenchUpdate(m, FromPrompt(PromptEv.Decided(0, false)))
+    assertEquals(no.state.prompt, None)
+    assert(no.cmds.isEmpty)
+  }
+
   test("a followed ref opens the pinned version and selects the node") {
     val target = doc("target")
     val (store, v) = Store.empty.put("u2", target)

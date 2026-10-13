@@ -82,6 +82,12 @@ class IndexedDBStore(dbName: String = "opelan-workbench", version: Int = 3) {
     transact(storeName, "readwrite", s"Failed to write to $storeName")(
       _.put(record))(_ => ())
 
+  // Empty an object store — used by the workbench's reset-everything
+  // flow before reloading into a fresh, re-seeded environment.
+  def clear(storeName: String): Future[Unit] =
+    transact(storeName, "readwrite", s"Failed to clear $storeName")(
+      _.clear())(_ => ())
+
   def get(storeName: String, key: String): Future[Option[js.Dynamic]] =
     transact(storeName, "readonly", s"Failed to read from $storeName")(
       _.get(key))(optResult)
@@ -105,5 +111,5 @@ class IndexedDBStore(dbName: String = "opelan-workbench", version: Int = 3) {
 // Global IndexedDB store instance.
 object IndexedDBStore {
   private val store = new IndexedDBStore()
-  export store.{initialize, put, get, getAll, close}
+  export store.{initialize, put, get, getAll, clear, close}
 }

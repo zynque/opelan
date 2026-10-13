@@ -71,6 +71,14 @@ object WorkbenchUpdate {
             pushSeq = m.pushSeq + 1,
             status = "Live sync off"))
 
+      case ResetStorage =>
+        val (m2, id) = nextReq(m)
+        up(m2.copy(
+          prompt = Some(PromptReq.Confirm(id,
+            "Clear all stored documents and sync data, then reload? " +
+              "The demo lineup re-seeds on next start.")),
+          promptFor = Some(PromptFor.ResetAll)))
+
       case FromPane(out)   => fromPane(m, out)
       case FromStorage(ev) => fromStorage(m, ev)
       case FromPrompt(ev)  => fromPrompt(m, ev)

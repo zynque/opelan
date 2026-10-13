@@ -1,8 +1,12 @@
 package opelan.ui.workbench
 
+import scala.concurrent.ExecutionContext.Implicits.global
+import org.scalajs.dom
 import opelan.collaboration.automerge.ChangeInfo
+import opelan.data.storage.IndexedDBStore
 import opelan.foundation.document._
 import opelan.ui.editor.{SyncedEntry, SyncedHistory}
+import opelan.ui.fp.{Cmd, Update}
 import opelan.ui.fx._
 import opelan.ui.typeddoc.{TypedDocInput, TypedDocOutput}
 import opelan.ui.typeddoc.TypedDocOutput._
@@ -115,6 +119,14 @@ private[workbench] def fromPrompt(m: WorkbenchModel, ev: PromptEv): Upd = {
         .getOrElse(up(cleared))
     case (Some(PromptFor.Join(url)), PromptEv.Decided(_, true)) =>
       joinBranch(cleared, url)
+    case (Some(PromptFor.ResetAll), PromptEv.Decided(_, true)) =>
+      // Wipe every persisted object store, then reload into a fresh
+      // boot — the cleanest reset of all in-memory state (sessions,
+      // panes, prompts), not just the store.
+      Update(cleared, Vector.empty, Vector(Cmd[WorkbenchInput](_ =>
+        IndexedDBStore.clear("documents")
+          .flatMap(_ => IndexedDBStore.clear("automerge_docs"))
+          .onComplete(_ => dom.window.location.reload()))))
     case _ => up(cleared)
   }
 }

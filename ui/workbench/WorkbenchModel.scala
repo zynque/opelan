@@ -16,6 +16,7 @@ enum ShellView {
 enum PromptFor {
   case NewDoc, SaveAs
   case Join(url: String)
+  case ResetAll
 }
 
 // The workbench's complete state — a pure value. Every effect the shell
@@ -61,6 +62,9 @@ enum WorkbenchInput {
   case SelectDocument(url: String)
   case SaveRequested
   case ToggleSync
+  // Wipe persisted state (documents + sync bytes) and reload — the
+  // escape hatch when stale persisted docs shadow the current seeds.
+  case ResetStorage
   case FromPane(out: TypedDocOutput)
   case FromStorage(ev: StorageEv)
   case FromPrompt(ev: PromptEv)

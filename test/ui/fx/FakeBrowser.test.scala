@@ -47,6 +47,8 @@ class FakeIDBStore(records: js.Dictionary[js.Dynamic]) extends js.Object {
   def getAll(): FakeIDBReq =
     new FakeIDBReq(() => js.Array(records.values.toSeq: _*)
       .asInstanceOf[js.Dynamic])
+  def clear(): FakeIDBReq =
+    new FakeIDBReq(() => { records.clear(); null.asInstanceOf[js.Dynamic] })
 }
 
 class FakeIDBOpen(db: FakeIDBDatabase) extends js.Object {

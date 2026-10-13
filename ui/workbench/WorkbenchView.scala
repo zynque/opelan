@@ -58,6 +58,11 @@ private def toolbar(m: WorkbenchModel): View[WorkbenchInput] =
       style("padding: 5px 10px;" +
         (if (m.syncOn) " font-weight: bold; background: #dde9f5;" else "")),
       events = on("click", ToggleSync))(text("Sync")),
+    el("button",
+      style("float: right; padding: 5px 10px; color: #b00;") ++
+        Map("title" ->
+          "Clear all stored data and reload (re-seeds the demo)"),
+      events = on("click", ResetStorage))(text("Reset")),
     el("span", style("margin-left: 20px;"))(text(currentDocLabel(m))))
 
 private def viewButton(
