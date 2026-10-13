@@ -40,9 +40,17 @@ private def textPane(m: TypedDocModel): View[TypedDocInput] =
 // the type ref to the language document. The pane is focusable so F12
 // works anywhere; a click that didn't land inside an editor focuses it.
 private def derivedPane(m: TypedDocModel): View[TypedDocInput] = {
+  // The view actually shown: if the doc's language doesn't offer the
+  // requested view — e.g. its definition was edited — fall back to the
+  // language's default perspective rather than rendering an error.
+  val lang = languageForDoc(m.doc, m.store)
   val active: Option[String] = m.view match {
-    case DocView.Derived(n) => Some(n)
-    case _                  => None
+    case DocView.Derived(n) => lang match {
+      case Some(l) if l.views.contains(n) => Some(n)
+      case Some(l)                        => l.defaultView.orElse(Some(n))
+      case None                           => Some(n)
+    }
+    case _ => None
   }
   val keydown: dom.Event => Option[TypedDocInput] = e =>
     if (e.asInstanceOf[dom.KeyboardEvent].key == "F12") {

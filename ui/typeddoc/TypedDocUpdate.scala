@@ -34,10 +34,12 @@ def typedDocUpdate(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel
     // live doc when the pull serial moved. The push recurses into this
     // same update — its outputs propagate, its inputs stay internal.
     case Pane(push, pushSeq, pull, store) =>
+      // The store prop applies before the push so a load resolves the
+      // new document's language against the current resolution context.
+      val m0 = m.copy(store = store)
       val applying = push.filter(_ => pushSeq != m.appliedPushSeq)
-      val u = applying.map(in => typedDocUpdate(m, in)).getOrElse(Update(m))
+      val u = applying.map(in => typedDocUpdate(m0, in)).getOrElse(Update(m0))
       val m2 = u.state.copy(
-        store = store,
         appliedPushSeq = if (applying.isDefined) pushSeq else m.appliedPushSeq,
         appliedPullSeq = pull)
       Update(m2, u.out ++
@@ -180,6 +182,19 @@ private def load(
       pushedDoc = d,
       pushedSelect = select.filter(id => d.getNode(id).isDefined).map(SelectTarget(_)),
       pushMode = DocPush.Open,
+      // A derived view only survives the load when the new document's
+      // language also offers it; otherwise fall to that language's
+      // default perspective (a raw document falls back to the editor).
+      view = m.view match {
+        case DocView.Derived(n) =>
+          languageForDoc(d, m.store) match {
+            case Some(l) if l.views.contains(n) => m.view
+            case Some(l) => l.defaultView.map(DocView.Derived(_))
+              .getOrElse(DocView.Editor)
+            case None => DocView.Editor
+          }
+        case v => v
+      },
       text = docText(d),
       textEpoch = m.textEpoch + 1,
       status = msg),

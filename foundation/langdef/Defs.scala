@@ -99,4 +99,19 @@ val docLanguageDef = LanguageDef(
   views = List(ViewBinding("def", "def-view")),
   cellParser = None)
 
+// The foundational languages, each paired with the implementations its
+// def names. This list is the only built-in registry: a def decoded
+// from a document inherits the impls of the foundational language whose
+// type ref it claims, so a stored lang: doc keeps working semantics.
+val foundation: List[(LanguageDef, Impls)] = List(
+  exprDef       -> exprImpls,
+  sheetDef      -> sheetImpls,
+  docLanguageDef -> docImpls)
+
+def implsFor(d: LanguageDef): Impls =
+  foundation.collectFirst {
+    case (fd, i) if fd.typeRef.documentUrl == d.typeRef.documentUrl &&
+                   fd.typeRef.nodeId == d.typeRef.nodeId => i
+  }.getOrElse(Impls())
+
 val DocLanguage: Language = new DefLanguage(docLanguageDef)

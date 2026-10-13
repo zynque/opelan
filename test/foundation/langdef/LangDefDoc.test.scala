@@ -51,7 +51,10 @@ class LangDefDocSuite extends FunSuite {
         DetachedNode(NodeData.StringData("syntax"), List(
           DetachedNode.leaf(NodeData.StringData("expr")),
           DetachedNode.leaf(NodeData.StringData("flibble")))))))
-    val d = langDefFromDocument("opelan:docs/broken", doc)
+    // The damaged doc claims the expression language's URL, so it
+    // inherits exprImpls — the "expr" lexer it names resolves.
+    val d = langDefFromDocument(
+      ExprLanguage.typeRef.documentUrl, doc)
     assertEquals(d.name, "lang: broken") // falls back to the title
     assertEquals(d.syntax.map(_.grammar), Some(GrammarDef.Hole))
     // The hole grammar parses nothing — total, not thrown.

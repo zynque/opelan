@@ -30,6 +30,7 @@ private def storedLanguage(
     if typeRefOf(doc).contains(langDefTypeRef)
   } yield new DefLanguage(
     langDefFromDocument(ref.documentUrl, doc),
-    // Nested language refs (e.g. a cell grammar's) resolve through the
-    // same store, so editing a referred language heals its dependents.
+    // The decoded def inherits the impls of the foundational language
+    // whose type ref it claims; nested language refs (e.g. a cell
+    // grammar's) resolve through the same store.
     ref2 => languageForRef(ref2, store))

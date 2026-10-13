@@ -20,8 +20,13 @@ trait Language {
 
   def name: String
 
-  // Derived views the language supports (e.g. "print", "eval").
+  // Derived views the language supports (e.g. "print", "eval"). The
+  // list is the perspective menu the UI presents for documents of this
+  // language; the first entry is the default a host falls back to when
+  // a requested view doesn't exist here.
   def views: List[String]
+
+  def defaultView: Option[String] = views.headOption
 
   // Render a derived view of the typed document's content as a view
   // tree. Left for genuine failures (no content, wrong type), Right

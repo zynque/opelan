@@ -2,7 +2,8 @@ package opelan.ui.typeddoc
 
 import opelan.foundation.document._
 import opelan.foundation.document.Detached._
-import opelan.foundation.language.{Expr, ExprLanguage, exprFromDocument}
+import opelan.foundation.langdef.{langDefDoc, sheetDef}
+import opelan.foundation.language.{Expr, ExprLanguage, SheetLanguage, exprFromDocument}
 import opelan.ui.editor.{
   DocPush, EditorInput, EditorOutput, SelectTarget, SyncedEntry, SyncedHistory}
 
@@ -37,6 +38,31 @@ class TypedDocSuite extends munit.FunSuite {
     assertEquals(u.state.pushedDoc, m.pushedDoc)
     assertEquals(editorInput(u.state), EditorInput.SyncDocument(m.pushedDoc))
     assert(u.out.contains(TypedDocOutput.DocChanged(edited)))
+  }
+
+  test("Load falls back to the new language's default view") {
+    // On a derived view, jump to a doc whose language lacks it — the
+    // go-to-definition path: "sheet" doesn't exist on DocLanguage, so
+    // the pane lands on its default "def" view instead of an error.
+    val m = typedDocUpdate(
+      init, TypedDocInput.SwitchView(DocView.Derived("sheet"))).state
+    val u = typedDocUpdate(m, TypedDocInput.Load(langDefDoc(sheetDef)))
+    assertEquals(u.state.view, DocView.Derived("def"))
+  }
+
+  test("Load onto an untyped doc leaves a derived view for the editor") {
+    val m = typedDocUpdate(
+      init, TypedDocInput.SwitchView(DocView.Derived("print"))).state
+    val u = typedDocUpdate(
+      m, TypedDocInput.Load(beginDocument(NodeData.StringData("raw"))))
+    assertEquals(u.state.view, DocView.Editor)
+  }
+
+  test("Load keeps a derived view the new language also offers") {
+    val m = typedDocUpdate(
+      init, TypedDocInput.SwitchView(DocView.Derived("sheet"))).state
+    val u = typedDocUpdate(m, TypedDocInput.Load(SheetLanguage.sampleDoc))
+    assertEquals(u.state.view, DocView.Derived("sheet"))
   }
 
   test("Load pushes the new document into the editor") {

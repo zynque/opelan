@@ -6,36 +6,41 @@ import opelan.foundation.language.{languageForRef, Language}
 
 // A Language interpreted from a LanguageDef — the bootstrap mechanism:
 // the def carries the grammar as data and names its semantics through
-// the builtins registry, so a document-encoded def (read by
+// an Impls bundle, so a document-encoded def (read by
 // langDefFromDocument) becomes a live language without touching code.
 //
-// `resolve` finds the language a cell grammar refers to; it defaults to
-// the Scala registry — the honest fallback until DocLanguage resolves
-// through the document store.
+// `impls` comes from the foundational language whose type ref the def
+// claims — a stored def doc for a foundational type keeps its
+// semantics even after its grammar is edited. `resolve` finds the
+// language a cell grammar refers to; it defaults to the Scala
+// registry — the honest fallback until DocLanguage resolves through
+// the document store.
 class DefLanguage(
-    d: LanguageDef,
+    val languageDef: LanguageDef,
     resolve: ExternalNodeReference => Option[Language] = languageForRef)
     extends Language {
 
-  def typeRef = d.typeRef
-  def name = d.name
-  def views = d.views.map(_.name)
+  private val impls: Impls = implsFor(languageDef)
+
+  def typeRef = languageDef.typeRef
+  def name = languageDef.name
+  def views = languageDef.views.map(_.name)
 
   // The def's document is its encoding — the same bytes a lang: doc
   // holds in the store.
-  def langDoc = langDefDoc(d)
+  def langDoc = langDefDoc(languageDef)
 
   private lazy val syntax: Option[(String => Vector[GTok], Parser)] =
     for {
-      s <- d.syntax
-      lx <- builtinLexers.get(s.lexer)
+      s <- languageDef.syntax
+      lx <- impls.lexers.get(s.lexer)
     } yield (lx, interpret(s.grammar))
 
   def render(view: String, doc: Document[NodeData])
       : Either[String, DetachedNode[NodeData]] =
-    d.views.find(_.name == view) match {
+    languageDef.views.find(_.name == view) match {
       case None => Left(s"$name has no '$view' view")
-      case Some(vb) => builtinViews.get(vb.builtin) match {
+      case Some(vb) => impls.views.get(vb.builtin) match {
         case None => Left(s"$name: unknown builtin view '${vb.builtin}'")
         case Some(b) => contentId(doc)
           .toRight(s"$name: typed document has no content")
@@ -48,9 +53,9 @@ class DefLanguage(
     syntax.map { case (lx, g) => toDetached(g(In(text, lx(text)), 0).tree) }
 
   override def parseCell(text: String): Option[DetachedNode[NodeData]] =
-    d.cellParser.map {
+    languageDef.cellParser.map {
       case CellParserDef.Builtin(name) =>
-        builtinCellParsers.get(name)
+        impls.cellParsers.get(name)
           .map(_(text))
           .getOrElse(DetachedNode.leaf(NodeData.GapData(text)))
       case CellParserDef.Language(ref, fb) => cellVia(ref, fb, text)

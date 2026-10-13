@@ -58,6 +58,23 @@ class DefLanguageSuite extends FunSuite {
     assert(defed.parseCell("x").isEmpty)
   }
 
+  test("a def claiming a foundational type ref inherits its impls") {
+    // implsFor(exprDef) == exprImpls: a doc-decoded def for the
+    // expression type still binds the "expr" lexer and expr views.
+    val edited = exprDef.copy(title = "edited")
+    val l = new DefLanguage(edited)
+    assert(l.parse("1 + 2").isDefined)
+    assert(l.render("print", hand.sampleDoc).isRight)
+  }
+
+  test("a def claiming an unknown type ref binds no impls") {
+    val foreign = exprDef.copy(
+      typeRef = ExternalNodeReference("opelan:languages/unknown", 0, 0))
+    val l = new DefLanguage(foreign)
+    assertEquals(l.parse("1 + 2"), None)          // "expr" lexer unbound
+    assert(l.render("print", hand.sampleDoc).isLeft)
+  }
+
   test("a cyclic grammar Ref degrades to a hole instead of looping") {
     // Named("e", Ref("e")) never consumes input — a malformed def doc
     // could encode this; the parse must terminate.

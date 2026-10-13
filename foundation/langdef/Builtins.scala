@@ -6,23 +6,35 @@ import opelan.foundation.language.{
   evalTree, exprGToks, formulasView, parseCellText, printTree,
   readLocExpr, sheetView}
 
-// The named behaviors a language definition can bind — the part of a
-// language that still lives in code. A builtin view interprets the
-// typed document's content subtree into a view tree; a builtin lexer
-// turns cell text into generic tokens; a builtin cell parser turns
-// committed cell text into a replacement subtree.
+// The code-side semantics each foundational language definition
+// references. A LanguageDef names behaviors — lexers, views, cell
+// parsers — but behavior lives in code while the demo bootstraps, so
+// each foundational def carries an Impls bundle holding its own
+// implementations. A def decoded from a document inherits the bundle of
+// the foundational language whose type ref it claims (see implsFor in
+// Defs.scala): editing lang: expression's grammar re-parses cells with
+// the same lexer, and renamed views simply fail to resolve.
 
 type BuiltinView = (Document[NodeData], Int) => DetachedNode[NodeData]
+type BuiltinLexer = String => Vector[GTok]
+type BuiltinCellParser = String => DetachedNode[NodeData]
 
-val builtinViews: Map[String, BuiltinView] = Map(
-  "expr-print"     -> ((doc, id) => printTree(readLocExpr(doc, id))),
-  "expr-eval"      -> ((doc, id) => evalTree(doc, readLocExpr(doc, id))),
-  "sheet-grid"     -> ((doc, id) => sheetView(doc, id)),
-  "sheet-formulas" -> ((doc, id) => formulasView(doc, id)),
-  "def-view"       -> ((doc, id) => defView(doc, id)))
+case class Impls(
+    lexers: Map[String, BuiltinLexer] = Map.empty,
+    views: Map[String, BuiltinView] = Map.empty,
+    cellParsers: Map[String, BuiltinCellParser] = Map.empty)
 
-val builtinLexers: Map[String, String => Vector[GTok]] = Map(
-  "expr" -> exprGToks)
+val exprImpls = Impls(
+  lexers = Map("expr" -> exprGToks),
+  views = Map(
+    "expr-print" -> ((doc, id) => printTree(readLocExpr(doc, id))),
+    "expr-eval"  -> ((doc, id) => evalTree(doc, readLocExpr(doc, id)))))
 
-val builtinCellParsers: Map[String, String => DetachedNode[NodeData]] = Map(
-  "sheet-cell" -> parseCellText)
+val sheetImpls = Impls(
+  views = Map(
+    "sheet-grid"     -> ((doc, id) => sheetView(doc, id)),
+    "sheet-formulas" -> ((doc, id) => formulasView(doc, id))),
+  cellParsers = Map("sheet-cell" -> parseCellText))
+
+val docImpls = Impls(
+  views = Map("def-view" -> ((doc, id) => defView(doc, id))))
