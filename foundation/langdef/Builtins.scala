@@ -18,7 +18,8 @@ val builtinViews: Map[String, BuiltinView] = Map(
   "expr-print"     -> ((doc, id) => printTree(readLocExpr(doc, id))),
   "expr-eval"      -> ((doc, id) => evalTree(doc, readLocExpr(doc, id))),
   "sheet-grid"     -> ((doc, id) => sheetView(doc, id)),
-  "sheet-formulas" -> ((doc, id) => formulasView(doc, id)))
+  "sheet-formulas" -> ((doc, id) => formulasView(doc, id)),
+  "def-view"       -> ((doc, id) => defView(doc, id)))
 
 val builtinLexers: Map[String, String => Vector[GTok]] = Map(
   "expr" -> exprGToks)

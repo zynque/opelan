@@ -2,7 +2,7 @@ package opelan.ui.typeddoc
 
 import org.scalajs.dom
 import opelan.foundation.document._
-import opelan.foundation.language.languageForDoc
+import opelan.foundation.langdef.languageForDoc
 import opelan.ui.fp._
 import opelan.ui.fp.Dsl._
 import opelan.ui.text.CodeMirror
@@ -79,7 +79,7 @@ private def barButton(label: String, in: TypedDocInput): View[TypedDocInput] =
     events = on("click", in))(text(label))
 
 private def derivedBody(name: String, m: TypedDocModel): View[TypedDocInput] = {
-  val rendered = languageForDoc(m.doc)
+  val rendered = languageForDoc(m.doc, m.store)
     .map(_.render(name, m.doc))
     .getOrElse(Left("no language for this document"))
   el("div", style("flex: 1; overflow: auto; padding: 12px;"))(
@@ -93,7 +93,7 @@ private def toolbar(m: TypedDocModel): View[TypedDocInput] =
     Vector(
       viewButton("editor", DocView.Editor, m),
       viewButton("text", DocView.Text, m)) ++
-      languageForDoc(m.doc).toList.flatMap(l =>
+      languageForDoc(m.doc, m.store).toList.flatMap(l =>
         l.views.map(v => viewButton(v, DocView.Derived(v), m))) ++
       Vector(
         el("span", style("color: #666; margin: 0 10px;"))(text(s"type: ${typeLabel(m)}")),
@@ -115,7 +115,7 @@ private def viewButton(label: String, v: DocView, m: TypedDocModel): View[TypedD
 }
 
 private def typeLabel(m: TypedDocModel): String =
-  languageForDoc(m.doc).map(_.name).getOrElse {
+  languageForDoc(m.doc, m.store).map(_.name).getOrElse {
     typeRefOf(m.doc)
       .map(r => s"unknown: ${r.documentUrl}#${r.nodeId}")
       .getOrElse("raw document")

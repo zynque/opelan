@@ -1,7 +1,8 @@
 package opelan.ui.typeddoc
 
 import opelan.foundation.document._
-import opelan.foundation.language.{Language, languageForDoc}
+import opelan.foundation.language.Language
+import opelan.foundation.langdef.languageForDoc
 import opelan.ui.fp._
 import opelan.ui.fp.Dsl._
 import opelan.ui.view._
@@ -12,7 +13,7 @@ import opelan.ui.view._
 // single view-tree interpreter: holes show as chips, and fragments tagged
 // with SourceRef provenance select their producing node when clicked.
 def typedDocSidebar(m: TypedDocModel): View[TypedDocInput] = {
-  val sections = languageForDoc(m.doc).toList.flatMap(lang =>
+  val sections = languageForDoc(m.doc, m.store).toList.flatMap(lang =>
     lang.views.map(v => section(lang, v, m)))
   // Hidden when a derived view fills the pane — the app is alone — and
   // for raw/untyped documents, which have no language and thus no views.

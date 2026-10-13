@@ -83,12 +83,27 @@ implementation plan.
   select their target, external refs resolve through the store and open
   the pinned version at the referenced node. First hydration seeds the
   demo lineup (`ui/workbench/DemoDocs`): each registered language's
-  `langDoc` — a descriptive outline of the language — lands at the URL
-  its `typeRef` names (v0, the version refs pin), plus the Household
-  budget at `opelan:docs/household-budget`; a URL the store already
-  holds is never overwritten. Following the budget's type ref thus lands
-  on `lang: sheet`, whose formula cell kind links on to
-  `lang: expression` — descriptive today, authoritative in M2.
+  `langDoc` — the real definition encoding (below) — lands at the URL
+  its `typeRef` names (v0, the version refs pin), plus the
+  language-definition language at `opelan:languages/language` and the
+  Household budget at `opelan:docs/household-budget`; a URL the store
+  already holds is never overwritten. Following the budget's type ref
+  lands on `lang: sheet` — itself typed by `lang: language`, rendered by
+  its `def` view — whose cell grammar links on to `lang: expression` by
+  external ref.
+- **Language definitions** (`foundation/langdef`): a `LanguageDef` ADT
+  (schema, combinator grammar, view/cell bindings) is encoded as a
+  document by `langDefDoc` and recovering-read by `langDefFromDocument`;
+  `interpret` turns grammar data into a total parser and `DefLanguage`
+  turns a def into a live `Language`. `languageForRef(ref, store)`
+  resolves a type ref through the document store first — the stored def
+  doc *is* the implementation — falling back to the Scala registry
+  (`ExprLanguage`, `SheetLanguage`) and to `DocLanguage`, the
+  code-resident language for def docs themselves. The pane's `store`
+  prop carries the resolution context, so saving an edited `lang:` doc
+  re-interprets dependents on the next render. Malformed defs degrade
+  to holes, never exceptions — missing refs, cyclic grammars, and
+  cyclic documents are all guarded.
 - **IndexedDB persistence** (`data/storage`): generic `js.Dynamic` store
   over four object stores (`projects`, `automerge_docs`, `settings`,
   `documents`); persists document versions as outline text (the projects

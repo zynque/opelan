@@ -43,6 +43,10 @@ case class TypedDocModel(
     text: String = "",
     textEpoch: Int = 0,
     status: String = "Ready",
+    // The document store, delivered as a prop: language refs (a doc's
+    // type, a cell grammar's language) resolve against it, so an edited
+    // `lang:` doc re-interprets dependents on the next render.
+    store: Store = Store.empty,
     // Props bookkeeping for the Pane input: which push/pull serials were
     // already applied, so re-delivery of unchanged props is a no-op.
     appliedPushSeq: Int = -1,
@@ -65,7 +69,11 @@ enum TypedDocInput {
   // Owner-driven props: `push` is desired state (a load/sync push),
   // applied when `pushSeq` is new — same-doc re-delivery can't reload;
   // bump `pushSeq` to force a re-push. A `pull` bump re-emits DocChanged.
-  case Pane(push: Option[TypedDocInput], pushSeq: Int, pull: Int)
+  // `store` is the owner's current document store — the language
+  // resolution context.
+  case Pane(
+      push: Option[TypedDocInput], pushSeq: Int, pull: Int,
+      store: Store = Store.empty)
   case LoadExprSample
   case LoadSheetSample
   case TextEdited(text: String)

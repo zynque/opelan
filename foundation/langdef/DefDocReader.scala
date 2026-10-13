@@ -3,11 +3,14 @@ package opelan.foundation.langdef
 import opelan.foundation.document._
 
 // Tolerant readers over a `lang:` document's outline — every lookup
-// optional, every leaf read string-or-nothing. `grammarFrom` decodes
-// combinator-shaped subtrees case by case; its `seen` ancestor set
-// guards the walk the way Document.preorder's visited set does — a
-// malformed document can list a node as its own descendant.
-private class DefDocReader(doc: Document[NodeData]) {
+// optional, every leaf read string-or-nothing. `root` is the outline's
+// root: the content node of a typed def doc, or the document root for
+// a bare outline (as a hand-built or damaged doc may be).
+// `grammarFrom` decodes combinator-shaped subtrees case by case; its
+// `seen` ancestor set guards the walk the way Document.preorder's
+// visited set does — a malformed document can list a node as its own
+// descendant.
+private class DefDocReader(doc: Document[NodeData], root: Int) {
 
   def data(id: Int): Option[NodeData] = doc.getNode(id).map(_.data)
   def kids(id: Int): List[Int] = doc.childrenOf(id)
@@ -17,15 +20,18 @@ private class DefDocReader(doc: Document[NodeData]) {
     kids(id).lift(i).flatMap(str)
 
   def section(tag: String): Option[Int] =
-    kids(doc.rootId).find(id => data(id).contains(NodeData.StringData(tag)))
+    kids(root).find(id => data(id).contains(NodeData.StringData(tag)))
 
-  // A bare leaf child of the root is prose — the description.
+  // A bare leaf child of the root holding a string is prose — the
+  // description. (The leaf check alone isn't enough: an untyped doc's
+  // root can carry a reference leaf too.)
   def description: String =
-    kids(doc.rootId).find(id => kids(id).isEmpty)
-      .flatMap(str).getOrElse("")
+    kids(root).collectFirst {
+      case id if kids(id).isEmpty => str(id)
+    }.flatten.getOrElse("")
 
   def rootTitle(url: String): String =
-    data(doc.rootId).collect { case NodeData.StringData(t) => t }
+    data(root).collect { case NodeData.StringData(t) => t }
       .getOrElse(url)
 
   def grammarFrom(id: Int, seen: Set[Int] = Set.empty): GrammarDef =

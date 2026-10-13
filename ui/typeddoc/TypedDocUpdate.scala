@@ -1,7 +1,8 @@
 package opelan.ui.typeddoc
 
 import opelan.foundation.document._
-import opelan.foundation.language.{ExprLanguage, SheetLanguage, applyDocText, docText, holeCount, languageForDoc}
+import opelan.foundation.language.{ExprLanguage, SheetLanguage, applyDocText, docText, holeCount}
+import opelan.foundation.langdef.languageForDoc
 import opelan.ui.editor.{DocPush, EditorOutput, SelectTarget}
 import opelan.ui.fp.Update
 import TypedDocInput._
@@ -32,10 +33,11 @@ def typedDocUpdate(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel
     // The owner's props: apply the push when its serial is new; emit the
     // live doc when the pull serial moved. The push recurses into this
     // same update — its outputs propagate, its inputs stay internal.
-    case Pane(push, pushSeq, pull) =>
+    case Pane(push, pushSeq, pull, store) =>
       val applying = push.filter(_ => pushSeq != m.appliedPushSeq)
       val u = applying.map(in => typedDocUpdate(m, in)).getOrElse(Update(m))
       val m2 = u.state.copy(
+        store = store,
         appliedPushSeq = if (applying.isDefined) pushSeq else m.appliedPushSeq,
         appliedPullSeq = pull)
       Update(m2, u.out ++
@@ -129,7 +131,7 @@ def typedDocUpdate(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel
     // An unchanged commit — e.g. a blur with no edit — is a no-op, so
     // projections can't churn versions.
     case CommitCellText(id, t) =>
-      languageForDoc(m.doc).flatMap(_.parseCell(t)) match {
+      languageForDoc(m.doc, m.store).flatMap(_.parseCell(t)) match {
         case Some(content)
             if m.doc.getNode(id).isDefined &&
                extractSubtree(id, m.doc).toOption.contains(content) =>

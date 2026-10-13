@@ -8,7 +8,11 @@ import opelan.foundation.document._
 // GrammarDef.Hole, and a def doc under construction keeps decoding
 // (Never Broken applies to language definitions too).
 def langDefFromDocument(url: String, doc: Document[NodeData]): LanguageDef = {
-  val r = new DefDocReader(doc)
+  // A seeded def doc is typed (type ref first child, outline after); a
+  // hand-built or damaged one may be a bare outline — read either.
+  val root = if (isTyped(doc)) contentId(doc).getOrElse(doc.rootId)
+    else doc.rootId
+  val r = new DefDocReader(doc, root)
   val title = r.rootTitle(url)
 
   LanguageDef(

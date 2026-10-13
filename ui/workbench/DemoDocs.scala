@@ -2,6 +2,7 @@ package opelan.ui.workbench
 
 import opelan.foundation.document._
 import opelan.foundation.language.{allLanguages, SheetLanguage}
+import opelan.foundation.langdef.{DocLanguage, langDefTypeRef}
 
 // The demo's opening lineup, seeded into a store that doesn't already
 // have it. Each registered language's descriptive document is seeded at
@@ -13,6 +14,7 @@ import opelan.foundation.language.{allLanguages, SheetLanguage}
 // alone, so a returning user's edited documents are safe.
 private[workbench] val seedDocs: List[(String, Document[NodeData])] =
   allLanguages.map(l => l.typeRef.documentUrl -> l.langDoc) :+
+    (langDefTypeRef.documentUrl -> DocLanguage.langDoc) :+
     (Store.urlForName("Household budget") -> SheetLanguage.sampleDoc)
 
 // The seeds `store` is missing.

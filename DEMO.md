@@ -56,9 +56,11 @@ Sidebar documents: `Household budget`, `lang: sheet`, `lang: expression`.
 5. From the sheet: F12 or the **Definition** button follows the type ref
    → lands on `opelan:languages/sheet`, a *document*: node kinds, cell
    formulas typed by `opelan:languages/expr`, the view declarations —
-   editable in the same editor. (Today it lands on the descriptive
-   outline; when the definition format gets its own UI, go-to-definition
-   jumps straight to it — same gesture, deeper landing.)
+   editable in the same editor. The doc is itself typed (by
+   `lang: language`, the def-definition language), so it gets a `def`
+   view and F12 bottoms out at the self-describing `lang: language`
+   doc. (A projectional text surface for def docs — IDE feel — is a
+   future goal below.)
 6. Follow the formula's `ext:` ref → `opelan:languages/int-expression`,
    the expression language's document.
 7. Add the `/` production. Return to the budget: the `total / people`
@@ -157,16 +159,32 @@ holey document must still parse (Never Broken)):
    `expr-eval`, `sheet-grid`, `sheet-formulas`, the `expr` lexer,
    `sheet-cell`). `DefLanguage(exprDef)` is proven identical to
    `ExprLanguage` — parse/print/eval agree on a 28-input battery.
-9. The def-doc format: recovering `langDefFromDocument` /
+9. ~~The def-doc format: recovering `langDefFromDocument` /
    `langDefToDetached`; the seeded `lang:` docs regenerate in the real
    format. The sheet's cell grammar names the expression language *by
-   ref*, so editing `lang: expression` heals both surfaces.
-10. `DocLanguage`: `languageForRef` gains Store access — resolve the
+   ref*, so editing `lang: expression` heals both surfaces~~ — done:
+   `LanguageDef` gained `title`/`description`/`cellParser`
+   (`CellParserDef.Language(ref, fallback)`), `DefDocEncode`/`Decode`/
+   `Reader` are the codec (sorted sets/ops → deterministic bytes), the
+   seeded `lang:` docs are the real encoding *typed* by
+   `lang: language`, and a damaged def doc decodes to holes (cyclic
+   docs and cyclic `Ref`s included).
+10. ~~`DocLanguage`: `languageForRef` gains Store access — resolve the
     ref to the stored def doc, interpret it into `Language`; the Scala
-    registry stays the fallback.
-11. Reactivity: resolution reads the current store per render/push, so
+    registry stays the fallback~~ — done: `DocLanguage` is
+    `DefLanguage(docLanguageDef)` bound to a `def-view` builtin, seeded
+    at `opelan:languages/language`; `langdef.languageForRef(ref, store)`
+    decodes the head version when it's def-typed (registry + DocLanguage
+    as fallbacks), and the pane's `store` prop carries the resolution
+    context through view/sidebar/cell-commit paths.
+11. ~~Reactivity: resolution reads the current store per render/push, so
     returning to the budget after editing `lang: expression` re-heals
-    its holes — mostly free once step 10 lands.
+    its holes — mostly free once step 10 lands~~ — done via the `Pane`
+    store prop: `languageForRef` resolves `store.head` on every render,
+    so a saved def-doc edit is live on the next redraw. (Deliberate
+    semantics: *execution* resolves at head — live — while
+    go-to-definition refs stay version-pinned. An old persisted store
+    with untyped `lang:` docs just falls back to the registry.)
 
 **M3 — flex:** version-pin upgrade path, tab-sync in the demo script,
 USAGE/demo notes.
@@ -176,3 +194,23 @@ auto-migrations, no network transport.
 
 **Risk:** step 7's grammar-as-document interpreter. Keep the grammar DSL
 tiny; M1 alone still yields a navigable, reactive demo if it runs long.
+
+## Beyond the demo
+
+Goals deliberately out of scope for the demo but on the roadmap:
+
+- **Projectional source editor for definitions.** Language and grammar
+  definitions are today edited as outlines — adequate, but not the IDE
+  feel. A `lang:` doc should eventually get a text-like projectional
+  surface (a def view emitting `input` cells over grammar nodes, in the
+  spirit of the sheet's `formulas` view), so navigating to
+  `lang: sheet` lands on something that reads like editing a grammar
+  file rather than a tree. The document stays the source of truth; the
+  text is a projection.
+- **Contextual F1 help.** Help is just documents: F1 on a cell opens
+  the help page for that construct (what a cell is, an example), and
+  from there links on to the implementation that makes it work — the
+  language def, the grammar, the builtin — for users who want to look
+  under the surface. Same navigation machinery as go-to-definition;
+  the help pages would be seeded docs linked by ref from schema/node
+  kinds.

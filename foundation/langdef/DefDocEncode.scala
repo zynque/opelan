@@ -3,11 +3,13 @@ package opelan.foundation.langdef
 import opelan.foundation.document._
 import opelan.foundation.document.Detached._
 
-// A LanguageDef as a document: an untyped outline whose sections carry
-// the definition as data. The grammar is encoded as combinator-shaped
-// subtrees — each GrammarDef case a tagged node — so a language doc is
-// both readable and interpretable. Sets and op maps sort before
-// encoding so the bytes (and their persisted text) are deterministic.
+// A LanguageDef as a document: a typed outline (type = the
+// language-definition language, langDefTypeRef) whose content subtree
+// carries the definition as data. The grammar is encoded as
+// combinator-shaped subtrees — each GrammarDef case a tagged node — so
+// a language doc is both readable and interpretable. Sets and op maps
+// sort before encoding so the bytes (and their persisted text) are
+// deterministic.
 //
 //   lang: expression                 root label (Store.labelOf)
 //     "the arithmetic-expression language"
@@ -18,7 +20,7 @@ import opelan.foundation.document.Detached._
 //     views   view ("print" "expr-print") ...
 //     cells   language <ext ref> "label"   (or: builtin "sheet-cell")
 def langDefDoc(d: LanguageDef): Document[NodeData] =
-  buildDocument(langDefToDetached(d))
+  makeTyped(langDefTypeRef, NodeData.StringData(d.title), langDefToDetached(d))
 
 def langDefToDetached(d: LanguageDef): DetachedNode[NodeData] =
   n(s(d.title), List(
