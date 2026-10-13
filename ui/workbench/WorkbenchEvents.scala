@@ -80,7 +80,7 @@ private[workbench] def fromStorage(m: WorkbenchModel, ev: StorageEv): Upd =
           case ((mm, s, ps), (url, d)) =>
             val (s2, v) = s.put(url, d)
             val (mm2, id) = nextReq(mm)
-            (mm2, s2, ps :+ StorageReq.Persist(id, url, v, d))
+            (mm2, s2, ps :+ StorageReq.Persist(id, url, v, d, quiet = true))
         }
       val m3 = m2.copy(
         workspace = m2.workspace.copy(store = seeded),
@@ -94,8 +94,12 @@ private[workbench] def fromStorage(m: WorkbenchModel, ev: StorageEv): Upd =
     case StorageEv.HydrateFailed(msg) =>
       up(m.copy(storageQ = m.storageQ.tail,
         status = s"Storage initialization failed: $msg"))
-    case StorageEv.Persisted(url, v) =>
-      up(m.copy(storageQ = m.storageQ.tail, status = s"Saved $url@v$v"))
+    case StorageEv.Persisted(url, v, quiet) =>
+      // A quiet persist is housekeeping — pop the queue but leave the
+      // status alone (a late seed "Saved" would clobber e.g. a fresh
+      // "Session ready").
+      up(m.copy(storageQ = m.storageQ.tail,
+        status = if (quiet) m.status else s"Saved $url@v$v"))
     case StorageEv.PersistFailed(msg) =>
       up(m.copy(storageQ = m.storageQ.tail, status = s"Save failed: $msg"))
   }

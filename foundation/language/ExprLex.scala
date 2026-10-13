@@ -1,5 +1,7 @@
 package opelan.foundation.language
 
+import opelan.foundation.grammar.GTok
+
 // Tokens for the expression cell syntax. Every token carries its source
 // span (char offsets into the input) so parse results can be mapped back
 // to text ranges — the basis for translating editor deltas into reparsed
@@ -72,7 +74,7 @@ private def refAt(input: String, i: Int): Int =
 
 // The generic-token view of an expr lex — the builtin "expr" lexer in
 // the language-def registry. Kinds are the grammar's vocabulary.
-def exprGToks(input: String): Vector[opelan.foundation.grammar.GTok] =
+def exprGToks(input: String): Vector[GTok] =
   lex(input).map { t =>
     val kind = t match {
       case _: Tok.IntTok   => "int"
@@ -84,5 +86,5 @@ def exprGToks(input: String): Vector[opelan.foundation.grammar.GTok] =
       case _: Tok.HoleTok  => "hole"
       case _: Tok.JunkTok  => "junk"
     }
-    opelan.foundation.grammar.GTok(kind, input.substring(t.from, t.to), t.from, t.to)
+    GTok(kind, input.substring(t.from, t.to), t.from, t.to)
   }

@@ -3,19 +3,21 @@ package opelan.foundation.langdef
 import opelan.foundation.document._
 
 // A language definition as data — the in-memory form of what a `lang:`
-// document will encode (M2 step 9): schema, a compositional grammar,
-// view bindings to named builtins, and the document itself. A def is
-// interpreted into a Language by DefLanguage; semantics named in it
-// (lexer, views, cell parser) resolve through the builtins registry —
-// honest scaffolding while behavior lives in code.
+// document encodes: identity (title/name/description), schema, a
+// compositional grammar, view bindings to named builtins, and a cell
+// grammar. A def is interpreted into a Language by DefLanguage and
+// encoded into a document by langDefToDetached; semantics named in it
+// (lexer, views, builtin cell parsers) resolve through the builtins
+// registry — honest scaffolding while behavior lives in code.
 case class LanguageDef(
     typeRef: ExternalNodeReference,
+    title: String,
     name: String,
+    description: String,
     schema: List[NodeKind],
     syntax: Option[SyntaxDef],
     views: List[ViewBinding],
-    cellParser: Option[String],
-    doc: Document[NodeData])
+    cellParser: Option[CellParserDef])
 
 // A node kind in the language's schema. Descriptive for now — nothing
 // checks arity yet — but the doc encoding carries it.
@@ -33,11 +35,27 @@ case class SyntaxDef(lexer: String, grammar: GrammarDef)
 // A derived view bound to a builtin: view "eval" → builtin "expr-eval".
 case class ViewBinding(name: String, builtin: String)
 
+// The grammar for projected cell editors — the text committed in a
+// cell's box becomes a replacement subtree. A Language ref names
+// *another language's grammar* (e.g. the sheet's cells parse with the
+// expression language), so editing that language's definition document
+// heals both surfaces.
+enum CellParserDef {
+  case Builtin(name: String)
+  case Language(ref: ExternalNodeReference, fallback: CellFallback)
+}
+
+// What a cell commit produces when the text doesn't fit the grammar:
+// Label keeps it as a string value (sheets), Hole keeps it as a gap.
+enum CellFallback { case Label, Hole }
+
 // A grammar as a combinator composition — the data twin of
 // foundation/grammar. Named/Ref encode recursion (a precedence grammar
 // its own parens refer back to); a doc encoding binds names the same
 // way. Token leaves map through LeafKind — named, since how "42"
-// becomes IntData(42) is semantics.
+// becomes IntData(42) is semantics. Hole is the recovering read's
+// residue: an unrecognizable grammar node becomes a production that
+// never applies.
 enum GrammarDef {
   case Tok(kind: String, leaf: LeafKind)
   case Choice(alts: List[GrammarDef])
@@ -49,6 +67,7 @@ enum GrammarDef {
   case Phrase(inner: GrammarDef, stops: Set[String])
   case Named(name: String, g: GrammarDef)
   case Ref(name: String)
+  case Hole
 }
 
 // How a token's text becomes leaf node data — the named productions a

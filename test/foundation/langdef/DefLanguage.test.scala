@@ -57,4 +57,16 @@ class DefLanguageSuite extends FunSuite {
     assert(defed.parseCell("1").isEmpty)
     assert(defed.parseCell("x").isEmpty)
   }
+
+  test("a cyclic grammar Ref degrades to a hole instead of looping") {
+    // Named("e", Ref("e")) never consumes input — a malformed def doc
+    // could encode this; the parse must terminate.
+    val cyc = exprDef.copy(syntax = Some(SyntaxDef("expr",
+      GrammarDef.Named("e", GrammarDef.Ref("e")))))
+    assertEquals(
+      new DefLanguage(cyc).parse("1").map(_.data),
+      Some(NodeData.GapData("")))
+    // …and the real grammar's consuming recursion still works after.
+    assertEquals(defed.parse("1 + 2"), hand.parse("1 + 2"))
+  }
 }

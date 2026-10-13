@@ -45,6 +45,25 @@ def tokWhere(kind: String)(p: GTok => Boolean)(f: GTok => NodeData): Parser =
     case _ => emptyHole(in, pos)
   }
 
+// A production that never applies — the parse-tree hole for a place
+// where a grammar couldn't provide one.
+def holeHere: Parser = (in, pos) => emptyHole(in, pos)
+
+// A hole covering all remaining tokens — for when a grammar has no
+// applicable production at all (GrammarDef.Hole). The input survives
+// as hole text rather than vanishing.
+def restHole: Parser = (in, pos) =>
+  in.toks.lift(pos) match {
+    case None => POut(pos,
+      PTree(NodeData.GapData(""), "", in.input.length, in.input.length),
+      ok = true)
+    case Some(t0) =>
+      val to = in.toks.last.to
+      val text = in.input.substring(t0.from, to)
+      POut(in.toks.length, PTree(NodeData.GapData(text), text, t0.from, to),
+        ok = true)
+  }
+
 // First alternative that applies; if none do, an empty hole.
 def choice(ps: Parser*): Parser =
   (in, pos) =>

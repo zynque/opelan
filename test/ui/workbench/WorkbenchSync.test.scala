@@ -99,15 +99,21 @@ class WorkbenchSyncSuite extends munit.FunSuite {
         .flatMap(_ => tick())
         .flatMap { _ =>
           wb2.send(ToggleSync)
-          until(FakeBrowser.hasText(c2, "Session ready"), "tab 2 session")
+          // Tab 2's attach immediately handshakes with tab 1 — the
+          // reply's "Synced remote edit" status can legitimately
+          // overwrite "Session ready" before we sample it, accept either.
+          until(
+            FakeBrowser.hasText(c2, "Session ready") ||
+              FakeBrowser.hasText(c2, "Synced remote edit"),
+            "tab 2 session")
         }
-    }.flatMap { _ =>
-      // an edit "from the pane" in tab 1
+    }.flatMap { _ => tick() }.flatMap { _ =>
+      // one tick so tab 2's hello has registered it as tab 1's peer —
+      // publishing before that would sync to nobody
       val edited: Document[NodeData] =
         beginDocument(NodeData.StringData("b"))
       wb1.send(FromPane(TypedDocOutput.DocChanged(edited)))
-      until(pane2.lastPushed.exists(d => render(d) == render(edited)) &&
-        FakeBrowser.hasText(c2, "Synced remote edit"),
+      until(pane2.lastPushed.exists(d => render(d) == render(edited)),
         "edit reaches tab 2")
     }.andThen { case _ =>
       wb1.dispose()

@@ -2,7 +2,9 @@ package opelan.foundation.langdef
 
 import opelan.foundation.document._
 import opelan.foundation.grammar.GTok
-import opelan.foundation.language._
+import opelan.foundation.language.{
+  evalTree, exprGToks, formulasView, parseCellText, printTree,
+  readLocExpr, sheetView}
 
 // The named behaviors a language definition can bind — the part of a
 // language that still lives in code. A builtin view interprets the

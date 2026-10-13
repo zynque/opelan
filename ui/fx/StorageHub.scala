@@ -12,18 +12,23 @@ import opelan.ui.fp._
 // clears on reply. Completions arrive as internal self-inputs emitted by
 // the Cmd that launched the async work.
 enum StorageReq {
-  // Requests (sent by the parent).
+  // Requests (sent by the parent). `quiet` persists are housekeeping
+  // (hydration seeds) — they don't announce themselves on the status bar.
   case Hydrate(id: Int)
-  case Persist(id: Int, url: String, version: Int, doc: Document[NodeData])
+  case Persist(
+      id: Int, url: String, version: Int,
+      doc: Document[NodeData], quiet: Boolean = false)
   // Internal completions (emitted by cmds back to this component).
   case Hydrated(id: Int, result: Try[Store])
-  case Persisted(id: Int, url: String, version: Int, result: Try[Unit])
+  case Persisted(
+      id: Int, url: String, version: Int,
+      quiet: Boolean, result: Try[Unit])
 }
 
 enum StorageEv {
   case Hydrated(store: Store)
   case HydrateFailed(message: String)
-  case Persisted(url: String, version: Int)
+  case Persisted(url: String, version: Int, quiet: Boolean)
   case PersistFailed(message: String)
 }
 
@@ -41,18 +46,18 @@ object StorageHub extends Component[Option[StorageReq], StorageEv] {
           IndexedDBStore.initialize().flatMap(_ => loadAll()).onComplete(r =>
             emit(Some(StorageReq.Hydrated(id, r))))))
 
-      case Some(StorageReq.Persist(id, url, v, doc)) if !s.seen(id) =>
+      case Some(StorageReq.Persist(id, url, v, doc, quiet)) if !s.seen(id) =>
         Update(s.copy(seen = s.seen + id), cmds = Vector(emit =>
           persist(url, v, doc).onComplete(r =>
-            emit(Some(StorageReq.Persisted(id, url, v, r))))))
+            emit(Some(StorageReq.Persisted(id, url, v, quiet, r))))))
 
       case Some(StorageReq.Hydrated(_, Success(store))) =>
         Update(s, Vector(StorageEv.Hydrated(store)))
       case Some(StorageReq.Hydrated(_, Failure(e))) =>
         Update(s, Vector(StorageEv.HydrateFailed(e.getMessage)))
-      case Some(StorageReq.Persisted(_, url, v, Success(_))) =>
-        Update(s, Vector(StorageEv.Persisted(url, v)))
-      case Some(StorageReq.Persisted(_, _, _, Failure(e))) =>
+      case Some(StorageReq.Persisted(_, url, v, quiet, Success(_))) =>
+        Update(s, Vector(StorageEv.Persisted(url, v, quiet)))
+      case Some(StorageReq.Persisted(_, _, _, _, Failure(e))) =>
         Update(s, Vector(StorageEv.PersistFailed(e.getMessage)))
 
       case _ => Update(s)

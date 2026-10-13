@@ -60,7 +60,7 @@ class WorkbenchUpdateSuite extends munit.FunSuite {
     // every seed is queued for persistence at version 0
     assertEquals(u.state.storageQ.length, 3)
     assert(u.state.storageQ.forall {
-      case StorageReq.Persist(_, _, 0, _) => true
+      case StorageReq.Persist(_, _, 0, _, _) => true
       case _                              => false
     })
   }
@@ -74,8 +74,8 @@ class WorkbenchUpdateSuite extends munit.FunSuite {
     // the user's doc at a seed URL is untouched — no new version, no persist
     assertEquals(st.head("opelan:languages/sheet"), Some(0 -> mine))
     assert(!u.state.storageQ.exists {
-      case StorageReq.Persist(_, "opelan:languages/sheet", _, _) => true
-      case _                                                   => false
+      case StorageReq.Persist(_, "opelan:languages/sheet", _, _, _) => true
+      case _                                                      => false
     })
     // the missing seeds still arrive
     assert(st.head("opelan:languages/int-expression").isDefined)
@@ -92,7 +92,7 @@ class WorkbenchUpdateSuite extends munit.FunSuite {
     assertEquals(u.state.workspace.openVersion, Some(0))
     assert(u.state.panePush.exists(_.isInstanceOf[TypedDocInput.Load]))
     assert(u.state.storageQ.exists {
-      case StorageReq.Persist(_, u2, 0, _) => u2 == url
+      case StorageReq.Persist(_, u2, 0, _, _) => u2 == url
       case _ => false
     })
     assert(u.state.prompt.isEmpty)
@@ -119,7 +119,7 @@ class WorkbenchUpdateSuite extends munit.FunSuite {
       u1.state, FromPane(TypedDocOutput.DocChanged(d2)))
     assert(!u2.state.pendingSave)
     assert(u2.state.storageQ.exists {
-      case StorageReq.Persist(_, "u1", 1, dd) => dd == d2
+      case StorageReq.Persist(_, "u1", 1, dd, _) => dd == d2
       case _ => false
     })
   }
