@@ -34,9 +34,10 @@ class DocSession(
     val name: String,
     onUpdate: (Vector[ChangeInfo], Vector[String]) => Unit,
     onPersist: Uint8Array => Unit,
-    onBranch: String => Unit = _ => ()) extends SessionUndo {
+    onBranch: String => Unit = _ => ()) {
 
-  protected var doc: Automerge.Doc = null
+  private var doc: Automerge.Doc = null
+  private var undoStacks = SessionUndo()
   private var peers = Map.empty[String, Automerge.SyncState]
   private var lastText = ""
   private var lastCount = 0
@@ -70,13 +71,26 @@ class DocSession(
   def localText(text: String): Unit =
     if (doc != null && text != lastText) {
       doc = Automerge.setText(doc, text, name)
-      pushedLocalChange()
+      undoStacks = undoStacks.pushed(doc)
       publish()
     }
 
+  def undo(): String = revise(undoStacks.undo(doc, name), "Undone")
+
+  def redo(): String = revise(undoStacks.redo(doc, name), "Redone")
+
+  private def revise(
+      r: Either[String, (Automerge.Doc, SessionUndo)], done: String): String =
+    r.fold(identity, { case (d, u) =>
+      doc = d
+      undoStacks = u
+      publish()
+      done
+    })
+
   // Shared by localText and undo/redo: every change the session writes
   // updates lastText, persists, reports history, and syncs to peers.
-  protected def publish(): Unit = {
+  private def publish(): Unit = {
     lastText = Automerge.textOf(doc)
     onPersist(Automerge.save(doc))
     emitUpdate()

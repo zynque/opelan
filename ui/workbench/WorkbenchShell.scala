@@ -18,7 +18,7 @@ object WorkbenchShell {
     if (container == null)
       throw new IllegalArgumentException(
         s"Container element with id '$containerId' not found")
-    handle = Runtime.mount(container, Workbench, WorkbenchInput.Boot)
+    handle = Runtime.mount(container, Workbench(), WorkbenchInput.Boot)
   }
 
   def cleanup(): Unit = {

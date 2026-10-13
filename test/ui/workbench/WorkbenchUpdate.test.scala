@@ -13,7 +13,9 @@ import opelan.ui.workbench.WorkbenchUpdate.workbenchUpdate
 // props — storageQ heads, prompt/random requests, the synced map.
 class WorkbenchUpdateSuite extends munit.FunSuite {
 
-  private def init: WorkbenchModel = Workbench.init
+  private val workbench = Workbench()
+
+  private def init: WorkbenchModel = workbench.init
 
   private def doc(label: String): Document[NodeData] =
     beginDocument(NodeData.StringData(label))
@@ -266,7 +268,7 @@ class WorkbenchUpdateSuite extends munit.FunSuite {
   }
 
   test("children declares all seams and both panes") {
-    val kids = Workbench.children(init)
+    val kids = workbench.children(init)
     assertEquals(kids.map(_.key).toSet,
       Set("storage", "prompt", "random", "sync", "doc", "demo"))
     assertEquals(kids.find(_.key == "doc").map(_.slot), Some("doc"))

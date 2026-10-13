@@ -21,48 +21,45 @@ import opelan.collaboration.automerge.{Automerge, inverseOf}
 // them from actor-tagged history is possible future work), and undoing a
 // change a collaborator already rewrote reports failure rather than
 // clobbering.
-trait SessionUndo { self: DocSession =>
-
-  private var undoable = Vector.empty[String]
-  private var redoable = Vector.empty[(String, String)] // (undoHash, origHash)
+//
+// A value owned by DocSession: undo/redo return the reverted doc and the
+// next stacks (Right), or a status message when nothing changed (Left).
+case class SessionUndo(
+    undoable: Vector[String] = Vector.empty,
+    redoable: Vector[(String, String)] = Vector.empty) { // (undoHash, origHash)
 
   // Called after a local change lands — it becomes the newest undoable
   // unit and forfeits any pending redos.
-  protected def pushedLocalChange(): Unit = {
-    undoable :+= Automerge.headsOf(doc).head
-    redoable = Vector.empty
-  }
+  def pushed(doc: Automerge.Doc): SessionUndo =
+    SessionUndo(undoable :+ Automerge.headsOf(doc).head, Vector.empty)
 
-  def undo(): String =
-    if (doc == null) "Nothing to undo"
+  def undo(doc: Automerge.Doc, name: String)
+      : Either[String, (Automerge.Doc, SessionUndo)] =
+    if (doc == null) Left("Nothing to undo")
     else undoable.lastOption match {
-      case None => "Nothing to undo"
+      case None => Left("Nothing to undo")
       case Some(h) =>
         inverseOf(doc, h) match {
           case Some((pos, del, ins)) =>
-            doc = Automerge.spliceText(doc, pos, del, ins, s"$name (undo)")
-            undoable = undoable.dropRight(1)
-            redoable :+= (Automerge.headsOf(doc).head -> h)
-            publish()
-            "Undone"
+            val d = Automerge.spliceText(doc, pos, del, ins, s"$name (undo)")
+            Right(d -> SessionUndo(
+              undoable.dropRight(1), redoable :+ (Automerge.headsOf(d).head -> h)))
           case None =>
-            "Can't undo — a collaborator changed that text"
+            Left("Can't undo — a collaborator changed that text")
         }
     }
 
-  def redo(): String =
-    if (doc == null) "Nothing to redo"
+  def redo(doc: Automerge.Doc, name: String)
+      : Either[String, (Automerge.Doc, SessionUndo)] =
+    if (doc == null) Left("Nothing to redo")
     else redoable.lastOption match {
-      case None => "Nothing to redo"
+      case None => Left("Nothing to redo")
       case Some((undoHash, origHash)) =>
         inverseOf(doc, undoHash) match {
           case Some((pos, del, ins)) =>
-            doc = Automerge.spliceText(doc, pos, del, ins, s"$name (redo)")
-            redoable = redoable.dropRight(1)
-            undoable :+= origHash
-            publish()
-            "Redone"
-          case None => "Can't redo"
+            val d = Automerge.spliceText(doc, pos, del, ins, s"$name (redo)")
+            Right(d -> SessionUndo(undoable :+ origHash, redoable.dropRight(1)))
+          case None => Left("Can't redo")
         }
     }
 }

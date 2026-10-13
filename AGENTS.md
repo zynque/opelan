@@ -4,11 +4,25 @@
 
 - **Small files**: aim for ~100 lines maximum per file. If a file grows past
   that, split it by responsibility rather than letting it sprawl.
-- **Encapsulation**: each file should own one concern. Prefer small traits or
-  classes with a focused responsibility over large classes that do everything.
-  Example: `ui/editor/DocumentEditor.scala` is a thin orchestrator composed of
-  single-responsibility traits (state, commands, ops, clipboard, session,
-  keys, view, row, toolbar), each in its own file.
+- **Encapsulation**: each file should own one concern. Prefer small values,
+  functions, or classes with a focused responsibility over large classes that
+  do everything. Example: `ui/editor/DocumentEditor.scala` is a thin
+  component delegating to single-responsibility files (update, session,
+  history, doc ops, clipboard, keys, view, row), each in its own file.
+- **Composition over inheritance**: the concern is inheritance used to
+  *provide behavior*. Reuse behavior by holding and delegating to a value
+  (e.g. `DocSession` owns a `SessionUndo` value) or by passing
+  functions/components as parameters (e.g. `Workbench(docPane)`) — not by
+  mixing in traits that carry real logic or state, self-types reaching into
+  the host's internals, or subclassing concrete classes.
+  Fine uses of `extends`:
+  - implementing an interface trait (`Component`, `Language`,
+    `SyncTransport`, `Cmd`), including small convenience/default methods
+    for fluency (`Language.defaultView`, `Component.children = Vector.empty`);
+  - sealed ADTs / enum cases;
+  - test fakes mirroring an external type hierarchy (`FakeNode` /
+    `FakeElement` mimic the DOM);
+  - framework/interop requirements (`munit.FunSuite`, `js.Object`).
 - **Pure logic separated from effects**: keep document/tree operations pure
   (`foundation/`) and DOM/event code thin (`ui/`). Pure helpers that tests can
   exercise live on companion objects (e.g. `DocumentEditor.parseNodeData`).

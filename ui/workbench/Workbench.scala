@@ -51,6 +51,3 @@ class Workbench(
       Child("demo", CounterList, CounterListInput.Noop,
         o => FromDemo(o.toString), slot = "demo"))
 }
-
-// The production workbench: the real TypedDoc pane.
-object Workbench extends Workbench(TypedDoc)
