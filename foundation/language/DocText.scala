@@ -5,10 +5,14 @@ import opelan.foundation.view.ViewTree
 
 // The text surface of a document: typed documents use their language's
 // syntax for the content cell; everything else falls back to the outline
-// codec (one line per node, indentation = nesting).
+// codec (one line per node, indentation = nesting). Resolution is
+// injected — the caller decides how a type ref finds a language (the
+// examples' store-aware resolver, for instance).
 
-def docText(doc: Document[NodeData]): String =
-  languageForDoc(doc) match {
+def docText(
+    doc: Document[NodeData],
+    languageFor: Document[NodeData] => Option[Language]): String =
+  languageFor(doc) match {
     case Some(lang) if lang.views.contains("print") =>
       lang.render("print", doc).map(ViewTree.flatten).getOrElse(contentOutline(doc))
     case _ => contentOutline(doc)
@@ -17,8 +21,11 @@ def docText(doc: Document[NodeData]): String =
 // Apply edited text back onto the document, returning the new document.
 // Typed documents with a language parser replace only the content
 // subtree; the root and type nodes — document identity — are preserved.
-def applyDocText(doc: Document[NodeData], text: String): Either[String, Document[NodeData]] =
-  languageForDoc(doc).flatMap(_.parse(text)) match {
+def applyDocText(
+    doc: Document[NodeData],
+    languageFor: Document[NodeData] => Option[Language],
+    text: String): Either[String, Document[NodeData]] =
+  languageFor(doc).flatMap(_.parse(text)) match {
     case Some(content) => replaceContent(doc, content)
     case None =>
       if (isTyped(doc))

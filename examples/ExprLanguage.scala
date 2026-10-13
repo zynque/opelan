@@ -1,7 +1,8 @@
-package opelan.foundation.language
+package opelan.examples
 
 import opelan.foundation.document._
 import opelan.foundation.document.Detached._
+import opelan.foundation.language.Language
 
 // The arithmetic-expression language, defined in Scala. `typeRef` names the
 // document that will eventually hold this definition (bootstrapping);
@@ -42,6 +43,5 @@ object ExprLanguage extends Language {
   // The language document is the encoded definition itself — the same
   // bytes langDefFromDocument reads back as exprDef.
   def langDoc: Document[NodeData] =
-    opelan.foundation.langdef.langDefDoc(
-      opelan.foundation.langdef.exprDef)
+    opelan.foundation.langdef.langDefDoc(exprDef)
 }

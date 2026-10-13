@@ -1,7 +1,7 @@
-package opelan.foundation.langdef
+package opelan.examples
 
 import opelan.foundation.document._
-import opelan.foundation.language.ExprLanguage
+import opelan.foundation.langdef._
 import munit.FunSuite
 
 // The regression anchor for the bootstrap: a language described as data
@@ -10,7 +10,7 @@ import munit.FunSuite
 class DefLanguageSuite extends FunSuite {
 
   private val lang: LanguageDef = exprDef
-  private val defed = new DefLanguage(lang)
+  private val defed = new DefLanguage(lang, implsFor(lang))
   private val hand = ExprLanguage
 
   // Valid, holey, and boundary inputs — the whole recovery contract.
@@ -62,7 +62,7 @@ class DefLanguageSuite extends FunSuite {
     // implsFor(exprDef) == exprImpls: a doc-decoded def for the
     // expression type still binds the "expr" lexer and expr views.
     val edited = exprDef.copy(title = "edited")
-    val l = new DefLanguage(edited)
+    val l = new DefLanguage(edited, implsFor(edited))
     assert(l.parse("1 + 2").isDefined)
     assert(l.render("print", hand.sampleDoc).isRight)
   }
@@ -70,7 +70,7 @@ class DefLanguageSuite extends FunSuite {
   test("a def claiming an unknown type ref binds no impls") {
     val foreign = exprDef.copy(
       typeRef = ExternalNodeReference("opelan:languages/unknown", 0, 0))
-    val l = new DefLanguage(foreign)
+    val l = new DefLanguage(foreign, implsFor(foreign))
     assertEquals(l.parse("1 + 2"), None)          // "expr" lexer unbound
     assert(l.render("print", hand.sampleDoc).isLeft)
   }
@@ -81,7 +81,7 @@ class DefLanguageSuite extends FunSuite {
     val cyc = exprDef.copy(syntax = Some(SyntaxDef("expr",
       GrammarDef.Named("e", GrammarDef.Ref("e")))))
     assertEquals(
-      new DefLanguage(cyc).parse("1").map(_.data),
+      new DefLanguage(cyc, implsFor(cyc)).parse("1").map(_.data),
       Some(NodeData.GapData("")))
     // …and the real grammar's consuming recursion still works after.
     assertEquals(defed.parse("1 + 2"), hand.parse("1 + 2"))

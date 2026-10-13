@@ -1,7 +1,7 @@
-package opelan.foundation.langdef
+package opelan.examples
 
 import opelan.foundation.document._
-import opelan.foundation.language.{ExprLanguage, SheetLanguage}
+import opelan.foundation.langdef._
 import munit.FunSuite
 
 // The def-doc format: encoding and reading must round-trip, and the
@@ -59,7 +59,7 @@ class LangDefDocSuite extends FunSuite {
     assertEquals(d.syntax.map(_.grammar), Some(GrammarDef.Hole))
     // The hole grammar parses nothing — total, not thrown.
     assertEquals(
-      new DefLanguage(d).parse("1 + 2").map(_.data),
+      languageFromDef(d).parse("1 + 2").map(_.data),
       Some(NodeData.GapData("1 + 2")))
   }
 
@@ -78,7 +78,7 @@ class LangDefDocSuite extends FunSuite {
   }
 
   test("sheet cell parsing goes through the language ref") {
-    val defed = new DefLanguage(sheetDef)
+    val defed = languageFromDef(sheetDef)
     val inputs = List("Apples", "4", "1.5", "ref:5", "ref:1 * 2",
       "?stuck", "", "a b", "1 +")
     inputs.foreach { t =>
@@ -90,10 +90,10 @@ class LangDefDocSuite extends FunSuite {
   test("DefLanguage(sheetDef) renders identically to SheetLanguage") {
     val doc = SheetLanguage.sampleDoc
     assertEquals(
-      new DefLanguage(sheetDef).render("sheet", doc),
+      languageFromDef(sheetDef).render("sheet", doc),
       SheetLanguage.render("sheet", doc))
     assertEquals(
-      new DefLanguage(sheetDef).render("formulas", doc),
+      languageFromDef(sheetDef).render("formulas", doc),
       SheetLanguage.render("formulas", doc))
   }
 }

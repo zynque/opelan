@@ -173,7 +173,7 @@ holey document must still parse (Never Broken)):
     ref to the stored def doc, interpret it into `Language`; the Scala
     registry stays the fallback~~ — done: `DocLanguage` is
     `DefLanguage(docLanguageDef)` bound to a `def-view` builtin, seeded
-    at `opelan:languages/language`; `langdef.languageForRef(ref, store)`
+    at `opelan:languages/language`; `examples.languageForRef(ref, store)`
     decodes the head version when it's def-typed (registry + DocLanguage
     as fallbacks), and the pane's `store` prop carries the resolution
     context through view/sidebar/cell-commit paths.

@@ -10,7 +10,7 @@ set TEMP=%CD%\.tmp
 set TMP=%CD%\.tmp
 
 rem Run tests
-call scala-cli test Main.scala project.scala foundation ui data collaboration test
+call scala-cli test Main.scala project.scala foundation examples ui data collaboration test
 
 if %errorlevel% neq 0 (
     echo Tests failed!

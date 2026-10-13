@@ -1,7 +1,8 @@
-package opelan.foundation.language
+package opelan.examples
 
 import opelan.foundation.document._
 import opelan.foundation.document.Detached._
+import opelan.foundation.language.applyDocText
 import opelan.foundation.view.ViewTree
 import Expr._
 
@@ -84,7 +85,7 @@ class ExprSuite extends munit.FunSuite {
 
   test("ExprLanguage evaluates a typed document's content") {
     val doc = ExprLanguage.sampleDoc
-    assertEquals(languageForDoc(doc), Some(ExprLanguage))
+    assertEquals(registryForDoc(doc), Some(ExprLanguage))
     assertEquals(
       ExprLanguage.render("eval", doc).map(ViewTree.flatten),
       Right("4"))
@@ -94,7 +95,7 @@ class ExprSuite extends munit.FunSuite {
   }
 
   test("rendered views keep holes as gap nodes") {
-    val doc = applyDocText(ExprLanguage.sampleDoc, "1 + abc").toOption.get
+    val doc = applyDocText(ExprLanguage.sampleDoc, registryForDoc, "1 + abc").toOption.get
     assertEquals(
       gaps(ExprLanguage.render("eval", doc).toOption.get), List("abc"))
     assertEquals(
@@ -108,7 +109,7 @@ class ExprSuite extends munit.FunSuite {
       ExprLanguage.render("eval", doc),
       Right(ViewTree.from(cid, ViewTree.txt("4"))))
     // A hole blocking eval points at the node holding it.
-    val holey = applyDocText(ExprLanguage.sampleDoc, "1 + abc").toOption.get
+    val holey = applyDocText(ExprLanguage.sampleDoc, registryForDoc, "1 + abc").toOption.get
     val gapId = holey.nodes.indexWhere(_.data == NodeData.GapData("abc"))
     assertEquals(
       ExprLanguage.render("eval", holey),

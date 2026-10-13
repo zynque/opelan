@@ -1,4 +1,4 @@
-package opelan.foundation.language
+package opelan.examples
 
 import opelan.foundation.grammar.GTok
 

@@ -1,9 +1,9 @@
 package opelan.ui.typeddoc
 
+import opelan.examples.{Expr, ExprLanguage, SheetLanguage, exprFromDocument, sheetDef}
 import opelan.foundation.document._
 import opelan.foundation.document.Detached._
-import opelan.foundation.langdef.{langDefDoc, sheetDef}
-import opelan.foundation.language.{Expr, ExprLanguage, SheetLanguage, exprFromDocument}
+import opelan.foundation.langdef.langDefDoc
 import opelan.ui.editor.{
   DocPush, EditorInput, EditorOutput, SelectTarget, SyncedEntry, SyncedHistory}
 

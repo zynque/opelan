@@ -1,7 +1,8 @@
-package opelan.foundation.language
+package opelan.examples
 
 import opelan.foundation.document._
 import opelan.foundation.document.Detached._
+import opelan.foundation.language.Language
 
 // The sheet language: a grid of labeled cells whose formula cells are
 // expressions over refs to other cells (the demo's "Budget" app). The
@@ -79,6 +80,5 @@ object SheetLanguage extends Language {
   // it lands on lang: expression (and DocLanguage resolves it at step
   // 10).
   def langDoc: Document[NodeData] =
-    opelan.foundation.langdef.langDefDoc(
-      opelan.foundation.langdef.sheetDef)
+    opelan.foundation.langdef.langDefDoc(sheetDef)
 }

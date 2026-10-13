@@ -1,4 +1,4 @@
-package opelan.foundation.language
+package opelan.examples
 
 import opelan.foundation.document._
 import opelan.foundation.document.Detached._
@@ -53,7 +53,7 @@ def evalTree(doc: Document[NodeData], e: LocExpr): DetachedNode[NodeData] =
 // Left carries (message, source id) — the display text and the node to
 // point at, which is not necessarily the node eval failed on: a blocked
 // ref points at the hole inside its target.
-private[language] def evalLoc(
+private[examples] def evalLoc(
     e: LocExpr,
     resolve: Int => Either[(String, Int), Num]): Either[(String, Int), Num] =
   e match {
@@ -61,9 +61,9 @@ private[language] def evalLoc(
     case LocExpr.LocFLit(_, v)     => Right(Num.F(v))
     case LocExpr.LocHole(id, t)    => Left((t, id))
     case LocExpr.LocRef(_, target) => resolve(target)
-    case LocExpr.LocAdd(id, l, r)  => bin(l, r, id, resolve, Num.add)
-    case LocExpr.LocSub(id, l, r)  => bin(l, r, id, resolve, Num.sub)
-    case LocExpr.LocMul(id, l, r)  => bin(l, r, id, resolve, Num.mul)
+    case LocExpr.LocAdd(id, l, r)  => binEval(l, r, id, resolve, Num.add)
+    case LocExpr.LocSub(id, l, r)  => binEval(l, r, id, resolve, Num.sub)
+    case LocExpr.LocMul(id, l, r)  => binEval(l, r, id, resolve, Num.mul)
     case LocExpr.LocDiv(id, l, r)  =>
       for {
         a <- evalLoc(l, resolve); b <- evalLoc(r, resolve)
@@ -71,7 +71,7 @@ private[language] def evalLoc(
       } yield q
   }
 
-private def bin(
+private def binEval(
     l: LocExpr, r: LocExpr, id: Int,
     resolve: Int => Either[(String, Int), Num],
     f: (Num, Num) => Num): Either[(String, Int), Num] =

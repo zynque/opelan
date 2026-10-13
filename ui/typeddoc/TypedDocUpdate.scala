@@ -1,8 +1,8 @@
 package opelan.ui.typeddoc
 
+import opelan.examples.{ExprLanguage, SheetLanguage, languageForDoc}
 import opelan.foundation.document._
-import opelan.foundation.language.{ExprLanguage, SheetLanguage, applyDocText, docText, holeCount}
-import opelan.foundation.langdef.languageForDoc
+import opelan.foundation.language.{applyDocText, docText, holeCount}
 import opelan.ui.editor.{DocPush, EditorOutput, SelectTarget}
 import opelan.ui.fp.Update
 import TypedDocInput._
@@ -19,7 +19,7 @@ def typedDocUpdate(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel
     case SyncHistory(d, h) =>
       // Only bump the epoch when the text actually changed — a push
       // echoing our own edit would remount the text cell mid-typing.
-      val t = docText(d)
+      val t = docText(d, langFor(m))
       Update(m.copy(
         doc = d,
         pushedDoc = d,
@@ -53,7 +53,7 @@ def typedDocUpdate(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel
     // A text edit is total: apply returns a new document (with holes
     // where the text doesn't fit) or an error that only touches status.
     case TextEdited(t) =>
-      applyDocText(m.doc, t) match {
+      applyDocText(m.doc, langFor(m), t) match {
         case Right(d) =>
           val holes = holeCount(d)
           val msg =
@@ -79,7 +79,7 @@ def typedDocUpdate(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel
       Update(m, Vector(RedoRequested))
     case FromEditor(EditorOutput.BranchRequested(d)) =>
       // Force the remount: the pane is about to reopen at a branch URL.
-      val t = docText(d)
+      val t = docText(d, langFor(m))
       Update(
         m.copy(doc = d, text = t, textEpoch = m.textEpoch + 1),
         Vector(BranchRequested(d)))
@@ -146,7 +146,7 @@ def typedDocUpdate(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel
                 m.copy(
                   doc = d, pushedDoc = d, pushedSelect = None,
                   pushMode = DocPush.Merge("Cell edit"),
-                  text = docText(d), textEpoch = m.textEpoch + 1,
+                  text = docText(d, langFor(m)), textEpoch = m.textEpoch + 1,
                   status = msg),
                 Vector(DocChanged(d), Status(msg)))
             case Left(err) =>
@@ -158,13 +158,19 @@ def typedDocUpdate(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel
       }
   }
 
+// The resolver handed to the text-surface functions: type refs resolve
+// through the store prop, same as the derived views.
+private def langFor(m: TypedDocModel)
+    : Document[NodeData] => Option[opelan.foundation.language.Language] =
+  d => languageForDoc(d, m.store)
+
 // Mirror a document the editor is showing: re-derive its text, bumping
 // the epoch when it changed (the bump remounts the text cell).
 private def mirrorDoc(
     m: TypedDocModel,
     d: Document[NodeData],
     out: Vector[TypedDocOutput]): Update[TypedDocModel, TypedDocOutput, TypedDocInput] = {
-  val t = docText(d)
+  val t = docText(d, langFor(m))
   Update(
     m.copy(doc = d, text = t,
       textEpoch = m.textEpoch + (if (t == m.text) 0 else 1)),
@@ -195,7 +201,7 @@ private def load(
           }
         case v => v
       },
-      text = docText(d),
+      text = docText(d, langFor(m)),
       textEpoch = m.textEpoch + 1,
       status = msg),
     Vector(DocChanged(d), Status(msg)))

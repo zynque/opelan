@@ -1,4 +1,4 @@
-package opelan.foundation.language
+package opelan.examples
 
 import opelan.foundation.document._
 import Expr._
@@ -71,7 +71,7 @@ private def bin(
 
 // What a malformed node contributes to a hole: its surface text —
 // strings unquoted, so hole text reparses as the same junk.
-private[language] def holeText(data: NodeData): String = data match {
+private[examples] def holeText(data: NodeData): String = data match {
   case NodeData.StringData(s) => s
   case other                  => NodeDataText.show(other)
 }

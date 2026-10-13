@@ -1,6 +1,7 @@
 package opelan.ui.typeddoc
 
-import opelan.foundation.language.{ExprLanguage, docText}
+import opelan.examples.{ExprLanguage, registryForDoc}
+import opelan.foundation.language.docText
 import opelan.ui.editor.{DocumentEditor, EditorInput}
 import opelan.ui.fp._
 
@@ -24,7 +25,7 @@ object TypedDoc extends Component[TypedDocInput, TypedDocOutput] {
     TypedDocModel(
       doc = d,
       pushedDoc = d,
-      text = docText(d),
+      text = docText(d, registryForDoc),
       status = "Expression sample loaded")
   }
 

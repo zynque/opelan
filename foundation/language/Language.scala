@@ -53,14 +53,3 @@ trait Language {
   // document *becomes* the language.
   def langDoc: Document[NodeData]
 }
-
-// Registry mapping document-type references to languages defined in code.
-val allLanguages: List[Language] = List(ExprLanguage, SheetLanguage)
-
-def languageForRef(ref: ExternalNodeReference): Option[Language] =
-  allLanguages.find(l =>
-    l.typeRef.documentUrl == ref.documentUrl && l.typeRef.nodeId == ref.nodeId)
-
-// The language of a typed document, if the type is known.
-def languageForDoc(doc: Document[NodeData]): Option[Language] =
-  typeRefOf(doc).flatMap(languageForRef)

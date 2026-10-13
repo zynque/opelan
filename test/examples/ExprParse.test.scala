@@ -1,4 +1,4 @@
-package opelan.foundation.language
+package opelan.examples
 
 import Expr._
 

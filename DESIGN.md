@@ -557,7 +557,7 @@ newer design supersedes each piece:
 | Retired scaffold | Superseded / replaced by |
 |---|---|
 | `TypedGap`/`TypedGapManager` | `GapData`/`Hole` in `foundation/document` + `foundation/language` |
-| `Expression`/`DSLParser` | `Expr`/`ExprParse`/`Language` in `foundation/language` |
+| `Expression`/`DSLParser` | `Expr`/`ExprParse`/`Language` in `examples/` + `foundation/language` |
 | `Schema`/`SchemaRegistry` | "Schemas as documents" — future typed-document machinery |
 | `Project`/`Definition`/`Workspace` | Document store + multi-document workspaces — future work |
 | `DiagramRenderer`, `CollaborationManager` stubs | Document-driven visualization and real Automerge integration — future work |

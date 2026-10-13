@@ -2,25 +2,22 @@ package opelan.foundation.langdef
 
 import opelan.foundation.document._
 import opelan.foundation.grammar._
-import opelan.foundation.language.{languageForRef, Language}
+import opelan.foundation.language.Language
 
 // A Language interpreted from a LanguageDef — the bootstrap mechanism:
 // the def carries the grammar as data and names its semantics through
 // an Impls bundle, so a document-encoded def (read by
 // langDefFromDocument) becomes a live language without touching code.
 //
-// `impls` comes from the foundational language whose type ref the def
-// claims — a stored def doc for a foundational type keeps its
-// semantics even after its grammar is edited. `resolve` finds the
-// language a cell grammar refers to; it defaults to the Scala
-// registry — the honest fallback until DocLanguage resolves through
-// the document store.
+// `impls` holds the implementations the def names — callers assemble it
+// (e.g. the examples' implsFor binds the foundational bundle whose type
+// ref the def claims). `resolve` finds the language a cell grammar
+// refers to; the default resolves nothing.
 class DefLanguage(
     val languageDef: LanguageDef,
-    resolve: ExternalNodeReference => Option[Language] = languageForRef)
+    impls: Impls,
+    resolve: ExternalNodeReference => Option[Language] = (_ => None))
     extends Language {
-
-  private val impls: Impls = implsFor(languageDef)
 
   def typeRef = languageDef.typeRef
   def name = languageDef.name

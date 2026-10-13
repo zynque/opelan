@@ -1,4 +1,4 @@
-package opelan.foundation.language
+package opelan.examples
 
 import opelan.foundation.document._
 import opelan.foundation.view.ViewTree
@@ -15,7 +15,7 @@ class SheetSuite extends munit.FunSuite {
     SheetLanguage.render(view, doc).map(ViewTree.flatten)
 
   test("sampleDoc is a typed sheet document") {
-    assertEquals(languageForDoc(doc), Some(SheetLanguage))
+    assertEquals(registryForDoc(doc), Some(SheetLanguage))
     assertEquals(doc.getNode(sheetId).map(_.data),
       Some(NodeData.StringData(SheetTag)))
   }

@@ -2,7 +2,7 @@ package opelan.ui.typeddoc
 
 import org.scalajs.dom
 import opelan.foundation.document._
-import opelan.foundation.langdef.languageForDoc
+import opelan.examples.languageForDoc
 import opelan.ui.fp._
 import opelan.ui.fp.Dsl._
 import opelan.ui.text.CodeMirror

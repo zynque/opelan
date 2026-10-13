@@ -1,4 +1,4 @@
-package opelan.foundation.language
+package opelan.examples
 
 // The expression language's number type: integers stay integers so
 // counts and indexes read naturally, while division and float literals

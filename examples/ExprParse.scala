@@ -1,4 +1,4 @@
-package opelan.foundation.language
+package opelan.examples
 
 import opelan.foundation.document._
 import opelan.foundation.grammar._
@@ -16,7 +16,8 @@ import Expr._
 //             (tightest first — the last level binds loosest)
 //
 // The combinator vocabulary is the point: the same grammar is written
-// as data in langdef/Defs.scala — the interpretation must agree.
+// as data in examples/ExampleDefs.scala — the interpretation must
+// agree.
 
 // Spans now come from the grammar package; keep the old name working.
 type ExprSpan = Span

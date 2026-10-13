@@ -22,7 +22,7 @@ implementation plan.
   from olw-p4 and fully tested — but see "not yet wired" below.
 - **Typed documents** (`foundation/document/Typed`): type-ref first child +
   content subtree convention, mirroring the olw-p1/p2 header convention.
-- **Expression language** (`foundation/language`): the demonstration
+- **Expression language** (`examples/`): the demonstration
   language — int/float literals (`Num` keeps integers integral, division
   floats), `+`/`−`/`*`/`/` with precedence-aware printing, `ref:N` cell
   references (stored as `InternalNodeRef`), structural grouping — with a
@@ -31,7 +31,7 @@ implementation plan.
   (`ExprView`'s `LocExpr` keeps each node's source id), resolver-based
   evaluation with cycle detection, and a span map (tree path → source
   range).
-- **Sheet language** (`foundation/language/Sheet*`): the demo app — a
+- **Sheet language** (`examples/Sheet*`): the demo app — a
   typed document whose content is `sheet > row/hrow > cell` rows of
   labels, literals, and formula cells (expressions over refs to other
   cells). `sheet` and `formulas` views render evaluated/source grids;
