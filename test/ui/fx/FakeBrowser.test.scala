@@ -2,6 +2,7 @@ package opelan.ui.fx
 
 import scala.scalajs.js
 import scala.collection.mutable
+import scala.compiletime.uninitialized
 import org.scalajs.dom
 import opelan.ui.editor.{FakeDom, FakeElement, FakeNode}
 
@@ -27,8 +28,8 @@ class FakeIDBTx(db: FakeIDBDatabase) extends js.Object {
 }
 
 class FakeIDBReq(getter: () => js.Dynamic) extends js.Object {
-  var onsuccess: js.Function1[dom.Event, Any] = _
-  var onerror: js.Function1[dom.Event, Any] = _
+  var onsuccess: js.Function1[dom.Event, Any] = uninitialized
+  var onerror: js.Function1[dom.Event, Any] = uninitialized
   def result: js.Dynamic = getter()
   js.timers.setTimeout(0) {
     if (onsuccess != null) onsuccess(null.asInstanceOf[dom.Event])
@@ -45,16 +46,16 @@ class FakeIDBStore(records: js.Dictionary[js.Dynamic]) extends js.Object {
       records.get(key).map(_.asInstanceOf[js.Dynamic])
         .getOrElse(null.asInstanceOf[js.Dynamic]))
   def getAll(): FakeIDBReq =
-    new FakeIDBReq(() => js.Array(records.values.toSeq: _*)
+    new FakeIDBReq(() => js.Array(records.values.toSeq*)
       .asInstanceOf[js.Dynamic])
   def clear(): FakeIDBReq =
     new FakeIDBReq(() => { records.clear(); null.asInstanceOf[js.Dynamic] })
 }
 
 class FakeIDBOpen(db: FakeIDBDatabase) extends js.Object {
-  var onsuccess: js.Function1[dom.Event, Any] = _
-  var onerror: js.Function1[dom.Event, Any] = _
-  var onupgradeneeded: js.Function1[dom.Event, Any] = _
+  var onsuccess: js.Function1[dom.Event, Any] = uninitialized
+  var onerror: js.Function1[dom.Event, Any] = uninitialized
+  var onupgradeneeded: js.Function1[dom.Event, Any] = uninitialized
   val result: js.Dynamic = db.asInstanceOf[js.Dynamic]
   js.timers.setTimeout(0) {
     val ev = js.Dynamic.literal("target" -> this.asInstanceOf[js.Dynamic])

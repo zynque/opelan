@@ -26,7 +26,7 @@ class ViewTreeSuite extends munit.FunSuite {
   }
 
   test("a SourceRef leaf is the provenance annotation") {
-    assertEquals(src(5), DetachedNode.leaf(NodeData.SourceRef(5)))
+    assertEquals(src(5), DetachedNode.leaf[NodeData](NodeData.SourceRef(5)))
     assertEquals(
       from(5, txt("x")),
       flow(src(5), txt("x")))

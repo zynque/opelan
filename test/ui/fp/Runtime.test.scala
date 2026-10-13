@@ -1,5 +1,6 @@
 package opelan.ui.fp
 
+import scala.compiletime.uninitialized
 import org.scalajs.dom
 import opelan.ui.editor.{FakeDom, FakeElement}
 import opelan.ui.fp.Dsl._
@@ -22,7 +23,7 @@ class RuntimeSuite extends munit.FunSuite {
   private object Probe extends Component[Probe.In, Probe.Out] {
     enum In { case Go; case Arm; case Done(v: Int) }
     enum Out { case Final(v: Int) }
-    var later: In => Unit = _
+    var later: In => Unit = uninitialized
 
     type State = Int
     def init = 0

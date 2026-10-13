@@ -81,7 +81,7 @@ object Automerge {
   // The document as it was at a point in history — heads are change
   // hashes. Used for revert computation and history inspection.
   def view(doc: Doc, heads: Vector[String]): Doc =
-    am.view(doc, js.Array(heads: _*)).asInstanceOf[js.Dynamic]
+    am.view(doc, js.Array(heads*)).asInstanceOf[js.Dynamic]
 
   def textAtHeads(doc: Doc, heads: Vector[String]): String =
     if (heads.isEmpty) "" else textOf(view(doc, heads))

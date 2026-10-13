@@ -1,6 +1,7 @@
 package opelan.ui.editor
 
 import scala.scalajs.js
+import scala.compiletime.uninitialized
 import org.scalajs.dom
 import opelan.foundation.document._
 
@@ -12,8 +13,8 @@ import opelan.foundation.document._
 // then the echo SyncDocument push — and verify the inline editor stays
 // mounted and focused.
 class FakeNode extends js.Object {
-  var parentNode: dom.Node = _
-  var textContent: String = _
+  var parentNode: dom.Node = uninitialized
+  var textContent: String = uninitialized
 
   // Connected iff the ancestor chain reaches a root registered with
   // FakeDom (the container passed to Runtime.mount).
@@ -107,7 +108,7 @@ class FakeDocument extends js.Object {
 }
 
 object FakeDom {
-  var active: dom.Node = _
+  var active: dom.Node = uninitialized
   var installed = false
   val roots = scala.collection.mutable.Set.empty[dom.Node]
 
