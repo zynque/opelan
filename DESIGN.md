@@ -316,20 +316,68 @@ meaning resolves at parse time to the cell's stable node identity
 (today's `InternalNodeRef`) and prints back as its current position.
 Rules need a way to mark parse-time versus evaluation-time meanings.
 
-**Engine.** A rule that begins with a literal (`-a`, `|a|`, `if …`) is
-prefix; one that begins with a placeholder (`a + b`, `a %`) is infix or
-postfix. That is exactly Pratt parsing: the binding list supplies binding
-powers, and left recursion is a non-issue. Recovery lives in the engine
-(a missing operand folds to a hole, as `chainLeft` does today), keeping
-`Junk`/`Phrase` out of definitions. The literal symbols in the rules
-define the tokens (scannerless, as in Ohm), retiring the builtin `expr`
-lexer.
+**Engine: combinators underneath, operator rules on top.** The parsing
+substrate stays the recovering combinators of `foundation/grammar`.
+MEANS rules are a notation *over* them — compiled to combinator
+compositions, never a separate parser. This is the MEANS layering applied
+to the parser itself: an operator rule plus its place on the binding list
+*means* a combinator composition, and show/hide implementation (§6)
+reveals it. The reasons:
+
+- *Generality.* An operator-precedence (Pratt) engine is excellent at
+  expressions but dispatches on a single token. Statements, sequences,
+  optional and repeated parts, lookahead, layout, and context-dependent
+  parsing are what combinators are for, and languages beyond arithmetic
+  need them.
+- *Composition.* Combinators compose; a closed operator table does not.
+  Embedding one language's grammar in another (STATUS open question 7)
+  means composing parsers.
+- *Continuity.* Total, recovering parsing already lives in the combinators
+  (holes instead of failure), and `precedenceTable` already shows the
+  pattern: an operator table is one meta-combinator, not a format feature.
+  Compiling rules to the same combinators makes parity with `ExprLanguage`
+  a matter of producing the same composition.
+
+Rules split by shape. An *operator-shaped* rule — placeholders at one or
+both edges, on the binding list (`a + b`, `-a`, `a %`, `a ^ b`) — joins a
+single **operator combinator**: a precedence-climbing loop that
+generalizes today's `precedenceTable` (left-associative infix only) to
+prefix, postfix, right- and non-associative infix, driven by the binding
+list. This is where Pratt's idea lives — as one combinator, not as the
+engine. Every other rule — bracketed or keyword-led (`(a)`, `|a|`,
+`if c then a else b`) or a plain sequence — compiles to sequence and
+choice, and serves as an atom of the operator combinator. Authors write
+MEANS rules either way; they write combinators only when zooming into
+implementation, which stays available as the escape hatch for what rules
+can't express.
+
+Caveats this design accepts:
+
+- *Left recursion.* Operator rules avoid it by construction (the loop
+  replaces recursion). A left-recursive non-operator rule would make a
+  PEG-style combinator loop at the same position — today's `Ref` guard
+  already degrades that to a hole. Warth's seed-growing left recursion
+  (OMeta, Ohm) is the upgrade if real grammars need it.
+- *Ordered choice.* Combinator choice takes the first alternative that
+  applies, so overlapping rules resolve by order rather than reporting
+  ambiguity. Detecting overlap and flagging it in the definition view is
+  a possible refinement.
+- *Two layers to learn.* Mitigated by keeping MEANS the only authoring
+  surface: whether a rule lands in the operator combinator or in a
+  sequence is decided by its shape, not by the author.
+
+Recovery stays in the combinators (a missing operand folds to a hole, as
+`chainLeft` does today), keeping `Junk`/`Phrase` out of authored
+definitions. The literal symbols in the rules define the tokens
+(scannerless, as in Ohm), retiring the builtin `expr` lexer.
 
 **Path in this codebase.**
 
-1. Compile rules plus the binding list to a Pratt parser producing
-   `PTree`s. The rule form of `exprDef` must behave identically to
-   `ExprLanguage` — the existing regression anchor.
+1. Generalize `precedenceTable` into the operator combinator, and compile
+   rules plus the binding list into combinator compositions (the
+   `GrammarDef` data the interpreter already runs) producing `PTree`s.
+   The rule form of `exprDef` must behave identically to `ExprLanguage` —
+   the existing regression anchor.
 2. Derive the schema (`NodeKind`) and the printer from the same rules.
 3. Encode rules in `lang:` documents as `means(pattern, meaning)` nodes.
    The MEANS notation becomes the text surface of the language-definition

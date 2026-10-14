@@ -63,7 +63,8 @@ Sidebar documents: `Household budget`, `lang: sheet`, `lang: expression`.
    future goal below.)
 6. Follow the formula's `ext:` ref → `opelan:languages/int-expression`,
    the expression language's document.
-7. Add the `/` production. Return to the budget: the `total / people`
+7. Add the `/` production (after M4: the line `a / b MEANS div(a, b)`).
+   Return to the budget: the `total / people`
    hole has healed — the cell computes. No rebuild, no redeploy; a
    running application's language changed by editing a document. **The
    moment.**
@@ -188,6 +189,36 @@ holey document must still parse (Never Broken)):
 
 **M3 — flex:** version-pin upgrade path, tab-sync in the demo script,
 USAGE/demo notes.
+
+**M4 — MEANS rules (next major series).** M2 proved a language can be a
+document, but the document is combinator data (`precedence`, `chain`,
+`signum`, `junk`, stop sets) — readable by its author, not by the
+domain expert the demo is aimed at. M4 replaces it with
+`pattern MEANS meaning` rules and a tightest-first binding list (DESIGN.md
+§4). The combinators stay as the parsing substrate; rules compile onto
+them, with operators and precedence handled by one precedence-climbing
+combinator. In phases: a rule compiler (operator combinator, derived
+tokens, printer, and schema); the expression language on rules at parity
+with `ExprLanguage`; rules as `lang:` documents with a MEANS text surface
+and live worked examples; semantics as rules bottoming out in builtins,
+with stored combinator-format docs migrated and `GrammarDef` demoted to
+the implementation layer (visible under show implementation); then the sheet's
+positional refs, WHERE with adjustable verbosity, and self-description.
+The step-by-step breakdown is in `STATUS.md` (next steps, item 6).
+
+What it changes in the demo: act 2's moment (step 7) stops being "add a
+`/` entry to an op table inside a precedence node" and becomes adding one
+line —
+
+```
+a / b  MEANS  div(a, b)
+```
+
+— plus `a * b, a / b` on the binding list. The `total / people` hole
+heals the same way, but the audience can read the change. Step 5's
+`lang: sheet` and step 6's `lang: expression` read as rules rather than
+outlines of combinators, which also covers most of the "projectional
+source editor for definitions" goal below.
 
 **Explicit cuts:** no type system, no editable app surface, no
 auto-migrations, no network transport.
