@@ -153,7 +153,7 @@ implementation plan.
 - **Synced history is unified, author-tagged, and navigation is
   mutation-free**: the pane's version DAG is rebuilt from the Automerge
   change graph on every growth, so both tabs see the same tree with
-  generated names per change. The §8 gesture split is implemented:
+  generated names per change. The §7 gesture split is implemented:
   checkout/`goTo` emits `DocViewed` (local view only — no change
   emitted, and a browsing pin survives remote pushes by change hash);
   Ctrl+Z at the synced head defers to `DocSession.undo`, which reverts
@@ -179,7 +179,7 @@ implementation plan.
 
 ## Open design questions
 
-1. *Two-layer history.* Largely settled in design (DESIGN.md §8): the
+1. *Two-layer history.* Largely settled in design (DESIGN.md §7): the
    Automerge change graph is the unified operational history — projected
    into the version-DAG view, actor-tagged — with the gesture split
    implemented: navigation is local (`DocViewed`), undo scopes to one's

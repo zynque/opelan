@@ -44,7 +44,7 @@ Sidebar documents: `Household budget`, `lang: sheet`, `lang: expression`.
 3. Click a `line total` cell → its formula node is selected in the
    (hidden) editor. Then edit `price` *in the grid itself* — the cell is
    a projection: typing a new value rewrites the source node and the grid
-   recomputes in place. (*Reactive*, provenance navigation per DESIGN §7,
+   recomputes in place. (*Reactive*, provenance navigation per DESIGN §6,
    projectional editing.)
 4. Two navigations out of the app surface: **Raw** shows this document's
    own representation (the outline editor, where the last-clicked cell's
