@@ -38,6 +38,8 @@ state and next steps), `AGENTS.md` (code conventions).
   system (or a domain-specific subset).
 - *Polysyntactic* — many surface representations over one document; users pick
   their preferred notation.
+- *Adjustable verbosity* — terse/verbose views of the same content; hidden
+  detail is still checked and signaled. Distinct from showing implementation.
 
 **Application**
 
@@ -223,6 +225,137 @@ demo's household budget.
 language's `parse`/`print` for the content cell; everything else falls
 back to `Outline.scala`. `holeCount` feeds the status bar.
 
+### Defining languages by MEANS rules (design, not yet built)
+
+Today a language's meaning is scattered: the grammar maps `"*"` to the tag
+`"mul"` inside a combinator tree, the schema separately declares
+`mul` as `Fixed(2)`, `Expr.pp` re-encodes precedence for printing, and
+eval matches `Mul` in Scala — four artifacts glued by a string. Authoring
+one requires knowing parser combinators (`Signum`, `Junk`, `Phrase`, stop
+sets), much of which is recovery machinery leaking into the definition.
+
+The target is the way mathematics is *taught*: a notation is introduced by
+saying what it means in terms of something already understood ("3 × 4
+means 4 + 4 + 4"; "5% means 5 per hundred"). Inspired by OMeta and VPRI
+STEPS (parsing and tree rewriting as one kind of pattern match; tiny,
+self-describing definitions), a language becomes a set of rules:
+
+```
+a + b    MEANS add(a, b)
+a - b    MEANS sub(a, b)
+a * b    MEANS mul(a, b)
+a / b    MEANS div(a, b)
+-a       MEANS neg(a)
+(a)      MEANS a
+|a|      MEANS abs(a)
+a %      MEANS a / 100
+
+binding, tightest first:
+  -a
+  a %
+  a * b,  a / b
+  a + b,  a - b
+
+examples:
+  1 + 2 * 3   MEANS 1 + (2 * 3)
+  8 - 3 - 2   MEANS (8 - 3) - 2
+```
+
+**One rule, every concern.** Read left to right a rule is a production;
+its meaning names a node kind and its arity (the schema); read right to
+left a constructor meaning is the printer — minimal-parenthesis printing
+derives from the binding list, replacing hand-written `Expr.pp`. Several
+surfaces may mean the same tree (`a × b`, `a times b`, `product of a, b`
+all `MEANS mul(a, b)`), so choosing a notation is choosing which rule set
+prints the view — *Polysyntactic* as data.
+
+**Precedence is an ordered list**, tightest first — the PEMDAS card, not
+binding-power numbers and not inferred. Associativity defaults to left and
+is overridden by example (`a ^ b ^ c MEANS a ^ (b ^ c)`). Worked examples
+are live checks, per *Self documenting* and *Reactive*. Grouping needs no
+special combinator: `(a) MEANS a` is an ordinary rule.
+
+**Placeholders and WHERE.** In `a + b`, `a` and `b` are placeholders; the
+rest is literal. A WHERE clause constrains what fills them:
+`ref:c,r MEANS cell(c, r) WHERE c, r: whole number`. In a projectional
+surface placeholders are distinguished structurally (rendered as styled
+chips, as math italicizes variables), so stored rules need no escaping;
+the text surface needs a convention (open question). Under *Adjustable
+verbosity* WHERE is detail: hidden at the terse level, revealed on zoom-in
+(§7). Hidden is never absent:
+
+- a WHERE implied by the layer below (`add` takes numbers ⇒
+  `a, b: number`) shows nothing tersely, and appears as inferred when
+  zoomed in;
+- a WHERE narrower than inference leaves a marker in the terse view, like
+  a fold indicator;
+- a violated WHERE is enforced regardless of zoom and surfaces as a hole.
+
+Detail-level zoom stays within the rule's own layer — it never descends
+into the meaning's implementation. That is the separate *implementation*
+axis (§7).
+
+**Layers form a DAG.** A meaning must refer only to things lower in the
+dependency graph; it never reaches back up. Dependencies are between
+*rules*, not languages, so one language may bundle several layers —
+`a % MEANS a / 100` sits above the `/` rule, which sits above `div`, which
+bottoms out in a builtin (today's `Impls` registry: the "already
+understood" arithmetic). Layers aren't numbered by authors; a rule's layer
+is derived as one above the highest rule its meaning uses. Show/hide
+implementation walks this graph downward.
+
+- *Prevention in the interface*: completion on a meaning only offers rules
+  already below it, so the structural editor cannot author a cycle
+  (*Discoverable*, *Immediately typed*).
+- *Tolerance in the model*: text edits and CRDT merges can still produce
+  one — two collaborators each adding a rule that uses the other's merge
+  cleanly in Automerge. A cycle renders as a hole at the closing edge, as
+  ref cycles already do in evaluation (*Never Broken*).
+
+**Documents keep what the user wrote.** `5%` stores `percent(5)`, not
+`div(5, 100)` — lower layers are derived, consistent with views being
+derived rather than stored, and printing round-trips the user's notation.
+
+**When a meaning resolves.** In the sheet, `ref:3,4` (or `C4`) means "the
+cell at column 3, row 4" — but storing the position would retarget on row
+insertion, the classic spreadsheet bug. The meaning is resolved at parse
+time to the cell's stable node identity (today's `InternalNodeRef`) and
+printed back as its current position. Rules need a way to mark parse-time
+versus evaluation-time meanings.
+
+**Engine.** A rule beginning with a literal (`-a`, `|a|`, `if …`) is
+prefix; one beginning with a placeholder (`a + b`, `a %`) is infix or
+postfix — exactly Pratt parsing, with the binding list as binding powers
+and left recursion a non-issue. Recovery lives in the engine (a missing
+operand folds to a hole, as `chainLeft` does today), keeping `Junk`/
+`Phrase` out of definitions. Literal symbols in the rules define the
+tokens (scannerless, as in Ohm), retiring the builtin `expr` lexer.
+
+**Path in this codebase.**
+
+1. Compile rules + binding list to a Pratt parser producing `PTree`s; the
+   rule form of `exprDef` must stay behaviorally identical to
+   `ExprLanguage` (the existing regression anchor).
+2. Derive the schema (`NodeKind`) and printer from the same rules.
+3. Encode rules in `lang:` documents as `means(pattern, meaning)` nodes;
+   the MEANS notation becomes the text surface of the language-definition
+   language — eventually described by its own rules.
+4. Bind semantics to builtins first (`add(a, b) MEANS builtin num-add`),
+   moving to rule-defined meanings where possible.
+
+Further examples the notation should handle: comparison chains
+(`a < b < c MEANS a < b and b < c`), juxtaposition
+(`n x MEANS n * x WHERE n: number literal`), units
+(`n kg MEANS quantity(n, kilogram)`), mixfix
+(`if c then a else b MEANS choose(c, a, b)`), sheet ranges
+(`a .. b MEANS range(a, b)`), and non-textual input
+(`drag cell x onto cell y MEANS set y to ref(x)`).
+
+Open questions: the plain-text placeholder convention; how parse-time
+versus evaluation-time meanings are marked; and whether multi-surface rule
+sets live in one language document or as notation documents layered over
+a shared one.
+
 ## 6. UI architecture
 
 ### `ui/fp` — the component runtime
@@ -373,14 +506,20 @@ results-as-documents apply uniformly to language-invented jumps.
 - *Peek*: `ExternalNodeRef` is already transclusion-style; peek-definition
   renders the target inline rather than navigating away.
 
-**Zoom navigation** — two orthogonal axes, both unique-ish to this design:
+**Zoom navigation** — three orthogonal axes, all per-user projections of
+the same document, never edits:
 
-- *Detail level* (terseness/verbosity): zoom out elides — types hidden,
-  signatures only, bodies folded; zoom in reveals. A per-user projection of
-  the same document, not an edit. Fold/collapse is the degenerate local
-  case.
+- *Detail level* (terseness/verbosity — the *Adjustable verbosity*
+  principle): zoom out elides — types and constraints hidden, signatures
+  only; zoom in reveals. It stays at the current layer of meaning: more of
+  *what* the content says, never *how* it is carried out. Fold/collapse is
+  the degenerate local case.
+- *Implementation* (show/hide implementation): descend from a construct to
+  what it means in the layer below — a rule to its meaning, a meaning to
+  its builtin (§5, *Defining languages by MEANS rules*). Orthogonal to
+  detail level: an implementation can itself be shown tersely or verbosely.
 - *Scope* (hoist/focus): a subtree becomes the temporary root of the view —
-  the outliner's zoom. Orthogonal to detail level.
+  the outliner's zoom. Orthogonal to both.
 
 **History** — navigation state is data, and eventually a document:
 

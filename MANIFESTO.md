@@ -56,6 +56,10 @@ This matters doubly in the presence of language models: a constrained language i
 
 Software should offer multiple representations of the same content, configurable to each user's preference, and translate seamlessly between them — so sharing work never requires adapting to someone else's preferred format.
 
+### Adjustable Verbosity
+
+Readers need different amounts of detail at different times. Software should let each user zoom between terse and verbose views of the same content — hiding types, constraints, and annotations until asked for — without changing the content itself. Hidden is never absent: elided detail is still checked, and its presence is signaled. Verbosity is distinct from implementation: zooming in on detail reveals more of *what* something says, never *how* it is carried out — showing an implementation is a separate choice.
+
 ## Application
 
 ### Available and Responsive
