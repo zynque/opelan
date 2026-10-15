@@ -11,25 +11,27 @@ class TypedSuite extends munit.FunSuite {
   val doc = makeTyped(ref, er(titleRef), er(importsRef), s("doc"),
     n(er(plus), il(1), n(er(plus), il(2), il(3))))
 
-  test("make lays out title, imports, then content under a typed root") {
+  test("make lays out imports, title, then content under a typed root") {
     assertEquals(doc.getNode(doc.rootId).map(_.data), Some(NodeData.ExternalNodeRef(ref)))
     val children = doc.childrenOf(doc.rootId)
     assertEquals(children.length, 3)
-    assertEquals(titleId(doc), Some(children(0)))
+    assertEquals(importsId(doc), Some(children(0)))
+    // The imports node's data is the `imports` declaration as a direct
+    // external ref (not imported into itself); its children are the
+    // ext-ref entries.
+    assertEquals(doc.getNode(children(0)).map(_.data),
+      Some(NodeData.ExternalNodeRef(importsRef)))
+    assertEquals(titleId(doc), Some(children(1)))
     // The title node carries the `title` construct ref (imported); the
     // raw text is its child.
-    assertEquals(externalRefOf(doc, children(0)), Some(titleRef))
+    assertEquals(externalRefOf(doc, children(1)), Some(titleRef))
     assertEquals(titleTextOf(doc).flatMap(doc.getNode).map(_.data), Some(s("doc")))
-    assertEquals(importsId(doc), Some(children(1)))
-    // The imports node carries the `imports` construct ref (imported
-    // into itself); its children are the ext-ref entries.
-    assertEquals(externalRefOf(doc, children(1)), Some(importsRef))
     assertEquals(contentId(doc), Some(children(2)))
   }
 
   test("make imports inline external refs once and uses them by internal ref") {
     val entries = importEntries(doc)
-    assertEquals(entries.map(_._2), List(titleRef, plus, importsRef))
+    assertEquals(entries.map(_._2), List(titleRef, plus))
     val entry = entries.find(_._2 == plus).get._1
     val cid = contentId(doc).get
     assertEquals(doc.getNode(cid).map(_.data), Some(NodeData.InternalNodeRef(entry)))

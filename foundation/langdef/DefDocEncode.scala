@@ -13,8 +13,8 @@ import opelan.foundation.document.Detached._
 // are strings. Sets and op maps sort so the bytes are deterministic.
 //
 //   ext: lang: language              type ref on the root's data
+//     ext: imports-declaration       the dependencies (title, kind, …)
 //     &imports(title) "lang: expression"   title construct + text
-//     imports                        kind, schema, op … (from lang: language)
 //     definition
 //       description  "the arithmetic-expression language"
 //       name         "Expressions"

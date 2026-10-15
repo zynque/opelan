@@ -10,18 +10,20 @@ package opelan.foundation.document
 // Most extend the standard core language, whose layout is positional:
 //
 //   root                     ExternalNodeRef(defining language document)
-//   ├── title node           the document's name (Store.labelOf)
 //   ├── imports node         one ExternalNodeRef leaf per imported node
+//   ├── title node           the document's name (Store.labelOf)
 //   └── content node         AST root in the type's language
 //
-// The imports section is the document's dependencies — itself a
-// construct use, carrying a ref to the core language's `imports`
-// declaration — holding one ExternalNodeRef leaf per imported node.
-// Every external node the content uses — a language construct, a
-// referenced language — is imported once and used through
-// InternalNodeRefs to the entry (see Imports). A typed document without
-// the imports-shaped second child has no dependencies and no standard
-// content slot; `internalize` leaves its refs inline.
+// The imports section comes first so it is in scope for everything
+// after it. It is itself a construct use — a direct ExternalNodeRef to
+// the core language's `imports` declaration (self-importing it would be
+// circular) — holding one ExternalNodeRef leaf per imported node. Every
+// external node used later in the document — a language construct, a
+// referenced language, the `title` construct on the title node — is
+// imported once and used through InternalNodeRefs to the entry
+// (see Imports). A typed document without the imports-shaped first
+// child has no dependencies and no standard title/content slots;
+// `internalize` leaves its refs inline.
 //
 // The slots are positional.
 
@@ -35,16 +37,16 @@ def isTyped(doc: Document[NodeData]): Boolean =
   typeRefOf(doc).isDefined
 
 // Whether the document follows the standard layout — detected by the
-// imports-shaped second child: a node whose data is a reference
-// (external, or internal once internalized; the def-doc encoder's
-// pending markers are internal refs too) and whose children are all
-// external-ref leaves — the import entries. A typed document that
+// imports-shaped first child: a node whose data is a reference
+// (the imports construct — normally an external ref; the def-doc
+// encoder's pending markers are internal refs) and whose children are
+// all external-ref leaves — the import entries. A typed document that
 // fails this check is treated as simple data: no title, no imports,
 // no content slot. (Genuinely ambiguous: a simple document whose
-// second child happens to be a bare ref leaf reads as an empty
+// first child happens to be a bare ref leaf reads as an empty
 // imports section.)
 def hasStandardLayout(doc: Document[NodeData]): Boolean =
-  isTyped(doc) && doc.childrenOf(doc.rootId).lift(1).exists { id =>
+  isTyped(doc) && doc.childrenOf(doc.rootId).headOption.exists { id =>
     doc.getNode(id).exists { n =>
       (n.data.isInstanceOf[NodeData.ExternalNodeRef] ||
         n.data.isInstanceOf[NodeData.InternalNodeRef]) &&
@@ -54,22 +56,22 @@ def hasStandardLayout(doc: Document[NodeData]): Boolean =
     }
   }
 
-// The title node: the root's first child, in a standard document. Its
-// data references the core language's `title` declaration (imported,
-// like every construct); the raw title text is its child.
-def titleId(doc: Document[NodeData]): Option[Int] =
+// The imports/dependencies section: the root's first child.
+def importsId(doc: Document[NodeData]): Option[Int] =
   if (hasStandardLayout(doc)) doc.childrenOf(doc.rootId).headOption
   else None
+
+// The title node: the root's child after the imports section. Its data
+// references the core language's `title` declaration (imported, like
+// every construct); the raw title text is its child.
+def titleId(doc: Document[NodeData]): Option[Int] =
+  if (hasStandardLayout(doc)) doc.childrenOf(doc.rootId).lift(1) else None
 
 // The document's title text: the title node's first child.
 def titleTextOf(doc: Document[NodeData]): Option[Int] =
   titleId(doc).flatMap(doc.childrenOf(_).headOption)
 
-// The imports/dependencies section: the root's second child.
-def importsId(doc: Document[NodeData]): Option[Int] =
-  if (hasStandardLayout(doc)) doc.childrenOf(doc.rootId).lift(1) else None
-
-// The content root: the root's child after title and imports.
+// The content root: the root's child after imports and title.
 def contentId(doc: Document[NodeData]): Option[Int] =
   if (hasStandardLayout(doc)) doc.childrenOf(doc.rootId).lift(2) else None
 
@@ -89,21 +91,14 @@ def makeTyped(
   internalizeStandard(beginTyped(typeRef, titleConstruct, importsConstruct,
     title, content))
 
-// Internalize every ref in the standard slots: the title subtree, the
-// imports node's own construct ref (its ext-ref-leaf children ARE the
-// imports — they stay external), and the content subtree.
+// Internalize every ref in the standard slots: the title subtree and
+// the content subtree. The imports node's own construct ref stays
+// external — self-importing it would be circular — and its ext-ref-leaf
+// children ARE the imports.
 def internalizeStandard(
-    doc: Document[NodeData]): Document[NodeData] = {
-  val d = Seq(titleId(doc), contentId(doc)).flatten
+    doc: Document[NodeData]): Document[NodeData] =
+  Seq(titleId(doc), contentId(doc)).flatten
     .foldLeft(doc)((d, id) => internalizeRefs(d, id).getOrElse(d))
-  importsId(d).flatMap(iid =>
-    d.getNode(iid).map(_.data) match {
-      case Some(NodeData.ExternalNodeRef(r)) =>
-        importRef(d, r).toOption.flatMap { case (d2, entry) =>
-          updateNodeData(iid, NodeData.InternalNodeRef(entry), d2).toOption }
-      case _ => None
-    }).getOrElse(d)
-}
 
 // The standard skeleton — refs not yet internalized.
 def beginTyped(
@@ -114,6 +109,6 @@ def beginTyped(
     content: DetachedNode[NodeData]): Document[NodeData] =
   buildDocument(
     DetachedNode(NodeData.ExternalNodeRef(typeRef), List(
-      DetachedNode(titleConstruct, List(DetachedNode.leaf(title))),
       DetachedNode.leaf(importsConstruct),
+      DetachedNode(titleConstruct, List(DetachedNode.leaf(title))),
       content)))

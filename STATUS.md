@@ -24,9 +24,12 @@ same combinators — see
   update/merge with LSCA merge-base via LSA links (Fischer & Huson). Ported
   from olw-p4 and fully tested — but see "not yet wired" below.
 - **Typed documents** (`foundation/document/Typed`): the type ref is the
-  root node's data; a standard-layout document's children are title,
-  imports, then content — olw-p2's header, dependencies, content layout
-  with the header folded onto the root. A typed document without an
+  root node's data; a standard-layout document's children are imports,
+  title, then content — olw-p2's dependencies, header, content layout
+  with the header folded onto the root. `title`/`imports` are
+  themselves declared constructs in `lang: language`'s schema; imports
+  carries a direct external ref (self-import would be circular), title
+  an imported one. A typed document without an
   imports-shaped second child is simple data: it has no dependencies
   and no standard content slot.
 - **Everything by reference** (`Imports`, `Names`, DESIGN §4): language
