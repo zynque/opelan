@@ -49,10 +49,16 @@ def hasStandardLayout(doc: Document[NodeData]): Boolean =
     }
   }
 
-// The title node: the root's first child, in a standard document.
+// The title node: the root's first child, in a standard document. Its
+// data references the core language's `title` declaration (imported,
+// like every construct); the raw title text is its child.
 def titleId(doc: Document[NodeData]): Option[Int] =
   if (hasStandardLayout(doc)) doc.childrenOf(doc.rootId).headOption
   else None
+
+// The document's title text: the title node's first child.
+def titleTextOf(doc: Document[NodeData]): Option[Int] =
+  titleId(doc).flatMap(doc.childrenOf(_).headOption)
 
 // The imports/dependencies section: the root's second child.
 def importsId(doc: Document[NodeData]): Option[Int] =
@@ -62,26 +68,30 @@ def importsId(doc: Document[NodeData]): Option[Int] =
 def contentId(doc: Document[NodeData]): Option[Int] =
   if (hasStandardLayout(doc)) doc.childrenOf(doc.rootId).lift(2) else None
 
-// Build a standard-layout document: the type ref on the root, a title
-// child, an imports section, then the content subtree. External refs
-// inside `content` (constructs written inline by a builder or parser)
-// move into the imports section.
+// Build a standard-layout document: the type ref on the root's data, a
+// title node carrying `titleConstruct` (a ref to the declaration of
+// `title`, internalized like every construct use — the encoder passes a
+// pending marker while lang: language's own schema is mid-build), an
+// imports section, then the content subtree. External refs inside
+// `title` and `content` move into the imports section.
 def makeTyped(
     typeRef: ExternalNodeReference,
+    titleConstruct: NodeData,
     title: NodeData,
     content: DetachedNode[NodeData]): Document[NodeData] = {
-  val doc = beginTyped(typeRef, title, content)
-  contentId(doc).flatMap(cid => internalizeRefs(doc, cid).toOption)
-    .getOrElse(doc)
+  val doc = beginTyped(typeRef, titleConstruct, title, content)
+  Seq(titleId(doc), contentId(doc)).flatten
+    .foldLeft(doc)((d, id) => internalizeRefs(d, id).getOrElse(d))
 }
 
 // The standard skeleton with `content` as-is — refs not yet internalized.
 def beginTyped(
     typeRef: ExternalNodeReference,
+    titleConstruct: NodeData,
     title: NodeData,
     content: DetachedNode[NodeData]): Document[NodeData] =
   buildDocument(
     DetachedNode(NodeData.ExternalNodeRef(typeRef), List(
-      DetachedNode.leaf(title),
+      DetachedNode(titleConstruct, List(DetachedNode.leaf(title))),
       DetachedNode.leaf(NodeData.StringData(ImportsLabel)),
       content)))

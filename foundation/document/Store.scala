@@ -61,11 +61,11 @@ case class Store(
 object Store {
   val empty: Store = Store()
 
-  // The document's name: the title child's string in a standard-layout
-  // document, else the root's own label if it holds a string (a raw
-  // document).
+  // The document's name: the string under the title node in a
+  // standard-layout document, else the root's own label if it holds a
+  // string (a raw document).
   def labelOf(doc: Document[NodeData]): Option[String] =
-    titleId(doc).flatMap(doc.getNode).map(_.data).collect {
+    titleTextOf(doc).flatMap(doc.getNode).map(_.data).collect {
       case NodeData.StringData(s) => s
     }.orElse(doc.getNode(doc.rootId).map(_.data).collect {
       case NodeData.StringData(s) => s

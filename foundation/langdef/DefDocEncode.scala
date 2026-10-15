@@ -13,7 +13,7 @@ import opelan.foundation.document.Detached._
 // are strings. Sets and op maps sort so the bytes are deterministic.
 //
 //   ext: lang: language              type ref on the root's data
-//     "lang: expression"             title (Store.labelOf)
+//     &imports(title) "lang: expression"   title construct + text
 //     imports                        kind, schema, op … (from lang: language)
 //     definition
 //       description  "the arithmetic-expression language"
@@ -29,7 +29,8 @@ def langDefDoc(d: LanguageDef): Document[NodeData] = encodeDef(d)._1
 // so its imports address the ids this very build assigns.
 private[langdef] def encodeDef(
     d: LanguageDef): (Document[NodeData], Map[String, Int]) = {
-  val doc0 = beginTyped(langDefTypeRef, NodeData.StringData(d.title),
+  val doc0 = beginTyped(langDefTypeRef, pending("title"),
+    NodeData.StringData(d.title),
     DetachedNode.leaf(pending("definition")))
   val cid = contentId(doc0).getOrElse(doc0.rootId)
   val (doc1, schemaId) = add(doc0, cid,
@@ -47,7 +48,9 @@ private[langdef] def encodeDef(
   val doc3 = resolvePending(linkUses(doc2, cid), name =>
     metaRefIn(metaIds, name).map(NodeData.ExternalNodeRef(_))
       .getOrElse(NodeData.GapData(name)))
-  (internalizeRefs(doc3, cid).getOrElse(doc3), kindIds)
+  val doc4 = Seq(titleId(doc3), contentId(doc3)).flatten
+    .foldLeft(doc3)((d, id) => internalizeRefs(d, id).getOrElse(d))
+  (doc4, kindIds)
 }
 
 // Append subtrees under `parent`; returns the doc and the last one's id

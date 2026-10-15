@@ -20,6 +20,7 @@ val langDefTypeRef =
 // The meta constructs, in schema order. Names are unique so code can key
 // on them; documents never store them — they import the schema entries.
 private[langdef] val metaKinds: List[NodeKind] = List(
+  NodeKind("title", Fixed(1)),     // document-structure: title's text
   NodeKind("definition", Any),     // content root: the sections below
   NodeKind("description", Fixed(1)),
   NodeKind("name", Fixed(1)),

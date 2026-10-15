@@ -34,6 +34,7 @@ object ExprLanguage extends Language {
   def sampleDoc: Document[NodeData] =
     makeTyped(
       typeRef,
+      er(opelan.foundation.langdef.docTitleRef),
       NodeData.StringData("expr sample"),
       exprToDetached(
         Expr.Sub(

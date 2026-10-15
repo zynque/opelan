@@ -81,7 +81,7 @@ class LangDefDocSuite extends FunSuite {
   }
 
   test("a damaged def doc still decodes — unknown grammar nodes become holes") {
-    val doc = makeTyped(langDefTypeRef, s("lang: broken"),
+    val doc = makeTyped(langDefTypeRef, er(docTitleRef), s("lang: broken"),
       n(meta("definition"),
         n(meta("description"), sl("a half-typed def")),
         n(meta("syntax"), sl("expr"), sl("flibble"))))

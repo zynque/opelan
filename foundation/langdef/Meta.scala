@@ -24,6 +24,11 @@ private[langdef] def metaNameOf(r: ExternalNodeReference): Option[String] =
 def metaRef(name: String): Option[ExternalNodeReference] =
   metaRefIn(metaKindIds, name)
 
+// The identity of `title` — the document-structure construct a standard
+// document's first child carries. Lives in lang: language's schema, so
+// it is imported like every other construct.
+def docTitleRef: ExternalNodeReference = metaRef("title").get
+
 private[langdef] def metaRefIn(
     ids: Map[String, Int], name: String): Option[ExternalNodeReference] =
   ids.get(name).map(ExternalNodeReference(langDefTypeRef.documentUrl, 0, _))

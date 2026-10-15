@@ -35,7 +35,8 @@ class DefLanguageSuite extends FunSuite {
   }
 
   private def typed(content: DetachedNode[NodeData]) =
-    makeTyped(hand.typeRef, NodeData.StringData("t"), content)
+    makeTyped(hand.typeRef, NodeData.ExternalNodeRef(docTitleRef),
+      NodeData.StringData("t"), content)
 
   test("print and eval views agree on parsed content") {
     inputs.foreach { t =>
@@ -52,7 +53,8 @@ class DefLanguageSuite extends FunSuite {
   }
 
   test("edge cases: unknown view, no content, no cell grammar") {
-    val empty = makeTyped(hand.typeRef, NodeData.StringData("t"), DetachedNode.leaf(NodeData.IntData(0)))
+    val empty = makeTyped(hand.typeRef, NodeData.ExternalNodeRef(docTitleRef),
+      NodeData.StringData("t"), DetachedNode.leaf(NodeData.IntData(0)))
     assertEquals(defed.render("nope", empty), hand.render("nope", empty))
     assert(defed.parseCell("1").isEmpty)
     assert(defed.parseCell("x").isEmpty)

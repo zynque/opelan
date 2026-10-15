@@ -35,7 +35,9 @@ object SheetLanguage extends Language {
   // formula refs are InternalNodeRefs to other cells, seeded here with
   // "r:<row>,<col>" placeholders resolved against the built document.
   def sampleDoc: Document[NodeData] = {
-    val doc0 = makeTyped(typeRef, NodeData.StringData("Household budget"), sheet)
+    val doc0 = makeTyped(typeRef,
+      er(opelan.foundation.langdef.docTitleRef),
+      NodeData.StringData("Household budget"), sheet)
     wireRefs(doc0).toOption.getOrElse(doc0)
   }
 

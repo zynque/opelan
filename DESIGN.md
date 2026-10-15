@@ -135,8 +135,9 @@ is an `ExternalNodeRef` in the root node's *data* — the header, naming the
 document that defines the language the rest of the tree is written in.
 A simple document can be just that: a root ref with data children. Most
 documents extend the standard core language, whose layout is positional:
-first child the *title* (`Store.labelOf`), second the *imports* section,
-third the *content* subtree (the AST). This is olw-p2's header,
+first child the *title* node — itself a construct use, carrying a ref to
+the core language's `title` declaration with the raw text as its child —
+second the *imports* section, third the *content* subtree (the AST). This is olw-p2's header,
 dependencies, content layout with the header folded onto the root.
 Untyped documents are "raw".
 
