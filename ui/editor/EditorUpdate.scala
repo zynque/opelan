@@ -44,8 +44,14 @@ def editorUpdate(m0: EditorModel, input: EditorInput): Update[EditorModel, Edito
     case Redo             => redo(m)
     case GoToVersion(v)   => goTo(m, v, s"Version #$v")
     case NewDocument      => newDocument()
-    case SyncDocument(d, sel, push) =>
-      syncDocument(m, d, sel, push)
+    case SyncDocument(d, sel, push, store) =>
+      val key = (d, sel, push)
+      if (m.appliedPush.contains(key) && store != m.store)
+        Update(m.copy(store = store))
+      else {
+        val u = syncDocument(m, d, sel, push)
+        u.copy(state = u.state.copy(store = store, appliedPush = Some(key)))
+      }
     case EditorInput.FollowRef => followRef(m)
     case LoadSample       => loadSample()
     case Compact          => compactDoc(m)

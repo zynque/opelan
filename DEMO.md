@@ -49,7 +49,12 @@ Sidebar documents: `Household budget`, `lang: sheet`, `lang: expression`.
 4. Two navigations out of the app surface: **Raw** shows this document's
    own representation (the outline editor, where the last-clicked cell's
    source node is selected); **Definition (F12)** follows the document's
-   type ref — "go to definition" for the app itself.
+   type ref — "go to definition" for the app itself. In the raw view the
+   document is all references: an imports section holds each construct's
+   `ext:` address once, and every use is an `&n` internal ref to an
+   entry — shown with its resolved name (`&54 [mul]`), so the tree still
+   reads plainly while a rename of `mul` in its definition would relabel
+   every use.
 
 **Act 2 — under the hood.**
 
@@ -204,6 +209,9 @@ and live worked examples; semantics as rules bottoming out in builtins,
 with stored combinator-format docs migrated and `GrammarDef` demoted to
 the implementation layer (visible under show implementation); then the sheet's
 positional refs, WHERE with adjustable verbosity, and self-description.
+The by-reference document format already landed ahead of it, so a
+meaning's constructor (`div(a, b)`) will refer to the `div` kind by
+identity — a rule, like every other construct use, survives renames.
 The step-by-step breakdown is in `STATUS.md` (next steps, item 6).
 
 What it changes in the demo: act 2's moment (step 7) stops being "add a

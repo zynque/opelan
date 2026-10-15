@@ -34,6 +34,7 @@ import opelan.ui.fp._
 //   EditorKeys.scala     keymap (KeyboardEvent => Option[EditorInput])
 //   EditorView.scala     toolbar, outline + history, status bar
 //   EditorRow.scala      per-node row + inline edit input
+//   EditorLabel.scala    a row's data display (refs show resolved names)
 //   EditorSample.scala   the manifesto as a sample document
 object DocumentEditor extends Component[EditorInput, EditorOutput] {
 

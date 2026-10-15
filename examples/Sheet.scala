@@ -4,17 +4,20 @@ import opelan.foundation.document._
 import opelan.foundation.view.ViewTree
 import opelan.foundation.view.ViewTree._
 
-// The sheet document schema: the content subtree is a "sheet" node whose
-// children are rows — "row", or "hrow" for a header row — and a row's
+// The sheet document schema: the content subtree is a `sheet` node whose
+// children are rows — `row`, or `hrow` for a header row — and a row's
 // children are the cells. A cell holds its content directly: a literal,
 // a label (a plain string leaf), a hole, or an expression subtree that
-// may reference other cells via InternalNodeRef leaves.
+// may reference other cells via InternalNodeRef leaves. `sheet`, `row`
+// and `hrow` are lang: sheet constructs and the operators lang:
+// expression ones, all used by reference through the imports section.
 //
 //   sheet
 //     hrow    "item"  "qty"  "price"  "line total"
-//     row     "Apples"  4    1.20     mul(ref:qtyCell, ref:priceCell)
+//     row     "Apples"  4    1.20     mul(&qtyCell, &priceCell)
 //     ...
 
+// Kind names — keys into sheetKinds, never stored.
 val SheetTag = "sheet"
 val RowTag = "row"
 val HRowTag = "hrow"
@@ -32,7 +35,7 @@ def formulasView(doc: Document[NodeData], sheetId: Int): DetachedNode[NodeData] 
   grid(doc.childrenOf(sheetId).map(r => formulaRow(doc, r, isHRow(doc, r)))*)
 
 private def isHRow(doc: Document[NodeData], rowId: Int): Boolean =
-  doc.getNode(rowId).exists(_.data == NodeData.StringData(HRowTag))
+  kindOf(sheetKinds, doc, rowId).contains(HRowTag)
 
 private def rowView(
     doc: Document[NodeData], rowId: Int,

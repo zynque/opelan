@@ -16,8 +16,13 @@ class SheetSuite extends munit.FunSuite {
 
   test("sampleDoc is a typed sheet document") {
     assertEquals(registryForDoc(doc), Some(SheetLanguage))
-    assertEquals(doc.getNode(sheetId).map(_.data),
-      Some(NodeData.StringData(SheetTag)))
+    // The content root applies lang: sheet's `sheet` construct by ref,
+    // through the imports section — no "sheet" string in the document.
+    assertEquals(kindOf(sheetKinds, doc, sheetId), Some(SheetTag))
+    assert(doc.getNode(sheetId).exists(_.data.isInstanceOf[NodeData.InternalNodeRef]))
+    assert(!doc.nodes.exists(_.data == NodeData.StringData(SheetTag)))
+    // Each construct is imported once: sheet, hrow, row, mul, add, div.
+    assertEquals(importEntries(doc).length, 6)
   }
 
   test("the sheet view evaluates formulas through cell refs") {
@@ -104,7 +109,7 @@ class SheetSuite extends munit.FunSuite {
     assertEquals(parseCellText("?").data, NodeData.GapData(""))
     assertEquals(parseCellText("").data, NodeData.StringData(""))
     assertEquals(
-      parseCellText("ref:5 * 2").data, NodeData.StringData(Expr.MulTag))
+      parseCellText("ref:5 * 2").data, exprTag(Expr.MulTag))
   }
 
   test("a committed cell edit rewrites the node in place, keeping refs") {
@@ -122,9 +127,12 @@ class SheetSuite extends munit.FunSuite {
     // A formula cell edited to a new formula: same node, new children.
     val cid = cellId(1, 3)
     val edited = replaceNodeContent(
-      cid, parseCellText(s"ref:${cellId(2, 1)} + 1"), doc).toOption.get
+      cid, parseCellText(s"ref:${cellId(2, 1)} + 1"), doc)
+      .flatMap(internalizeRefs(_, cid)).toOption.get
     val node = edited.getNode(cid).get
-    assertEquals(node.data, NodeData.StringData(Expr.AddTag))
+    assertEquals(kindOf(exprKinds, edited, cid), Some(Expr.AddTag))
+    // `add` was already imported (the total row uses it) — reused.
+    assertEquals(importEntries(edited), importEntries(doc))
     assertEquals(node.childIds.length, 2)
     assert(edited.getNode(node.childIds(0)).exists(
       _.data == NodeData.InternalNodeRef(cellId(2, 1))))

@@ -3,105 +3,76 @@ package opelan.foundation.langdef
 import opelan.foundation.document._
 import opelan.foundation.document.Detached._
 
-// A LanguageDef as a document: a typed outline (type = the
-// language-definition language, langDefTypeRef) whose content subtree
-// carries the definition as data. The grammar is encoded as
-// combinator-shaped subtrees — each GrammarDef case a tagged node — so
-// a language doc is both readable and interpretable. Sets and op maps
-// sort before encoding so the bytes (and their persisted text) are
-// deterministic.
+// A LanguageDef as a document: a typed document (type = the
+// language-definition language, langDefTypeRef) whose content carries
+// the definition as data. Every construct is used by reference — the
+// meta constructs (`kind`, `schema`, `op` …) are imported from
+// lang: language, and references *within* the definition (an operator
+// to the kind it builds, `use` to a named grammar) are internal refs to
+// the defining node. Only the definition's own names and literal syntax
+// are strings. Sets and op maps sort so the bytes are deterministic.
 //
-//   lang: expression                 root label (Store.labelOf)
-//     "the arithmetic-expression language"
-//     name    "Expressions"
-//     schema  kind ("literal" "leaf") kind ("add" "fixed 2") ...
-//     syntax  "expr"                   builtin lexer name
-//       grammar nodes …
-//     views   view ("print" "expr-print") ...
-//     cells   language <ext ref> "label"   (or: builtin "sheet-cell")
-def langDefDoc(d: LanguageDef): Document[NodeData] =
-  makeTyped(langDefTypeRef, NodeData.StringData(d.title), langDefToDetached(d))
+//   "lang: expression"               root label (Store.labelOf)
+//     ext: lang: language            type
+//     imports                        kind, schema, op … (from lang: language)
+//     definition
+//       description  "the arithmetic-expression language"
+//       name         "Expressions"
+//       schema       kind("add", fixed(2))  kind("mul", fixed(2)) …
+//       syntax       "expr"  phrase(named("expr", precedence(…)), "")
+//       views        view("print", "expr-print") …
+//       cells        language(&import, as-label)
+def langDefDoc(d: LanguageDef): Document[NodeData] = encodeDef(d)._1
 
-def langDefToDetached(d: LanguageDef): DetachedNode[NodeData] =
-  n(s(d.title), List(
-    Some(sl(d.description)),
-    Some(n(s("name"), sl(d.name))),
-    Some(schemaNode(d.schema)),
-    d.syntax.map(syntaxNode),
-    Some(viewsNode(d.views)),
-    d.cellParser.map(cellsNode)).flatten*)
-
-private def schemaNode(ks: List[NodeKind]): DetachedNode[NodeData] =
-  n(s("schema"), ks.map(k =>
-    n(s("kind"), sl(k.name), sl(shapeText(k.shape))))*)
-
-private def shapeText(sh: NodeShape): String = sh match {
-  case NodeShape.Leaf     => "leaf"
-  case NodeShape.Any      => "any"
-  case NodeShape.Fixed(n) => s"fixed $n"
+// The document plus each schema kind's node id. lang: language itself
+// imports its constructs from its own schema — the bootstrap fixpoint —
+// so its imports address the ids this very build assigns.
+private[langdef] def encodeDef(
+    d: LanguageDef): (Document[NodeData], Map[String, Int]) = {
+  val doc0 = beginTyped(langDefTypeRef, NodeData.StringData(d.title),
+    DetachedNode.leaf(pending("definition")))
+  val cid = contentId(doc0).getOrElse(doc0.rootId)
+  val (doc1, schemaId) = add(doc0, cid,
+    n(pending("description"), sl(d.description)),
+    n(pending("name"), sl(d.name)),
+    n(pending("schema"), d.schema.map(kindNode)*))
+  val kindIds = d.schema.map(_.name).zip(doc1.childrenOf(schemaId)).toMap
+  val doc2 = add(doc1, cid, List(
+    d.syntax.map(s => n(pending("syntax"), sl(s.lexer), grammarNode(s.grammar, kindIds))),
+    Some(n(pending("views"), d.views.map(v =>
+      n(pending("view"), sl(v.name), sl(v.builtin)))*)),
+    d.cellParser.map(cp => n(pending("cells"), cellsNode(cp)))).flatten*)._1
+  val metaIds =
+    if (d.typeRef.documentUrl == langDefTypeRef.documentUrl) kindIds else metaKindIds
+  val doc3 = resolvePending(linkUses(doc2, cid), name =>
+    metaRefIn(metaIds, name).map(NodeData.ExternalNodeRef(_))
+      .getOrElse(NodeData.GapData(name)))
+  (internalizeRefs(doc3, cid).getOrElse(doc3), kindIds)
 }
 
-private def syntaxNode(sd: SyntaxDef): DetachedNode[NodeData] =
-  n(s("syntax"), sl(sd.lexer), grammarNode(sd.grammar))
+// Append subtrees under `parent`; returns the doc and the last one's id
+// (a subtree's root is its last node).
+private def add(
+    doc: Document[NodeData], parent: Int,
+    subtrees: DetachedNode[NodeData]*): (Document[NodeData], Int) =
+  subtrees.foldLeft((doc, -1)) { case ((d, last), t) =>
+    insertNode(t, parent, d.childrenOf(parent).length, d)
+      .map(d2 => (d2, d2.nodes.length - 1)).getOrElse((d, last))
+  }
 
-private def viewsNode(vs: List[ViewBinding]): DetachedNode[NodeData] =
-  n(s("views"), vs.map(v =>
-    n(s("view"), sl(v.name), sl(v.builtin)))*)
-
-private def cellsNode(cp: CellParserDef): DetachedNode[NodeData] =
-  n(s("cells"), cp match {
-    case CellParserDef.Builtin(name) =>
-      n(s("builtin"), sl(name))
-    case CellParserDef.Language(ref, fb) =>
-      n(s("language"), erl(ref), sl(fb match {
-        case CellFallback.Label => "label"
-        case CellFallback.Hole  => "hole"
-      }))
+private def kindNode(k: NodeKind): DetachedNode[NodeData] =
+  n(pending("kind"), sl(k.name), k.shape match {
+    case NodeShape.Leaf     => DetachedNode.leaf(pending("leaf"))
+    case NodeShape.Any      => DetachedNode.leaf(pending("any"))
+    case NodeShape.Fixed(a) => n(pending("fixed"), il(a))
   })
 
-// A grammar combinator as a node subtree. The sub-grammar comes first
-// (parens inner, chain atom, precedence atom, phrase inner, named's
-// body) with parameters after — matching how the combinators read.
-def grammarNode(g: GrammarDef): DetachedNode[NodeData] = g match {
-  case GrammarDef.Tok(kind, leaf) =>
-    n(s("tok"), sl(kind), leafNode(leaf))
-  case GrammarDef.Choice(alts) =>
-    n(s("choice"), alts.map(grammarNode)*)
-  case GrammarDef.Parens(inner) =>
-    n(s("parens"), grammarNode(inner))
-  case GrammarDef.Signum =>
-    n(s("signum"))
-  case GrammarDef.Junk(start, run) =>
-    n(s("junk"), sl(start.toList.sorted.mkString(" ")),
-      sl(run.toList.sorted.mkString(" ")))
-  case GrammarDef.ChainLeft(ops, atom) =>
-    n(s("chain"), grammarNode(atom), opsNode(ops))
-  case GrammarDef.Precedence(atom, levels) =>
-    n(s("precedence"), grammarNode(atom),
-      n(s("levels"),
-        levels.map(l => n(s("level"), opPairs(l)*))*))
-  case GrammarDef.Phrase(inner, stops) =>
-    n(s("phrase"), grammarNode(inner),
-      sl(stops.toList.sorted.mkString(" ")))
-  case GrammarDef.Named(name, inner) =>
-    n(s("named"), sl(name), grammarNode(inner))
-  case GrammarDef.Ref(name) =>
-    n(s("ref"), sl(name))
-  case GrammarDef.Hole =>
-    n(s("hole"))
-}
-
-private def opsNode(ops: Map[String, String]): DetachedNode[NodeData] =
-  n(s("ops"), opPairs(ops)*)
-
-private def opPairs(ops: Map[String, String]): List[DetachedNode[NodeData]] =
-  ops.toList.sortBy(_._1).map { case (sym, tag) =>
-    n(s("op"), sl(sym), sl(tag)) }
-
-private def leafNode(l: LeafKind): DetachedNode[NodeData] = l match {
-  case LeafKind.IntLit         => sl("int")
-  case LeafKind.FloatLit       => sl("float")
-  case LeafKind.HoleLeaf       => sl("hole")
-  case LeafKind.Text           => sl("text")
-  case LeafKind.RefLit(prefix) => n(s("ref"), sl(prefix))
+private def cellsNode(cp: CellParserDef): DetachedNode[NodeData] = cp match {
+  case CellParserDef.Builtin(name) =>
+    n(pending("builtin"), sl(name))
+  case CellParserDef.Language(ref, fb) =>
+    n(pending("language"), erl(ref), DetachedNode.leaf(pending(fb match {
+      case CellFallback.Label => "as-label"
+      case CellFallback.Hole  => "as-gap"
+    })))
 }

@@ -3,7 +3,7 @@ package opelan.examples
 import opelan.foundation.document._
 import opelan.foundation.langdef.{
   DocLanguage, docLanguageDef, langDefDoc, langDefFromDocument,
-  langDefTypeRef}
+  langDefTypeRef, withKindRefs}
 import munit.FunSuite
 
 // Store-first language resolution: a type ref names a def doc, and the
@@ -68,6 +68,6 @@ class ResolveSuite extends FunSuite {
     assertEquals(
       langDefFromDocument(
         langDefTypeRef.documentUrl, DocLanguage.langDoc),
-      docLanguageDef)
+      withKindRefs(docLanguageDef))
   }
 }

@@ -10,7 +10,11 @@ import opelan.foundation.grammar._
 // reaching back to the expression level) resolves at call time; a Ref
 // to an unknown name produces a hole rather than crashing — a def doc
 // can contain typos and stay Never Broken.
-def interpret(top: GrammarDef): Parser = {
+//
+// Operator tables name node kinds; `tag` turns a kind name into the
+// node data the parser emits — the construct's ref (see
+// DefLanguage.kindTag), so parsed trees use constructs by reference.
+def interpret(top: GrammarDef, tag: String => NodeData): Parser = {
 
   def collect(g: GrammarDef): List[(String, GrammarDef)] = g match {
     case GrammarDef.Named(n, inner)     => (n -> inner) :: collect(inner)
@@ -48,9 +52,9 @@ def interpret(top: GrammarDef): Parser = {
     case GrammarDef.Junk(start, run) =>
       junk(start, run)
     case GrammarDef.ChainLeft(ops, atom) =>
-      chainLeft(ops)(go(atom))
+      chainLeft(ops.view.mapValues(tag).toMap)(go(atom))
     case GrammarDef.Precedence(atom, levels) =>
-      precedenceTable(go(atom), levels)
+      precedenceTable(go(atom), levels.map(_.view.mapValues(tag).toMap))
     case GrammarDef.Phrase(inner, stops) =>
       phrase(go(inner), stops)
     case GrammarDef.Named(_, inner) =>

@@ -35,7 +35,7 @@ private def idLabel(id: Int): View[EditorInput] =
 private def content(m: EditorModel, id: Int, node: Node[NodeData]): View[EditorInput] =
   if (id == EditorModel.PendingId) pendingInput(m)
   else if (m.editingId.contains(id)) editInput(node)
-  else dataLabel(node)
+  else nodeLabel(m, id, node)
 
 // The phantom row's box: its text is tracked in the model (DraftEdit)
 // so a remote push that reorders rows — rebuilding this element — can't
@@ -44,15 +44,6 @@ private def pendingInput(m: EditorModel): View[EditorInput] =
   editBox(
     m.pendingInsert.map(_.draft).getOrElse(""),
     onEventOpt("input")(e => Some(DraftEdit(valueOf(e)))))
-
-private def dataLabel(node: Node[NodeData]): View[EditorInput] = {
-  val css = node.data match {
-    case _: NodeData.InternalNodeRef | _: NodeData.ExternalNodeRef => "color: #7b2cbf;"
-    case _: NodeData.GapData => "color: #b58900; background: #fdf6e3;"
-    case _ => ""
-  }
-  el("span", style(css))(text(DocumentEditor.displayData(node.data)))
-}
 
 private def editInput(node: Node[NodeData]): View[EditorInput] =
   editBox(DocumentEditor.editText(node.data))

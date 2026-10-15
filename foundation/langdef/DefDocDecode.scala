@@ -3,29 +3,35 @@ package opelan.foundation.langdef
 import opelan.foundation.document._
 
 // The recovering read of a `lang:` document — the inverse of
-// DefDocEncode. Every section is optional and every read tolerant:
-// missing children default, unrecognized grammar nodes become
-// GrammarDef.Hole, and a def doc under construction keeps decoding
-// (Never Broken applies to language definitions too).
-def langDefFromDocument(url: String, doc: Document[NodeData]): LanguageDef = {
-  // A seeded def doc is typed (type ref first child, outline after); a
-  // hand-built or damaged one may be a bare outline — read either.
+// DefDocEncode. Constructs are recognized by identity (which
+// lang: language schema entry a node's import names), never by name, so
+// a def doc whose meta constructs were renamed still decodes. Every
+// section is optional and every read tolerant: missing children
+// default, unrecognized grammar nodes become GrammarDef.Hole, and a def
+// doc under construction keeps decoding (Never Broken applies to
+// language definitions too).
+//
+// `version` is the version of `url` being read: kinds' refs pin it, so
+// a construct added in a later version is addressable.
+def langDefFromDocument(
+    url: String, doc: Document[NodeData], version: Int = 0): LanguageDef = {
+  // A seeded def doc is typed (type ref, imports, content); a hand-built
+  // or damaged one may be a bare outline — read either.
   val root = if (isTyped(doc)) contentId(doc).getOrElse(doc.rootId)
     else doc.rootId
   val r = new DefDocReader(doc, root)
-  val title = r.rootTitle(url)
+  val title = Store.labelOf(doc).getOrElse(url)
 
   LanguageDef(
     typeRef = ExternalNodeReference(url, 0, 0),
     title = title,
     name = r.section("name").flatMap(r.childStr(_, 0)).getOrElse(title),
-    description = r.description,
+    description = r.section("description").flatMap(r.childStr(_, 0)).getOrElse(""),
     schema = r.section("schema").toList.flatMap { sid =>
-      r.kids(sid).filter(k =>
-          r.data(k).contains(NodeData.StringData("kind")))
-        .map(k => NodeKind(
-          r.childStr(k, 0).getOrElse(""),
-          shapeFrom(r.childStr(k, 1))))
+      r.entries(sid, "kind").map(k => NodeKind(
+        r.childStr(k, 0).getOrElse(""),
+        r.shapeFrom(r.kids(k).lift(1)),
+        Some(ExternalNodeReference(url, version, k))))
     },
     syntax = r.section("syntax").map { sid =>
       SyntaxDef(
@@ -34,19 +40,21 @@ def langDefFromDocument(url: String, doc: Document[NodeData]): LanguageDef = {
           .getOrElse(GrammarDef.Hole))
     },
     views = r.section("views").toList.flatMap { vid =>
-      r.kids(vid).filter(k =>
-          r.data(k).contains(NodeData.StringData("view")))
-        .map(k => ViewBinding(
-          r.childStr(k, 0).getOrElse(""),
-          r.childStr(k, 1).getOrElse("")))
+      r.entries(vid, "view").map(k => ViewBinding(
+        r.childStr(k, 0).getOrElse(""),
+        r.childStr(k, 1).getOrElse("")))
     },
     cellParser = r.section("cells").flatMap(r.cellParserFrom))
 }
 
-private def shapeFrom(s: Option[String]): NodeShape = s match {
-  case Some("leaf")                  => NodeShape.Leaf
-  case Some("any")                   => NodeShape.Any
-  case Some(s) if s.startsWith("fixed ") =>
-    s.drop(6).toIntOption.map(NodeShape.Fixed(_)).getOrElse(NodeShape.Any)
-  case _                             => NodeShape.Any
-}
+// A def's kinds with their identities: a decoded def has them; a def
+// written in code gets the ones its encoding assigns.
+def withKindRefs(d: LanguageDef): LanguageDef =
+  if (d.schema.forall(_.ref.isDefined)) d
+  else d.copy(schema =
+    langDefFromDocument(d.typeRef.documentUrl, langDefDoc(d)).schema)
+
+// Kind name → the construct's identity, for code that builds or reads
+// documents in a defined language.
+def kindRefs(d: LanguageDef): Map[String, ExternalNodeReference] =
+  withKindRefs(d).schema.flatMap(k => k.ref.map(k.name -> _)).toMap

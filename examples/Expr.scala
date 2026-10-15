@@ -26,9 +26,12 @@ enum Expr {
 
 object Expr {
   // Content encoding: an IntData/FloatData leaf is a literal; an
-  // InternalNodeRef leaf is a reference; an "add"/"sub"/"mul"/"div" node
+  // InternalNodeRef leaf (to a node that isn't an import) is a reference;
+  // a node applying the add/sub/mul/div construct — its data refers to
+  // the kind's schema entry in lang: expression, through an import —
   // with exactly two children is a binary operation; a GapData node is a
-  // hole.
+  // hole. The tags below are kind names, used only to look the
+  // constructs up (exprKinds).
   val AddTag = "add"
   val SubTag = "sub"
   val MulTag = "mul"

@@ -131,15 +131,15 @@ def typedDocUpdate(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel
     // A projected cell edit: parse through the doc's language and rewrite
     // the node in place (the id survives, so refs into it keep working).
     // An unchanged commit — e.g. a blur with no edit — is a no-op, so
-    // projections can't churn versions.
+    // projections can't churn versions. Parsed constructs arrive as
+    // inline refs; the commit imports them (internalizeRefs).
     case CommitCellText(id, t) =>
       languageForDoc(m.doc, m.store).flatMap(_.parseCell(t)) match {
-        case Some(content)
-            if m.doc.getNode(id).isDefined &&
-               extractSubtree(id, m.doc).toOption.contains(content) =>
+        case Some(content) if unchangedCell(m.doc, id, content) =>
           Update(m)
         case Some(content) =>
-          replaceNodeContent(id, content, m.doc) match {
+          replaceNodeContent(id, content, m.doc)
+              .flatMap(internalizeRefs(_, id)) match {
             case Right(d) =>
               val msg = "Cell updated"
               Update(
@@ -157,6 +157,12 @@ def typedDocUpdate(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel
             Vector(Status("No cell grammar")))
       }
   }
+
+// A cell commit that reproduces the node's current content (compared
+// with its imports inlined, as the parser writes constructs).
+private def unchangedCell(
+    d: Document[NodeData], id: Int, content: DetachedNode[NodeData]): Boolean =
+  extractExternalized(d, id).contains(content)
 
 // The resolver handed to the text-surface functions: type refs resolve
 // through the store prop, same as the derived views.

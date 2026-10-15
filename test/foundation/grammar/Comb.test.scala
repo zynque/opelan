@@ -34,7 +34,7 @@ class CombSuite extends FunSuite {
 
   test("chainLeft folds left-associatively") {
     // "1 - 2 - 3" at one level => sub(sub(1, 2), 3)
-    val p = chainLeft(Map("-" -> "sub"))(int)
+    val p = chainLeft(Map("-" -> NodeData.StringData("sub")))(int)
     val i = in("1-2-3",
       ("int", "1"), ("op", "-"), ("int", "2"), ("op", "-"), ("int", "3"))
     val r = p(i, 0)
@@ -50,8 +50,8 @@ class CombSuite extends FunSuite {
   test("precedenceTable binds the last level loosest") {
     // tightest-first levels: "1 + 2 * 3" => add(1, mul(2, 3))
     val p = precedenceTable(int, List(
-      Map("*" -> "mul"),
-      Map("+" -> "add")))
+      Map("*" -> NodeData.StringData("mul")),
+      Map("+" -> NodeData.StringData("add"))))
     val i = in("1+2*3",
       ("int", "1"), ("op", "+"), ("int", "2"), ("op", "*"), ("int", "3"))
     val r = p(i, 0)
@@ -85,7 +85,7 @@ class CombSuite extends FunSuite {
   }
 
   test("spansOf maps every node path to its source range") {
-    val p = chainLeft(Map("-" -> "sub"))(int)
+    val p = chainLeft(Map("-" -> NodeData.StringData("sub")))(int)
     val i = in("1-23",
       ("int", "1"), ("op", "-"), ("int", "23"))
     val r = p(i, 0)

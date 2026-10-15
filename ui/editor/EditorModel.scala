@@ -41,6 +41,12 @@ case class EditorModel(
     // highlights the node without stealing focus from the surface the
     // click came from (a cell's edit box, say).
     claimFocus: Boolean = true,
+    // The document store — the context reference names resolve in (a
+    // construct row shows its definition's current name). Arrives with
+    // the parent's push; `appliedPush` remembers that push, so a re-send
+    // that only carries a newer store doesn't reload the document.
+    store: Store = Store.empty,
+    appliedPush: Option[(Document[NodeData], Option[SelectTarget], DocPush)] = None,
     status: String = "Ready") {
 
   // The node an operation applies to when nothing is explicitly selected.
@@ -143,11 +149,13 @@ enum EditorInput {
   // Push a document down from the parent without echoing DocChanged back
   // — for parents that push the document themselves and already know it.
   // `select` selects a node after the push (e.g. a followed ref's target);
-  // `push` says how the doc relates to the one being shown (see DocPush).
+  // `push` says how the doc relates to the one being shown (see DocPush);
+  // `store` is the name-resolution context (EditorModel.store).
   case SyncDocument(
       doc: Document[NodeData],
       select: Option[SelectTarget] = None,
-      push: DocPush = DocPush.Open)
+      push: DocPush = DocPush.Open,
+      store: Store = Store.empty)
   // Follow the selected node's reference: internal refs select their
   // target in place; external refs are reported via EditorOutput.FollowRef
   // for the owner (which holds the document store) to resolve.

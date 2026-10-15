@@ -148,7 +148,7 @@ class WorkbenchUpdateSuite extends munit.FunSuite {
     val on = workbenchUpdate(
       init.copy(workspace = ws, syncOn = true, synced = Map("u1" -> "old")),
       FromPane(TypedDocOutput.DocChanged(d)))
-    assertEquals(on.state.synced, Map("u1" -> render(d)))
+    assertEquals(on.state.synced, Map("u1" -> serialize(d)))
   }
 
   test("DocViewed mirrors but never feeds a session") {
@@ -166,7 +166,7 @@ class WorkbenchUpdateSuite extends munit.FunSuite {
     val m = init.copy(workspace = Workspace.empty.open("u1", 0, d))
     val u = workbenchUpdate(m, ToggleSync)
     assert(u.state.syncOn)
-    assertEquals(u.state.synced, Map("u1" -> render(d)))
+    assertEquals(u.state.synced, Map("u1" -> serialize(d)))
     val off = workbenchUpdate(u.state, ToggleSync)
     assert(!off.state.syncOn)
     assert(off.state.synced.isEmpty)
@@ -188,7 +188,7 @@ class WorkbenchUpdateSuite extends munit.FunSuite {
     val ws = Workspace.empty.open("u1", 0, doc("x"))
     val m = init.copy(
       workspace = ws, syncOn = true, synced = Map("u1" -> "old"))
-    val text = render(doc("shared"))
+    val text = serialize(doc("shared"))
     val entries = Vector(change("h1", "peer-actor", text))
     val ev = SyncEv.Grew("u1", text, entries, Vector("h1"), "my-actor")
     val u = workbenchUpdate(m, FromSync(ev))
@@ -202,7 +202,7 @@ class WorkbenchUpdateSuite extends munit.FunSuite {
   test("a session update for a non-open document changes nothing") {
     val m = init.copy(syncOn = true)
     val u = workbenchUpdate(m, FromSync(SyncEv.Grew("other",
-      render(doc("y")), Vector(change("h1", "a", "t")),
+      serialize(doc("y")), Vector(change("h1", "a", "t")),
       Vector("h1"), "me")))
     assertEquals(u.state.workspace, m.workspace)
     assert(u.state.panePush.isEmpty)
@@ -219,7 +219,7 @@ class WorkbenchUpdateSuite extends munit.FunSuite {
     val u = workbenchUpdate(req.state,
       FromRandom(RandomEv.Generated(0, "abc123")))
     assertEquals(u.state.workspace.openUrl, Some("u1~abc123"))
-    assertEquals(u.state.synced("u1~abc123"), render(edited))
+    assertEquals(u.state.synced("u1~abc123"), serialize(edited))
     assert(u.state.syncCmd.exists(_._2 == SyncCmd.Announce("u1", "u1~abc123")))
     assert(u.state.randomReq.isEmpty)
     assert(u.state.pendingBranch.isEmpty)

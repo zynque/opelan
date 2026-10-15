@@ -23,8 +23,23 @@ same combinators — see
 - **Version DAG** (`foundation/version`): version tree as a document;
   update/merge with LSCA merge-base via LSA links (Fischer & Huson). Ported
   from olw-p4 and fully tested — but see "not yet wired" below.
-- **Typed documents** (`foundation/document/Typed`): type-ref first child +
-  content subtree convention, mirroring the olw-p1/p2 header convention.
+- **Typed documents** (`foundation/document/Typed`): type ref, imports
+  section, then content, which is olw-p2's header, dependencies, content
+  layout.
+- **Everything by reference** (`Imports`, `Names`, DESIGN §4): language
+  constructs are never stored as strings. Each one a document uses is
+  imported once (an `ExternalNodeRef` to its schema entry) and applied
+  through `InternalNodeRef`s to that entry. Readers (expression, sheet,
+  def-doc decoder) match constructs by identity, and the structural
+  editor shows the resolved name beside the raw ref. Renaming a construct
+  in its `lang:` doc renames every use, and decoding is unaffected
+  (tested). Def docs import their meta constructs from `lang: language`,
+  which imports from itself.
+- **Id-preserving persistence** (`Serial`): stored and synced text carries
+  node ids (`#17 "mul"`), so internal refs and `url@v#n` refs into a
+  document survive save, reload, and sync. Before this, a reload
+  renumbered nodes and broke them. Id-less text from older stores still
+  loads.
 - **Expression language** (`examples/`): the demonstration
   language — int/float literals (`Num` keeps integers integral, division
   floats), `+`/`−`/`*`/`/` with precedence-aware printing, `ref:N` cell
@@ -180,6 +195,17 @@ same combinators — see
   `foundation/structure` model was retired; convergence presumably means
   "schemas as documents".
 
+- **Stored documents from before the by-reference format** (old IndexedDB
+  stores) aren't migrated: their typed docs have no imports section and
+  spell constructs as strings, so they degrade to holes. Seeding never
+  overwrites, so use **Reset** to reseed. The seeds' construct ids must
+  also match code's canonical encodings (`metaKindIds`, `kindRefs`), so
+  a change to a seed's layout needs a reset or a migration.
+- **Cross-document paste** doesn't externalize/re-import refs yet
+  (`extractExternalized` + `internalizeRefs` are the primitives), and
+  import entries pin the version current at import time. Names display
+  from the head, but nothing yet offers to bump pins.
+
 ## Open design questions
 
 1. *Two-layer history.* Largely settled in design (DESIGN.md §7): the
@@ -260,6 +286,10 @@ The natural sequence from the current code is:
 
    *Phase A — the rule engine (pure, `foundation/`):*
 
+   0. ~~**Everything by reference.**~~ Done: constructs are imported and
+      used by ref, and persistence preserves ids (see "Working"). Rules
+      inherit this: a meaning's constructor and placeholders are refs,
+      not names.
    1. **Rule model.** A `Rule(pattern, meaning)` ADT: patterns as
       literal/placeholder pieces; meanings as a constructor
       (`add(a, b)`), a bare placeholder (`(a) MEANS a`), or a rewrite into

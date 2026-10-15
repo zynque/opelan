@@ -27,11 +27,20 @@ class DefLanguage(
   // holds in the store.
   def langDoc = langDefDoc(languageDef)
 
+  // What a parsed node of `kind` carries: the construct's ref (inline —
+  // the destination document imports it on insert). A kind the schema
+  // doesn't define becomes a hole that keeps its parsed children.
+  def kindTag(kind: String): NodeData =
+    kindTags.getOrElse(kind, NodeData.GapData(kind))
+
+  private lazy val kindTags: Map[String, NodeData] =
+    kindRefs(languageDef).view.mapValues(NodeData.ExternalNodeRef(_)).toMap
+
   private lazy val syntax: Option[(String => Vector[GTok], Parser)] =
     for {
       s <- languageDef.syntax
       lx <- impls.lexers.get(s.lexer)
-    } yield (lx, interpret(s.grammar))
+    } yield (lx, interpret(s.grammar, kindTag))
 
   def render(view: String, doc: Document[NodeData])
       : Either[String, DetachedNode[NodeData]] =

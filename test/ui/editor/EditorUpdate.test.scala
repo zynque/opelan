@@ -41,6 +41,17 @@ class EditorUpdateSuite extends munit.FunSuite {
     assert(u.out.isEmpty)
   }
 
+  test("a re-push that only brings a newer store keeps the editor's state") {
+    val d = buildDocument(Detached.n(Detached.s("r"), Detached.sl("a")))
+    val opened = editorUpdate(init, EditorInput.SyncDocument(d)).state
+    val edited = insertCommitted(opened.copy(selectedId = Some(d.rootId)))
+    val store = Store.empty.put("x:doc", d)._1
+    val u = editorUpdate(edited, EditorInput.SyncDocument(d, store = store))
+    assertEquals(u.state.doc, edited.doc)        // no reload of the old push
+    assertEquals(u.state.history, edited.history)
+    assertEquals(u.state.store, store)
+  }
+
   test("a silent select highlights the node without claiming focus") {
     val m = init
     val target = m.flatIds(1)
@@ -353,16 +364,16 @@ class EditorUpdateSuite extends munit.FunSuite {
     val m0 = init
     val m1 = insertCommitted(m0)
     val newId = m1.doc.nodes.length - 1
-    // the session round-trips the outline text — reparsing reassigns node
-    // ids, so the inserted node no longer sits at `newId` in the pushed doc
-    val pushed = parse(render(m1.doc)).get
+    // the session round-trips the serialized text — ids survive, but node
+    // versions don't, so the pushed doc is a different value
+    val pushed = deserialize(serialize(m1.doc)).get
     assert(pushed != m1.doc)
+    assertEquals(serialize(pushed), serialize(m1.doc))
     val h = SyncedHistory(
       Vector(SyncedEntry("h1", Vector(), "amber-fox", pushed)),
       Vector("h1"))
     val u = editorUpdate(m1, EditorInput.SyncDocument(pushed, push = DocPush.Synced(h)))
-    // the editor keeps its own doc (stable ids), so the new node stays
-    // selected instead of the highlight jumping to a wrong node
+    // the editor keeps its own doc, and the new node stays selected
     assertEquals(u.state.doc, m1.doc)
     assertEquals(u.state.selectedId, Some(newId))
   }
@@ -457,9 +468,9 @@ class EditorUpdateSuite extends munit.FunSuite {
       (_, _) => (), _ => persisted = true)
     b = new DocSession("u", tb, actor("b"), "calm-otter",
       (_, _) => remoteText = b.text, _ => ())
-    a.attach(render(m0.doc), None)
-    b.attach(render(m0.doc), None)
-    a.localText(render(paneDoc.get))
+    a.attach(serialize(m0.doc), None)
+    b.attach(serialize(m0.doc), None)
+    a.localText(serialize(paneDoc.get))
     assert(persisted)
     assertEquals(remoteText, a.text)
     assert(remoteText.contains("intro"))

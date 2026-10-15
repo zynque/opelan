@@ -70,8 +70,25 @@ The substrate everything is built on — a direct port of olw-p4, extended:
   `compact` — the source document is a different address space.
 - **`Outline`** — a text codec for raw documents: one line per node,
   indentation for nesting, and surface syntax for each `NodeData` variant
-  (`"abc"`, `42`, `1.5`, `ref:5`, `ref:url@v#n`, `?text`). It doubles as
-  the serialization format for stored documents.
+  (`"abc"`, `42`, `1.5`, `ref:5`, `ref:url@v#n`, `?text`). It is the human
+  text surface; a parse renumbers nodes.
+- **`Serial`** — the storage and sync codec: the outline with each line
+  prefixed by its node id (`#17 "mul"`). Node identity survives save,
+  reload, and sync, which documents depend on. Internal refs (imports,
+  construct uses, cell refs) and other documents' `url@v#n` refs all
+  name ids. Unreachable ids stay reserved, duplicate ids from a text
+  merge get fresh ones, and id-less text falls back to `Outline`.
+- **Imports** (`Imports.scala`) — every external node a typed document
+  uses is imported once, as an `ExternalNodeRef` leaf in its imports
+  section, and used through `InternalNodeRef`s to that entry (§4).
+  `internalizeRefs` moves inline external refs, as builders, parsers,
+  and clipboards write them, into the imports on insert, and
+  `extractExternalized` reverses that. `externalRefOf` dereferences one
+  hop.
+- **Names** (`Names.scala`) — a name is a projection. `refName` resolves
+  a reference node to its definition through the store, reading the
+  head so a rename shows at once, and returns the definition's name: its
+  first string child, or a document root's label.
 - **`Store`** — a pure, immutable, versioned document store keyed by URL.
   `put` appends a version (0, 1, 2, …), `resolve` dereferences
   `url@version#node` addresses, and heads are tracked per URL. It is
@@ -114,10 +131,26 @@ History is designed as two layers (per `RELATED_WORK.md`):
 ## 4. Typed documents, languages, and holes
 
 **Typed documents** (`foundation/document/Typed.scala`): a document's *type*
-is its root's first child — an `ExternalNodeRef` naming the document that
-defines it — and the second child is the *content* subtree (the AST). This
-is the same convention as olw-p1/p2's header child. Untyped documents are
-"raw".
+is its root's first child, an `ExternalNodeRef` naming the document that
+defines it. The second child is the *imports* section and the third is
+the *content* subtree (the AST). This is olw-p2's header, dependencies,
+content layout. Untyped documents are "raw".
+
+**Everything by reference.** Content never spells a language construct
+by name. A node applying `mul` (or `schema`, `kind`, `row`) has as its
+data an `InternalNodeRef` to an import entry. That entry is an
+`ExternalNodeRef` to the construct's schema entry in its `lang:`
+document, e.g. `opelan:languages/int-expression@0#28`. A construct's
+identity is that address, and readers match on it (`kindOf`,
+`DefDocReader.cons`), never on a string. Renaming a construct therefore
+edits one node, its definition, and every use, in every document, picks
+up the new name. The editor shows each use projectionally: the resolved
+name in bold, with the raw `&n` beside it. References *within* a
+definition are plain internal refs to the defining node, for example an
+operator to the kind it builds or a `use` to a `named` grammar rule.
+Only a definition's own names, literal syntax (`"*"`), builtin names,
+and user data remain strings. The type and imports slots are positional;
+the imports node's `"imports"` label is a caption, not a key.
 
 **Languages** (`foundation/language/Language.scala`): a `Language` gives
 meaning to a type reference:
@@ -169,7 +202,15 @@ grammar (`GrammarDef`, the data twin of the `foundation/grammar`
 combinators), view bindings, and a cell grammar. `langDefDoc` encodes a
 def as a typed `lang:` document; `langDefFromDocument` reads it back
 recoveringly; `interpret` turns grammar data into a total parser; and
-`DefLanguage` turns a def into a live `Language`. Semantics the def names
+`DefLanguage` turns a def into a live `Language`. A def doc's sections,
+schema entries, and grammar combinators are constructs of
+`lang: language` (`metaKinds`), imported like any other construct.
+`lang: language` imports them from its own schema, which is the bootstrap
+fixpoint. Code knows meta constructs by node id (`metaKindIds`, taken
+from encoding `docLanguageDef`). It knows an example language's
+constructs by the ids its canonical encoding assigns (`kindRefs`,
+`exprKinds`, `sheetKinds`). Each decoded `NodeKind` carries its `ref`,
+and a def-interpreted parser emits that ref for each node it builds. Semantics the def names
 by string — lexers, view renderers, builtin cell parsers — resolve
 through an `Impls` bundle: honest scaffolding while behavior still lives
 in code.
@@ -380,6 +421,10 @@ definitions. The literal symbols in the rules define the tokens
    the existing regression anchor.
 2. Derive the schema (`NodeKind`) and the printer from the same rules.
 3. Encode rules in `lang:` documents as `means(pattern, meaning)` nodes.
+   Like every construct use, a meaning names its constructor by
+   reference: `add(a, b)` is a node whose data refers to the `add` kind,
+   and `a` is an internal ref to the pattern's placeholder node. A rule
+   therefore survives renames on either side.
    The MEANS notation becomes the text surface of the language-definition
    language, eventually described by its own rules.
 4. Bind semantics to builtins first (`add(a, b) MEANS builtin num-add`),
@@ -611,7 +656,7 @@ presence being broadcast state.
   (`projects`, `automerge_docs`, `settings`, `documents`) using
   `js.Dynamic` payloads, so the store stays agnostic about what it
   persists. **`DocumentRepo`** maps the `documents` store to the `Store`:
-  one record per `url@version` holding outline text; `loadAll` re-parses
+  one record per `url@version` holding `Serial` text (id-preserving); `loadAll` re-parses
   every record into a `Store` and derives heads as the max version per
   URL — no separate index to keep consistent. **`AutomergeRepo`** keeps
   each synced document's Automerge bytes in `automerge_docs`.
@@ -619,9 +664,9 @@ presence being broadcast state.
   document's outline text in an Automerge `{text}` doc (3.x strings merge
   per character), exchanges sync messages pairwise with each peer over a
   `SyncTransport`, and persists the bytes so a reloading tab resumes
-  rather than restarts. Synced text is reparsed into `Document[NodeData]`
-  on arrival: the CRDT syncs the serial form, and the document model stays
-  canonical.
+  rather than restarts. Synced text (the `Serial` form, so node ids
+  agree on every peer) is parsed into `Document[NodeData]` on arrival:
+  the CRDT syncs the serial form, and the document model stays canonical.
 - **`collaboration/`** — `automerge/` (the facade, plus change info and
   revert computation), `backends/` (`SyncTransport` and
   `BroadcastTransport`: tab-to-tab sync with no server), `DocSession` (the

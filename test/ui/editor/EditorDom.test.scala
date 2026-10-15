@@ -230,7 +230,7 @@ class EditorDomSuite extends munit.FunSuite {
     val remote = insertNode(
       DetachedNode.leaf(NodeData.StringData("peer")),
       d0.rootId, 0, d0).toOption.get
-    val pushed = parse(render(remote)).get
+    val pushed = deserialize(serialize(remote)).get
     val hist = SyncedHistory(
       Vector(SyncedEntry("h1", Vector(), "init", d0),
              SyncedEntry("h2", Vector("h1"), "calm-otter", pushed)),

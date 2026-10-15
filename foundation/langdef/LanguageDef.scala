@@ -20,8 +20,14 @@ case class LanguageDef(
     cellParser: Option[CellParserDef])
 
 // A node kind in the language's schema. Descriptive for now — nothing
-// checks arity yet — but the doc encoding carries it.
-case class NodeKind(name: String, shape: NodeShape)
+// checks arity yet — but the doc encoding carries it. `ref` is the
+// kind's identity: the address of its schema entry in the def document
+// (`url@v#node`). Documents use the construct by that ref, so the name
+// is only a label — renaming the entry renames every use. A def written
+// in code has no refs until encoded (see kindRefs).
+case class NodeKind(
+    name: String, shape: NodeShape,
+    ref: Option[ExternalNodeReference] = None)
 
 enum NodeShape {
   case Leaf            // a data leaf (literal, ref, gap, label…)

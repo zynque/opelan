@@ -12,7 +12,7 @@ import Expr._
 //
 //   expr   := phrase(precedenceTable(atom, levels))
 //   atom   := int | float | ref:N | '?' | ( expr ) | signum | junk
-//   levels := ["*"->mul, "/"->div] then ["+"->add, "-"->sub]
+//   levels := ["*"->mul, "/"->div] then ["+"->add, "-"->sub]  (construct refs)
 //             (tightest first — the last level binds loosest)
 //
 // The combinator vocabulary is the point: the same grammar is written
@@ -39,9 +39,11 @@ private def exprCore: Parser = precedenceTable(atom, opLevels)
 
 private def exprGrammar: Parser = phrase(exprCore, Set.empty)
 
-private val opLevels = List(
-  Map("*" -> Expr.MulTag, "/" -> Expr.DivTag),
-  Map("+" -> Expr.AddTag, "-" -> Expr.SubTag))
+// Each operator builds its construct by ref (exprTag), as the
+// interpreted grammar does through DefLanguage.kindTag.
+private lazy val opLevels = List(
+  Map("*" -> exprTag(Expr.MulTag), "/" -> exprTag(Expr.DivTag)),
+  Map("+" -> exprTag(Expr.AddTag), "-" -> exprTag(Expr.SubTag)))
 
 private def atom: Parser = choice(
   tok("int")(t => NodeData.IntData(t.text.toInt)),

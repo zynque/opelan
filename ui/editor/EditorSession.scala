@@ -126,13 +126,11 @@ private def syncShared(
         if (pin.isDefined)
           hist.getNode(vid).map(_.data.data.doc).getOrElse(d)
         else d
-      // A push carrying the same outline text the editor already has is
-      // the echo of our own local edit — keep the live doc: a whole-text
-      // reparse reassigns node ids, which would orphan the selection and
-      // in-progress edit (id 5 on a reparse isn't the id-5 node we
-      // inserted).
+      // A push carrying the same serialized text the editor already has
+      // is the echo of our own local edit — keep the live doc (with its
+      // node versions and detached nodes, which the text doesn't carry).
       val shown =
-        if (render(pushed) == render(m.doc)) m.doc
+        if (serialize(pushed) == serialize(m.doc)) m.doc
         else pushed
       val nm = retarget(m.copy(
         doc = shown,

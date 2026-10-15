@@ -44,6 +44,6 @@ def languageFromDef(d: LanguageDef, store: Store = Store.empty): Language =
 private def storedLanguage(
     ref: ExternalNodeReference, store: Store): Option[Language] =
   for {
-    (_, doc) <- store.head(ref.documentUrl)
+    (v, doc) <- store.head(ref.documentUrl)
     if typeRefOf(doc).contains(langDefTypeRef)
-  } yield languageFromDef(langDefFromDocument(ref.documentUrl, doc), store)
+  } yield languageFromDef(langDefFromDocument(ref.documentUrl, doc, v), store)

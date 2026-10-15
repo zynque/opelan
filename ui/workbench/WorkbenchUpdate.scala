@@ -25,7 +25,7 @@ object WorkbenchUpdate {
 
   def openEntry(m: WorkbenchModel): Map[String, String] =
     (for { u <- m.workspace.openUrl; d <- m.workspace.doc }
-     yield Map(u -> render(d))).getOrElse(Map.empty)
+     yield Map(u -> serialize(d))).getOrElse(Map.empty)
 
   def workbenchUpdate(m: WorkbenchModel, in: WorkbenchInput): Upd =
     in match {

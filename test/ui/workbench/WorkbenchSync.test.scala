@@ -70,7 +70,7 @@ class WorkbenchSyncSuite extends munit.FunSuite {
     FakeBrowser.db.stores("documents") = js.Dictionary(
       s"$url@0" -> js.Dynamic.literal(
         "key" -> s"$url@0", "url" -> url,
-        "version" -> 0, "outline" -> render(seedDoc)))
+        "version" -> 0, "outline" -> serialize(seedDoc)))
 
     val c1 = FakeBrowser.container()
     val c2 = FakeBrowser.container()
@@ -113,7 +113,7 @@ class WorkbenchSyncSuite extends munit.FunSuite {
       val edited: Document[NodeData] =
         beginDocument(NodeData.StringData("b"))
       wb1.send(FromPane(TypedDocOutput.DocChanged(edited)))
-      until(pane2.lastPushed.exists(d => render(d) == render(edited)),
+      until(pane2.lastPushed.exists(d => serialize(d) == serialize(edited)),
         "edit reaches tab 2")
     }.andThen { case _ =>
       wb1.dispose()

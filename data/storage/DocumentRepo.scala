@@ -7,7 +7,8 @@ import opelan.foundation.document._
 
 // Persistence for the document store: each version is one record in the
 // `documents` object store, keyed "url@version", holding the document's
-// outline text. Heads are derived by scanning records (documents are few
+// serialized text (Serial — the id-preserving outline, so refs into and
+// within the document survive a reload). Heads are derived by scanning records (documents are few
 // and small), so there is no separate index to keep consistent.
 
 // Write one version record. The caller's in-memory Store assigns the
@@ -17,14 +18,14 @@ def persist(url: String, version: Int, doc: Document[NodeData]): Future[Unit] =
     "key" -> s"$url@$version",
     "url" -> url,
     "version" -> version,
-    "outline" -> render(doc)))
+    "outline" -> serialize(doc)))
 
 // Rebuild the whole store from persisted version records. Records that
 // fail to parse are skipped rather than failing the load.
 def loadAll(): Future[Store] =
   IndexedDBStore.getAll("documents").map { records =>
     records.foldLeft(Store.empty) { (store, r) =>
-      parse(r.outline.asInstanceOf[String]) match {
+      deserialize(r.outline.asInstanceOf[String]) match {
         case Some(doc) =>
           store.withVersion(
             r.url.asInstanceOf[String],

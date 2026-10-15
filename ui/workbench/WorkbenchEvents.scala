@@ -23,7 +23,7 @@ private[workbench] def fromPane(m: WorkbenchModel, out: TypedDocOutput): Upd =
       val m2 = m.copy(
         workspace = m.workspace.changed(d),
         synced = m.workspace.openUrl.filter(m.synced.contains)
-          .map(u => m.synced + (u -> render(d))).getOrElse(m.synced))
+          .map(u => m.synced + (u -> serialize(d))).getOrElse(m.synced))
       if (m.pendingSave) saveDocument(m2.copy(pendingSave = false), d)
       else up(m2)
 
@@ -156,7 +156,7 @@ private[workbench] def fromSync(m: WorkbenchModel, ev: SyncEv): Upd =
     // text and push the synced history into the pane.
     case SyncEv.Grew(url, text, entries, heads, actor) =>
       if (!m.workspace.openUrl.contains(url)) up(m)
-      else parse(text) match {
+      else deserialize(text) match {
         case Some(d) =>
           val seen = m.syncedTexts.get(url).contains(text)
           val remote = entries.lastOption.exists(_.actor != actor)
@@ -190,7 +190,7 @@ private[workbench] def syncedHistory(
     entries: Vector[ChangeInfo],
     heads: Vector[String]): SyncedHistory =
   SyncedHistory(
-    entries.flatMap(e => parse(e.snapshotText).map(doc =>
+    entries.flatMap(e => deserialize(e.snapshotText).map(doc =>
       SyncedEntry(e.hash, e.deps,
         e.message.getOrElse(shortActor(e.actor)), doc))),
     heads)

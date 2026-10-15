@@ -15,7 +15,7 @@ private[workbench] def open(
   // pane stays in lockstep with whatever doc is open.
   up(push(m.copy(
     workspace = m.workspace.open(url, v, d),
-    synced = if (m.syncOn) m.synced + (url -> render(d)) else m.synced,
+    synced = if (m.syncOn) m.synced + (url -> serialize(d)) else m.synced,
     status = status.getOrElse(m.status)),
     TypedDocInput.Load(d, sel)))
 

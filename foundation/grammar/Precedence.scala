@@ -9,12 +9,13 @@ import opelan.foundation.document._
 
 // A left-associative operator level: atom (op atom)* where op is a
 // token of `opKind` ("op" by convention) whose text is in the
-// symbol → tag table; each step builds tag(l, r) spanning both
-// operands. An operand that doesn't apply (an op or ")" or EOF where a
-// value was expected) still folds as its empty hole — then the level
-// ends and the caller's `phrase`/`parens` handles the boundary.
+// symbol → node-data table (the construct the operator builds, by ref);
+// each step builds tag(l, r) spanning both operands. An operand that
+// doesn't apply (an op or ")" or EOF where a value was expected) still
+// folds as its empty hole — then the level ends and the caller's
+// `phrase`/`parens` handles the boundary.
 def chainLeft(
-    ops: Map[String, String],
+    ops: Map[String, NodeData],
     opKind: String = "op")(atom: Parser): Parser =
   (in, pos) => {
     val first = atom(in, pos)
@@ -28,7 +29,7 @@ def chainLeft(
           case Some(op) if op.kind == opKind && ops.contains(op.text) =>
             val r = atom(in, cur + 1)
             acc = PTree(
-              NodeData.StringData(ops(op.text)),
+              ops(op.text),
               in.input.substring(acc.from, r.tree.to),
               acc.from, r.tree.to,
               List(acc, r.tree))
@@ -45,7 +46,7 @@ def chainLeft(
 // last level is the loosest (outermost) binding.
 def precedenceTable(
     atom: Parser,
-    levels: List[Map[String, String]],
+    levels: List[Map[String, NodeData]],
     opKind: String = "op"): Parser =
   levels.foldLeft(atom)((lower, ops) => chainLeft(ops, opKind)(lower))
 

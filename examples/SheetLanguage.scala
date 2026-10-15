@@ -62,18 +62,18 @@ object SheetLanguage extends Language {
   }
 
   private def sheet: DetachedNode[NodeData] =
-    n(s(SheetTag),
-      n(s(HRowTag), sl("item"), sl("qty"), sl("price"), sl("line total")),
-      n(s(RowTag), sl("Apples"), il(4), fl(1.20), n(s("mul"), ref(1, 1), ref(1, 2))),
-      n(s(RowTag), sl("Bread"),  il(2), fl(2.50), n(s("mul"), ref(2, 1), ref(2, 2))),
-      n(s(RowTag), sl("Coffee"), il(1), fl(6.40), n(s("mul"), ref(3, 1), ref(3, 2))),
-      n(s(RowTag), sl("total"), sl(""), sl(""),
-        n(s("add"),
-          n(s("add"), ref(1, 3), ref(2, 3)),
+    n(sheetTag(SheetTag),
+      n(sheetTag(HRowTag), sl("item"), sl("qty"), sl("price"), sl("line total")),
+      n(sheetTag(RowTag), sl("Apples"), il(4), fl(1.20), n(exprTag("mul"), ref(1, 1), ref(1, 2))),
+      n(sheetTag(RowTag), sl("Bread"),  il(2), fl(2.50), n(exprTag("mul"), ref(2, 1), ref(2, 2))),
+      n(sheetTag(RowTag), sl("Coffee"), il(1), fl(6.40), n(exprTag("mul"), ref(3, 1), ref(3, 2))),
+      n(sheetTag(RowTag), sl("total"), sl(""), sl(""),
+        n(exprTag("add"),
+          n(exprTag("add"), ref(1, 3), ref(2, 3)),
           ref(3, 3))),
-      n(s(RowTag), sl("people"), il(2), sl(""), sl("")),
-      n(s(RowTag), sl("per person"), sl(""), sl(""),
-        n(s("div"), ref(4, 3), ref(5, 1))))
+      n(sheetTag(RowTag), sl("people"), il(2), sl(""), sl("")),
+      n(sheetTag(RowTag), sl("per person"), sl(""), sl(""),
+        n(exprTag("div"), ref(4, 3), ref(5, 1))))
 
   // The language document is the encoded definition itself — its
   // `cells` section names the expression language by ref, so following
