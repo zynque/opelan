@@ -8,10 +8,12 @@ class TypedSuite extends munit.FunSuite {
   val plus = ExternalNodeReference("test:lang", 0, 3)
   val doc = makeTyped(ref, s("doc"), n(er(plus), il(1), n(er(plus), il(2), il(3))))
 
-  test("make lays out type, imports, then content") {
+  test("make lays out title, imports, then content under a typed root") {
+    assertEquals(doc.getNode(doc.rootId).map(_.data), Some(NodeData.ExternalNodeRef(ref)))
     val children = doc.childrenOf(doc.rootId)
     assertEquals(children.length, 3)
-    assertEquals(doc.getNode(children(0)).map(_.data), Some(NodeData.ExternalNodeRef(ref)))
+    assertEquals(titleId(doc), Some(children(0)))
+    assertEquals(doc.getNode(children(0)).map(_.data), Some(s("doc")))
     assertEquals(importsId(doc), Some(children(1)))
     assertEquals(contentId(doc), Some(children(2)))
   }
@@ -44,10 +46,19 @@ class TypedSuite extends munit.FunSuite {
     assertEquals(internalizeRefs(raw, raw.rootId), Right(raw))
   }
 
-  test("a first child that is not an external ref is not a type") {
+  test("a root without an external-ref data is not typed") {
     val raw = buildDocument(n(s("a"), sl("b"), sl("c")))
     assertEquals(typeRefOf(raw), None)
     assert(!isTyped(raw))
+  }
+
+  test("a simple typed document has data children and no standard layout") {
+    val simple = buildDocument(n(er(ref), il(1), il(2)))
+    assert(isTyped(simple))
+    assertEquals(typeRefOf(simple), Some(ref))
+    assert(!hasStandardLayout(simple))
+    assertEquals(importsId(simple), None)
+    assertEquals(contentId(simple), None)
   }
 
   test("refName resolves an import through the store, at the head") {

@@ -23,9 +23,12 @@ same combinators — see
 - **Version DAG** (`foundation/version`): version tree as a document;
   update/merge with LSCA merge-base via LSA links (Fischer & Huson). Ported
   from olw-p4 and fully tested — but see "not yet wired" below.
-- **Typed documents** (`foundation/document/Typed`): type ref, imports
-  section, then content, which is olw-p2's header, dependencies, content
-  layout.
+- **Typed documents** (`foundation/document/Typed`): the type ref is the
+  root node's data; a standard-layout document's children are title,
+  imports, then content — olw-p2's header, dependencies, content layout
+  with the header folded onto the root. A typed document without an
+  imports-shaped second child is simple data: it has no dependencies
+  and no standard content slot.
 - **Everything by reference** (`Imports`, `Names`, DESIGN §4): language
   constructs are never stored as strings. Each one a document uses is
   imported once (an `ExternalNodeRef` to its schema entry) and applied

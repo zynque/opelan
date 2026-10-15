@@ -44,8 +44,8 @@ case class Store(
     get(ref.documentUrl, ref.documentVersionId).flatMap(doc =>
       doc.getNode(ref.nodeId).map(doc -> _))
 
-  // A document's display name: its root's label, per the Typed convention
-  // that the root's data labels the document. Falls back to the URL.
+  // A document's display name: the title child of a standard document,
+  // else the root's own label. Falls back to the URL.
   def labelOf(url: String): String =
     head(url).flatMap { case (_, d) => Store.labelOf(d) }.getOrElse(url)
 
@@ -61,9 +61,15 @@ case class Store(
 object Store {
   val empty: Store = Store()
 
-  // The root's label if it holds a string.
+  // The document's name: the title child's string in a standard-layout
+  // document, else the root's own label if it holds a string (a raw
+  // document).
   def labelOf(doc: Document[NodeData]): Option[String] =
-    doc.getNode(doc.rootId).map(_.data).collect { case NodeData.StringData(s) => s }
+    titleId(doc).flatMap(doc.getNode).map(_.data).collect {
+      case NodeData.StringData(s) => s
+    }.orElse(doc.getNode(doc.rootId).map(_.data).collect {
+      case NodeData.StringData(s) => s
+    })
 
   // URL for a user document under the local `opelan:docs/` scheme — the
   // same scheme ExternalNodeReference.documentUrl addresses. The name

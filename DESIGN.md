@@ -131,10 +131,14 @@ History is designed as two layers (per `RELATED_WORK.md`):
 ## 4. Typed documents, languages, and holes
 
 **Typed documents** (`foundation/document/Typed.scala`): a document's *type*
-is its root's first child, an `ExternalNodeRef` naming the document that
-defines it. The second child is the *imports* section and the third is
-the *content* subtree (the AST). This is olw-p2's header, dependencies,
-content layout. Untyped documents are "raw".
+is an `ExternalNodeRef` in the root node's *data* — the header, naming the
+document that defines the language the rest of the tree is written in.
+A simple document can be just that: a root ref with data children. Most
+documents extend the standard core language, whose layout is positional:
+first child the *title* (`Store.labelOf`), second the *imports* section,
+third the *content* subtree (the AST). This is olw-p2's header,
+dependencies, content layout with the header folded onto the root.
+Untyped documents are "raw".
 
 **Everything by reference.** Content never spells a language construct
 by name. A node applying `mul` (or `schema`, `kind`, `row`) has as its

@@ -12,8 +12,8 @@ import opelan.foundation.document.Detached._
 // the defining node. Only the definition's own names and literal syntax
 // are strings. Sets and op maps sort so the bytes are deterministic.
 //
-//   "lang: expression"               root label (Store.labelOf)
-//     ext: lang: language            type
+//   ext: lang: language              type ref on the root's data
+//     "lang: expression"             title (Store.labelOf)
 //     imports                        kind, schema, op … (from lang: language)
 //     definition
 //       description  "the arithmetic-expression language"
