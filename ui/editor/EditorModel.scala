@@ -46,6 +46,9 @@ case class EditorModel(
     // the parent's push; `appliedPush` remembers that push, so a re-send
     // that only carries a newer store doesn't reload the document.
     store: Store = Store.empty,
+    // Show reference rows in their rawest form — just the ref value —
+    // without the resolved definition name.
+    rawLabels: Boolean = false,
     appliedPush: Option[(Document[NodeData], Option[SelectTarget], DocPush)] = None,
     status: String = "Ready") {
 
@@ -162,6 +165,9 @@ enum EditorInput {
   case FollowRef
   case LoadSample
   case Compact
+  // Toggle rawest-form row labels: refs shown as their bare ref value,
+  // no resolved names.
+  case ToggleRaw
 }
 
 // What the editor reports outward. Effects (persistence, sync, status

@@ -10,7 +10,7 @@ import opelan.ui.fp.Dsl._
 // editing — and the runtime applies it after patching.
 def editorView(m: EditorModel): View[EditorInput] =
   el("div", style("height: 100%; display: flex; flex-direction: column;"))(
-    toolbar(),
+    toolbar(m),
     el("div", style("flex: 1; display: flex; min-height: 0;"))(
       outline(m),
       historyView(m)),
@@ -52,13 +52,14 @@ private def statusBar(m: EditorModel): View[EditorInput] = {
       s"root #${m.doc.rootId} — v#${m.versionId}"))
 }
 
-private def toolbar(): View[EditorInput] =
+private def toolbar(m: EditorModel): View[EditorInput] =
   el("div",
     style("padding: 6px 10px; border-bottom: 1px solid #ddd; background: #f9f9f9; " +
       "font-family: Arial, sans-serif; font-size: 12px;"))(
     button("New", EditorInput.NewDocument),
     button("Sample", EditorInput.LoadSample),
     button("Compact", EditorInput.Compact),
+    button(if (m.rawLabels) "Named refs" else "Raw refs", EditorInput.ToggleRaw),
     el("span", style("color: #888; margin-left: 10px;"))(
       text("Enter: sibling · Shift+Enter: child · Tab/S-Tab: indent/outdent · " +
         "F2/dbl-click: edit · Del: remove · ^X/^C/^V · ^Z/^Y · ^Enter: follow ref")))

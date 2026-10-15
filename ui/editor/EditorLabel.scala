@@ -11,7 +11,7 @@ import opelan.ui.fp.Dsl._
 private[editor] def nodeLabel(
     m: EditorModel, id: Int, node: Node[NodeData]): View[EditorInput] =
   node.data match {
-    case _: NodeData.InternalNodeRef | _: NodeData.ExternalNodeRef =>
+    case _: NodeData.InternalNodeRef | _: NodeData.ExternalNodeRef if !m.rawLabels =>
       refName(m.store, m.doc, id).map(refLabel(_, node)).getOrElse(dataLabel(node))
     case _ => dataLabel(node)
   }

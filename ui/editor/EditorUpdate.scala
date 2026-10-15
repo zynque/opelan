@@ -55,6 +55,7 @@ def editorUpdate(m0: EditorModel, input: EditorInput): Update[EditorModel, Edito
     case EditorInput.FollowRef => followRef(m)
     case LoadSample       => loadSample()
     case Compact          => compactDoc(m)
+    case ToggleRaw        => Update(m.copy(rawLabels = !m.rawLabels))
   }
 }
 
