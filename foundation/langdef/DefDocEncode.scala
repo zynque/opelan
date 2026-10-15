@@ -29,7 +29,7 @@ def langDefDoc(d: LanguageDef): Document[NodeData] = encodeDef(d)._1
 // so its imports address the ids this very build assigns.
 private[langdef] def encodeDef(
     d: LanguageDef): (Document[NodeData], Map[String, Int]) = {
-  val doc0 = beginTyped(langDefTypeRef, pending("title"),
+  val doc0 = beginTyped(langDefTypeRef, pending("title"), pending("imports"),
     NodeData.StringData(d.title),
     DetachedNode.leaf(pending("definition")))
   val cid = contentId(doc0).getOrElse(doc0.rootId)
@@ -48,9 +48,7 @@ private[langdef] def encodeDef(
   val doc3 = resolvePending(linkUses(doc2, cid), name =>
     metaRefIn(metaIds, name).map(NodeData.ExternalNodeRef(_))
       .getOrElse(NodeData.GapData(name)))
-  val doc4 = Seq(titleId(doc3), contentId(doc3)).flatten
-    .foldLeft(doc3)((d, id) => internalizeRefs(d, id).getOrElse(d))
-  (doc4, kindIds)
+  (internalizeStandard(doc3), kindIds)
 }
 
 // Append subtrees under `parent`; returns the doc and the last one's id

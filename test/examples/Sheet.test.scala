@@ -21,9 +21,9 @@ class SheetSuite extends munit.FunSuite {
     assertEquals(kindOf(sheetKinds, doc, sheetId), Some(SheetTag))
     assert(doc.getNode(sheetId).exists(_.data.isInstanceOf[NodeData.InternalNodeRef]))
     assert(!doc.nodes.exists(_.data == NodeData.StringData(SheetTag)))
-    // Each construct is imported once: title, sheet, hrow, row, mul,
-    // add, div.
-    assertEquals(importEntries(doc).length, 7)
+    // Each construct is imported once: title, imports, sheet, hrow,
+    // row, mul, add, div.
+    assertEquals(importEntries(doc).length, 8)
   }
 
   test("the sheet view evaluates formulas through cell refs") {

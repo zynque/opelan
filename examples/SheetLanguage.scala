@@ -37,6 +37,7 @@ object SheetLanguage extends Language {
   def sampleDoc: Document[NodeData] = {
     val doc0 = makeTyped(typeRef,
       er(opelan.foundation.langdef.docTitleRef),
+      er(opelan.foundation.langdef.docImportsRef),
       NodeData.StringData("Household budget"), sheet)
     wireRefs(doc0).toOption.getOrElse(doc0)
   }

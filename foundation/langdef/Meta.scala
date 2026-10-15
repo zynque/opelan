@@ -29,6 +29,10 @@ def metaRef(name: String): Option[ExternalNodeReference] =
 // it is imported like every other construct.
 def docTitleRef: ExternalNodeReference = metaRef("title").get
 
+// The identity of `imports` — the document-structure construct a
+// standard document's second child carries.
+def docImportsRef: ExternalNodeReference = metaRef("imports").get
+
 private[langdef] def metaRefIn(
     ids: Map[String, Int], name: String): Option[ExternalNodeReference] =
   ids.get(name).map(ExternalNodeReference(langDefTypeRef.documentUrl, 0, _))

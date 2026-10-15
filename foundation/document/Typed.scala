@@ -14,14 +14,16 @@ package opelan.foundation.document
 //   ├── imports node         one ExternalNodeRef leaf per imported node
 //   └── content node         AST root in the type's language
 //
-// The imports section is the document's dependencies: every external
-// node the content uses — a language construct, a referenced language —
-// is imported once and used through InternalNodeRefs to the entry
-// (see Imports). A typed document without the imports-shaped second
-// child has no dependencies and no standard content slot; `internalize`
-// leaves its refs inline.
+// The imports section is the document's dependencies — itself a
+// construct use, carrying a ref to the core language's `imports`
+// declaration — holding one ExternalNodeRef leaf per imported node.
+// Every external node the content uses — a language construct, a
+// referenced language — is imported once and used through
+// InternalNodeRefs to the entry (see Imports). A typed document without
+// the imports-shaped second child has no dependencies and no standard
+// content slot; `internalize` leaves its refs inline.
 //
-// The slots are positional; the imports node's label is only a caption.
+// The slots are positional.
 
 // The document's type: the language/format ref on the root's data.
 def typeRefOf(doc: Document[NodeData]): Option[ExternalNodeReference] =
@@ -32,20 +34,23 @@ def typeRefOf(doc: Document[NodeData]): Option[ExternalNodeReference] =
 def isTyped(doc: Document[NodeData]): Boolean =
   typeRefOf(doc).isDefined
 
-val ImportsLabel = "imports"
-
 // Whether the document follows the standard layout — detected by the
-// imports-shaped second child: a node labeled ImportsLabel, or one
-// whose children are all external-ref leaves. A typed document that
+// imports-shaped second child: a node whose data is a reference
+// (external, or internal once internalized; the def-doc encoder's
+// pending markers are internal refs too) and whose children are all
+// external-ref leaves — the import entries. A typed document that
 // fails this check is treated as simple data: no title, no imports,
-// no content slot.
+// no content slot. (Genuinely ambiguous: a simple document whose
+// second child happens to be a bare ref leaf reads as an empty
+// imports section.)
 def hasStandardLayout(doc: Document[NodeData]): Boolean =
   isTyped(doc) && doc.childrenOf(doc.rootId).lift(1).exists { id =>
     doc.getNode(id).exists { n =>
-      n.data == NodeData.StringData(ImportsLabel) ||
-        (n.childIds.nonEmpty && n.childIds.forall(cid =>
+      (n.data.isInstanceOf[NodeData.ExternalNodeRef] ||
+        n.data.isInstanceOf[NodeData.InternalNodeRef]) &&
+        n.childIds.forall(cid =>
           doc.getNode(cid).map(_.data)
-            .exists(_.isInstanceOf[NodeData.ExternalNodeRef])))
+            .exists(_.isInstanceOf[NodeData.ExternalNodeRef]))
     }
   }
 
@@ -69,29 +74,46 @@ def contentId(doc: Document[NodeData]): Option[Int] =
   if (hasStandardLayout(doc)) doc.childrenOf(doc.rootId).lift(2) else None
 
 // Build a standard-layout document: the type ref on the root's data, a
-// title node carrying `titleConstruct` (a ref to the declaration of
-// `title`, internalized like every construct use — the encoder passes a
-// pending marker while lang: language's own schema is mid-build), an
-// imports section, then the content subtree. External refs inside
-// `title` and `content` move into the imports section.
+// title node carrying `titleConstruct`, an imports node carrying
+// `importsConstruct` (refs to the `title`/`imports` declarations — the
+// encoder passes pending markers while lang: language's own schema is
+// mid-build), then the content subtree. External refs inside the title
+// and content subtrees — and the imports node's own construct ref —
+// move into the imports section.
 def makeTyped(
     typeRef: ExternalNodeReference,
     titleConstruct: NodeData,
+    importsConstruct: NodeData,
     title: NodeData,
-    content: DetachedNode[NodeData]): Document[NodeData] = {
-  val doc = beginTyped(typeRef, titleConstruct, title, content)
-  Seq(titleId(doc), contentId(doc)).flatten
+    content: DetachedNode[NodeData]): Document[NodeData] =
+  internalizeStandard(beginTyped(typeRef, titleConstruct, importsConstruct,
+    title, content))
+
+// Internalize every ref in the standard slots: the title subtree, the
+// imports node's own construct ref (its ext-ref-leaf children ARE the
+// imports — they stay external), and the content subtree.
+def internalizeStandard(
+    doc: Document[NodeData]): Document[NodeData] = {
+  val d = Seq(titleId(doc), contentId(doc)).flatten
     .foldLeft(doc)((d, id) => internalizeRefs(d, id).getOrElse(d))
+  importsId(d).flatMap(iid =>
+    d.getNode(iid).map(_.data) match {
+      case Some(NodeData.ExternalNodeRef(r)) =>
+        importRef(d, r).toOption.flatMap { case (d2, entry) =>
+          updateNodeData(iid, NodeData.InternalNodeRef(entry), d2).toOption }
+      case _ => None
+    }).getOrElse(d)
 }
 
-// The standard skeleton with `content` as-is — refs not yet internalized.
+// The standard skeleton — refs not yet internalized.
 def beginTyped(
     typeRef: ExternalNodeReference,
     titleConstruct: NodeData,
+    importsConstruct: NodeData,
     title: NodeData,
     content: DetachedNode[NodeData]): Document[NodeData] =
   buildDocument(
     DetachedNode(NodeData.ExternalNodeRef(typeRef), List(
       DetachedNode(titleConstruct, List(DetachedNode.leaf(title))),
-      DetachedNode.leaf(NodeData.StringData(ImportsLabel)),
+      DetachedNode.leaf(importsConstruct),
       content)))

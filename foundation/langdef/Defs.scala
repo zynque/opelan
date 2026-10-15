@@ -21,6 +21,7 @@ val langDefTypeRef =
 // on them; documents never store them — they import the schema entries.
 private[langdef] val metaKinds: List[NodeKind] = List(
   NodeKind("title", Fixed(1)),     // document-structure: title's text
+  NodeKind("imports", Any),        // document-structure: the dependencies
   NodeKind("definition", Any),     // content root: the sections below
   NodeKind("description", Fixed(1)),
   NodeKind("name", Fixed(1)),
