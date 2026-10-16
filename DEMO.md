@@ -68,7 +68,7 @@ Sidebar documents: `Household budget`, `lang: sheet`, `lang: expression`.
    future goal below.)
 6. Follow the formula's `ext:` ref → `opelan:languages/int-expression`,
    the expression language's document.
-7. Add the `/` production (after M4: the line `a / b MEANS div(a, b)`).
+7. Add the `/` production (after M4: the line `a / b means div(a, b)`).
    Return to the budget: the `total / people`
    hole has healed — the cell computes. No rebuild, no redeploy; a
    running application's language changed by editing a document. **The
@@ -195,20 +195,20 @@ holey document must still parse (Never Broken)):
 **M3 — flex:** version-pin upgrade path, tab-sync in the demo script,
 USAGE/demo notes.
 
-**M4 — MEANS rules (next major series).** M2 proved a language can be a
+**M4 — `means` rules (next major series).** M2 proved a language can be a
 document, but the document is combinator data (`precedence`, `chain`,
 `signum`, `junk`, stop sets) — readable by its author, not by the
 domain expert the demo is aimed at. M4 replaces it with
-`pattern MEANS meaning` rules and a tightest-first binding list (DESIGN.md
+`pattern means meaning` rules and a tightest-first binding list (DESIGN.md
 §4). The combinators stay as the parsing substrate; rules compile onto
 them, with operators and precedence handled by one precedence-climbing
-combinator. In phases: a rule compiler (operator combinator, derived
-tokens, printer, and schema); the expression language on rules at parity
-with `ExprLanguage`; rules as `lang:` documents with a MEANS text surface
+combinator. In phases: a rule compiler (scannerless combinators — no
+separate lexers — the operator combinator, printer, and schema); the expression language on rules at parity
+with `ExprLanguage`; rules as `lang:` documents with a `means` text surface
 and live worked examples; semantics as rules bottoming out in builtins,
 with stored combinator-format docs migrated and `GrammarDef` demoted to
 the implementation layer (visible under show implementation); then the sheet's
-positional refs, WHERE with adjustable verbosity, and self-description.
+positional refs, `where` with adjustable verbosity, and self-description.
 The by-reference document format already landed ahead of it, so a
 meaning's constructor (`div(a, b)`) will refer to the `div` kind by
 identity — a rule, like every other construct use, survives renames.
@@ -219,7 +219,7 @@ What it changes in the demo: act 2's moment (step 7) stops being "add a
 line —
 
 ```
-a / b  MEANS  div(a, b)
+a / b  means  div(a, b)
 ```
 
 — plus `a * b, a / b` on the binding list. The `total / people` hole

@@ -269,7 +269,7 @@ household budget.
 `parse`/`print` for the content; everything else falls back to
 `Outline`. `holeCount` feeds the status bar.
 
-### Defining languages by MEANS rules (design, not yet built)
+### Defining languages by `means` rules (in progress)
 
 Today a language's meaning is scattered: the grammar maps `"*"` to the tag
 `"mul"` inside a combinator tree, the schema separately declares `mul` as
@@ -286,14 +286,14 @@ definitions small enough to describe themselves — a language becomes a
 set of rules:
 
 ```
-a + b    MEANS add(a, b)
-a - b    MEANS sub(a, b)
-a * b    MEANS mul(a, b)
-a / b    MEANS div(a, b)
--a       MEANS neg(a)
-(a)      MEANS a
-|a|      MEANS abs(a)
-a %      MEANS a / 100
+a + b    means add(a, b)
+a - b    means sub(a, b)
+a * b    means mul(a, b)
+a / b    means div(a, b)
+-a       means neg(a)
+(a)      means a
+|a|      means abs(a)
+a %      means a / 100
 
 binding, tightest first:
   -a
@@ -302,39 +302,50 @@ binding, tightest first:
   a + b,  a - b
 
 examples:
-  1 + 2 * 3   MEANS 1 + (2 * 3)
-  8 - 3 - 2   MEANS (8 - 3) - 2
+  1 + 2 * 3   means 1 + (2 * 3)
+  8 - 3 - 2   means (8 - 3) - 2
 ```
+
+**The keyword is itself a verbosity choice.** The verbose spelling is
+lowercase `means`, emphasized by highlighting rather than capitals; the
+terse spelling is `=>` (`a + b => add(a, b)`). Both read back as the same
+rule — which spelling a surface shows is a detail-level setting (§6), not
+a difference in content. The reader and printer exist
+(`foundation/means`): rules print as role-tagged spans (keyword, literal,
+placeholder, constructor tag, constraint kind, marker), so a highlighting
+surface and plain text come from one source.
 
 **One rule, every concern.** Read left to right, a rule is a production;
 its meaning names a node kind and its arity (the schema); read right to
 left, a constructor meaning is the printer — minimal-parenthesis printing
 follows from the binding list, replacing hand-written `Expr.pp`. Several
 surfaces may mean the same tree (`a × b`, `a times b`, `product of a, b`
-all `MEANS mul(a, b)`), so choosing a notation means choosing which rule
+all `means mul(a, b)`), so choosing a notation means choosing which rule
 set prints the view — *Polysyntactic* as data.
 
 **Precedence is an ordered list**, tightest first — the PEMDAS card, not
 binding-power numbers and not inferred. Associativity defaults to left and
-is overridden by example (`a ^ b ^ c MEANS a ^ (b ^ c)`). Worked examples
+is overridden by example (`a ^ b ^ c means a ^ (b ^ c)`). Worked examples
 are live checks (*Learnable and self documenting*, *Reactive*). Grouping
-needs no special combinator: `(a) MEANS a` is an ordinary rule.
+needs no special combinator: `(a) means a` is an ordinary rule.
 
-**Placeholders and WHERE.** In `a + b`, `a` and `b` are placeholders; the
-rest is literal. A WHERE clause constrains what may fill them:
-`ref:c,r MEANS cell(c, r) WHERE c, r: whole number`. A projectional
+**Placeholders and `where`.** In `a + b`, `a` and `b` are placeholders; the
+rest is literal. A `where` clause constrains what may fill them:
+`ref:c,r means cell(c, r) where c, r: whole number`. A projectional
 surface distinguishes placeholders structurally (styled chips, as math
 italicizes variables), so stored rules need no escaping; the text surface
-needs a convention (open question). Under *Adjustable verbosity*, WHERE
+needs a convention. The provisional one: a placeholder is a lone lowercase
+letter, optionally numbered (`a`, `n`, `x2`); every other word is
+literal, and quoting (`'x'`) forces a literal. Under *Adjustable verbosity*, `where`
 is detail: hidden at the terse level, revealed on zoom-in (§6). Hidden is
 never absent:
 
-- a WHERE implied by the layer below (`add` takes numbers ⇒
+- a `where` implied by the layer below (`add` takes numbers ⇒
   `a, b: number`) shows nothing tersely, and appears marked as inferred
   when zoomed in;
-- a WHERE narrower than inference leaves a marker in the terse view, like
+- a `where` narrower than inference leaves a marker in the terse view, like
   a fold indicator;
-- a violated WHERE is enforced at every zoom level and surfaces as a hole.
+- a violated `where` is enforced at every zoom level and surfaces as a hole.
 
 Detail-level zoom stays within the rule's own layer and never descends
 into the meaning's implementation; that is the separate *implementation*
@@ -342,7 +353,7 @@ axis (§6).
 
 **Layers form a DAG.** A meaning may refer only to things lower in the
 dependency graph, never back up. Dependencies are between *rules*, not
-languages, so one language may bundle several layers: `a % MEANS a / 100`
+languages, so one language may bundle several layers: `a % means a / 100`
 sits above the `/` rule, which sits above `div`, which bottoms out in a
 builtin (today's `Impls` registry — the "already understood" arithmetic).
 Authors don't number layers; a rule's layer is one above the highest rule
@@ -369,8 +380,8 @@ Rules need a way to mark parse-time versus evaluation-time meanings.
 
 **Engine: combinators underneath, operator rules on top.** The parsing
 substrate stays the recovering combinators of `foundation/grammar`.
-MEANS rules are a notation *over* them — compiled to combinator
-compositions, never a separate parser. This is the MEANS layering applied
+`means` rules are a notation *over* them — compiled to combinator
+compositions, never a separate parser. This is the means layering applied
 to the parser itself: an operator rule plus its place on the binding list
 *means* a combinator composition, and show/hide implementation (§6)
 reveals it. The reasons:
@@ -398,7 +409,7 @@ list. This is where Pratt's idea lives — as one combinator, not as the
 engine. Every other rule — bracketed or keyword-led (`(a)`, `|a|`,
 `if c then a else b`) or a plain sequence — compiles to sequence and
 choice, and serves as an atom of the operator combinator. Authors write
-MEANS rules either way; they write combinators only when zooming into
+`means` rules either way; they write combinators only when zooming into
 implementation, which stays available as the escape hatch for what rules
 can't express.
 
@@ -413,40 +424,71 @@ Caveats this design accepts:
   applies, so overlapping rules resolve by order rather than reporting
   ambiguity. Detecting overlap and flagging it in the definition view is
   a possible refinement.
-- *Two layers to learn.* Mitigated by keeping MEANS the only authoring
+- *Two layers to learn.* Mitigated by keeping means the only authoring
   surface: whether a rule lands in the operator combinator or in a
   sequence is decided by its shape, not by the author.
 
 Recovery stays in the combinators (a missing operand folds to a hole, as
 `chainLeft` does today), keeping `Junk`/`Phrase` out of authored
-definitions. The literal symbols in the rules define the tokens
-(scannerless, as in Ohm), retiring the builtin `expr` lexer.
+definitions.
+
+**Scannerless: no separate lexers.** Today the combinators run over a
+token stream (`GTok`s) produced by a builtin lexer that each language's
+syntax names (`"expr"`), and the rule reader has a hand-written lexer of
+its own (`RuleLex`). Combinators can parse characters directly, as
+OMeta, Ohm, and Parsec do, so both lexers go:
+
+- *Lexing is the lowest layer of rules.* Number, name, and text become
+  builtin character-level rules (`n means number(n) where n: digits`)
+  instead of a tokenizer outside the language definition.
+- *Composition.* A separate tokenizer imposes one global token set, so a
+  cell cannot embed a language with different lexical rules. Character
+  parsers compose freely (STATUS open question 7), and context-dependent
+  lexing (`ref:3,4`, units like `5kg`, string interpolation) is natural.
+- *`glued` gains its meaning.* Following Ohm's split between syntactic
+  rules (whitespace skipped between parts) and lexical rules (no
+  whitespace allowed), a glued piece means "no whitespace here": `ref:c,r`
+  matches `ref:3,4` but not `ref : 3 , 4`. Unglued pieces skip whitespace
+  implicitly, so rules never mention it.
+- *The rule notation is an ordinary grammar.* The `means` reader is
+  rewritten with the same combinators, ahead of full self-description.
+
+The cost is recovery: `junk` gathers a run of *tokens* into a hole and
+`phrase` stops at stop-token *kinds*. At character level a junk run is
+redefined (up to whitespace or a literal the grammar knows), and stops
+become literals. Spans are already character offsets, and `PTree`,
+holes, and the `Ref` recursion guard carry over unchanged. Performance
+is fine at cell-sized inputs; memoization (packrat) is available if
+larger documents need it.
 
 **Path in this codebase.**
 
-1. Generalize `precedenceTable` into the operator combinator, and compile
+1. Make the combinators scannerless (character input, syntactic vs
+   lexical sequencing, character-level recovery); `ExprParse` must
+   produce identical trees and spans.
+2. Generalize `precedenceTable` into the operator combinator, and compile
    rules plus the binding list into combinator compositions (the
    `GrammarDef` data the interpreter already runs) producing `PTree`s.
    The rule form of `exprDef` must behave identically to `ExprLanguage` —
    the existing regression anchor.
-2. Derive the schema (`NodeKind`) and the printer from the same rules.
-3. Encode rules in `lang:` documents as `means(pattern, meaning)` nodes.
+3. Derive the schema (`NodeKind`) and the printer from the same rules.
+4. Encode rules in `lang:` documents as `means(pattern, meaning)` nodes.
    Like every construct use, a meaning names its constructor by
    reference: `add(a, b)` is a node whose data refers to the `add` kind,
    and `a` is an internal ref to the pattern's placeholder node. A rule
    therefore survives renames on either side.
-   The MEANS notation becomes the text surface of the language-definition
+   The `means` notation becomes the text surface of the language-definition
    language, eventually described by its own rules.
-4. Bind semantics to builtins first (`add(a, b) MEANS builtin num-add`),
+5. Bind semantics to builtins first (`add(a, b) means builtin num-add`),
    moving to rule-defined meanings where possible.
 
 More examples the notation should handle: comparison chains
-(`a < b < c MEANS a < b and b < c`), juxtaposition
-(`n x MEANS n * x WHERE n: number literal`), units
-(`n kg MEANS quantity(n, kilogram)`), mixfix
-(`if c then a else b MEANS choose(c, a, b)`), sheet ranges
-(`a .. b MEANS range(a, b)`), and non-textual input
-(`drag cell x onto cell y MEANS set y to ref(x)`).
+(`a < b < c means a < b and b < c`), juxtaposition
+(`n x means n * x where n: number literal`), units
+(`n kg means quantity(n, kilogram)`), mixfix
+(`if c then a else b means choose(c, a, b)`), sheet ranges
+(`a .. b means range(a, b)`), and non-textual input
+(`drag cell x onto cell y means set y to ref(x)`).
 
 Open questions: the plain-text placeholder convention; how parse-time and
 evaluation-time meanings are marked; and whether alternative notations
@@ -632,7 +674,7 @@ the same document, never edits:
   the degenerate local case.
 - *Implementation* (show/hide implementation): descend from a construct to
   what it means in the layer below — a rule to its meaning, a meaning to
-  its builtin (§4, *Defining languages by MEANS rules*), an app to its
+  its builtin (§4, *Defining languages by `means` rules*), an app to its
   language document (today's Definition/F12 exit). Orthogonal to detail
   level: an implementation can itself be shown tersely or verbosely.
 - *Scope* (hoist/focus): a subtree becomes the temporary root of the

@@ -7,7 +7,7 @@ Last updated: 2026-10-14
 
 The project is in Phase 1 (foundation & schema system) of the
 implementation plan. **Next major series:** replacing combinator-based
-language definitions with `pattern MEANS meaning` rules compiled onto the
+language definitions with `pattern means meaning` rules compiled onto the
 same combinators — see
 "Next steps", item 6.
 
@@ -226,7 +226,7 @@ same combinators — see
 2. *Bootstrap.* Language definitions are documents resolved through
    `typeRef`, but their semantics (lexers, views, eval) still name Scala
    builtins, and the definition format is combinator data rather than
-   something a domain expert would write. The MEANS-rules series (next
+   something a domain expert would write. The means-rules series (next
    steps, item 6) is the planned answer to both.
 3. *Immediately typed.* Real typechecking per keystroke over holey trees
    (Hazelnut-style edit semantics), beyond the current parse-level holes.
@@ -280,13 +280,13 @@ The natural sequence from the current code is:
    documents + store-first resolution (`foundation/langdef`). Remaining:
    schemas are descriptive only; gap/typing machinery is not yet folded
    into the document model.
-6. **MEANS rules — the next major series.** Replace authoring of the
+6. **`means` rules — the next major series.** Replace authoring of the
    combinator-based language definition model (`GrammarDef`, a
    hand-written schema list, hand-written printers, and builtin views)
-   with `pattern MEANS meaning` rules plus a tightest-first binding list,
+   with `pattern means meaning` rules plus a tightest-first binding list,
    compiled onto the existing recovering combinators, as designed in
    DESIGN.md §4
-   (*Defining languages by MEANS rules*). The steps below keep the
+   (*Defining languages by `means` rules*). The steps below keep the
    current model working alongside until parity is proven; each step
    lands with tests.
 
@@ -296,18 +296,40 @@ The natural sequence from the current code is:
       used by ref, and persistence preserves ids (see "Working"). Rules
       inherit this: a meaning's constructor and placeholders are refs,
       not names.
-   1. **Rule model.** A `Rule(pattern, meaning)` ADT: patterns as
-      literal/placeholder pieces; meanings as a constructor
-      (`add(a, b)`), a bare placeholder (`(a) MEANS a`), or a rewrite into
-      the same language (`a % MEANS a / 100`); a binding list of tiers;
-      worked examples. Rule shape — atom, prefix, infix, postfix,
-      outfix (`|a|`), mixfix — is derived from the pattern.
-   2. **Tokens from rules.** Derive the token set from the rules' literal
-      pieces (longest match), plus a small set of builtin lexical classes
-      for leaves (number, whole number, name, text). Retires the builtin
-      `expr` lexer.
+   1. ~~**Rule model.**~~ Done (`foundation/means`): `Rule(pattern,
+      meaning, where)` with patterns as literal/placeholder pieces and
+      meanings as a constructor (`add(a, b)`), a bare placeholder
+      (`(a) means a`), or a phrase in the same language
+      (`a % means a / 100`); binding-list tiers, worked examples, and
+      `where` constraints. Shape (leaf, closed, prefix, postfix, infix)
+      is derived from the pattern's edges; `ruleIssues`/`ruleSetIssues`
+      report unbound or duplicate placeholders and binding-list mistakes.
+      Rule text reads and prints with the lowercase keyword `means`, or
+      `=>` as its terse spelling (a detail-level choice, `Verbosity`);
+      the reader's hand-written lexer (`RuleLex`) is interim until step 2.
+      The printer emits role-tagged spans for highlighting. The
+      provisional placeholder convention is a lone lowercase letter,
+      optionally numbered; quotes force a literal. Names are labels, as in
+      `NodeKind`; a constructor carries an optional kind ref, filled in
+      when rules are read from a document (step 7).
+   2. **Scannerless combinators.** Move `foundation/grammar` from `GTok`
+      streams to character input (DESIGN.md §4, *Scannerless*), so no
+      language needs a separate lexer:
+      - syntactic sequencing skips whitespace between parts; lexical
+        sequencing doesn't, and a `glued` piece compiles to lexical;
+      - number, whole number, name, and text become builtin
+        character-level rules;
+      - recovery reworked for characters — a junk run reaches up to
+        whitespace or a literal the grammar knows, and `phrase`/`parens`
+        stops become literals rather than token kinds;
+      - `ExprParse` re-expressed on the new combinators must produce
+        identical trees and spans on its existing tests, retiring the
+        builtin `expr` lexer (`ExprLex`, `exprGToks`);
+      - the `means` reader rewritten with the same combinators, deleting
+        `RuleLex` — the rule notation becomes an ordinary grammar.
    3. **Operator combinator + rule compiler.** Combinators stay the
-      parsing substrate (DESIGN.md §4, *Engine*). Generalize
+      parsing substrate (DESIGN.md §4, *Engine*), now scannerless.
+      Generalize
       `precedenceTable` (left-associative infix only) into a
       precedence-climbing operator combinator covering prefix, postfix,
       and right-/non-associative infix, driven by the binding list. Then
@@ -317,7 +339,7 @@ The natural sequence from the current code is:
       the combinators — a missing operand is an empty hole, unplaceable
       text a verbatim hole — so `Junk`/`Phrase`/stop sets never appear in
       an authored definition. `Signum`'s fused negative literals become a
-      parse-time meaning (`-n MEANS literal(-n) WHERE n: number`).
+      parse-time meaning (`-n means literal(-n) where n: number`).
    4. **Derived printer.** Invert constructor meanings and use the binding
       list for minimal parentheses. Property test:
       `parse(print(t)) == t` over generated trees and the parser battery.
@@ -337,17 +359,20 @@ The natural sequence from the current code is:
    7. **Rule encoding.** `lang:` documents hold `means(pattern, meaning)`
       nodes, a binding list, and examples; the recovering decoder turns a
       malformed rule into a hole rule that never applies.
-   8. **MEANS text surface.** The `def` view and text cell for `lang:`
-      documents read and write the MEANS notation (hand-written parser at
-      first), so editing a language reads like the DESIGN.md examples
-      rather than an outline of combinators.
+   8. **`means` text surface.** The `def` view and text cell for `lang:`
+      documents read and write the `means` notation (the step-1 printer
+      and the step-2 combinator reader), so editing a language reads like the DESIGN.md
+      examples rather than an outline of combinators. The view renders
+      the printer's role spans: the `means` keyword emphasized,
+      placeholders styled, and a detail-level toggle switching `means` to
+      `=>` and hiding `where`.
    9. **Worked examples as live checks.** `examples:` entries are checked
       on every render; a failing example shows as a hole in the `def`
       view (*Learnable and self documenting*, *Reactive*).
 
    *Phase D — meaning layers; demote the old model:*
 
-   10. **Semantics as rules.** `add(a, b) MEANS builtin num-add`: eval
+   10. **Semantics as rules.** `add(a, b) means builtin num-add`: eval
        is derived from meaning rules bottoming out in builtins, replacing
        the hand-coded `Expr.eval` behind the `expr-eval` view. The rule
        dependency DAG and derived layers are computed; a cycle renders as
@@ -370,14 +395,14 @@ The natural sequence from the current code is:
    13. **Sheet on rules.** Positional refs (`ref:c,r`, then `C4`) as
        parse-time meanings resolving to stable `InternalNodeRef`s and
        printing back as current positions; ranges (`a .. b`).
-   14. **WHERE and adjustable verbosity.** WHERE clauses with constraints
+   14. **`where` and adjustable verbosity.** where clauses with constraints
        inferred from the layer below; a terse/verbose detail toggle in the
        `def` view, kept separate from show/hide implementation; violated
        constraints surface as holes at every zoom level.
    15. **Cycle prevention in the editor.** Completion on a meaning offers
        only rules below it in the DAG.
    16. **Self-description.** The language-definition language's own
-       syntax is written as MEANS rules, closing the bootstrap loop.
+       syntax is written as `means` rules, closing the bootstrap loop.
 
    Open questions to settle along the way (DESIGN.md §4): the plain-text
    placeholder convention, how parse-time vs evaluation-time meanings are

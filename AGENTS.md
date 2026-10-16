@@ -35,6 +35,16 @@
   collections. Reserve `var`/`mutable` for the effect boundary — DOM nodes,
   live `Instance`s, the `Runtime` queue — or for local accumulators that
   don't escape their function (e.g. `Vector.newBuilder`).
+- **Names: spell words out; shorten only as scope narrows**: top-level
+  definitions — types, enum cases, case-class fields, top-level functions
+  and values — use full words, not abbreviations (`Literal`, not `Lit`;
+  `RuleToken`, not `RuleTok`; `arguments`, not `args`), and the plain
+  domain word over implementation jargon (`Placeholder`, not `Slot`).
+  The narrower the scope, the shorter a name
+  may be: a lambda parameter or a loop variable in a few-line block can
+  be `p` for a point or `t` for a token when context makes it obvious.
+  Function parameters and local values in longer bodies sit in between —
+  prefer the word. Established domain terms (`url`, `id`) are fine.
 
 ## Build & test
 
