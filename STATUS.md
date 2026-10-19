@@ -172,8 +172,9 @@ same combinators — see
 - **`ExternalNodeRef`s to missing targets** report "unresolved" rather than
   offering creation; and refs into old pinned versions open read-write —
   saving an old version appends a new head rather than branching.
-- **Text edits reparse whole cells**; the parser's span map exists to enable
-  finer-grained text-edit → node mapping later.
+- **Text edits reparse whole cells**, and a reparse assigns fresh node
+  ids. Incremental parsing (next steps, item 6, step 3) addresses both:
+  reused subtrees keep their ids, and cost follows the size of the edit.
 - **Synced history is unified, author-tagged, and navigation is
   mutation-free**: the pane's version DAG is rebuilt from the Automerge
   change graph on every growth, so both tabs see the same tree with
@@ -190,7 +191,7 @@ same combinators — see
   keeps the live document — a reparse reassigns node ids, which would
   otherwise retarget selection/edit state onto wrong nodes. Remaining:
   remote application is still a whole-text reparse (finer-grained
-  application belongs with the span-map work); text-cell
+  application belongs with incremental parsing, item 6 step 3); text-cell
   edits while browsing still write to the main session (branch
   interception covers structural-editor edits); undo stacks are
   session-local and lost on resume; branch merge-back is manual (a
@@ -311,7 +312,7 @@ The natural sequence from the current code is:
       provisional placeholder convention is a lone lowercase letter,
       optionally numbered; quotes force a literal. Names are labels, as in
       `NodeKind`; a constructor carries an optional kind ref, filled in
-      when rules are read from a document (step 7).
+      when rules are read from a document (step 8).
    2. **Scannerless combinators.** Move `foundation/grammar` from `GTok`
       streams to character input (DESIGN.md §4, *Scannerless*), so no
       language needs a separate lexer:
@@ -326,8 +327,28 @@ The natural sequence from the current code is:
         identical trees and spans on its existing tests, retiring the
         builtin `expr` lexer (`ExprLex`, `exprGToks`);
       - the `means` reader rewritten with the same combinators, deleting
-        `RuleLex` — the rule notation becomes an ordinary grammar.
-   3. **Operator combinator + rule compiler.** Combinators stay the
+        `RuleLex` — the rule notation becomes an ordinary grammar;
+      - designed for step 3: rule applications are named (they carry the
+        identity a memo key needs), positions are character offsets, and
+        every result — holes and junk runs included — reports how far it
+        examined, not just how far it consumed.
+   3. **Incremental parsing.** Incremental packrat parsing (Dubroy &
+      Warth; DESIGN.md §4, *Incremental parsing*), so a change costs in
+      proportion to its size (*Incremental*):
+      - memoize named rule applications by `(rule, position)`, recording
+        consumed and examined lengths and the rules each result called;
+        parsed nodes are the memo entries, holding their lengths relative
+        to the node so edits don't shift untouched positions, with a side
+        table for failed and rejected attempts;
+      - text edits drop results whose examined range overlaps the edit
+        and reuse the rest — reused subtrees keep their node ids, fixing
+        the id reassignment noted under *Not yet wired*;
+      - rule changes drop only results that called a changed rule
+        (keyed by rule identity, so renames invalidate nothing); stored
+        documents re-render and retry only the affected holes;
+      - property test: for any edit, incremental reparse equals a full
+        parse of the edited text.
+   4. **Operator combinator + rule compiler.** Combinators stay the
       parsing substrate (DESIGN.md §4, *Engine*), now scannerless.
       Generalize
       `precedenceTable` (left-associative infix only) into a
@@ -340,15 +361,15 @@ The natural sequence from the current code is:
       text a verbatim hole — so `Junk`/`Phrase`/stop sets never appear in
       an authored definition. `Signum`'s fused negative literals become a
       parse-time meaning (`-n means literal(-n) where n: number`).
-   4. **Derived printer.** Invert constructor meanings and use the binding
+   5. **Derived printer.** Invert constructor meanings and use the binding
       list for minimal parentheses. Property test:
       `parse(print(t)) == t` over generated trees and the parser battery.
-   5. **Derived schema.** `NodeKind`s (name and arity) come from the
+   6. **Derived schema.** `NodeKind`s (name and arity) come from the
       rules' meanings; the hand-written schema list goes away.
 
    *Phase B — the expression language on rules:*
 
-   6. **`exprRules` at parity.** Write the expression language as rules;
+   7. **`exprRules` at parity.** Write the expression language as rules;
       `DefLanguage` accepts rule-based syntax next to `GrammarDef`.
       Done when the rule form is identical to `ExprLanguage` — trees,
       spans, printing, and eval — on the existing 28-input battery and
@@ -356,33 +377,33 @@ The natural sequence from the current code is:
 
    *Phase C — rules as documents:*
 
-   7. **Rule encoding.** `lang:` documents hold `means(pattern, meaning)`
+   8. **Rule encoding.** `lang:` documents hold `means(pattern, meaning)`
       nodes, a binding list, and examples; the recovering decoder turns a
       malformed rule into a hole rule that never applies.
-   8. **`means` text surface.** The `def` view and text cell for `lang:`
+   9. **`means` text surface.** The `def` view and text cell for `lang:`
       documents read and write the `means` notation (the step-1 printer
       and the step-2 combinator reader), so editing a language reads like the DESIGN.md
       examples rather than an outline of combinators. The view renders
       the printer's role spans: the `means` keyword emphasized,
       placeholders styled, and a detail-level toggle switching `means` to
       `=>` and hiding `where`.
-   9. **Worked examples as live checks.** `examples:` entries are checked
+   10. **Worked examples as live checks.** `examples:` entries are checked
       on every render; a failing example shows as a hole in the `def`
       view (*Learnable and self documenting*, *Reactive*).
 
    *Phase D — meaning layers; demote the old model:*
 
-   10. **Semantics as rules.** `add(a, b) means builtin num-add`: eval
+   11. **Semantics as rules.** `add(a, b) means builtin num-add`: eval
        is derived from meaning rules bottoming out in builtins, replacing
        the hand-coded `Expr.eval` behind the `expr-eval` view. The rule
        dependency DAG and derived layers are computed; a cycle renders as
        a hole at the closing edge.
-   11. **Migrate stored definitions.** Users' IndexedDB stores hold
+   12. **Migrate stored definitions.** Users' IndexedDB stores hold
        `lang:` docs in the combinator format, and seeding never
        overwrites. Convert legacy grammar subtrees to rules on read (or
        on first load) — the project's first real *Evolvable* migration,
        revertible because every version is kept.
-   12. **Demote `GrammarDef` to the implementation layer.** Definitions
+   13. **Demote `GrammarDef` to the implementation layer.** Definitions
        are authored and stored as rules; `GrammarDef` stays as the
        compilation target `interpret` runs, shown only under show
        implementation — and still writable there as the escape hatch for
@@ -392,16 +413,16 @@ The natural sequence from the current code is:
 
    *Phase E — beyond parity:*
 
-   13. **Sheet on rules.** Positional refs (`ref:c,r`, then `C4`) as
+   14. **Sheet on rules.** Positional refs (`ref:c,r`, then `C4`) as
        parse-time meanings resolving to stable `InternalNodeRef`s and
        printing back as current positions; ranges (`a .. b`).
-   14. **`where` and adjustable verbosity.** where clauses with constraints
+   15. **`where` and adjustable verbosity.** where clauses with constraints
        inferred from the layer below; a terse/verbose detail toggle in the
        `def` view, kept separate from show/hide implementation; violated
        constraints surface as holes at every zoom level.
-   15. **Cycle prevention in the editor.** Completion on a meaning offers
+   16. **Cycle prevention in the editor.** Completion on a meaning offers
        only rules below it in the DAG.
-   16. **Self-description.** The language-definition language's own
+   17. **Self-description.** The language-definition language's own
        syntax is written as `means` rules, closing the bootstrap loop.
 
    Open questions to settle along the way (DESIGN.md §4): the plain-text

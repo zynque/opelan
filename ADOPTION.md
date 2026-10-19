@@ -8,8 +8,8 @@ domain experts — and how opelan intends to address each blocker. Companion to
 
 JetBrains MPS is the reference point throughout: it is the most capable
 language workbench ever shipped, it has real production successes (mbeddr,
-tax and finance DSLs), and it still never escaped a niche. Its failures are
-more instructive than its successes.
+tax and finance DSLs), and it still never escaped a niche. Its failures and
+successes are instructive.
 
 ## The IDE problem
 

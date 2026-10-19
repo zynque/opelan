@@ -78,6 +78,10 @@ Every application should have an undo button. Developers take source control for
 
 The results of a change should be made immediately visible via live examples (similar to unit tests). Changes to anything a document depends on — libraries, schemas, the language it is written in — should surface unobtrusive notifications describing their severity and nature; mechanical migrations apply automatically and remain revertible, while riskier changes wait for a single click (see Evolvable).
 
+### Incremental
+
+The cost of responding to a change should be proportional to the change, not to the size of everything it touches. An edit to one line should reparse that line, re-evaluate what depends on it, and redraw what shows it — and the same holds when the change is to a language, a library, or a schema rather than to the content written in it. Whatever didn't change keeps its identity, so references, selections, and history stay attached to the work they point at. Incrementality is what lets Reactive and Real Time Collaboration scale.
+
 ### Never Broken
 
 Every intermediate state of a user's work — unfinished, inconsistent, or outright malformed — is valid and useful information. Software should interpret whatever exists as far as it can, treating the gaps as first-class content rather than as failures. A hole is a place the user has not finished yet; it should be visible and able to heal as work continues — never an error that blocks rendering, discards input, or prevents the rest of the work from functioning.

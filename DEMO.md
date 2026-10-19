@@ -203,7 +203,8 @@ domain expert the demo is aimed at. M4 replaces it with
 §4). The combinators stay as the parsing substrate; rules compile onto
 them, with operators and precedence handled by one precedence-climbing
 combinator. In phases: a rule compiler (scannerless combinators — no
-separate lexers — the operator combinator, printer, and schema); the expression language on rules at parity
+separate lexers — made incremental by packrat memoization, then the
+operator combinator, printer, and schema); the expression language on rules at parity
 with `ExprLanguage`; rules as `lang:` documents with a `means` text surface
 and live worked examples; semantics as rules bottoming out in builtins,
 with stored combinator-format docs migrated and `GrammarDef` demoted to

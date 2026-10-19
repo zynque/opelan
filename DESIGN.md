@@ -251,7 +251,8 @@ document — a referenced cell's own subtree is evaluated, so formulas
 compose — and a visiting set reports ref cycles as holes instead of
 diverging. The parser also emits a **span map** (`Map[List[Int], Span]`,
 tree path → source range), groundwork for mapping text edits onto nodes
-instead of reparsing whole cells. `Expr.print` round-trips holes.
+instead of reparsing whole cells — superseded by per-node lengths under
+incremental parsing (below). `Expr.print` round-trips holes.
 
 **Sheet language** (`Sheet`, `SheetLanguage`): the demo app — a typed
 document whose content subtree is `sheet > row/hrow > cell`. Label cells
@@ -457,29 +458,71 @@ The cost is recovery: `junk` gathers a run of *tokens* into a hole and
 `phrase` stops at stop-token *kinds*. At character level a junk run is
 redefined (up to whitespace or a literal the grammar knows), and stops
 become literals. Spans are already character offsets, and `PTree`,
-holes, and the `Ref` recursion guard carry over unchanged. Performance
-is fine at cell-sized inputs; memoization (packrat) is available if
-larger documents need it.
+holes, and the `Ref` recursion guard carry over unchanged.
+
+**Incremental parsing** (*Incremental*). The parser follows
+*Incremental Packrat Parsing* (Dubroy & Warth, SLE 2017 — the algorithm
+behind Ohm): every named rule application is memoized by
+`(rule, position)`, and each result records how far it consumed, how
+far it *examined* (lookahead can reach past what it consumed), and which
+rules it called. That one mechanism answers three different needs:
+
+- *Text edits.* Drop the results whose examined range overlaps the edit;
+  everything else is reused. Cost follows the size of the edit, not of
+  the text.
+- *Identity.* A reused result is the *same* subtree, so its nodes keep
+  their ids — refs, selection, and history survive a reparse. Today a
+  reparse reassigns ids (STATUS, *Not yet wired*); this fixes that by
+  construction rather than by after-the-fact matching.
+- *Language changes.* Drop only the results that called a changed rule.
+  Rules have stable identities (their node ids in the `lang:` document,
+  per *Everything by reference*), so the memo key survives renames and
+  only real changes invalidate. Stored documents are trees and need no
+  reparse at all: a language change re-renders views and retries the
+  holes whose failed parse called a changed rule — the demo's healing
+  moment, done incrementally.
+
+The memo table largely *is* the document. A parsed node already records
+the rule that produced it (its construct ref) and its children; what it
+adds is bookkeeping: its text length and its examined length, stored as
+*lengths relative to the node* rather than absolute offsets, so an edit
+never shifts the positions of untouched nodes (absolute positions are
+sums along the path, as in Tree-sitter and Lezer), plus the rules it
+depended on. Results that don't become nodes — failed attempts, and
+alternatives tried and rejected — live in a small side table keyed by
+`(rule, position)`; failures must be remembered too, or an edit could
+make a previously failed alternative succeed without being retried.
+
+Two constraints follow for the scannerless step: rule applications must
+be *named* (they carry the identity the memo key needs), and every
+result — including holes and junk runs — must report an honest examined
+range, or invalidation will miss cases. The guard is a property test:
+for any edit, an incremental reparse equals a full parse of the edited
+text.
 
 **Path in this codebase.**
 
 1. Make the combinators scannerless (character input, syntactic vs
-   lexical sequencing, character-level recovery); `ExprParse` must
+   lexical sequencing, character-level recovery), with named rule
+   applications and examined extents from the start; `ExprParse` must
    produce identical trees and spans.
-2. Generalize `precedenceTable` into the operator combinator, and compile
+2. Memoize named rules with examined extents and called-rule
+   dependencies; invalidate on text edits and on rule changes; keep node
+   ids for reused subtrees. Incremental reparse must equal full reparse.
+3. Generalize `precedenceTable` into the operator combinator, and compile
    rules plus the binding list into combinator compositions (the
    `GrammarDef` data the interpreter already runs) producing `PTree`s.
    The rule form of `exprDef` must behave identically to `ExprLanguage` —
    the existing regression anchor.
-3. Derive the schema (`NodeKind`) and the printer from the same rules.
-4. Encode rules in `lang:` documents as `means(pattern, meaning)` nodes.
+4. Derive the schema (`NodeKind`) and the printer from the same rules.
+5. Encode rules in `lang:` documents as `means(pattern, meaning)` nodes.
    Like every construct use, a meaning names its constructor by
    reference: `add(a, b)` is a node whose data refers to the `add` kind,
    and `a` is an internal ref to the pattern's placeholder node. A rule
    therefore survives renames on either side.
    The `means` notation becomes the text surface of the language-definition
    language, eventually described by its own rules.
-5. Bind semantics to builtins first (`add(a, b) means builtin num-add`),
+6. Bind semantics to builtins first (`add(a, b) means builtin num-add`),
    moving to rule-defined meanings where possible.
 
 More examples the notation should handle: comparison chains
