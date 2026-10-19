@@ -36,11 +36,11 @@ class DefLanguage(
   private lazy val kindTags: Map[String, NodeData] =
     kindRefs(languageDef).view.mapValues(NodeData.ExternalNodeRef(_)).toMap
 
-  private lazy val syntax: Option[(String => Vector[GTok], Parser)] =
+  private lazy val syntax: Option[(Lexicon, Parser)] =
     for {
       s <- languageDef.syntax
-      lx <- impls.lexers.get(s.lexer)
-    } yield (lx, interpret(s.grammar, kindTag))
+      lexicon <- impls.lexicons.get(s.lexicon)
+    } yield (lexicon, interpret(s.grammar, kindTag))
 
   def render(view: String, doc: Document[NodeData])
       : Either[String, DetachedNode[NodeData]] =
@@ -56,7 +56,7 @@ class DefLanguage(
 
   // Total like every recovering grammar: Some whenever a syntax exists.
   override def parse(text: String): Option[DetachedNode[NodeData]] =
-    syntax.map { case (lx, g) => toDetached(g(In(text, lx(text)), 0).tree) }
+    syntax.map { case (lexicon, g) => toDetached(g(In(text, lexicon), 0).tree) }
 
   override def parseCell(text: String): Option[DetachedNode[NodeData]] =
     languageDef.cellParser.map {

@@ -221,7 +221,7 @@ from encoding `docLanguageDef`). It knows an example language's
 constructs by the ids its canonical encoding assigns (`kindRefs`,
 `exprKinds`, `sheetKinds`). Each decoded `NodeKind` carries its `ref`,
 and a def-interpreted parser emits that ref for each node it builds. Semantics the def names
-by string — lexers, view renderers, builtin cell parsers — resolve
+by string — lexicons, view renderers, builtin cell parsers — resolve
 through an `Impls` bundle: honest scaffolding while behavior still lives
 in code.
 
@@ -237,7 +237,7 @@ dependents when a definition changes (*Evolvable*) is open. Malformed defs
 degrade to holes: missing refs, cyclic grammars, and cyclic documents are
 all guarded.
 
-**Expression language** (`ExprLanguage`, `Expr`/`ExprDoc`, `ExprLex`,
+**Expression language** (`ExprLanguage`, `Expr`/`ExprDoc`, `ExprLexicon`,
 `ExprParse`, `ExprView`): the demonstration language. It has int and
 float literals (`Num`: integer arithmetic stays integral, division and
 floats are decimal, `Num.show` rounds away float noise for display);
@@ -433,11 +433,18 @@ Recovery stays in the combinators (a missing operand folds to a hole, as
 `chainLeft` does today), keeping `Junk`/`Phrase` out of authored
 definitions.
 
-**Scannerless: no separate lexers.** Today the combinators run over a
-token stream (`GTok`s) produced by a builtin lexer that each language's
-syntax names (`"expr"`), and the rule reader has a hand-written lexer of
-its own (`RuleLex`). Combinators can parse characters directly, as
-OMeta, Ohm, and Parsec do, so both lexers go:
+**Scannerless: no separate lexers** (built). The combinators parse
+characters directly, as OMeta, Ohm, and Parsec do; there is no token
+stream and no lexing pass. A *lexicon* (`foundation/grammar/Lexicon`) is
+an ordered set of named, character-level lexical rules, tried only where
+a combinator asks what starts at its position — the first rule that
+matches wins, so order is priority (`float` before `int`). A grammar's
+token kinds (`"int"`, `"rpar"`) are the names of these rules, so the
+`GrammarDef` format and stored `lang:` documents are unchanged; a
+syntax names its lexicon (`"expr"`) where it once named a lexer.
+Token-level combinators skip whitespace before what they match;
+lexical rules never do. The `means` reader is itself a combinator
+grammar (`RuleGrammar`) over a rule lexicon. Why this direction:
 
 - *Lexing is the lowest layer of rules.* Number, name, and text become
   builtin character-level rules (`n means number(n) where n: digits`)
@@ -446,19 +453,22 @@ OMeta, Ohm, and Parsec do, so both lexers go:
   cell cannot embed a language with different lexical rules. Character
   parsers compose freely (STATUS open question 7), and context-dependent
   lexing (`ref:3,4`, units like `5kg`, string interpolation) is natural.
-- *`glued` gains its meaning.* Following Ohm's split between syntactic
-  rules (whitespace skipped between parts) and lexical rules (no
-  whitespace allowed), a glued piece means "no whitespace here": `ref:c,r`
-  matches `ref:3,4` but not `ref : 3 , 4`. Unglued pieces skip whitespace
-  implicitly, so rules never mention it.
-- *The rule notation is an ordinary grammar.* The `means` reader is
-  rewritten with the same combinators, ahead of full self-description.
+- *`glued` gains its meaning* (with the rule compiler). Following Ohm's
+  split between syntactic rules (whitespace skipped between parts) and
+  lexical rules (no whitespace allowed), a glued piece means "no
+  whitespace here": `ref:c,r` matches `ref:3,4` but not `ref : 3 , 4`.
+  Unglued pieces skip whitespace implicitly, so rules never mention it.
+- *The rule notation is an ordinary grammar*, ahead of full
+  self-description.
 
-The cost is recovery: `junk` gathers a run of *tokens* into a hole and
-`phrase` stops at stop-token *kinds*. At character level a junk run is
-redefined (up to whitespace or a literal the grammar knows), and stops
-become literals. Spans are already character offsets, and `PTree`,
-holes, and the `Ref` recursion guard carry over unchanged.
+Recovery keeps its token-level vocabulary: `junk` gathers a run of
+lexicon matches of given kinds into a hole, and `phrase` stops at given
+kinds, so behavior is identical to the token-stream version. A character
+no lexical rule accepts still forms a one-character token, so no text is
+lost. Once grammars are compiled from rules, the same recovery can be
+phrased in terms of the literals a grammar knows instead of kind names.
+Every result reports how far it examined (its lookahead), the bookkeeping
+incremental parsing needs.
 
 **Incremental parsing** (*Incremental*). The parser follows
 *Incremental Packrat Parsing* (Dubroy & Warth, SLE 2017 — the algorithm

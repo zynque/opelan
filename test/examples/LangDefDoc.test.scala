@@ -87,7 +87,7 @@ class LangDefDocSuite extends FunSuite {
         n(meta("description"), sl("a half-typed def")),
         n(meta("syntax"), sl("expr"), sl("flibble"))))
     // The damaged doc claims the expression language's URL, so it
-    // inherits exprImpls — the "expr" lexer it names resolves.
+    // inherits exprImpls — the "expr" lexicon it names resolves.
     val d = langDefFromDocument(
       ExprLanguage.typeRef.documentUrl, doc)
     assertEquals(d.name, "lang: broken") // falls back to the title

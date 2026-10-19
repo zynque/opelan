@@ -2,14 +2,21 @@ package opelan.foundation.grammar
 
 import opelan.foundation.document._
 
-// Recovering parser combinators over a token stream — the Hazel-style
-// answer to combinator parsing: parsers are *total* (they never fail or
-// throw); `ok = false` means the production did not apply and the
-// returned node is a hole covering what could not be placed. Recovery
-// replaces backtracking.
+// Recovering parser combinators over characters — the Hazel-style answer
+// to combinator parsing: parsers are *total* (they never fail or throw);
+// `ok = false` means the production did not apply and the returned node
+// is a hole covering what could not be placed. Recovery replaces
+// backtracking.
+//
+// Positions are character offsets. Token-level combinators skip
+// whitespace before what they match (syntactic sequencing); lexical
+// rules never do. Every result reports `examined`: the exclusive bound
+// of characters read to produce it (input.length + 1 when the end of
+// input was observed) — what incremental reparsing will use to decide
+// which results an edit invalidates.
 
-// The parse input: the source text plus its tokens.
-case class In(input: String, toks: Vector[GTok])
+// The parse input: the source text and the lexicon its tokens come from.
+case class In(input: String, lexicon: Lexicon)
 
 // A parse-tree node: its node data, the source slice it came from, and
 // its children.
@@ -20,113 +27,70 @@ case class PTree(
     to: Int,
     kids: List[PTree] = Nil)
 
-// A parse result: where parsing stopped, the produced tree, and whether
-// the production genuinely applied.
-case class POut(pos: Int, tree: PTree, ok: Boolean)
+// A parse result: where parsing stopped, the produced tree, whether the
+// production genuinely applied, and how far it read.
+case class POut(pos: Int, tree: PTree, ok: Boolean, examined: Int)
 
-// A combinator: input + token position → result.
+// A combinator: input + character position → result.
 type Parser = (In, Int) => POut
 
-// The zero-length hole produced where a production should have applied.
-private def emptyHole(in: In, pos: Int): POut = {
-  val at = in.toks.lift(pos).map(_.from).getOrElse(in.input.length)
-  POut(pos, PTree(NodeData.GapData(""), "", at, at), ok = false)
+// The zero-length hole produced where a production should have applied,
+// placed after any whitespace.
+private[grammar] def emptyHole(in: In, pos: Int, examined: Int): POut = {
+  val at = skipSpace(in.input, pos)
+  POut(pos, PTree(NodeData.GapData(""), "", at, at), ok = false,
+    examined.max(at + 1))
+}
+
+// A named rule application. Names are the identity incremental parsing
+// memoizes by (next step); for now the wrapper only defers construction,
+// so recursive grammars can refer to themselves.
+def rule(name: String)(body: => Parser): Parser = {
+  lazy val parser = body
+  (in, pos) => parser(in, pos)
 }
 
 // A single token of `kind`, mapped to node data.
-def tok(kind: String)(f: GTok => NodeData): Parser =
+def tok(kind: String)(f: Token => NodeData): Parser =
   tokWhere(kind)(_ => true)(f)
 
-// A token of `kind` satisfying `p`.
-def tokWhere(kind: String)(p: GTok => Boolean)(f: GTok => NodeData): Parser =
-  (in, pos) => in.toks.lift(pos) match {
-    case Some(t) if t.kind == kind && p(t) =>
-      POut(pos + 1, PTree(f(t), t.text, t.from, t.to), ok = true)
-    case _ => emptyHole(in, pos)
+// A token of `kind` satisfying `accept`.
+def tokWhere(kind: String)(accept: Token => Boolean)(f: Token => NodeData): Parser =
+  (in, pos) => {
+    val scanned = scanAt(in, pos)
+    scanned.token match {
+      case Some(t) if t.kind == kind && accept(t) =>
+        POut(t.to, PTree(f(t), t.text, t.from, t.to), ok = true, scanned.examined)
+      case _ => emptyHole(in, pos, scanned.examined)
+    }
   }
 
 // A production that never applies — the parse-tree hole for a place
 // where a grammar couldn't provide one.
-def holeHere: Parser = (in, pos) => emptyHole(in, pos)
-
-// A hole covering all remaining tokens — for when a grammar has no
-// applicable production at all (GrammarDef.Hole). The input survives
-// as hole text rather than vanishing.
-def restHole: Parser = (in, pos) =>
-  in.toks.lift(pos) match {
-    case None => POut(pos,
-      PTree(NodeData.GapData(""), "", in.input.length, in.input.length),
-      ok = true)
-    case Some(t0) =>
-      val to = in.toks.last.to
-      val text = in.input.substring(t0.from, to)
-      POut(in.toks.length, PTree(NodeData.GapData(text), text, t0.from, to),
-        ok = true)
-  }
+def holeHere: Parser = (in, pos) => emptyHole(in, pos, pos)
 
 // First alternative that applies; if none do, an empty hole.
 def choice(ps: Parser*): Parser =
-  (in, pos) =>
-    ps.iterator.map(p => p(in, pos)).find(_.ok)
-      .getOrElse(emptyHole(in, pos))
+  (in, pos) => {
+    var seen = pos
+    ps.iterator.map { p =>
+      val r = p(in, pos)
+      seen = seen.max(r.examined)
+      r
+    }.find(_.ok).map(_.copy(examined = seen))
+      .getOrElse(emptyHole(in, pos, seen))
+  }
 
 // Two productions in sequence, combined by `f`; if either fails the
 // whole seq backtracks to the start.
 def seq(a: Parser, b: Parser)(f: (PTree, PTree) => PTree): Parser =
   (in, pos) => {
     val ra = a(in, pos)
-    if (!ra.ok) POut(pos, ra.tree, ok = false)
+    if (!ra.ok) POut(pos, ra.tree, ok = false, ra.examined)
     else {
       val rb = b(in, ra.pos)
-      if (!rb.ok) emptyHole(in, pos)
-      else POut(rb.pos, f(ra.tree, rb.tree), ok = true)
+      val seen = ra.examined.max(rb.examined)
+      if (!rb.ok) emptyHole(in, pos, seen)
+      else POut(rb.pos, f(ra.tree, rb.tree), ok = true, seen)
     }
   }
-
-// The fallback hole: applies only when the token at `pos` can start
-// junk (its kind is in `start` — a boundary like ")" never begins a
-// hole), then covers the maximal run extended by kinds in `run`. At EOF
-// it produces the empty hole — "operand expected" — and still applies.
-def junk(start: Set[String], run: Set[String]): Parser =
-  (in, pos) => in.toks.lift(pos) match {
-    case None => POut(pos, emptyHole(in, pos).tree, ok = true)
-    case Some(t0) if start(t0.kind) =>
-      var end = pos + 1
-      while (in.toks.lift(end).exists(t => run(t.kind))) end += 1
-      val to = in.toks(end - 1).to
-      val text = in.input.substring(t0.from, to)
-      POut(end, PTree(NodeData.GapData(text), text, t0.from, to), ok = true)
-    case _ => emptyHole(in, pos)
-  }
-
-// A sign fused with a numeric literal: "+4" / "-4" / "- 4.5" — the
-// sign token and the number need not be adjacent.
-def signum: Parser =
-  seq(
-    tokWhere("op")(t => t.text == "+" || t.text == "-")(
-      t => NodeData.StringData(t.text)),
-    choice(
-      tok("int")(t => NodeData.IntData(t.text.toInt)),
-      tok("float")(t => NodeData.FloatData(t.text.toDouble))))(
-    (op, num) => {
-      val neg = op.text == "-"
-      val data = num.data match {
-        case NodeData.IntData(v)   => NodeData.IntData(if (neg) -v else v)
-        case NodeData.FloatData(v) => NodeData.FloatData(if (neg) -v else v)
-        case d                     => d
-      }
-      PTree(data, op.text + num.text, op.from, num.to)
-    })
-
-// Strip the spans: a PTree becomes ordinary detached document data.
-def toDetached(t: PTree): DetachedNode[NodeData] =
-  DetachedNode(t.data, t.kids.map(toDetached))
-
-// Path (child indexes from the root) → source span, for every node —
-// the text-edit → node mapping substrate.
-def spansOf(t: PTree): Map[List[Int], Span] = {
-  def go(t: PTree, path: List[Int]): List[(List[Int], Span)] =
-    (path -> Span(t.from, t.to)) ::
-      t.kids.zipWithIndex.toList.flatMap { case (k, i) => go(k, path :+ i) }
-  go(t, Nil).toMap
-}

@@ -64,7 +64,7 @@ class DefLanguageSuite extends FunSuite {
 
   test("a def claiming a foundational type ref inherits its impls") {
     // implsFor(exprDef) == exprImpls: a doc-decoded def for the
-    // expression type still binds the "expr" lexer and expr views.
+    // expression type still binds the "expr" lexicon and expr views.
     val edited = exprDef.copy(title = "edited")
     val l = new DefLanguage(edited, implsFor(edited))
     assert(l.parse("1 + 2").isDefined)
@@ -75,7 +75,7 @@ class DefLanguageSuite extends FunSuite {
     val foreign = exprDef.copy(
       typeRef = ExternalNodeReference("opelan:languages/unknown", 0, 0))
     val l = new DefLanguage(foreign, implsFor(foreign))
-    assertEquals(l.parse("1 + 2"), None)          // "expr" lexer unbound
+    assertEquals(l.parse("1 + 2"), None)          // "expr" lexicon unbound
     assert(l.render("print", hand.sampleDoc).isLeft)
   }
 

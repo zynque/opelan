@@ -152,7 +152,7 @@ holey document must still parse (Never Broken)):
    generic tokens, producing `DetachedNode[NodeData]` trees with spans.
    The expression grammar is re-expressed as a combinator composition~~ —
    done: `ExprParse` is now `phrase(precedenceTable(atom, levels))` over
-   `GTok`s, where `atom = int | float | ref | '?' | parens | signum |
+   tokens (since made scannerless: character-level lexicon rules), where `atom = int | float | ref | '?' | parens | signum |
    junk` and `levels` is the tightest-first op→tag table. All parser
    tests pass unchanged — identical trees and spans prove the machinery.
 8. ~~`LanguageDef` + `DefLanguage` + builtins: the in-memory ADT a def

@@ -1,5 +1,6 @@
 package opelan.foundation.means
 
+import opelan.foundation.grammar.{In, scanAt}
 import opelan.foundation.view.Verbosity
 
 // Rule text as role-tagged spans — one source for plain printing and for
@@ -43,12 +44,12 @@ private def pieceSpans(pieces: List[Piece]): List[Styled] =
     })
   }
 
-// A literal that would read back as something else gets quoted.
+// A literal that would read back as something else gets quoted: it must
+// be exactly one unquoted token, and neither a placeholder nor a keyword.
 private def quoteIfNeeded(text: String): String = {
-  val tokens = lexRule(text)
-  val plain = tokens.length == 1 && tokens.head.text == text &&
-    tokens.head.kind != RuleTokenKind.Quoted &&
-    !isPlaceholderWord(text) && !isMeansKeyword(tokens.head) && text != "where"
+  val token = scanAt(In(text, ruleLexicon), 0).token
+  val plain = token.exists(t => t.from == 0 && t.to == text.length && t.kind != "quoted") &&
+    !isPlaceholderWord(text) && !ruleKeywords(text)
   if (plain) text else s"'$text'"
 }
 

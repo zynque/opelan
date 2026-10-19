@@ -35,8 +35,9 @@ enum NodeShape {
   case Any             // a tag node with variable children
 }
 
-// The text syntax: a named builtin lexer plus the grammar it feeds.
-case class SyntaxDef(lexer: String, grammar: GrammarDef)
+// The text syntax: a named builtin lexicon — the character-level lexical
+// rules the grammar's token kinds name — plus the grammar itself.
+case class SyntaxDef(lexicon: String, grammar: GrammarDef)
 
 // A derived view bound to a builtin: view "eval" → builtin "expr-eval".
 case class ViewBinding(name: String, builtin: String)

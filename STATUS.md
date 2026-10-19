@@ -306,32 +306,38 @@ The natural sequence from the current code is:
       is derived from the pattern's edges; `ruleIssues`/`ruleSetIssues`
       report unbound or duplicate placeholders and binding-list mistakes.
       Rule text reads and prints with the lowercase keyword `means`, or
-      `=>` as its terse spelling (a detail-level choice, `Verbosity`);
-      the reader's hand-written lexer (`RuleLex`) is interim until step 2.
+      `=>` as its terse spelling (a detail-level choice, `Verbosity`).
       The printer emits role-tagged spans for highlighting. The
       provisional placeholder convention is a lone lowercase letter,
       optionally numbered; quotes force a literal. Names are labels, as in
       `NodeKind`; a constructor carries an optional kind ref, filled in
       when rules are read from a document (step 8).
-   2. **Scannerless combinators.** Move `foundation/grammar` from `GTok`
-      streams to character input (DESIGN.md §4, *Scannerless*), so no
-      language needs a separate lexer:
-      - syntactic sequencing skips whitespace between parts; lexical
-        sequencing doesn't, and a `glued` piece compiles to lexical;
-      - number, whole number, name, and text become builtin
-        character-level rules;
-      - recovery reworked for characters — a junk run reaches up to
-        whitespace or a literal the grammar knows, and `phrase`/`parens`
-        stops become literals rather than token kinds;
-      - `ExprParse` re-expressed on the new combinators must produce
-        identical trees and spans on its existing tests, retiring the
-        builtin `expr` lexer (`ExprLex`, `exprGToks`);
-      - the `means` reader rewritten with the same combinators, deleting
-        `RuleLex` — the rule notation becomes an ordinary grammar;
-      - designed for step 3: rule applications are named (they carry the
-        identity a memo key needs), positions are character offsets, and
-        every result — holes and junk runs included — reports how far it
-        examined, not just how far it consumed.
+   2. ~~**Scannerless combinators.**~~ Done (DESIGN.md §4,
+      *Scannerless*): `foundation/grammar` parses characters; there is
+      no token stream (`GTok` and the `expr` lexer, `ExprLex`, are gone).
+      - A `Lexicon` is an ordered set of named character-level lexical
+        rules (`LexicalRules`: `runOf`, `exactly`, `oneOf`, `chain`,
+        `firstOf`, `optionally`), tried on demand at the parser's
+        position; token kinds name these rules, so `GrammarDef` and
+        stored `lang:` documents are unchanged (`SyntaxDef` names a
+        lexicon, `Impls.lexicons` binds it). Token-level combinators
+        skip whitespace first; an unlexable character still forms a
+        one-character token, so no text is lost.
+      - `ExprParse` and the interpreted `exprDef` run on
+        `exprLexicon` with identical trees and spans — the parser
+        tests and the 28-input `DefLanguage` battery pass unchanged.
+      - The `means` reader is a combinator grammar (`RuleGrammar`) over
+        `ruleLexicon`, with new structural combinators (`sequence`,
+        `many`, `optional`, `followedBy`, `notFollowedBy`, `endOfInput`,
+        `anyToken`); `RuleLex` is gone, and glue is read off spans.
+      - Ready for step 3: positions are character offsets, named rule
+        applications exist (`rule(name)`, used by the interpreter's
+        `named` grammars and `ExprParse`), and every result reports how
+        far it examined (tested).
+      - Deferred to step 4, where grammars are compiled from rules:
+        lexical sequencing for `glued` pieces, shared builtin lexical
+        rules (number, whole number, name, text), and recovery phrased
+        by the literals a grammar knows rather than by kind names.
    3. **Incremental parsing.** Incremental packrat parsing (Dubroy &
       Warth; DESIGN.md §4, *Incremental parsing*), so a change costs in
       proportion to its size (*Incremental*):
@@ -361,6 +367,9 @@ The natural sequence from the current code is:
       text a verbatim hole — so `Junk`/`Phrase`/stop sets never appear in
       an authored definition. `Signum`'s fused negative literals become a
       parse-time meaning (`-n means literal(-n) where n: number`).
+      Picks up step 2's deferrals: glued pieces compile to lexical
+      sequencing, a shared set of builtin lexical rules (number, whole
+      number, name, text), and recovery driven by the grammar's literals.
    5. **Derived printer.** Invert constructor meanings and use the binding
       list for minimal parentheses. Property test:
       `parse(print(t)) == t` over generated trees and the parser battery.

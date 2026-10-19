@@ -3,28 +3,26 @@ package opelan.foundation.grammar
 import opelan.foundation.document._
 import munit.FunSuite
 
-// Direct tests of the combinator layer: parsing produces PTree nodes
-// whose data is checked structurally (IntData / StringData tag /
-// GapData), plus totality and span coverage.
+// Direct tests of the scannerless combinator layer: parsing produces
+// PTree nodes whose data is checked structurally (IntData / StringData
+// tag / GapData), plus totality, spans, and examined extents.
 class CombSuite extends FunSuite {
 
-  // "1 + 2 * 3" etc. over int/op/lpar/rpar tokens.
-  private def in(input: String, specs: (String, String)*): In = {
-    // specs are (kind, text); positions come from laying the texts down
-    // back to back — token contents matter, not the gaps between them.
-    var at = 0
-    val toks = specs.map { case (k, s) =>
-      val t = GTok(k, s, at, at + s.length); at += s.length; t
-    }.toVector
-    In(input, toks)
-  }
+  private val lexicon = Lexicon(List(
+    "int"  -> runOf(1)(_.isDigit),
+    "op"   -> oneOf("+-*"),
+    "lpar" -> exactly("("),
+    "rpar" -> exactly(")"),
+    "junk" -> runOf(1)(c => c.isLetter)))
+
+  private def in(text: String) = In(text, lexicon)
 
   private val int = tok("int")(t => NodeData.IntData(t.text.toInt))
 
   private def tag(s: String) = NodeData.StringData(s)
 
   test("tok applies on its kind and fails elsewhere without consuming") {
-    val i = in("1+", ("int", "1"), ("op", "+"))
+    val i = in("1+")
     assertEquals(int(i, 0).tree.data, NodeData.IntData(1))
     val miss = int(i, 1)
     assertEquals(miss.ok, false)
@@ -32,63 +30,67 @@ class CombSuite extends FunSuite {
     assertEquals(miss.tree.data, NodeData.GapData(""))
   }
 
+  test("tokens skip leading whitespace; positions are characters") {
+    val r = int(in("  42 "), 0)
+    assertEquals((r.tree.from, r.tree.to, r.pos), (2, 4, 4))
+  }
+
+  test("an unlexable character is still a token, so no text is lost") {
+    val r = phrase(int, Set.empty)(in("1 #"), 0)
+    assertEquals(r.tree.data, NodeData.GapData("1 #"))
+  }
+
   test("chainLeft folds left-associatively") {
-    // "1 - 2 - 3" at one level => sub(sub(1, 2), 3)
-    val p = chainLeft(Map("-" -> NodeData.StringData("sub")))(int)
-    val i = in("1-2-3",
-      ("int", "1"), ("op", "-"), ("int", "2"), ("op", "-"), ("int", "3"))
-    val r = p(i, 0)
-    assertEquals(r.pos, 5)
-    r.tree.data match {
-      case NodeData.StringData("sub") =>
-        assertEquals(r.tree.kids(0).data, NodeData.StringData("sub"))
-        assertEquals(r.tree.kids(1).data, NodeData.IntData(3))
-      case other => fail(s"expected sub root, got $other")
-    }
+    val r = chainLeft(Map("-" -> tag("sub")))(int)(in("1 - 2 - 3"), 0)
+    assertEquals(r.pos, 9)
+    assertEquals(r.tree.data, tag("sub"))
+    assertEquals(r.tree.kids(0).data, tag("sub"))
+    assertEquals(r.tree.kids(1).data, NodeData.IntData(3))
   }
 
   test("precedenceTable binds the last level loosest") {
-    // tightest-first levels: "1 + 2 * 3" => add(1, mul(2, 3))
     val p = precedenceTable(int, List(
-      Map("*" -> NodeData.StringData("mul")),
-      Map("+" -> NodeData.StringData("add"))))
-    val i = in("1+2*3",
-      ("int", "1"), ("op", "+"), ("int", "2"), ("op", "*"), ("int", "3"))
-    val r = p(i, 0)
+      Map("*" -> tag("mul")),
+      Map("+" -> tag("add"))))
+    val r = p(in("1+2*3"), 0)
     assertEquals(r.pos, 5)
     assertEquals(r.tree.data, tag("add"))
     assertEquals(r.tree.kids(1).data, tag("mul"))
   }
 
   test("parens stops at ')' and a missing close is tolerated") {
-    val inner = int
-    val p = parens(inner)
-    // "(1)" — closes cleanly
-    val closed = p(in("(1)", ("lpar", "("), ("int", "1"), ("rpar", ")")), 0)
+    val p = parens(int)
+    val closed = p(in("(1)"), 0)
     assertEquals(closed.pos, 3)
     assertEquals(closed.tree.data, NodeData.IntData(1))
     assertEquals(closed.tree.text, "(1)")
-    // "(1" — EOF stands in for the close
-    val open = p(in("(1", ("lpar", "("), ("int", "1")), 0)
+    val open = p(in("(1"), 0)
     assertEquals(open.pos, 2)
     assertEquals(open.tree.data, NodeData.IntData(1))
     assertEquals(open.tree.text, "(1")
   }
 
   test("phrase merges unplaced leftovers into one hole") {
-    // "1 x" — the junk token can't continue the level; the whole thing
-    // becomes a hole covering both tokens.
-    val p = phrase(int, Set.empty)
-    val r = p(in("1x", ("int", "1"), ("junk", "x")), 0)
+    val r = phrase(int, Set.empty)(in("1x"), 0)
     assertEquals(r.tree.data, NodeData.GapData("1x"))
     assertEquals(r.pos, 2)
   }
 
+  test("examined covers the lookahead that decided a result") {
+    // "12+" — int reads up to '+' to know the digits ended.
+    assertEquals(int(in("12+"), 0).examined, 3)
+    // At the end of input, the end itself was observed.
+    assertEquals(int(in("12"), 0).examined, 3)
+    // chainLeft looked past the last operand for another operator: it
+    // scanned "x" (junk runs to the end, so the end was observed too) —
+    // appending to the text could change this result.
+    val p = chainLeft(Map("+" -> tag("add")))(int)
+    assertEquals(p(in("1+2 x"), 0).examined, 6)
+    assertEquals(p(in("1+2 x"), 0).pos, 3)
+  }
+
   test("spansOf maps every node path to its source range") {
-    val p = chainLeft(Map("-" -> NodeData.StringData("sub")))(int)
-    val i = in("1-23",
-      ("int", "1"), ("op", "-"), ("int", "23"))
-    val r = p(i, 0)
+    val r = chainLeft(Map("-" -> tag("sub")))(int)(in("1-23"), 0)
     val spans = spansOf(r.tree)
     assertEquals(spans(Nil), Span(0, 4))
     assertEquals(spans(List(0)), Span(0, 1))

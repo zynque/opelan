@@ -5,7 +5,8 @@ import opelan.foundation.grammar._
 import Expr._
 
 // A total, recovering parser for the expression cell syntax, written as
-// a combinator composition over generic tokens (foundation/grammar).
+// a scannerless combinator composition (foundation/grammar) over the
+// expression lexicon's character-level rules.
 // Every input produces an Expr; text that fits no production is kept
 // verbatim in Hole nodes, so typing continues to heal the tree rather
 // than fail.
@@ -29,13 +30,13 @@ val ExprSpan = Span
 case class ExprParseResult(expr: Expr, spans: Map[List[Int], ExprSpan])
 
 def parseExpr(input: String): ExprParseResult = {
-  val r = exprGrammar(In(input, exprGToks(input)), 0)
+  val r = exprGrammar(In(input, exprLexicon), 0)
   ExprParseResult(exprFromDetached(toDetached(r.tree)), spansOf(r.tree))
 }
 
 // The bare grammar — precedence levels over the atom choice. `parens`
 // wraps it with a ")"-stopping phrase; the top level phrases it to EOF.
-private def exprCore: Parser = precedenceTable(atom, opLevels)
+private lazy val exprCore: Parser = rule("expr")(precedenceTable(atom, opLevels))
 
 private def exprGrammar: Parser = phrase(exprCore, Set.empty)
 

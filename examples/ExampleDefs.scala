@@ -81,7 +81,7 @@ val sheetDef = LanguageDef(
 // beside the defs that reference them.
 
 val exprImpls = Impls(
-  lexers = Map("expr" -> exprGToks),
+  lexicons = Map("expr" -> exprLexicon),
   views = Map(
     "expr-print" -> ((doc, id) => printTree(readLocExpr(doc, id))),
     "expr-eval"  -> ((doc, id) => evalTree(doc, readLocExpr(doc, id)))))

@@ -26,7 +26,7 @@ private[langdef] val metaKinds: List[NodeKind] = List(
   NodeKind("description", Fixed(1)),
   NodeKind("name", Fixed(1)),
   NodeKind("schema", Any),
-  NodeKind("syntax", Fixed(2)),    // builtin lexer name + grammar
+  NodeKind("syntax", Fixed(2)),    // builtin lexicon name + grammar
   NodeKind("views", Any),
   NodeKind("cells", Fixed(1)),
   NodeKind("kind", Fixed(2)),      // schema entry: name + shape

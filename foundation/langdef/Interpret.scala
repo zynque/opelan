@@ -57,8 +57,8 @@ def interpret(top: GrammarDef, tag: String => NodeData): Parser = {
       precedenceTable(go(atom), levels.map(_.view.mapValues(tag).toMap))
     case GrammarDef.Phrase(inner, stops) =>
       phrase(go(inner), stops)
-    case GrammarDef.Named(_, inner) =>
-      go(inner)
+    case GrammarDef.Named(name, inner) =>
+      rule(name)(go(inner))
     case GrammarDef.Ref(name) =>
       (in, pos) =>
         if (inProgress(name -> pos)) holeHere(in, pos)
@@ -75,7 +75,7 @@ def interpret(top: GrammarDef, tag: String => NodeData): Parser = {
   go(top)
 }
 
-private def leafData(leaf: LeafKind, t: GTok): NodeData = leaf match {
+private def leafData(leaf: LeafKind, t: Token): NodeData = leaf match {
   case LeafKind.IntLit =>
     t.text.toIntOption.map(NodeData.IntData(_)).getOrElse(NodeData.GapData(t.text))
   case LeafKind.FloatLit =>

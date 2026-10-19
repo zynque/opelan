@@ -1,100 +1,83 @@
 package opelan.foundation.means
 
-import RuleTokenKind._
+import opelan.foundation.document.NodeData
+import opelan.foundation.grammar._
 
 // Read one rule from text:
 //
 //   pattern means meaning [where a, b: kind; c: kind]
 //
-// `=>` is accepted wherever `means` is — the terse spelling. Left
-// carries what's wrong; callers decide how to keep the text (a document
-// decoder will hold it as a hole rule, per *Never broken*).
+// `=>` is accepted wherever `means` is — the terse spelling. The text is
+// parsed by RuleGrammar, which always produces a tree; this turns the
+// tree into a Rule, or says what's missing. Callers decide how to keep
+// malformed text (a document decoder will hold it as a hole rule, per
+// *Never broken*).
 def readRule(text: String): Either[String, Rule] = {
-  val tokens = lexRule(text)
-  val keywordAt = tokens.indexWhere(isMeansKeyword)
-  if (keywordAt < 0) Left("missing 'means'")
-  else if (keywordAt == 0) Left("empty pattern")
-  else {
-    val rest = tokens.drop(keywordAt + 1)
-    val whereAt = rest.indexWhere(_.is(Word, "where"))
-    val (meaningTokens, whereTokens) =
-      if (whereAt < 0) (rest, Vector.empty) else rest.splitAt(whereAt)
-    for {
-      meaning <- readMeaning(meaningTokens)
-      where <- if (whereAt < 0) Right(Nil) else readWhere(whereTokens.drop(1))
-    } yield Rule(Pattern(pieces(tokens.take(keywordAt))), meaning, where)
-  }
+  val parts = ruleGrammar(In(text, ruleLexicon), 0).tree.kids
+  val (pattern, keyword, meaning, where) = (parts(0), parts(1), parts(2), parts(3))
+  if (!isToken(keyword)) Left("missing 'means'")
+  else if (pattern.kids.isEmpty) Left("empty pattern")
+  else if (!isTagged(meaning)) Left("empty meaning")
+  else for {
+    constraints <- if (isTagged(where)) readWhere(where) else Right(Nil)
+  } yield Rule(Pattern(pieces(tokensIn(pattern))), readMeaning(meaning), constraints)
 }
 
 // A bare pattern — how the binding list names a rule (`a * b`).
-def readPattern(text: String): Pattern = Pattern(pieces(lexRule(text)))
-
-def isMeansKeyword(token: RuleToken): Boolean =
-  token.is(Word, "means") || token.is(Symbol, "=>")
-
-// A pattern or phrase: placeholder words become placeholders, everything
-// else literal. The first piece is never glued — nothing precedes it.
-private[means] def pieces(tokens: Seq[RuleToken]): List[Piece] =
-  tokens.toList.zipWithIndex.map { case (t, i) =>
-    val glued = i > 0 && t.glued
-    if (t.kind == Word && isPlaceholderWord(t.text)) Piece.Placeholder(t.text, glued)
-    else Piece.Literal(t.text, glued)
-  }
-
-private def readMeaning(tokens: Vector[RuleToken]): Either[String, Meaning] =
-  tokens.toList match {
-    case Nil => Left("empty meaning")
-    case List(t) if t.kind == Word && isPlaceholderWord(t.text) =>
-      Right(Meaning.Use(t.text))
-    case tag :: open :: _
-        if tag.kind == Word && open.is(Symbol, "(") && closesAtEnd(tokens) =>
-      splitArguments(tokens.slice(2, tokens.length - 1))
-        .foldRight[Either[String, List[Meaning]]](Right(Nil)) { (a, acc) =>
-          for { m <- readMeaning(a); ms <- acc } yield m :: ms
-        }
-        .map(arguments => Meaning.Build(tag.text, arguments))
-    case _ => Right(Meaning.Phrase(pieces(tokens)))
-  }
-
-// Does the "(" at index 1 close at the last token?
-private def closesAtEnd(tokens: Vector[RuleToken]): Boolean = {
-  val depths = tokens.drop(1).scanLeft(0)((d, t) =>
-    if (t.is(Symbol, "(")) d + 1 else if (t.is(Symbol, ")")) d - 1 else d).drop(1)
-  depths.last == 0 && depths.init.forall(_ > 0)
+def readPattern(text: String): Pattern = {
+  val tree = many(NodeData.StringData("pattern"))(anyToken)(In(text, ruleLexicon), 0).tree
+  Pattern(pieces(tokensIn(tree)))
 }
 
-// Constructor arguments split at depth-0 commas; `add()` has none.
-private def splitArguments(tokens: Vector[RuleToken]): List[Vector[RuleToken]] =
-  if (tokens.isEmpty) Nil
-  else {
-    val (done, last, _) = tokens.foldLeft(
-        (List.empty[Vector[RuleToken]], Vector.empty[RuleToken], 0)) {
-      case ((done, current, d), t) =>
-        if (d == 0 && t.is(Symbol, ",")) (current :: done, Vector.empty, d)
-        else {
-          val next =
-            if (t.is(Symbol, "(")) d + 1 else if (t.is(Symbol, ")")) d - 1 else d
-          (done, current :+ t, next)
-        }
+private def isToken(t: PTree): Boolean = t.data match {
+  case NodeData.StringData(kind) => t.kids.isEmpty && ruleTokenKinds(kind)
+  case _                         => false
+}
+
+private def isTagged(t: PTree): Boolean = t.data.isInstanceOf[NodeData.StringData]
+
+private def tagOf(t: PTree): String = t.data match {
+  case NodeData.StringData(s) => s
+  case _                      => ""
+}
+
+// The tokens under a node, in order.
+private def tokensIn(t: PTree): List[PTree] =
+  if (isToken(t)) List(t) else t.kids.flatMap(tokensIn)
+
+// Placeholder words become placeholders, everything else literal; a piece
+// is glued when no whitespace separates it from the previous one. The
+// first piece is never glued — nothing precedes it.
+private def pieces(tokens: List[PTree]): List[Piece] =
+  tokens.zipWithIndex.map { case (t, i) =>
+    val glued = i > 0 && tokens(i - 1).to == t.from
+    tagOf(t) match {
+      case "word" if isPlaceholderWord(t.text) => Piece.Placeholder(t.text, glued)
+      case "quoted"                            => Piece.Literal(unquote(t.text), glued)
+      case _                                   => Piece.Literal(t.text, glued)
     }
-    (last :: done).reverse
   }
 
-// `a, b: number; c: whole number` — groups split at `;`.
-private def readWhere(tokens: Vector[RuleToken]): Either[String, List[Constraint]] =
-  splitOn(tokens, ";").foldRight[Either[String, List[Constraint]]](Right(Nil)) {
-    (group, acc) =>
-      val colon = group.indexWhere(_.is(Symbol, ":"))
-      val names = group.take(colon.max(0)).filterNot(_.is(Symbol, ",")).map(_.text)
-      val kind = group.drop(colon + 1).map(_.text).mkString(" ")
-      if (colon < 0) Left("where needs 'placeholders: kind'")
-      else if (names.isEmpty || kind.isEmpty) Left("incomplete where clause")
-      else acc.map(Constraint(names.toList, kind) :: _)
-  }
+private def readMeaning(t: PTree): Meaning = tagOf(t) match {
+  case "build" =>
+    val arguments = t.kids(2)
+    val list =
+      if (tagOf(arguments) != "arguments") Nil
+      else arguments.kids(0) :: arguments.kids(1).kids.map(_.kids(1))
+    Meaning.Build(t.kids(0).text, list.map(readMeaning))
+  case "use" => Meaning.Use(t.kids(0).text)
+  case _     => Meaning.Phrase(pieces(tokensIn(t)))
+}
 
-private def splitOn(
-    tokens: Vector[RuleToken], separator: String): List[Vector[RuleToken]] =
-  tokens.foldRight(List(Vector.empty[RuleToken])) { (t, acc) =>
-    if (t.is(Symbol, separator)) Vector.empty :: acc
-    else (t +: acc.head) :: acc.tail
+// `a, b: number; c: whole number` — one constraint per group.
+private def readWhere(t: PTree): Either[String, List[Constraint]] = {
+  val groups = t.kids(1) :: t.kids(2).kids.map(_.kids(1))
+  groups.foldRight[Either[String, List[Constraint]]](Right(Nil)) { (g, acc) =>
+    val names = tokensIn(g.kids(0)).map(_.text).filterNot(_ == ",")
+    val typed = g.kids(1)
+    val kind = if (tagOf(typed) == "typed") tokensIn(typed.kids(1)).map(_.text) else Nil
+    if (tagOf(typed) != "typed") Left("where needs 'placeholders: kind'")
+    else if (names.isEmpty || kind.isEmpty) Left("incomplete where clause")
+    else acc.map(Constraint(names, kind.mkString(" ")) :: _)
   }
+}
