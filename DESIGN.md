@@ -493,37 +493,24 @@ alternatives tried and rejected — live in a small side table keyed by
 `(rule, position)`; failures must be remembered too, or an edit could
 make a previously failed alternative succeed without being retried.
 
-Two constraints follow for the scannerless step: rule applications must
+Two constraints follow for the combinators: rule applications must
 be *named* (they carry the identity the memo key needs), and every
 result — including holes and junk runs — must report an honest examined
 range, or invalidation will miss cases. The guard is a property test:
 for any edit, an incremental reparse equals a full parse of the edited
 text.
 
-**Path in this codebase.**
+**Rules as documents.** A `lang:` document stores each rule as a
+`means(pattern, meaning)` node. Like every construct use, a meaning names
+its constructor by reference: `add(a, b)` is a node whose data refers to
+the `add` kind, and `a` is an internal ref to the pattern's placeholder
+node, so a rule survives renames on either side. Rules compile to
+`GrammarDef`, which remains the implementation layer the interpreter
+runs. The `means` notation is the text surface of the
+language-definition language, eventually described by its own rules.
 
-1. Make the combinators scannerless (character input, syntactic vs
-   lexical sequencing, character-level recovery), with named rule
-   applications and examined extents from the start; `ExprParse` must
-   produce identical trees and spans.
-2. Memoize named rules with examined extents and called-rule
-   dependencies; invalidate on text edits and on rule changes; keep node
-   ids for reused subtrees. Incremental reparse must equal full reparse.
-3. Generalize `precedenceTable` into the operator combinator, and compile
-   rules plus the binding list into combinator compositions (the
-   `GrammarDef` data the interpreter already runs) producing `PTree`s.
-   The rule form of `exprDef` must behave identically to `ExprLanguage` —
-   the existing regression anchor.
-4. Derive the schema (`NodeKind`) and the printer from the same rules.
-5. Encode rules in `lang:` documents as `means(pattern, meaning)` nodes.
-   Like every construct use, a meaning names its constructor by
-   reference: `add(a, b)` is a node whose data refers to the `add` kind,
-   and `a` is an internal ref to the pattern's placeholder node. A rule
-   therefore survives renames on either side.
-   The `means` notation becomes the text surface of the language-definition
-   language, eventually described by its own rules.
-6. Bind semantics to builtins first (`add(a, b) means builtin num-add`),
-   moving to rule-defined meanings where possible.
+The step-by-step plan, with how each step is verified, is in `STATUS.md`
+(next steps, item 6).
 
 More examples the notation should handle: comparison chains
 (`a < b < c means a < b and b < c`), juxtaposition
