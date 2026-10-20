@@ -14,21 +14,12 @@ import opelan.foundation.grammar._
 // Operator tables name node kinds; `tag` turns a kind name into the
 // node data the parser emits — the construct's ref (see
 // DefLanguage.kindTag), so parsed trees use constructs by reference.
+//
+// Each named grammar is one memoized rule (foundation/grammar `rule`),
+// reached the same way from its definition site and from every Ref, so
+// an incremental session sees each call — what invalidating by rule
+// identity relies on.
 def interpret(top: GrammarDef, tag: String => NodeData): Parser = {
-
-  def collect(g: GrammarDef): List[(String, GrammarDef)] = g match {
-    case GrammarDef.Named(n, inner)     => (n -> inner) :: collect(inner)
-    case GrammarDef.Choice(alts)        => alts.flatMap(collect)
-    case GrammarDef.Parens(inner)       => collect(inner)
-    case GrammarDef.ChainLeft(_, atom)  => collect(atom)
-    case GrammarDef.Precedence(atom, _) => collect(atom)
-    case GrammarDef.Phrase(inner, _)    => collect(inner)
-    case GrammarDef.Tok(_, _)           => Nil
-    case GrammarDef.Signum              => Nil
-    case GrammarDef.Junk(_, _)          => Nil
-    case GrammarDef.Ref(_)              => Nil
-    case GrammarDef.Hole                => Nil
-  }
 
   // (name, pos) pairs currently on the call stack. Recursion is legal
   // only when it consumes input (parens reaches Ref at a later pos), so
@@ -38,7 +29,7 @@ def interpret(top: GrammarDef, tag: String => NodeData): Parser = {
   val inProgress = mutable.Set.empty[(String, Int)]
 
   lazy val env: Map[String, Parser] =
-    collect(top).map { case (n, g) => n -> go(g) }.toMap
+    namedRules(top).map { case (n, g) => n -> rule(n)(go(g)) }
 
   def go(g: GrammarDef): Parser = g match {
     case GrammarDef.Tok(kind, leaf) =>
@@ -57,8 +48,8 @@ def interpret(top: GrammarDef, tag: String => NodeData): Parser = {
       precedenceTable(go(atom), levels.map(_.view.mapValues(tag).toMap))
     case GrammarDef.Phrase(inner, stops) =>
       phrase(go(inner), stops)
-    case GrammarDef.Named(name, inner) =>
-      rule(name)(go(inner))
+    case GrammarDef.Named(name, _) =>
+      (in, pos) => env(name)(in, pos)
     case GrammarDef.Ref(name) =>
       (in, pos) =>
         if (inProgress(name -> pos)) holeHere(in, pos)

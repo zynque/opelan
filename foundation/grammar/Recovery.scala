@@ -80,11 +80,11 @@ def signum: Parser =
         case NodeData.FloatData(v) => NodeData.FloatData(if (negative) -v else v)
         case d                     => d
       }
-      PTree(data, op.text + num.text, op.from, num.to)
+      PTree(data, op.text + num.text, op.from, num.to - op.from)
     })
 
 private[grammar] def hole(
     in: In, from: Int, to: Int, pos: Int, ok: Boolean, examined: Int): POut = {
   val text = in.input.substring(from, to)
-  POut(pos, PTree(NodeData.GapData(text), text, from, to), ok, examined)
+  POut(pos, PTree(NodeData.GapData(text), text, from, to - from), ok, examined)
 }

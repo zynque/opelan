@@ -41,16 +41,25 @@ private def tagOf(t: PTree): String = t.data match {
   case _                      => ""
 }
 
-// The tokens under a node, in order.
-private def tokensIn(t: PTree): List[PTree] =
-  if (isToken(t)) List(t) else t.kids.flatMap(tokensIn)
+// The tokens under a node, in order, each with its absolute start —
+// a kid's `from` is relative to its parent, so the base accumulates
+// on the way down.
+private def tokensIn(t: PTree): List[(Int, PTree)] = {
+  def go(t: PTree, base: Int): List[(Int, PTree)] =
+    if (isToken(t)) List((base + t.from, t))
+    else t.kids.flatMap(k => go(k, base + t.from))
+  go(t, 0)
+}
 
 // Placeholder words become placeholders, everything else literal; a piece
 // is glued when no whitespace separates it from the previous one. The
 // first piece is never glued — nothing precedes it.
-private def pieces(tokens: List[PTree]): List[Piece] =
-  tokens.zipWithIndex.map { case (t, i) =>
-    val glued = i > 0 && tokens(i - 1).to == t.from
+private def pieces(tokens: List[(Int, PTree)]): List[Piece] =
+  tokens.zipWithIndex.map { case ((start, t), i) =>
+    val glued = i > 0 && {
+      val (previousStart, previous) = tokens(i - 1)
+      previousStart + previous.length == start
+    }
     tagOf(t) match {
       case "word" if isPlaceholderWord(t.text) => Piece.Placeholder(t.text, glued)
       case "quoted"                            => Piece.Literal(unquote(t.text), glued)
@@ -73,9 +82,9 @@ private def readMeaning(t: PTree): Meaning = tagOf(t) match {
 private def readWhere(t: PTree): Either[String, List[Constraint]] = {
   val groups = t.kids(1) :: t.kids(2).kids.map(_.kids(1))
   groups.foldRight[Either[String, List[Constraint]]](Right(Nil)) { (g, acc) =>
-    val names = tokensIn(g.kids(0)).map(_.text).filterNot(_ == ",")
+    val names = tokensIn(g.kids(0)).map(_._2.text).filterNot(_ == ",")
     val typed = g.kids(1)
-    val kind = if (tagOf(typed) == "typed") tokensIn(typed.kids(1)).map(_.text) else Nil
+    val kind = if (tagOf(typed) == "typed") tokensIn(typed.kids(1)).map(_._2.text) else Nil
     if (tagOf(typed) != "typed") Left("where needs 'placeholders: kind'")
     else if (names.isEmpty || kind.isEmpty) Left("incomplete where clause")
     else acc.map(Constraint(names, kind.mkString(" ")) :: _)

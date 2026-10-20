@@ -35,8 +35,8 @@ def chainLeft(
             acc = PTree(
               ops(op.text),
               in.input.substring(acc.from, r.tree.to),
-              acc.from, r.tree.to,
-              List(acc, r.tree))
+              acc.from, r.tree.to - acc.from,
+              List(adopted(acc, acc.from), adopted(r.tree, acc.from)))
             cur = r.pos
             more = r.ok
           case _ => more = false
@@ -74,7 +74,12 @@ def parens(inner: => Parser): Parser =
             hole(in, t.from, end, endPos, ok = true, seen)
           case _ =>
             val text = in.input.substring(t.from, end)
-            POut(endPos, r.tree.copy(text = text, from = t.from, to = end),
+            // The node grows to cover the parens: its start moves back
+            // to "(", so its kids' relative offsets grow by that much.
+            val shift = r.tree.from - t.from
+            POut(endPos, r.tree.copy(text = text, from = t.from,
+              length = end - t.from,
+              kids = r.tree.kids.map(k => k.copy(from = k.from + shift))),
               ok = true, seen)
         }
       case _ => emptyHole(in, pos, open.examined)

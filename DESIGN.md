@@ -510,6 +510,33 @@ range, or invalidation will miss cases. The guard is a property test:
 for any edit, an incremental reparse equals a full parse of the edited
 text.
 
+*What is built* (`foundation/grammar`: `Memo`, `ParseSession`). The
+engine runs as a separate memo table beside the document, as a first
+stage toward the memo-is-the-document form above — but already in the
+relative form that form needs:
+
+- Parse trees are relative: a node's `from` is an offset from its
+  parent's start and its `length` is its span; absolute positions are
+  sums down the path, computed where they are needed (`spansOf`, the
+  rule reader). Combinators still see absolute positions during a
+  parse — a subtree's offsets are fixed when a parent adopts it, and
+  never move again.
+- `rule(name)` memoizes by `(name, position)` in the parse's
+  `MemoTable`: one column per position, each entry's positions stored
+  relative to its column, recording the rules it called — failures
+  included. A reused result is the *same* subtree object; that object
+  identity is what will map to document node ids.
+- `ParseSession` holds text, grammar, and the columns. `edit` splices
+  them: entries before the edit that read only text before it stay;
+  columns inside the replaced range are dropped; later columns move
+  wholesale — nothing inside an entry or a subtree is touched, so an
+  edit shifts no positions. `changeRules(grammar, names)` drops results
+  of the named rules and of every rule that called one. `changedRules`
+  diffs two `GrammarDef`s to supply the names.
+- Not yet connected: reused subtrees are not yet mapped to document
+  node ids, and the workbench's text surfaces still reparse whole cells
+  (STATUS).
+
 **Rules as documents.** A `lang:` document stores each rule as a
 `means(pattern, meaning)` node. Like every construct use, a meaning names
 its constructor by reference: `add(a, b)` is a node whose data refers to

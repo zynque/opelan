@@ -8,7 +8,7 @@ import opelan.foundation.document._
 
 // Succeeds without consuming anything.
 def nothing(data: NodeData = NodeData.GapData("")): Parser =
-  (_, pos) => POut(pos, PTree(data, "", pos, pos), ok = true, pos)
+  (_, pos) => POut(pos, PTree(data, "", pos, 0), ok = true, pos)
 
 // All of `parts` in order, as one node whose children are their trees.
 def sequence(data: NodeData)(parts: Parser*): Parser =
@@ -48,7 +48,7 @@ def optional(p: Parser): Parser = choice(p, nothing())
 // Lookahead: succeeds without consuming when `p` would apply.
 def followedBy(p: Parser): Parser = (in, pos) => {
   val r = p(in, pos)
-  POut(pos, PTree(NodeData.GapData(""), "", pos, pos), r.ok, r.examined)
+  POut(pos, PTree(NodeData.GapData(""), "", pos, 0), r.ok, r.examined)
 }
 
 // Negative lookahead: succeeds without consuming when `p` would not apply.
@@ -61,7 +61,7 @@ def notFollowedBy(p: Parser): Parser = (in, pos) => {
 def endOfInput: Parser = (in, pos) => {
   val start = skipSpace(in.input, pos)
   val ok = start >= in.input.length
-  POut(pos, PTree(NodeData.GapData(""), "", start, start), ok,
+  POut(pos, PTree(NodeData.GapData(""), "", start, 0), ok,
     in.input.length.min(start) + 1)
 }
 
@@ -70,16 +70,19 @@ def anyToken: Parser = (in, pos) => {
   val scanned = scanAt(in, pos)
   scanned.token match {
     case Some(t) => POut(t.to,
-      PTree(NodeData.StringData(t.kind), t.text, t.from, t.to), ok = true,
-      scanned.examined)
+      PTree(NodeData.StringData(t.kind), t.text, t.from, t.text.length),
+      ok = true, scanned.examined)
     case None => emptyHole(in, pos, scanned.examined)
   }
 }
 
-// A node spanning its children (or the empty range at `pos`).
+// A node spanning its children (or the empty range at `pos`). The kids,
+// which still carry absolute `from`s, are adopted: rebased to offsets
+// from this node's start.
 private def node(
     in: In, data: NodeData, kids: List[PTree], pos: Int): PTree = {
   val from = kids.headOption.map(_.from).getOrElse(pos)
   val to = kids.lastOption.map(_.to).getOrElse(pos)
-  PTree(data, in.input.substring(from, to), from, to, kids)
+  PTree(data, in.input.substring(from, to), from, to - from,
+    kids.map(adopted(_, from)))
 }

@@ -340,20 +340,44 @@ The natural sequence from the current code is:
         by the literals a grammar knows rather than by kind names.
    3. **Incremental parsing.** Incremental packrat parsing (Dubroy &
       Warth; DESIGN.md §4, *Incremental parsing*), so a change costs in
-      proportion to its size (*Incremental*):
-      - memoize named rule applications by `(rule, position)`, recording
-        consumed and examined lengths and the rules each result called;
-        parsed nodes are the memo entries, holding their lengths relative
-        to the node so edits don't shift untouched positions, with a side
-        table for failed and rejected attempts;
-      - text edits drop results whose examined range overlaps the edit
-        and reuse the rest — reused subtrees keep their node ids, fixing
-        the id reassignment noted under *Not yet wired*;
-      - rule changes drop only results that called a changed rule
-        (keyed by rule identity, so renames invalidate nothing); stored
-        documents re-render and retry only the affected holes;
-      - property test: for any edit, incremental reparse equals a full
-        parse of the edited text.
+      proportion to its size (*Incremental*).
+      - ~~Engine~~ — done (`Memo`, `ParseSession`): `rule(name)`
+        memoizes by `(name, position)` into one column per position —
+        failures included — recording the rules each result called.
+        Positions are relative throughout: a memo entry stores consumed
+        and examined lengths relative to its column, and a `PTree`'s
+        `from` is an offset from its parent's start with its `length`
+        as its span, so an edit moves whole columns and shifts nothing
+        inside them (absolute positions are sums down the path, per
+        `spansOf`). `ParseSession.edit` keeps pre-edit results that
+        read only before the edit and splices the columns;
+        `changeRules` drops results of changed rules and of their
+        callers, and `changedRules` diffs two `GrammarDef`s. The
+        interpreter routes every named rule, `Ref`s included, through
+        the memo. Property tests over a multi-rule grammar and the
+        interpreted expression language: after hundreds of random edits
+        (and rule changes interleaved), the session equals a full parse
+        — trees, spans, positions, and examined extents. A one-statement
+        edit in a 20-statement text reruns under a quarter of the rule
+        bodies, and untouched subtrees are the same objects — including
+        after length-changing edits.
+      - Remaining:
+        - *Identity in documents* — map reused subtrees (the same
+          objects across reparses) to document node ids so a reparse
+          updates matched nodes in place instead of replacing the
+          subtree, fixing the id reassignment noted under
+          *Not yet wired*.
+        - *Wiring* — use sessions for the text cell, projected cell
+          commits, and synced remote text, instead of whole reparses.
+        - *Stored documents on a language change* — retry only the holes
+          whose failed parse called a changed rule.
+        - *Memo in the document* — the memo is still a separate column
+          table beside the document; parse results should live in the
+          document nodes themselves, keeping only failed attempts in a
+          side table.
+        - *Rule identity by reference* — rules are identified by name
+          until they live in `lang:` documents (step 8); then by node
+          id, so a rename invalidates nothing.
    4. **Operator combinator + rule compiler.** Combinators stay the
       parsing substrate (DESIGN.md §4, *Engine*), now scannerless.
       Generalize

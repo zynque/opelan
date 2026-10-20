@@ -15,17 +15,26 @@ import opelan.foundation.document._
 // input was observed) — what incremental reparsing will use to decide
 // which results an edit invalidates.
 
-// The parse input: the source text and the lexicon its tokens come from.
-case class In(input: String, lexicon: Lexicon)
+// The parse input: the source text, the lexicon its tokens come from,
+// and the memo table of this parse (fresh unless a session seeds it).
+case class In(input: String, lexicon: Lexicon, memo: MemoTable = MemoTable())
 
 // A parse-tree node: its node data, the source slice it came from, and
-// its children.
+// its children. Positions are relative so a subtree never changes when
+// text before it does: `from` is an offset from the parent's start, and
+// `length` is the node's span. While a node stands alone during a parse
+// (not yet adopted into a parent), its `from` is absolute — that is
+// when combinators read it. `adopted` (Tree.scala) rebases a kid when a
+// parent claims it.
 case class PTree(
     data: NodeData,
     text: String,
     from: Int,
-    to: Int,
-    kids: List[PTree] = Nil)
+    length: Int,
+    kids: List[PTree] = Nil) {
+  // The end offset, in the same coordinate as `from`.
+  def to: Int = from + length
+}
 
 // A parse result: where parsing stopped, the produced tree, whether the
 // production genuinely applied, and how far it read.
@@ -38,16 +47,8 @@ type Parser = (In, Int) => POut
 // placed after any whitespace.
 private[grammar] def emptyHole(in: In, pos: Int, examined: Int): POut = {
   val at = skipSpace(in.input, pos)
-  POut(pos, PTree(NodeData.GapData(""), "", at, at), ok = false,
+  POut(pos, PTree(NodeData.GapData(""), "", at, 0), ok = false,
     examined.max(at + 1))
-}
-
-// A named rule application. Names are the identity incremental parsing
-// memoizes by (next step); for now the wrapper only defers construction,
-// so recursive grammars can refer to themselves.
-def rule(name: String)(body: => Parser): Parser = {
-  lazy val parser = body
-  (in, pos) => parser(in, pos)
 }
 
 // A single token of `kind`, mapped to node data.
@@ -60,7 +61,8 @@ def tokWhere(kind: String)(accept: Token => Boolean)(f: Token => NodeData): Pars
     val scanned = scanAt(in, pos)
     scanned.token match {
       case Some(t) if t.kind == kind && accept(t) =>
-        POut(t.to, PTree(f(t), t.text, t.from, t.to), ok = true, scanned.examined)
+        POut(t.to, PTree(f(t), t.text, t.from, t.text.length), ok = true,
+          scanned.examined)
       case _ => emptyHole(in, pos, scanned.examined)
     }
   }
