@@ -77,7 +77,8 @@ same combinators — see
   `SelectTarget` carries a focus flag so the outline highlights without
   claiming DOM focus and the cell's edit box keeps it), and `input` commits
   rewrite the source node via `Language.parseCell` +
-  `replaceNodeContent` — an id-preserving edit, so refs keep resolving.
+  `commitContent` — an id-preserving reconcile, so refs keep resolving
+  and unchanged subtrees keep their node ids.
 - **fp component runtime** (`ui/fp`): Elm-style `Component[I,O]` with pure
   update, single FIFO dispatch queue, positional DOM patching that preserves
   focus, keyed child reconciliation, `Managed` escape hatch for imperative
@@ -172,9 +173,11 @@ same combinators — see
 - **`ExternalNodeRef`s to missing targets** report "unresolved" rather than
   offering creation; and refs into old pinned versions open read-write —
   saving an old version appends a new head rather than branching.
-- **Text edits reparse whole cells**, and a reparse assigns fresh node
-  ids. Incremental parsing (next steps, item 6, step 3) addresses both:
-  reused subtrees keep their ids, and cost follows the size of the edit.
+- **Text edits reparse whole cells.** Node ids already survive a
+  reparse — `commitContent` keeps the ids of every subtree whose
+  content didn't change — but the parse itself still covers the whole
+  cell. Sessions (next steps, item 6, step 3) make cost follow the
+  size of the edit.
 - **Synced history is unified, author-tagged, and navigation is
   mutation-free**: the pane's version DAG is rebuilt from the Automerge
   change graph on every growth, so both tabs see the same tree with
@@ -373,12 +376,22 @@ The natural sequence from the current code is:
         edit in a 20-statement text reruns under a quarter of the rule
         bodies, and untouched subtrees are the same objects — including
         after length-changing edits.
+      - ~~Identity in documents~~ — done (`foundation/document/Reconcile`:
+        `commitContent`): committing parsed content into a node keeps
+        the node's id and matches each new child against the current
+        children by externalized content — a match keeps its whole
+        subtree untouched; a data-only match (a construct ref
+        internalized in the doc compares externalized) keeps the node
+        and rematches its children recursively. Matching by content
+        subsumes provenance: a reused subtree is identical content
+        anyway, so the same operation serves session reparses, first
+        commits, and non-combinator cell grammars. Both commit paths
+        use it — `CommitCellText` and `applyDocText` — so a text edit
+        or a cell commit no longer reassigns ids to what did not
+        change. Verified by `ReconcileSuite` (unchanged, changed,
+        moved, duplicate, and internalized-ref matching) and TypedDoc
+        tests showing formula refs survive a commit.
       - Remaining:
-        - *Identity in documents* — map reused subtrees (the same
-          objects across reparses) to document node ids so a reparse
-          updates matched nodes in place instead of replacing the
-          subtree, fixing the id reassignment noted under
-          *Not yet wired*.
         - *Wiring* — use sessions for the text cell, projected cell
           commits, and synced remote text, instead of whole reparses.
         - *Stored documents on a language change* — retry only the holes

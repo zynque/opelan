@@ -1,6 +1,7 @@
 package opelan.ui.typeddoc
 
-import opelan.examples.{Expr, ExprLanguage, SheetLanguage, exprFromDocument, sheetDef}
+import opelan.examples.{Expr, ExprLanguage, SheetLanguage,
+  exprFromDocument, sheetDef}
 import opelan.foundation.document._
 import opelan.foundation.document.Detached._
 import opelan.foundation.langdef.langDefDoc
@@ -154,6 +155,38 @@ class TypedDocSuite extends munit.FunSuite {
       u.state.doc.getNode(price).map(_.data), Some(NodeData.FloatData(1.5)))
     assertEquals(u.state.pushedDoc, u.state.doc)
     assert(u.out.contains(TypedDocOutput.DocChanged(u.state.doc)))
+  }
+
+  test("a cell commit keeps the ids of unchanged subtrees") {
+    val m = typedDocUpdate(init, TypedDocInput.LoadSheetSample).state
+    val total = cellId(m.doc, 1, 3) // Apples' line total = qty * price
+    val refs = m.doc.childrenOf(total)
+    val Seq(NodeData.InternalNodeRef(qty), NodeData.InternalNodeRef(price)) =
+      refs.map(id => m.doc.getNode(id).get.data)
+    val u = typedDocUpdate(
+      m, TypedDocInput.CommitCellText(total, s"ref:$qty + ref:$price"))
+    // mul → add changed the node's data, but the ref nodes kept their
+    // ids and the cell itself was never replaced.
+    assertEquals(u.state.doc.childrenOf(total), refs)
+    assertEquals(
+      exprFromDocument(u.state.doc, total),
+      Right(Expr.Add(Expr.Ref(qty), Expr.Ref(price))))
+    // A fresh part gets a fresh id; the rest stay put.
+    val u2 = typedDocUpdate(
+      m, TypedDocInput.CommitCellText(total, s"ref:$qty * 3"))
+    val after = u2.state.doc.childrenOf(total)
+    assertEquals(after(0), refs(0))
+    assertNotEquals(after(1), refs(1))
+  }
+
+  test("a text edit keeps the ids of unchanged content") {
+    val m = init
+    // TextEdited goes through applyDocText: recommitting the current
+    // text keeps the content node's id (and the whole subtree's).
+    val cid = contentId(m.doc).get
+    val u = typedDocUpdate(m, TypedDocInput.TextEdited(m.text))
+    assertEquals(u.state.doc.childrenOf(u.state.doc.rootId), m.doc.childrenOf(m.doc.rootId))
+    assertEquals(u.state.doc.childrenOf(cid), m.doc.childrenOf(cid))
   }
 
   test("an unchanged CommitCellText is a no-op") {

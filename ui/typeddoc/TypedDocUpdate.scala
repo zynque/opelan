@@ -128,9 +128,10 @@ def typedDocUpdate(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel
             Vector(Status("Untyped document")))
       }
 
-    // A projected cell edit: parse through the doc's language and rewrite
-    // the node in place (the id survives, so refs into it keep working).
-    // An unchanged commit — e.g. a blur with no edit — is a no-op, so
+    // A projected cell edit: parse through the doc's language and commit
+    // the content in place — the node's id survives, and so do the ids
+    // of every child whose content didn't change (commitContent). An
+    // unchanged commit — e.g. a blur with no edit — is a no-op, so
     // projections can't churn versions. Parsed constructs arrive as
     // inline refs; the commit imports them (internalizeRefs).
     case CommitCellText(id, t) =>
@@ -138,7 +139,7 @@ def typedDocUpdate(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel
         case Some(content) if unchangedCell(m.doc, id, content) =>
           Update(m)
         case Some(content) =>
-          replaceNodeContent(id, content, m.doc)
+          commitContent(id, content, m.doc)
               .flatMap(internalizeRefs(_, id)) match {
             case Right(d) =>
               val msg = "Cell updated"

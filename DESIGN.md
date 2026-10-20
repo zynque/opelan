@@ -192,8 +192,9 @@ machinery, not per-language behavior.
 `input` reuses that convention with a stronger meaning: its `SourceRef`
 names the node the text box *edits*. A commit parses the text with the
 language's cell grammar (`parseCell`) and rewrites that node in place
-(`replaceNodeContent`; the node keeps its id, so refs into it keep
-resolving). This is the workbench's first projected editor: the view is
+(`commitContent`; the node keeps its id, so refs into it keep
+resolving — and unchanged children keep theirs). This is the
+workbench's first projected editor: the view is
 not only derived from the document, it writes back. The same vocabulary
 is what a language document's view spec will eventually encode, and a
 stored view tree can be inspected or edited like any other document.
@@ -480,10 +481,13 @@ rules it called. That one mechanism answers three different needs:
 - *Text edits.* Drop the results whose examined range overlaps the edit;
   everything else is reused. Cost follows the size of the edit, not of
   the text.
-- *Identity.* A reused result is the *same* subtree, so its nodes keep
-  their ids — refs, selection, and history survive a reparse. Today a
-  reparse reassigns ids (STATUS, *Not yet wired*); this fixes that by
-  construction rather than by after-the-fact matching.
+- *Identity.* A commit reconciles parsed content against the document
+  subtree it replaces (`commitContent`): children that match by
+  content keep their node ids, at any depth — refs, selection, and
+  history survive a reparse. Matching by content subsumes parse
+  provenance (a reused subtree is identical content anyway), so the
+  same reconcile covers session reparses, whole-cell commits, and
+  languages without combinator cell grammars.
 - *Language changes.* Drop only the results that called a changed rule.
   Rules have stable identities (their node ids in the `lang:` document,
   per *Everything by reference*), so the memo key survives renames and
@@ -524,8 +528,7 @@ relative form that form needs:
 - `rule(name)` memoizes by `(name, position)` in the parse's
   `MemoTable`: one column per position, each entry's positions stored
   relative to its column, recording the rules it called — failures
-  included. A reused result is the *same* subtree object; that object
-  identity is what will map to document node ids.
+  included. A reused result is the *same* subtree object.
 - `ParseSession` holds text, grammar, and the columns. `edit` splices
   them: entries before the edit that read only text before it stay;
   columns inside the replaced range are dropped; later columns move
@@ -533,9 +536,13 @@ relative form that form needs:
   edit shifts no positions. `changeRules(grammar, names)` drops results
   of the named rules and of every rule that called one. `changedRules`
   diffs two `GrammarDef`s to supply the names.
-- Not yet connected: reused subtrees are not yet mapped to document
-  node ids, and the workbench's text surfaces still reparse whole cells
-  (STATUS).
+- Document identity is handled a layer down: `commitContent`
+  (`foundation/document/Reconcile`) commits a parse's detached output
+  into a node, keeping the ids of every subtree whose content didn't
+  change — at any depth. Both commit paths — projected cells and
+  whole-text edits — use it.
+- Not yet connected: sessions don't yet drive the workbench's text
+  surfaces, which still reparse whole cells (STATUS).
 
 **Rules as documents.** A `lang:` document stores each rule as a
 `means(pattern, meaning)` node. Like every construct use, a meaning names

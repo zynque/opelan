@@ -125,10 +125,11 @@ bootstrap):
    per leaf cell (labels, literals, holes — refs and formulas stay
    read-only computed values); the `formulas` view makes every cell an
    input showing `cellText` (so formulas edit as `ref:N * ref:M` text).
-   Commit parses via `Language.parseCell` and rewrites the node *in
-   place* (`replaceNodeContent`) — the id survives, so `ref:N` cells
-   pointing at it keep working and the grid recomputes; an unchanged
-   commit is a no-op, so blur can't churn versions.
+   Commit parses via `Language.parseCell` and reconciles the result into
+   the node *in place* (`commitContent`) — the id survives, the ids of
+   unchanged subtrees survive, so `ref:N` cells pointing at it keep
+   working and the grid recomputes; an unchanged commit is a no-op, so
+   blur can't churn versions.
 6. ~~Seed the three demo docs; store a *descriptive* `lang: expr` doc
    under the type ref~~ — done: `Language.langDoc` makes every
    registered language self-describing; hydration seeds each `langDoc`

@@ -19,9 +19,10 @@ def docText(
   }
 
 // Apply edited text back onto the document, returning the new document.
-// Typed documents with a language parser replace only the content
-// subtree; the root, type, and imports — document identity — are
-// preserved, and constructs the parse wrote inline are imported.
+// Typed documents with a language parser rewrite only the content
+// subtree — in place, keeping the ids of whatever did not change
+// (commitContent) — while the root, type, and imports are preserved,
+// and constructs the parse wrote inline are imported.
 def applyDocText(
     doc: Document[NodeData],
     languageFor: Document[NodeData] => Option[Language],
@@ -51,9 +52,7 @@ private def replaceContent(
     doc: Document[NodeData],
     content: DetachedNode[NodeData]): Either[String, Document[NodeData]] = {
   val inserted = contentId(doc) match {
-    case Some(cid) =>
-      val index = doc.childrenOf(doc.rootId).indexOf(cid)
-      cutNode(cid, doc).flatMap(d => insertNode(content, doc.rootId, index, d))
+    case Some(cid) => commitContent(cid, content, doc)
     case None =>
       insertNode(content, doc.rootId, math.min(2, doc.childrenOf(doc.rootId).length), doc)
   }
