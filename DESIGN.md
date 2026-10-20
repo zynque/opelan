@@ -193,7 +193,8 @@ machinery, not per-language behavior.
 names the node the text box *edits*. A commit parses the text with the
 language's cell grammar (`parseCell`) and rewrites that node in place
 (`commitContent`; the node keeps its id, so refs into it keep
-resolving — and unchanged children keep theirs). This is the
+resolving — and unchanged children keep theirs); an unchanged commit is
+a no-op, so a blur records no version. This is the
 workbench's first projected editor: the view is
 not only derived from the document, it writes back. The same vocabulary
 is what a language document's view spec will eventually encode, and a
@@ -224,7 +225,13 @@ constructs by the ids its canonical encoding assigns (`kindRefs`,
 and a def-interpreted parser emits that ref for each node it builds. Semantics the def names
 by string — lexicons, view renderers, builtin cell parsers — resolve
 through an `Impls` bundle: honest scaffolding while behavior still lives
-in code.
+in code. The cell grammar (`CellParserDef.Language(ref, fallback)`)
+names another language by ref, which is how the sheet's cells parse
+with `lang: expression`. `DefDocEncode`/`DefDocDecode`/`DefDocReader`
+are the codec, with sets and op tables sorted so encoding is
+deterministic. `DefLanguage(exprDef)` is held identical to
+`ExprLanguage` (parse, print, and eval) on a 28-input battery, the
+regression anchor for any change to the definition machinery.
 
 Resolution is store-first (`examples/Resolve.scala`): `languageForRef`
 looks up the type ref's URL in the document store, and if the head there
@@ -234,9 +241,11 @@ falls back to the code registry (`allLanguages`: `ExprLanguage`,
 `lang:` documents are themselves typed by — where the regress stops).
 Saving an edited `lang:` document therefore re-interprets every dependent
 document on its next render (*Reactive*); deriving migrations for those
-dependents when a definition changes (*Evolvable*) is open. Malformed defs
-degrade to holes: missing refs, cyclic grammars, and cyclic documents are
-all guarded.
+dependents when a definition changes (*Evolvable*) is open. The split is
+deliberate: *execution* resolves at head (live), while go-to-definition
+refs stay version-pinned. Malformed defs degrade to holes: missing refs,
+cyclic grammars, and cyclic documents are all guarded, and an old store
+with untyped `lang:` docs falls back to the registry.
 
 **Expression language** (`ExprLanguage`, `Expr`/`ExprDoc`, `ExprLexicon`,
 `ExprParse`, `ExprView`): the demonstration language. It has int and
@@ -315,7 +324,15 @@ rule — which spelling a surface shows is a detail-level setting (§6), not
 a difference in content. The reader and printer exist
 (`foundation/means`): rules print as role-tagged spans (keyword, literal,
 placeholder, constructor tag, constraint kind, marker), so a highlighting
-surface and plain text come from one source.
+surface and plain text come from one source. A `Rule(pattern, meaning,
+where)` has a pattern of literal and placeholder pieces and a meaning
+that is a constructor (`add(a, b)`), a bare placeholder (`(a) means a`),
+or a phrase in the same language (`a % means a / 100`); a rule set adds
+binding-list tiers and worked examples. A rule's shape (leaf, closed,
+prefix, postfix, infix) is derived from its pattern's edges, and
+`ruleIssues`/`ruleSetIssues` report unbound or duplicate placeholders and
+binding-list mistakes. Names are labels for now; a constructor carries an
+optional kind ref, filled in once rules are read from a document.
 
 **One rule, every concern.** Read left to right, a rule is a production;
 its meaning names a node kind and its arity (the schema); read right to
@@ -394,8 +411,8 @@ reveals it. The reasons:
   parsing are what combinators are for, and languages beyond arithmetic
   need them.
 - *Composition.* Combinators compose; a closed operator table does not.
-  Embedding one language's grammar in another (STATUS open question 7)
-  means composing parsers.
+  Embedding one language's grammar in another (STATUS, *Language
+  composition*) means composing parsers.
 - *Continuity.* Total, recovering parsing already lives in the combinators
   (holes instead of failure), and `precedenceTable` already shows the
   pattern: an operator table is one meta-combinator, not a format feature.
@@ -452,7 +469,7 @@ grammar (`RuleGrammar`) over a rule lexicon. Why this direction:
   instead of a tokenizer outside the language definition.
 - *Composition.* A separate tokenizer imposes one global token set, so a
   cell cannot embed a language with different lexical rules. Character
-  parsers compose freely (STATUS open question 7), and context-dependent
+  parsers compose freely (STATUS, *Language composition*), and context-dependent
   lexing (`ref:3,4`, units like `5kg`, string interpolation) is natural.
 - *`glued` gains its meaning* (with the rule compiler). Following Ohm's
   split between syntactic rules (whitespace skipped between parts) and
@@ -541,6 +558,12 @@ relative form that form needs:
   into a node, keeping the ids of every subtree whose content didn't
   change — at any depth. Both commit paths — projected cells and
   whole-text edits — use it.
+- Verified by property tests over a multi-rule grammar and the
+  interpreted expression language: after hundreds of random edits, with
+  rule changes interleaved, a session equals a full parse (trees, spans,
+  positions, examined extents). A one-statement edit in a 20-statement
+  text reruns under a quarter of the rule bodies, and untouched subtrees
+  are the same objects, even after length-changing edits.
 - Not yet connected: sessions don't yet drive the workbench's text
   surfaces, which still reparse whole cells (STATUS).
 
@@ -554,7 +577,7 @@ runs. The `means` notation is the text surface of the
 language-definition language, eventually described by its own rules.
 
 The step-by-step plan, with how each step is verified, is in `STATUS.md`
-(next steps, item 6).
+(*Next steps*).
 
 More examples the notation should handle: comparison chains
 (`a < b < c means a < b and b < c`), juxtaposition
@@ -758,7 +781,10 @@ to language-invented jumps.
   bar.
 - *Provenance navigation*: click a value in a derived view to jump to the
   node that produced it — upstream along the derivation. Implemented for
-  view trees via `SourceRef`.
+  view trees via `SourceRef`. The click is a *silent select*: it rides the
+  ordinary `SyncDocument` push (a same-document push carrying a selection
+  records no version), and `SelectTarget`'s focus flag lets the outline
+  highlight the node without taking DOM focus from the cell's edit box.
 
 **Cross-surface navigation** — the selection follows the user across views:
 
@@ -826,6 +852,8 @@ presence being broadcast state.
   rather than restarts. Synced text (the `Serial` form, so node ids
   agree on every peer) is parsed into `Document[NodeData]` on arrival:
   the CRDT syncs the serial form, and the document model stays canonical.
+  A push that echoes the session's own last text is suppressed, so the
+  live document (selection, edit state) is kept rather than reparsed.
   Syncing the serial text is scaffolding, not the intent: merges happen
   at the line level, so concurrent structural edits degrade to line
   merges — duplicate node ids must be renumbered (retargeting or dangling
@@ -979,7 +1007,7 @@ placeholders as belonging to this removed generation.
   handled by deleting `app.js` first); `test.bat` / `test.sh` run the
   suite. The test scripts point `TEMP`/`TMPDIR` at `./.tmp` so Node can
   resolve `node_modules` from the linked test bundle.
-- Tests: ~255 munit tests across `test/foundation/**` (document ops,
+- Tests: munit suites across `test/foundation/**` (document ops,
   outline codec, typed documents, grammar combinators, version LSCA),
   `test/examples/**` (expression and sheet languages, language defs and
   their document encoding), `test/collaboration/**` (DocSession

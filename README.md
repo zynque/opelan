@@ -18,33 +18,39 @@ Working today:
 - **Local-First**: Browser-only deployment with IndexedDB persistence
 - **Versioned History**: Version DAG as a document — branching undo and a click-to-jump history tree
 - **Live Sync**: Automerge-backed editing shared live between browser tabs (BroadcastChannel — no server)
+- **Languages as Documents**: language definitions are stored documents; editing one changes its dependents live
 
 Planned / exploratory:
 
+- Defining languages by readable `pattern means meaning` rules
 - Real P2P sync across machines (signaling transport) and presence/cursors
-- Language definitions as documents (bootstrap)
 
 ## Architecture
 
 ```
 foundation/           # Pure model layer
-├── document/         # Persistent document tree model (ported from olw-p4)
+├── document/         # Persistent document tree, store, codecs (ported from olw-p4)
 ├── version/          # Version DAG / merge-base machinery (ported from olw-p4)
-└── language/         # Languages, parsers, and derived views over documents
+├── language/         # The Language interface and text surfaces
+├── grammar/          # Recovering, incremental parser combinators
+├── langdef/          # Language definitions as documents
+├── means/            # `means` rules: model, reader, printer
+└── view/             # View-tree vocabulary for derived views
+
+examples/             # Expression and sheet languages (the demo)
 
 ui/                   # User interface components
 ├── fp/               # Elm-style component runtime (+ demo components)
-├── editor/           # Structural document editor + workbench shell
+├── editor/           # Structural document editor
 ├── typeddoc/         # Typed-document pane: structure + text + derived views
+├── view/             # View-tree renderer
+├── workbench/        # Application shell and document workspace
+├── fx/               # Effect seams (storage, prompts, sync)
 └── text/             # CodeMirror integration
 
-data/                 # Data persistence
-└── storage/          # IndexedDB persistence
+data/storage/         # IndexedDB persistence
 
-collaboration/        # Collaboration infrastructure (planned)
-├── signaling/        # P2P signaling protocols
-├── backends/         # Pluggable backend adapters
-└── presence/         # User presence and cursors
+collaboration/        # Automerge live sync, transports, per-actor undo
 ```
 
 ## Build Requirements
