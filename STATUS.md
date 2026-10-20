@@ -3,7 +3,7 @@
 Point-in-time state of the Opelan workbench. For architecture and rationale
 see `DESIGN.md`; for principles see `MANIFESTO.md`.
 
-Last updated: 2026-10-14
+Last updated: 2026-10-20
 
 The project is in Phase 1 (foundation & schema system) of the
 implementation plan. **Next major series:** replacing combinator-based
@@ -147,9 +147,13 @@ same combinators — see
   a revert change that propagates to peers. Echoes are suppressed by
   last-text comparison, not protocol smarts.
 - **Build/test pipeline**: `build.bat` produces `bundle.js` (scala-cli →
-  webpack); `test.bat` runs ~190 munit tests covering the pure core and the
+  webpack); `test.bat` runs 310 munit tests covering the pure core and the
   update functions of the UI layer, plus DocSession convergence tests that
-  run real Automerge under Node.
+  run real Automerge under Node. `build.sh` now matches `build.bat`
+  (includes `examples`, `--power` for `-o`). `webpack.config.js` is
+  gitignored, so a fresh clone has none and `npm run bundle` fails
+  looking for `./src` — it needs `entry: './app.js'`, output
+  `bundle.js`, and `experiments.asyncWebAssembly` for Automerge.
 
 ## In progress / scaffolded
 
@@ -173,6 +177,14 @@ same combinators — see
 - **`ExternalNodeRef`s to missing targets** report "unresolved" rather than
   offering creation; and refs into old pinned versions open read-write —
   saving an old version appends a new head rather than branching.
+- **Grammar edits don't heal stored cells.** Languages resolve at head
+  on every render, but that governs parsing of newly committed text
+  only; stored cell trees (including `GapData` holes) aren't reparsed
+  when `lang: expression` changes, and the sheet's cell fallback is a
+  label, so rejected formula text never becomes a `?` hole. The seeded
+  budget also already has `/` (`per person` = `div`), so the DEMO.md
+  act-2 "hole heals" moment can't be shown yet — see DEMO.md, "Gaps vs.
+  the narration".
 - **Text edits reparse whole cells.** Node ids already survive a
   reparse — `commitContent` keeps the ids of every subtree whose
   content didn't change — but the parse itself still covers the whole

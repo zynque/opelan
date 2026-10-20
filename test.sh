@@ -10,7 +10,7 @@ export TMP="$PWD/.tmp"
 export TMPDIR="$PWD/.tmp"
 
 # Run tests
-scala-cli test Main.scala project.scala foundation ui data collaboration test
+scala-cli test --server=false Main.scala project.scala foundation examples ui data collaboration test
 
 if [ $? -ne 0 ]; then
     echo "Tests failed!"

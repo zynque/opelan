@@ -72,11 +72,15 @@ build.bat
 npm install
 
 # Build Scala.js to ES module
-scala-cli package Main.scala foundation ui data collaboration --js --js-module-kind es -o app.js
+scala-cli --power package Main.scala project.scala foundation examples ui data collaboration --js --js-module-kind es -o app.js
 
 # Bundle with webpack
 npm run bundle
 ```
+
+`webpack.config.js` is gitignored; on a fresh clone create one with
+`entry: './app.js'`, output `bundle.js` in the repo root, and
+`experiments: { asyncWebAssembly: true }` (Automerge ships WASM).
 
 ### Running tests
 
@@ -88,7 +92,7 @@ test.bat
 ./test.sh
 
 # Or manually
-scala-cli test Main.scala project.scala foundation ui data collaboration test
+scala-cli test Main.scala project.scala foundation examples ui data collaboration test
 ```
 
 ### Running the application

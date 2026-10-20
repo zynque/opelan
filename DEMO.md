@@ -41,6 +41,10 @@ Sidebar documents: `Household budget`, `lang: sheet`, `lang: expression`.
 2. One cell shows `?` — formula `total / people` is a hole because `/`
    is not in the grammar. The app still works; every other cell
    computes. (*Never Broken.*)
+   *Current build (verified 2026-10-20):* not staged yet — the seeded
+   expression language already has `/` and the budget seeds `per person`
+   as a computed `div` formula (shows `8.1`). See "Gaps vs. the
+   narration" below.
 3. Click a `line total` cell → its formula node is selected in the
    (hidden) editor. Then edit `price` *in the grid itself* — the cell is
    a projection: typing a new value rewrites the source node and the grid
@@ -73,12 +77,18 @@ Sidebar documents: `Household budget`, `lang: sheet`, `lang: expression`.
    hole has healed — the cell computes. No rebuild, no redeploy; a
    running application's language changed by editing a document. **The
    moment.**
+   *Current build:* the grammar edit itself works — adding or removing
+   the `/` op in `lang: expression`'s `level` and saving updates the
+   `def` view and the head version, and the budget keeps rendering.
+   But there is no hole to heal (step 2), and stored cells are not
+   reparsed when the grammar changes: a cell only picks up the new
+   grammar when its text is committed again.
 8. Cosmetic contrast: edit the currency format or a column label in
    `lang: sheet` → grid restyles. View specs are data too.
 
 **Act 3 — the substrate flex.**
 
-9. The budget's type ref is `opelan:lang/sheet@3` — pinned. Bumping to
+9. The budget's type ref is `opelan:languages/sheet@0` — pinned. Bumping to
    `@4` is itself an edit ("the app upgraded"); the pinned old version
    still opens and computes correctly. (*Evolvable*; `url@version#node`
    already implemented.)
@@ -88,6 +98,39 @@ Sidebar documents: `Household budget`, `lang: sheet`, `lang: expression`.
 Close: the app, its data, and its implementation are three documents in
 one store — addressable, versioned, editable in place. Nothing was
 compiled.
+
+### Gaps vs. the narration
+
+Walked in a fresh browser on 2026-10-20 (Linux, `./build.sh` +
+`npx http-server`). Steps 1, 3 (cell selection and in-grid price edit
+with live recompute), 4, 5, 6 and the grammar edit in 7 behave as
+narrated. What doesn't match yet:
+
+- **No seeded hole.** `examples/SheetLanguage.scala` seeds `per person`
+  as `div(total, people)` and the seeded `lang: expression` v0 already
+  has `/ → div`, so act 1 never shows a `?`. To stage the moment, seed
+  `lang: expression` without the `/` op and the cell as the hole text
+  `?ref:N / ref:M`.
+- **Holes don't heal on their own.** Grammar edits resolve at head on
+  the next render, but that only affects parsing of newly committed
+  text; stored trees (holes included) are not reparsed. Healing
+  currently requires re-committing the cell. Step 7's "return to the
+  budget: the hole has healed" needs a reparse of hole cells against
+  the current grammar on render (or on def-doc save).
+- **Unparsed text becomes a label, not a hole.** The sheet's cell
+  parser uses `CellFallback.Label`, so a formula the grammar rejects
+  (e.g. `ref:1 / ref:2` with no `/`) is stored as a plain text label
+  rather than a `?` hole; only text typed with a leading `?` becomes a
+  hole.
+- **Removing a production doesn't break existing cells.** Evaluation
+  is the Scala `expr-eval` builtin over stored `div` nodes, so deleting
+  `/` from the grammar leaves `per person` computing — consistent with
+  *Never Broken*, but it means grammar edits are invisible until text is
+  re-entered.
+- Not exercised in this walk: step 8 (no currency/label view spec is
+  exposed in `lang: sheet` yet — its views are builtins
+  `sheet-grid`/`sheet-formulas`), step 9's version bump, step 10's
+  two-tab sync.
 
 ## Steps to get there
 
