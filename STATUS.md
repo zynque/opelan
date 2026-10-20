@@ -251,7 +251,19 @@ same combinators — see
    of language fragments most DSLs share, and a shared value/evaluation
    model so an artifact in one DSL is semantically meaningful to another —
    cross-document *linking* exists via refs; cross-language *composition*
-   does not.
+   does not. The design intent is now settled (DESIGN.md §4, *Towers*):
+   extension is strictly additive, narrowing is by non-import, and an
+   inherited rule is never overridden — an insufficient lower layer is
+   generalized (new version) or forked. Open: how input-surface ambiguity
+   between imported languages is resolved (inline prompt vs. stored
+   preference), the canonical base vocabulary, and the shared value model.
+8. *Tree-native sync.* The operational layer syncs the `Serial` text in
+   an Automerge `{text}` doc — explicitly scaffolding, not the intent
+   (DESIGN.md §7). Line-level merge degrades concurrent structural edits:
+   duplicate node ids must be renumbered, silently retargeting or
+   dangling the refs that named them. The destination is a tree-native
+   CRDT — the node array and child lists replicated as structure — so
+   merges preserve node identity and no reparse is needed on receipt.
 
 ## Next steps
 

@@ -562,6 +562,39 @@ evaluation-time meanings are marked; and whether alternative notations
 live in one language document or as notation documents layered over a
 shared one.
 
+### Towers: languages composed into layers (design intent)
+
+The platform's long-term shape is a *tower* (see `GLOSSARY.md`): the
+workbench's base languages at the bottom, then increasingly
+domain-specific languages — a game language, a card-game language, a
+language for one game's items, behaviors, and levels — with the artifact
+itself (the game, the budget) as the topmost document. Each *layer* is a
+`lang:` document written only in constructs the layers below provide.
+
+**Extension is strictly additive.** A layer adds rules whose meanings
+name constructs imported from below; it never redefines, overrides, or
+shadows an inherited rule. Narrowing is by non-import: a layer's usable
+vocabulary is exactly the constructs it imports plus what it declares.
+"This lower rule needs changing" is a signal the layer below wasn't
+general enough — the fix is to generalize it there and publish a new
+version; dependents' `url@version` pins make adopting it opt-in.
+
+**Every layer is fixable or forkable.** Inspecting a layer is the
+ordinary follow-the-type-ref mechanism (F12), and editing a layer one
+doesn't control produces a new branch or version of its document —
+visible, versioned divergence that a later merge could reconcile —
+rather than an invisible override. The cost of divergence grows with
+depth: heavy local modification of the lowest layers cuts a user off
+from community support — a social-contract problem the platform can
+surface but not solve (open).
+
+**Ambiguity lives only at the input surface.** Storage is never
+ambiguous: every construct use is a ref to a fully specified import.
+Two imported languages may define overlapping surface syntax (two
+`a + b` rules); resolving such input ambiguity — inline prompting, or a
+preference stored at the composition level — is an open question, but
+the answer lives in the projection layer, never in the document.
+
 ## 5. UI architecture
 
 ### `ui/fp` — the component runtime
@@ -786,6 +819,14 @@ presence being broadcast state.
   rather than restarts. Synced text (the `Serial` form, so node ids
   agree on every peer) is parsed into `Document[NodeData]` on arrival:
   the CRDT syncs the serial form, and the document model stays canonical.
+  Syncing the serial text is scaffolding, not the intent: merges happen
+  at the line level, so concurrent structural edits degrade to line
+  merges — duplicate node ids must be renumbered (retargeting or dangling
+  refs that named them), and unrelated structural changes can collide
+  textually. The destination is a **tree-native CRDT**: the document's
+  nodes and child lists replicated as structure, so concurrent edits
+  merge structurally, node identity survives by construction, and no
+  reparse is needed on receipt.
 - **`collaboration/`** — `automerge/` (the facade, plus change info and
   revert computation), `backends/` (`SyncTransport` and
   `BroadcastTransport`: tab-to-tab sync with no server), `DocSession` (the
