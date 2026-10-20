@@ -6,7 +6,7 @@ import munit.FunSuite
 // Direct tests of the scannerless combinator layer: parsing produces
 // PTree nodes whose data is checked structurally (IntData / StringData
 // tag / GapData), plus totality, spans, and examined extents.
-class CombSuite extends FunSuite {
+class CombinatorSuite extends FunSuite {
 
   private val lexicon = Lexicon(List(
     "int"  -> runOf(1)(_.isDigit),
