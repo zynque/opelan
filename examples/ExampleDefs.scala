@@ -20,7 +20,9 @@ private val addSub = Map("+" -> Expr.AddTag, "-" -> Expr.SubTag)
 // The expression grammar as data — the same composition ExprParse
 // writes by hand, with "expr" named so parens recurses to the
 // precedence level (not the phrase wrapper).
-private val exprGrammarDef: GrammarDef =
+private val exprGrammarDef: GrammarDef = exprGrammarWith(List(mulDiv, addSub))
+
+private def exprGrammarWith(levels: List[Map[String, String]]): GrammarDef =
   Phrase(
     Named("expr", Precedence(
       atom = Choice(List(
@@ -33,7 +35,7 @@ private val exprGrammarDef: GrammarDef =
         Junk(
           Set("op", "junk"),
           Set("int", "float", "ref", "junk", "hole")))),
-      levels = List(mulDiv, addSub))),
+      levels = levels)),
     stops = Set.empty)
 
 val exprDef = LanguageDef(
@@ -55,6 +57,13 @@ val exprDef = LanguageDef(
     ViewBinding("eval", "expr-eval")),
   cellParser = None)
 
+// The demo's starting point for lang: expression: `/` is missing, so the
+// budget's per-person formula sits as a hole until the audience adds the
+// operator to the definition document. The schema still declares `div`,
+// so kind ids match exprDef's.
+val demoExprDef = exprDef.copy(syntax =
+  Some(SyntaxDef("expr", exprGrammarWith(List(mulDiv - "/", addSub)))))
+
 val sheetDef = LanguageDef(
   typeRef = SheetLanguage.typeRef,
   title = "lang: sheet",
@@ -70,7 +79,7 @@ val sheetDef = LanguageDef(
     NodeKind("formula", Any)),
   syntax = None,
   views = List(
-    ViewBinding("sheet", "sheet-grid"),
+    ViewBinding("sheet", "sheet-grid", Map("currency" -> "$")),
     ViewBinding("formulas", "sheet-formulas")),
   // Cells parse with the expression language's grammar — by ref, so
   // editing lang: expression heals sheet cells too.
@@ -83,13 +92,13 @@ val sheetDef = LanguageDef(
 val exprImpls = Impls(
   lexicons = Map("expr" -> exprLexicon),
   views = Map(
-    "expr-print" -> ((doc, id) => printTree(readLocExpr(doc, id))),
-    "expr-eval"  -> ((doc, id) => evalTree(doc, readLocExpr(doc, id)))))
+    "expr-print" -> ((doc, id, _) => printTree(readLocExpr(doc, id))),
+    "expr-eval"  -> ((doc, id, _) => evalTree(doc, readLocExpr(doc, id)))))
 
 val sheetImpls = Impls(
   views = Map(
-    "sheet-grid"     -> ((doc, id) => sheetView(doc, id)),
-    "sheet-formulas" -> ((doc, id) => formulasView(doc, id))),
+    "sheet-grid"     -> ((doc, id, ctx) => sheetView(doc, id, ctx)),
+    "sheet-formulas" -> ((doc, id, ctx) => formulasView(doc, id, ctx))),
   cellParsers = Map("sheet-cell" -> parseCellText))
 
 // The foundational languages, each paired with the implementations its

@@ -10,7 +10,8 @@ import opelan.foundation.grammar.Lexicon
 // package for the concrete bundles). docImpls is the meta-language's:
 // the "def" view that renders a decoded definition.
 
-type BuiltinView = (Document[NodeData], Int) => DetachedNode[NodeData]
+type BuiltinView =
+  (Document[NodeData], Int, ViewContext) => DetachedNode[NodeData]
 type BuiltinCellParser = String => DetachedNode[NodeData]
 
 case class Impls(
@@ -18,5 +19,13 @@ case class Impls(
     views: Map[String, BuiltinView] = Map.empty,
     cellParsers: Map[String, BuiltinCellParser] = Map.empty)
 
+// What a builtin view gets from the language rendering it: the view's
+// settings as written in the def doc, and the language's current cell
+// grammar — so a view can retry holes against it (a hole whose text
+// now parses renders healed).
+case class ViewContext(
+    settings: Map[String, String] = Map.empty,
+    parseCell: String => Option[DetachedNode[NodeData]] = _ => None)
+
 val docImpls = Impls(
-  views = Map("def-view" -> ((doc, id) => defView(doc, id))))
+  views = Map("def-view" -> ((doc, id, _) => defView(doc, id))))

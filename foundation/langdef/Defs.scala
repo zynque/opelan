@@ -57,7 +57,8 @@ private[langdef] val metaKinds: List[NodeKind] = List(
   NodeKind("float", Fixed(0)),
   NodeKind("text", Fixed(0)),
   NodeKind("gap", Fixed(0)),
-  NodeKind("ref", Fixed(1)))
+  NodeKind("ref", Fixed(1)),
+  NodeKind("setting", Fixed(2)))  // view setting: key + value
 
 val docLanguageDef = LanguageDef(
   typeRef = langDefTypeRef,

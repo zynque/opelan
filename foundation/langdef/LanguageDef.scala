@@ -39,8 +39,11 @@ enum NodeShape {
 // rules the grammar's token kinds name — plus the grammar itself.
 case class SyntaxDef(lexicon: String, grammar: GrammarDef)
 
-// A derived view bound to a builtin: view "eval" → builtin "expr-eval".
-case class ViewBinding(name: String, builtin: String)
+// A derived view bound to a builtin: view "eval" → builtin "expr-eval",
+// with optional settings the builtin reads (the sheet's currency).
+case class ViewBinding(
+    name: String, builtin: String,
+    settings: Map[String, String] = Map.empty)
 
 // The grammar for projected cell editors — the text committed in a
 // cell's box becomes a replacement subtree. A Language ref names

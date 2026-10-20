@@ -70,4 +70,25 @@ class ResolveSuite extends FunSuite {
         langDefTypeRef.documentUrl, DocLanguage.langDoc),
       withKindRefs(docLanguageDef))
   }
+
+  // The demo's healing moment, end to end through the store: with `/`
+  // missing from the stored lang: expression, the budget's per-person
+  // cell is a hole and rejected formula text stays one; saving the
+  // definition with `/` heals it on the next render.
+  test("a stored hole heals when the referred language gains the operator") {
+    import opelan.foundation.view.ViewTree
+    val staged = seededStore.put(
+      ExprLanguage.typeRef.documentUrl, langDefDoc(demoExprDef))._1
+    val budget = SheetLanguage.sampleDoc
+    def perPerson(st: Store) = languageForDoc(budget, st).get
+      .render("sheet", budget).map(ViewTree.flatten).toOption.get
+      .split("\n")(6)
+    assert(perPerson(staged).contains("?ref:"), perPerson(staged))
+    val sheet = languageForDoc(budget, staged).get
+    assertEquals(sheet.parseCell("ref:1 / ref:2").map(_.data),
+      Some(NodeData.GapData("ref:1 / ref:2")))
+    val fixed = staged.put(
+      ExprLanguage.typeRef.documentUrl, ExprLanguage.langDoc)._1
+    assertEquals(perPerson(fixed), "per person\t\t\t$8.10")
+  }
 }

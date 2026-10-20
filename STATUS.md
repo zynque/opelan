@@ -9,7 +9,7 @@ Last updated: 2026-10-20
 The project is in Phase 1 (foundation & schema system). **Next major
 series:** replacing combinator-based language definitions with
 `pattern means meaning` rules compiled onto the same combinators (*Next
-steps*, item 2).
+steps*, item 1).
 
 ## Working
 
@@ -28,7 +28,9 @@ Each item is described in the cited `DESIGN.md` section.
 - **Expression and sheet languages** (`examples/`, §4): the recovering
   expression parser, `print`/`eval` views, ref resolution with cycle
   detection; the sheet's `sheet`/`formulas` grids with projected cell
-  editing; the seeded "Household budget".
+  editing, holes that heal when the cell grammar can read them, and a
+  `currency` view setting; the seeded "Household budget", staged for the
+  demo with `/` missing from `lang: expression`.
 - **View trees** (`foundation/view`, `ui/view`, §4, §6): one recovering
   interpreter, provenance clicks that select the producing node, and
   `input` commits reconciled in place by `commitContent`.
@@ -54,26 +56,24 @@ Each item is described in the cited `DESIGN.md` section.
 
 ## Known gaps
 
-- **The demo's healing moment can't be shown yet.** Walked in a fresh
-  browser on 2026-10-20 (Linux, `./build.sh` + `npx http-server`): acts 1
-  and 2 otherwise behave as narrated in `DEMO.md`, including in-grid
-  edits with live recompute and the grammar edit itself. What doesn't:
-  - *No seeded hole.* `examples/SheetLanguage.scala` seeds `per person`
-    as `div(total, people)` and `lang: expression` v0 already has `/`,
-    so act 1 never shows a `?`.
-  - *Holes don't heal.* Languages resolve at head, but that only governs
-    newly committed text; stored cell trees (holes included) are not
-    reparsed when a grammar changes. Healing needs a re-commit.
-  - *Rejected formulas become labels.* The sheet's cell parser falls back
-    to `CellFallback.Label`, so `ref:1 / ref:2` without `/` is stored as
-    text; only text typed with a leading `?` becomes a hole.
-  - *Removing a production changes nothing visible.* Eval is the Scala
-    `expr-eval` builtin over stored `div` nodes, so `per person` keeps
-    computing.
-  - *No view spec in `lang: sheet`* for the cosmetic step (currency,
-    column labels): its views are the builtins `sheet-grid` and
-    `sheet-formulas`.
-  - *Not yet walked:* act 3's version bump and two-tab sync.
+- **Demo rough edges.** The full narration in `DEMO.md` was walked in a
+  fresh browser on 2026-10-20 (Linux, `./build.sh` + `npx http-server`,
+  starting from **Reset**) and every step works. What still reads
+  awkwardly:
+  - *Adding `/` takes outline surgery:* copy the `*` op node, paste it
+    (it lands as a child; outdent it), then edit its symbol and retarget
+    its kind ref by node id (`&33`). The `means` series replaces this
+    with one readable line.
+  - *Healing is derived:* a healed hole computes in both views, but the
+    document still holds the hole text until the cell is re-committed
+    (e.g. from the `formulas` view). Retrying holes on each render is
+    whole-sheet, not incremental.
+  - *Pins don't select behavior:* bumping the budget's type ref to a
+    later `lang: sheet` version changes where go-to-definition lands, but
+    execution always resolves at head, so an old pin renders with the
+    current definition.
+  - *`currency` formats computed cells only;* price inputs stay plain
+    numbers.
 - **Text edits reparse whole cells.** Ids survive (`commitContent`), but
   parse cost doesn't follow the edit until sessions are wired in.
 - **Synced history:** remote changes apply as a whole-text reparse;
@@ -137,17 +137,7 @@ Each item is described in the cited `DESIGN.md` section.
 
 ## Next steps
 
-1. **Stage the demo** (`DEMO.md`; clears the first known gap).
-   - Seed `lang: expression` without `/` and the `per person` cell as
-     the hole text `?ref:N / ref:M`.
-   - Store rejected formula text as a hole rather than a label.
-   - Heal holes on a language change: retry hole cells against the
-     current grammar on render or on def-doc save (incrementally, per
-     item 2's *stored documents on a language change*).
-   - Expose a view spec (currency format, column labels) in `lang: sheet`.
-   - Walk the version-pin upgrade and two-tab sync in the demo script;
-     update `USAGE.md` with demo notes.
-2. **`means` rules — the next major series.** Replace authoring of the
+1. **`means` rules — the next major series.** Replace authoring of the
    combinator-based model (`GrammarDef`, a hand-written schema list,
    hand-written printers, builtin views) with `pattern means meaning`
    rules plus a tightest-first binding list, compiled onto the existing
@@ -245,7 +235,7 @@ Each item is described in the cited `DESIGN.md` section.
        only rules below it in the DAG.
    15. **Self-description.** The language-definition language's own
        syntax is written as `means` rules, closing the bootstrap loop.
-3. **History and sync.** A network transport (signaling) and presence
+2. **History and sync.** A network transport (signaling) and presence
    (cursors, selections, eventually keystroke-level preview, as
    ephemeral broadcast state off the change graph); debounce-coalesced
    edit bursts; undo stacks rebuilt on resume; branch interception for
@@ -253,9 +243,9 @@ Each item is described in the cited `DESIGN.md` section.
    lifetime (the op log already persists in `automerge_docs`) and for
    unsynced documents; curated checkpoints; the synced meta-log for
    pruning and compaction; then a tree-native CRDT.
-4. **Schemas and typing.** Check documents against their node kinds and
+3. **Schemas and typing.** Check documents against their node kinds and
    fold the gap/typing machinery into the document model.
-5. **Further roadmap:**
+4. **Further roadmap:**
    - A visual schema editor and interactive diagram editing as document
      views.
    - In-workbench help: `USAGE.md` is an interim measure; per *self

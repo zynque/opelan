@@ -21,6 +21,7 @@ import opelan.foundation.document.Detached._
 //       schema       kind("add", fixed(2))  kind("mul", fixed(2)) …
 //       syntax       "expr"  phrase(named("expr", precedence(…)), "")
 //       views        view("print", "expr-print") …
+//                    view("sheet", "sheet-grid", setting("currency", "$"))
 //       cells        language(&import, as-label)
 def langDefDoc(d: LanguageDef): Document[NodeData] = encodeDef(d)._1
 
@@ -40,8 +41,7 @@ private[langdef] def encodeDef(
   val kindIds = d.schema.map(_.name).zip(doc1.childrenOf(schemaId)).toMap
   val doc2 = add(doc1, cid, List(
     d.syntax.map(s => n(pending("syntax"), sl(s.lexicon), grammarNode(s.grammar, kindIds))),
-    Some(n(pending("views"), d.views.map(v =>
-      n(pending("view"), sl(v.name), sl(v.builtin)))*)),
+    Some(n(pending("views"), d.views.map(viewNode)*)),
     d.cellParser.map(cp => n(pending("cells"), cellsNode(cp)))).flatten*)._1
   val metaIds =
     if (d.typeRef.documentUrl == langDefTypeRef.documentUrl) kindIds else metaKindIds
@@ -60,6 +60,12 @@ private def add(
     insertNode(t, parent, d.childrenOf(parent).length, d)
       .map(d2 => (d2, d2.nodes.length - 1)).getOrElse((d, last))
   }
+
+private def viewNode(v: ViewBinding): DetachedNode[NodeData] =
+  n(pending("view"), (sl(v.name) +: sl(v.builtin) +:
+    v.settings.toList.sorted.map { case (k, value) =>
+      n(pending("setting"), sl(k), sl(value))
+    })*)
 
 private def kindNode(k: NodeKind): DetachedNode[NodeData] =
   n(pending("kind"), sl(k.name), k.shape match {

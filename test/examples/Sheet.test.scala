@@ -22,20 +22,21 @@ class SheetSuite extends munit.FunSuite {
     assert(doc.getNode(sheetId).exists(_.data.isInstanceOf[NodeData.InternalNodeRef]))
     assert(!doc.nodes.exists(_.data == NodeData.StringData(SheetTag)))
     // Each construct is imported once: title, sheet, hrow, row, mul,
-    // add, div. (The imports construct itself stays a direct ext ref.)
-    assertEquals(importEntries(doc).length, 7)
+    // add. (The imports construct itself stays a direct ext ref; `div`
+    // appears only in the per-person hole's text.)
+    assertEquals(importEntries(doc).length, 6)
   }
 
   test("the sheet view evaluates formulas through cell refs") {
     assertEquals(flat("sheet"), Right(
       List(
         "item\tqty\tprice\tline total",
-        "Apples\t4\t1.2\t4.8",
-        "Bread\t2\t2.5\t5",
-        "Coffee\t1\t6.4\t6.4",
-        "total\t\t\t16.2",
+        "Apples\t4\t1.2\t$4.80",
+        "Bread\t2\t2.5\t$5.00",
+        "Coffee\t1\t6.4\t$6.40",
+        "total\t\t\t$16.20",
         "people\t2\t\t",
-        "per person\t\t\t8.1"
+        "per person\t\t\t$8.10"
       ).mkString("\n")))
   }
 
@@ -64,7 +65,25 @@ class SheetSuite extends munit.FunSuite {
     assert(rows(3).endsWith("\toops"), rows(3))
     assert(rows(4).endsWith("\toops"), rows(4))
     assert(rows(6).endsWith("\toops"), rows(6))
-    assertEquals(rows(1), "Apples\t4\t1.2\t4.8")
+    assertEquals(rows(1), "Apples\t4\t1.2\t$4.80")
+  }
+
+  test("the per-person cell is seeded as a hole holding formula text") {
+    val cell = doc.getNode(cellId(6, 3)).get
+    assertEquals(cell.data,
+      NodeData.GapData(s"ref:${cellId(4, 3)} / ref:${cellId(5, 1)}"))
+  }
+
+  test("a hole heals in the views when the cell grammar can read it") {
+    import opelan.foundation.langdef.ViewContext
+    val sid = contentId(doc).get
+    val noGrammar = ViewTree.flatten(sheetView(doc, sid))
+    assert(noGrammar.split("\n")(6).contains("?ref:"), noGrammar)
+    val healed = ViewTree.flatten(
+      sheetView(doc, sid, ViewContext(parseCell = t => Some(parseCellText(t)))))
+    assertEquals(healed.split("\n")(6), "per person\t\t\t8.1")
+    // the document itself still holds the hole
+    assert(doc.getNode(cellId(6, 3)).exists(_.data.isInstanceOf[NodeData.GapData]))
   }
 
   test("a self-referencing cell reports a cycle, not a hang") {
@@ -109,6 +128,9 @@ class SheetSuite extends munit.FunSuite {
     assertEquals(parseCellText("?oops").data, NodeData.GapData("oops"))
     assertEquals(parseCellText("?").data, NodeData.GapData(""))
     assertEquals(parseCellText("").data, NodeData.StringData(""))
+    // unparsed text that mentions a cell is a formula-in-waiting: a hole
+    assertEquals(parseCellText("ref:1 % ref:2").data, NodeData.GapData("ref:1 % ref:2"))
+    assertEquals(parseCellText("2 % people").data, NodeData.StringData("2 % people"))
     assertEquals(
       parseCellText("ref:5 * 2").data, exprTag(Expr.MulTag))
   }
@@ -121,7 +143,7 @@ class SheetSuite extends munit.FunSuite {
     assert(edited.getNode(cellId(1, 1)).exists(_.data == NodeData.IntData(3)))
     val rows = SheetLanguage.render("sheet", edited)
       .map(ViewTree.flatten).toOption.get.split("\n")
-    assertEquals(rows(1), "Apples\t3\t1.2\t3.6")
+    assertEquals(rows(1), "Apples\t3\t1.2\t$3.60")
   }
 
   test("replaceNodeContent swaps children while keeping the node id") {
@@ -140,7 +162,7 @@ class SheetSuite extends munit.FunSuite {
     // and the ref chain still computes: 2 (Bread qty) + 1 = 3
     val rows = SheetLanguage.render("sheet", edited)
       .map(ViewTree.flatten).toOption.get.split("\n")
-    assertEquals(rows(1), "Apples\t4\t1.2\t3")
+    assertEquals(rows(1), "Apples\t4\t1.2\t$3.00")
   }
 
   private def inputSrcs(t: DetachedNode[NodeData]): List[Int] =

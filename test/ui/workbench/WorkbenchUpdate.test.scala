@@ -55,9 +55,11 @@ class WorkbenchUpdateSuite extends munit.FunSuite {
       "opelan:languages/sheet"))
     // the budget opens first — sorted before the language URLs
     assertEquals(u.state.workspace.openUrl, Some("opelan:docs/household-budget"))
-    // each language's type ref resolves to its descriptive doc at v0
+    // each language's type ref resolves to its definition doc at v0 —
+    // lang: expression staged without `/` for the demo
     assertEquals(
-      st.resolve(ExprLanguage.typeRef).map(_._1), Some(ExprLanguage.langDoc))
+      st.resolve(ExprLanguage.typeRef).map(_._1),
+      Some(opelan.foundation.langdef.langDefDoc(opelan.examples.demoExprDef)))
     assertEquals(
       st.resolve(SheetLanguage.typeRef).map(_._1), Some(SheetLanguage.langDoc))
     // every seed is queued for persistence at version 0

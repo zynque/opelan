@@ -30,7 +30,8 @@ the app's implementation *is a document in the same workbench*.
 
 ## The demo, narrated
 
-Sidebar documents: `Household budget`, `lang: sheet`, `lang: expression`.
+Sidebar documents: `Household budget`, `lang: sheet`, `lang: expression`,
+freshly seeded (**Reset** reseeds a used store).
 
 **Act 1 — the app.**
 
@@ -74,13 +75,15 @@ Sidebar documents: `Household budget`, `lang: sheet`, `lang: expression`.
    a / b  means  div(a, b)
    ```
 
-   plus `a * b, a / b` on the binding list (before rules land, an `/`
-   entry in the grammar's precedence node). Return to the budget: the
+   plus `a * b, a / b` on the binding list (before rules land, a copy of
+   the `*` op node in the grammar's first precedence level, changed to
+   `/` building `div`). Save, then return to the budget: the
    `total / people` hole has healed — the cell computes. No rebuild, no
    redeploy; a running application's language changed by editing a
    document. **The moment.**
-8. Cosmetic contrast: edit the currency format or a column label in
-   `lang: sheet` → grid restyles. View specs are data too.
+8. Cosmetic contrast: edit the `sheet` view's `currency` setting in
+   `lang: sheet` (`$` → `€`) and save → the computed column restyles.
+   View specs are data too.
 
 **Act 3 — the substrate flex.**
 

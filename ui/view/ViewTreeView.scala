@@ -95,12 +95,19 @@ private def inputView[I](
     Map(
       "type"  -> "text",
       "value" -> current,
-      "style" -> ("border: none; background: transparent; font: inherit; " +
-        s"padding: 0; margin: 0; min-width: 4ch; width: ${math.max(4, current.length + 1)}ch;")),
+      "style" -> (inputCss(current) + "font: inherit; padding: 0; margin: 0; " +
+        s"min-width: 4ch; width: ${math.max(4, current.length + 1)}ch;")),
     events(
       onEventOpt("keydown")(keyDown(id, current, onEdit)),
       onEventOpt("blur")(blurCommit(id, onEdit))))()
 }
+
+// A box over a hole (its surface text starts with "?") wears the hole
+// chip's colors, so a stuck cell reads as one at a glance.
+private def inputCss(current: String): String =
+  if (current.startsWith("?"))
+    "border: 1px solid #e8d48a; border-radius: 3px; background: #fdf3d7; color: #8a6d1a; "
+  else "border: none; background: transparent; "
 
 private def keyDown[I](id: Int, current: String, onEdit: (Int, String) => I)(
     e: dom.Event): Option[I] = {

@@ -45,7 +45,16 @@ and every cell in the `formulas` view show a text box — edit in place,
 Enter or click-away commits, Escape reverts. A commit rewrites the
 source node in place, so formulas referencing the cell recompute.
 Typing `?` writes a hole; text that parses as an expression (numbers,
-`ref:N`, `a * b`) becomes formula content; anything else is a label.
+`ref:N`, `a * b`) becomes formula content; text that doesn't parse but
+mentions a cell (`ref:N`) is kept as a hole; anything else is a label.
+Hole cells show in yellow. The cell grammar is `lang: expression` as
+stored, so a hole heals (computes) as soon as a saved edit to that
+definition can read it. Computed values are formatted by the `sheet`
+view's `currency` setting in `lang: sheet`.
+
+The seeded `lang: expression` starts without `/`, so the budget's
+`per person` cell starts as a hole: the demo's healing moment
+(`DEMO.md`). **Reset** clears the store and reseeds.
 
 ## Structural editor keys
 

@@ -271,7 +271,16 @@ expression and evaluated, with `InternalNodeRef` leaves addressing other
 cells. The `sheet` view renders the computed grid; `formulas` renders
 each cell's expression instead of its value. Cells parse with the
 expression language's grammar, referenced by type ref, so editing
-`lang: expression` changes sheet cells too. A hole or cycle in a
+`lang: expression` changes sheet cells too. Rejected text that mentions a
+cell (`ref:N`) is kept as a hole rather than a label: a formula the
+grammar can't read yet. Both views render a *healed* sheet: builtin views
+receive a `ViewContext` (the view's settings plus the language's current
+cell grammar), and `healHoles` retries each hole cell's text against that
+grammar, so a hole that now parses renders as the formula it reads as.
+The document keeps the hole (what the user wrote) until the cell is
+committed again. View settings are data in the def doc
+(`view(name, builtin, setting(key, value)…)`); the sheet's `currency`
+setting formats computed values. A hole or cycle in a
 referenced cell propagates only to the cells that use it — the app
 recovers like the documents it is made of. `sampleDoc` seeds the demo's
 household budget.

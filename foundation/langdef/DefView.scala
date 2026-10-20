@@ -20,15 +20,20 @@ def defView(doc: Document[NodeData], contentRootId: Int)
     d.syntax.map(s =>
       section("syntax", grammarLines(s.grammar).map(txt))),
     Some(section("views", d.views.map(v =>
-      txt(s"${v.name} → ${v.builtin}")))),
+      txt(s"${v.name} → ${v.builtin}${settingsText(v.settings)}")))),
     d.cellParser.map(cp =>
       section("cells", List(txt(cellText(cp)))))).flatten*)
 }
 
+// One item per line: each entry is its own block.
 private def section(
     name: String, items: List[DetachedNode[NodeData]])
     : DetachedNode[NodeData] =
-  block(heading(txt(name)) +: items*)
+  block(heading(txt(name)) +: items.map(block(_))*)
+
+private def settingsText(settings: Map[String, String]): String =
+  if (settings.isEmpty) ""
+  else settings.toList.sorted.map((k, v) => s"$k: $v").mkString(" (", ", ", ")")
 
 private def shapeName(s: NodeShape): String = s match {
   case NodeShape.Leaf    => "leaf"

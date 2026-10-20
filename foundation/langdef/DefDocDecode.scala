@@ -42,7 +42,9 @@ def langDefFromDocument(
     views = r.section("views").toList.flatMap { vid =>
       r.entries(vid, "view").map(k => ViewBinding(
         r.childStr(k, 0).getOrElse(""),
-        r.childStr(k, 1).getOrElse("")))
+        r.childStr(k, 1).getOrElse(""),
+        r.entries(k, "setting").flatMap(s =>
+          r.childStr(s, 0).map(_ -> r.childStr(s, 1).getOrElse(""))).toMap))
     },
     cellParser = r.section("cells").flatMap(r.cellParserFrom))
 }
