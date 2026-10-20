@@ -573,8 +573,15 @@ relative form that form needs:
   positions, examined extents). A one-statement edit in a 20-statement
   text reruns under a quarter of the rule bodies, and untouched subtrees
   are the same objects, even after length-changing edits.
-- Not yet connected: sessions don't yet drive the workbench's text
-  surfaces, which still reparse whole cells (STATUS).
+- The text cell runs on a session. A language offers its syntax as a
+  `TextSyntax` (parser, lexicon, a key identifying the grammar, and how
+  a tree becomes content); the pane keeps a `TextSession` and applies
+  each new text as one prefix/suffix edit against the session's own
+  text, so a session that missed a re-derived text is still correct.
+  A re-decoded but unchanged `lang:` def has the same key and keeps the
+  session; a changed one carries it through `changeRules` with the
+  rules `changedRules` reports. Projected cell commits still parse
+  whole (STATUS).
 
 **Rules as documents.** A `lang:` document stores each rule as a
 `means(pattern, meaning)` node. Like every construct use, a meaning names

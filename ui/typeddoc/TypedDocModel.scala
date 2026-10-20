@@ -1,6 +1,7 @@
 package opelan.ui.typeddoc
 
 import opelan.foundation.document._
+import opelan.foundation.language.TextSession
 import opelan.ui.editor.{DocPush, EditorOutput, SelectTarget, SyncedHistory}
 
 // Which surface fills the pane: the generic structural editor, the
@@ -47,6 +48,8 @@ case class TypedDocModel(
     // type, a cell grammar's language) resolve against it, so an edited
     // `lang:` doc re-interprets dependents on the next render.
     store: Store = Store.empty,
+    // The text surface's incremental parse, carried across text edits.
+    textSession: Option[TextSession] = None,
     // Props bookkeeping for the Pane input: which push/pull serials were
     // already applied, so re-delivery of unchanged props is a no-op.
     appliedPushSeq: Int = -1,

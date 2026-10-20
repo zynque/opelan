@@ -2,7 +2,8 @@ package opelan.ui.typeddoc
 
 import opelan.examples.{ExprLanguage, SheetLanguage, languageForDoc}
 import opelan.foundation.document._
-import opelan.foundation.language.{applyDocText, docText, holeCount}
+import opelan.foundation.language.{
+  TextSession, applyDocContent, applyDocText, docText, holeCount}
 import opelan.ui.editor.{DocPush, EditorOutput, SelectTarget}
 import opelan.ui.fp.Update
 import TypedDocInput._
@@ -52,8 +53,16 @@ def typedDocUpdate(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel
 
     // A text edit is total: apply returns a new document (with holes
     // where the text doesn't fit) or an error that only touches status.
+    // A language with an incremental syntax reparses through the pane's
+    // text session, so the work follows the size of the edit.
     case TextEdited(t) =>
-      applyDocText(m.doc, langFor(m), t) match {
+      val session = languageForDoc(m.doc, m.store).flatMap(_.textSyntax)
+        .map(syn => m.textSession.fold(TextSession.start(syn, t))(_.retext(syn, t)))
+      val applied = session match {
+        case Some(s) => applyDocContent(m.doc, s.content)
+        case None    => applyDocText(m.doc, langFor(m), t)
+      }
+      applied match {
         case Right(d) =>
           val holes = holeCount(d)
           val msg =
@@ -63,7 +72,8 @@ def typedDocUpdate(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel
             m.copy(
               doc = d, pushedDoc = d, pushedSelect = None,
               pushMode = DocPush.Merge("Text edit"),
-              text = t, status = msg),
+              text = t, status = msg,
+              textSession = session.orElse(m.textSession)),
             Vector(DocChanged(d), Status(msg)))
         case Left(err) =>
           Update(m.copy(text = t, status = err), Vector(Status(err)))

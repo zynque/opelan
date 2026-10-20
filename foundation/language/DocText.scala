@@ -48,6 +48,13 @@ private def contentOutline(doc: Document[NodeData]): String =
     contentId(doc).map(cid => renderSubtree(doc, cid)).getOrElse("")
   else render(doc)
 
+// Commit already-parsed content (e.g. a TextSession's) the way
+// applyDocText commits a parse.
+def applyDocContent(
+    doc: Document[NodeData],
+    content: DetachedNode[NodeData]): Either[String, Document[NodeData]] =
+  replaceContent(doc, content)
+
 private def replaceContent(
     doc: Document[NodeData],
     content: DetachedNode[NodeData]): Either[String, Document[NodeData]] = {

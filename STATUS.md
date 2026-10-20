@@ -40,8 +40,8 @@ Each item is described in the cited `DESIGN.md` section.
 - **`means` rule groundwork** (`foundation/means`, `foundation/grammar`,
   §4): rule model, checker, reader, and role-tagged printer;
   scannerless combinators; the incremental packrat engine (`Memo`,
-  `ParseSession`); id-preserving reconcile (`commitContent`) on both
-  commit paths.
+  `ParseSession`), driving the text cell through `TextSession`;
+  id-preserving reconcile (`commitContent`) on both commit paths.
 - **UI** (`ui/`, §5): fp runtime, `DocumentEditor`, `TypedDoc` with the
   app surface and its Raw / Definition (F12) exits, `Workbench` with
   seeded demo documents and ref following.
@@ -74,8 +74,10 @@ Each item is described in the cited `DESIGN.md` section.
     current definition.
   - *`currency` formats computed cells only;* price inputs stay plain
     numbers.
-- **Text edits reparse whole cells.** Ids survive (`commitContent`), but
-  parse cost doesn't follow the edit until sessions are wired in.
+- **Only the text cell parses incrementally.** Projected cell commits
+  still parse each committed text whole (they are short, one cell at a
+  time), and synced remote text is the `Serial` outline, parsed by the
+  outline codec rather than a language grammar.
 - **Synced history:** remote changes apply as a whole-text reparse;
   text-cell edits made while browsing a version still write to the main
   session (branching covers structural edits); undo stacks are
@@ -150,8 +152,9 @@ Each item is described in the cited `DESIGN.md` section.
    *Phase A — the rule engine (pure, `foundation/`):*
 
    1. **Finish incremental parsing** (DESIGN §4, *Incremental parsing*):
-      - *Wiring:* use sessions for the text cell, projected cell
-        commits, and synced remote text instead of whole reparses.
+      - *Wiring:* the text cell is done (`TextSession`, below). Still
+        whole reparses: projected cell commits, and synced remote text
+        once sync carries language text rather than the outline.
       - *Stored documents on a language change:* retry only the holes
         whose failed parse called a changed rule.
       - *Memo in the document:* parse results live in document nodes,

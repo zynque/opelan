@@ -2,7 +2,8 @@ package opelan.examples
 
 import opelan.foundation.document._
 import opelan.foundation.document.Detached._
-import opelan.foundation.language.Language
+import opelan.foundation.language.{Language, TextSyntax}
+import opelan.foundation.grammar.toDetached
 
 // The arithmetic-expression language, defined in Scala. `typeRef` names the
 // document that will eventually hold this definition (bootstrapping);
@@ -26,6 +27,12 @@ object ExprLanguage extends Language {
   // text does not fit the grammar.
   override def parse(text: String): Option[DetachedNode[NodeData]] =
     Some(exprToDetached(parseExpr(text).expr))
+
+  // The same parse, incremental: content is normalized through Expr,
+  // exactly as `parse` does.
+  override def textSyntax: Option[TextSyntax] =
+    Some(TextSyntax(exprGrammar, exprLexicon, "examples.ExprParse",
+      toContent = t => exprToDetached(exprFromDetached(toDetached(t)))))
 
   private def content(doc: Document[NodeData]): Either[String, Int] =
     contentId(doc).toRight(s"$name: typed document has no content")

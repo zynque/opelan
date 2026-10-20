@@ -2,7 +2,7 @@ package opelan.foundation.langdef
 
 import opelan.foundation.document._
 import opelan.foundation.grammar._
-import opelan.foundation.language.Language
+import opelan.foundation.language.{Language, TextSyntax}
 
 // A Language interpreted from a LanguageDef — the bootstrap mechanism:
 // the def carries the grammar as data and names its semantics through
@@ -57,6 +57,21 @@ class DefLanguage(
   // Total like every recovering grammar: Some whenever a syntax exists.
   override def parse(text: String): Option[DetachedNode[NodeData]] =
     syntax.map { case (lexicon, g) => toDetached(g(In(text, lexicon), 0).tree) }
+
+  // The interpreted grammar as an incremental parser. Its key is the
+  // grammar data plus the construct refs it emits (they pin the def's
+  // version), so a session survives re-decoding an unchanged def; after
+  // an edit to the def, only rules whose definitions changed rerun.
+  override def textSyntax: Option[TextSyntax] =
+    for {
+      s <- languageDef.syntax
+      (lexicon, parser) <- syntax
+    } yield TextSyntax(parser, lexicon, (s.lexicon, s.grammar, kindTags),
+      changedSince = previous => previous.key match {
+        case (s.lexicon, before: GrammarDef, `kindTags`) =>
+          Some(changedRules(before, s.grammar))
+        case _ => None
+      })
 
   override def parseCell(text: String): Option[DetachedNode[NodeData]] =
     languageDef.cellParser.map {

@@ -45,6 +45,11 @@ trait Language {
   // the node it edits. None = the language's views are read-only.
   def parseCell(text: String): Option[DetachedNode[NodeData]] = None
 
+  // The text syntax as an incremental parser, if the language has one:
+  // the text surface keeps a TextSession over it, so an edit reparses in
+  // proportion to its size. Its content must equal `parse`'s.
+  def textSyntax: Option[TextSyntax] = None
+
   // The document `typeRef` names: a readable description of this
   // language, seeded into the document store so following a typed
   // document's type ref lands on a real node. Descriptive, not

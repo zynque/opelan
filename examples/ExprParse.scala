@@ -38,7 +38,7 @@ def parseExpr(input: String): ExprParseResult = {
 // wraps it with a ")"-stopping phrase; the top level phrases it to EOF.
 private lazy val exprCore: Parser = rule("expr")(precedenceTable(atom, opLevels))
 
-private def exprGrammar: Parser = phrase(exprCore, Set.empty)
+lazy val exprGrammar: Parser = phrase(exprCore, Set.empty)
 
 // Each operator builds its construct by ref (exprTag), as the
 // interpreted grammar does through DefLanguage.kindTag.

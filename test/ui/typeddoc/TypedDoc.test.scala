@@ -84,6 +84,16 @@ class TypedDocSuite extends munit.FunSuite {
     assertEquals(exprFromDocument(u.state.doc, content), Right(Expr.Add(Expr.Lit(1), Expr.Lit(2))))
   }
 
+  test("TextEdited reparses through a carried text session") {
+    val u1 = typedDocUpdate(init, TypedDocInput.TextEdited("1 + 2"))
+    assert(u1.state.textSession.isDefined)
+    val u2 = typedDocUpdate(u1.state, TypedDocInput.TextEdited("1 + 2 * 3"))
+    assertEquals(u2.state.textSession.map(_.session.text), Some("1 + 2 * 3"))
+    // the same document a whole-text parse commits
+    assertEquals(Right(u2.state.doc), opelan.foundation.language.applyDocText(
+      u1.state.doc, opelan.examples.registryForDoc, "1 + 2 * 3"))
+  }
+
   test("TextEdited leaves holes where text does not fit") {
     val u = typedDocUpdate(init, TypedDocInput.TextEdited("1 + abc"))
     val content = contentId(u.state.doc).get
