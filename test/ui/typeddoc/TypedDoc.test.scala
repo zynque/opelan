@@ -295,4 +295,47 @@ class TypedDocSuite extends munit.FunSuite {
     assertEquals(u.state.textEpoch, m.textEpoch)
     assertEquals(u.state.text, "5")
   }
+
+  // A store holding two versions of the pane's language: the doc's
+  // pins all target v0 while v1 is head.
+  private def bumpedStore: Store =
+    Store.empty
+      .put(ExprLanguage.typeRef.documentUrl, ExprLanguage.langDoc)._1
+      .put(ExprLanguage.typeRef.documentUrl,
+        langDefDoc(opelan.examples.exprDef.copy(name = "v2")))._1
+
+  test("AcceptUpdates bumps the doc's pinned refs to their heads") {
+    val m = init.copy(store = bumpedStore)
+    val u = typedDocUpdate(m, TypedDocInput.AcceptUpdates)
+    assertEquals(
+      typeRefOf(u.state.doc).map(_.documentVersionId), Some(1))
+    assert(u.out.exists {
+      case TypedDocOutput.DocChanged(d) =>
+        typeRefOf(d).map(_.documentVersionId).contains(1)
+      case _ => false
+    })
+    assertEquals(pendingUpdates(u.state.doc, u.state.store), Nil)
+  }
+
+  test("AcceptUpdates reports when nothing is pending") {
+    val u = typedDocUpdate(init, TypedDocInput.AcceptUpdates)
+    assertEquals(u.out, Vector(TypedDocOutput.Status("No pending updates")))
+  }
+
+  test("ToggleAutoUpdate writes and removes the flag") {
+    val u1 = typedDocUpdate(init, TypedDocInput.ToggleAutoUpdate)
+    assert(opelan.foundation.langdef.autoUpdateEnabled(u1.state.doc))
+    val u2 = typedDocUpdate(u1.state, TypedDocInput.ToggleAutoUpdate)
+    assert(!opelan.foundation.langdef.autoUpdateEnabled(u2.state.doc))
+  }
+
+  test("an auto-updating doc accepts pending pins without the click") {
+    val flagged =
+      opelan.foundation.langdef.setAutoUpdate(init.doc, true).toOption.get
+    val m = init.copy(doc = flagged, store = bumpedStore)
+    // Any input — a view switch suffices — triggers the recorded accept.
+    val u = typedDocUpdate(m, TypedDocInput.SwitchView(DocView.Text))
+    assertEquals(
+      typeRefOf(u.state.doc).map(_.documentVersionId), Some(1))
+  }
 }

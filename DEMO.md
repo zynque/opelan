@@ -79,10 +79,10 @@ freshly seeded (**Reset** reseeds a used store).
    the `*` op node in the grammar's first precedence level, changed to
    `/` building `div`). Save → `lang: expression` is v1 — and the budget
    is unchanged: its pin keeps it on `lang: sheet` v0, whose own pin
-   keeps it on expression v0. `lang: sheet` shows a pending update;
-   accepting bumps its cell-grammar ref and publishes `lang: sheet` v1,
-   which pends the budget. Back on the budget, one accept → the
-   `total / people` hole heals and the cell computes. No rebuild, no
+   keeps it on expression v0. `lang: sheet` shows a pending update —
+   accepting bumps its cell-grammar ref, and saving publishes `lang:
+   sheet` v1, which pends the budget. Back on the budget, one accept →
+   the `total / people` hole heals and the cell computes. No rebuild, no
    redeploy: a running application's language changed by editing a
    document, and adopting it was an explicit, versioned gesture at each
    layer — opting a document into automatic updates makes the same

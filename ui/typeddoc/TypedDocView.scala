@@ -2,6 +2,7 @@ package opelan.ui.typeddoc
 
 import org.scalajs.dom
 import opelan.foundation.document._
+import opelan.foundation.langdef.autoUpdateEnabled
 import opelan.examples.languageForDoc
 import opelan.ui.fp._
 import opelan.ui.fp.Dsl._
@@ -104,7 +105,9 @@ private def toolbar(m: TypedDocModel): View[TypedDocInput] =
       languageForDoc(m.doc, m.store).toList.flatMap(l =>
         l.views.map(v => viewButton(v, DocView.Derived(v), m))) ++
       Vector(
-        el("span", style("color: #666; margin: 0 10px;"))(text(s"type: ${typeLabel(m)}")),
+        el("span", style("color: #666; margin: 0 10px;"))(text(s"type: ${typeLabel(m)}"))) ++
+      pendingControls(m) ++
+      Vector(
         el("span", style("float: right;"))(
           el("button",
             style("padding: 3px 8px; margin-left: 6px;"),
@@ -112,6 +115,23 @@ private def toolbar(m: TypedDocModel): View[TypedDocInput] =
           el("button",
             style("padding: 3px 8px; margin-left: 6px;"),
             events = on("click", TypedDocInput.LoadSheetSample))(text("Sheet sample")))))
+
+// Pending pin updates + the auto-update opt-in: the accept button
+// appears only when a ref pins behind a head; the toggle writes the
+// flag into the document itself.
+private def pendingControls(m: TypedDocModel): Vector[View[TypedDocInput]] = {
+  val n = pendingUpdates(m.doc, m.store).length
+  Vector(
+    el("button",
+      style("padding: 3px 8px; margin-left: 6px;" +
+        (if (n == 0) " display: none;" else " font-weight: bold;")),
+      events = on("click", TypedDocInput.AcceptUpdates))(
+      text(s"Update ($n)")),
+    el("button",
+      style("padding: 3px 8px; margin-left: 6px;"),
+      events = on("click", TypedDocInput.ToggleAutoUpdate))(
+      text(s"auto-update: ${if (autoUpdateEnabled(m.doc)) "on" else "off"}")))
+}
 
 private def viewButton(label: String, v: DocView, m: TypedDocModel): View[TypedDocInput] = {
   val active = m.view == v

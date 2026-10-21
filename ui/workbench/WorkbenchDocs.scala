@@ -1,6 +1,7 @@
 package opelan.ui.workbench
 
 import opelan.foundation.document._
+import opelan.foundation.langdef.autoUpdateEnabled
 import opelan.ui.fx._
 import opelan.ui.typeddoc.TypedDocInput
 import opelan.ui.workbench.WorkbenchUpdate._
@@ -50,11 +51,59 @@ private[workbench] def doSave(
   written match {
     case Some(v) =>
       val (m2, id) = nextReq(m.copy(workspace = ws))
-      up(m2.copy(
-        storageQ = m2.storageQ :+ StorageReq.Persist(id, url, v, d)))
+      val (m3, bumps) = autoCascade(m2, url)
+      up(m3.copy(
+        storageQ =
+          m3.storageQ ++ (StorageReq.Persist(id, url, v, d) +: bumps)))
     case None =>
       up(m.copy(workspace = ws, status = s"No changes to save — $url"))
   }
+}
+
+// Auto-update cascade after a save: every auto-update-opted document
+// whose refs pin behind a head accepts them — each accept is a `put`, a
+// recorded versioned edit that can pend the next layer, so passes
+// repeat to a fixpoint (bounded by the URL count: a dep bumped late in
+// a pass can repend a doc already passed). The open document is left to
+// its pane's own auto-accept; synced docs are skipped — their sessions
+// own their text. Returns the model with the cascade's store plus one
+// quiet persist request per bumped version.
+private[workbench] def autoCascade(
+    m: WorkbenchModel,
+    savedUrl: String): (WorkbenchModel, Vector[StorageReq]) = {
+  val skip = m.synced.keySet ++ m.workspace.openUrl.toSet + savedUrl
+  def pass(s: Store): (Store, List[(String, Int, Document[NodeData])]) =
+    s.urls.filterNot(skip).foldLeft(
+      (s, List.empty[(String, Int, Document[NodeData])])) {
+        case ((st, bs), u) =>
+          st.head(u) match {
+            case Some((_, d)) if autoUpdateEnabled(d) =>
+              acceptUpdates(d, st) match {
+                case Some(d2) =>
+                  val (st2, v) = st.put(u, d2)
+                  (st2, bs :+ (u, v, d2))
+                case None => (st, bs)
+              }
+            case _ => (st, bs)
+          }
+      }
+  def fixpoint(
+      s: Store, acc: Vector[(String, Int, Document[NodeData])], rounds: Int)
+      : (Store, Vector[(String, Int, Document[NodeData])]) =
+    pass(s) match {
+      case (s2, Nil) => (s2, acc)
+      case (s2, bs) =>
+        if (rounds >= s.urls.size) (s2, acc ++ bs)
+        else fixpoint(s2, acc ++ bs, rounds + 1)
+    }
+  val (s, bumped) = fixpoint(m.workspace.store, Vector.empty, 0)
+  bumped.foldLeft(
+    (m.copy(workspace = m.workspace.copy(store = s)),
+      Vector.empty[StorageReq])) {
+        case ((mm, rs), (u, v, d)) =>
+          val (m2, id) = nextReq(mm)
+          (m2, rs :+ StorageReq.Persist(id, u, v, d, quiet = true))
+      }
 }
 
 private[workbench] def joinBranch(m: WorkbenchModel, url: String): Upd = {

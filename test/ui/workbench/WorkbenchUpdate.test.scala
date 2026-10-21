@@ -276,4 +276,35 @@ class WorkbenchUpdateSuite extends munit.FunSuite {
     assertEquals(kids.find(_.key == "doc").map(_.slot), Some("doc"))
     assertEquals(kids.find(_.key == "demo").map(_.slot), Some("demo"))
   }
+
+  test("saving a dependency cascades pin bumps through opted-in dependents") {
+    def pinned(url: String): Document[NodeData] =
+      buildDocument(DetachedNode.leaf(NodeData.ExternalNodeRef(
+        ExternalNodeReference(url, 0, 0))))
+    def flagged(url: String): Document[NodeData] =
+      opelan.foundation.langdef.setAutoUpdate(pinned(url), true).toOption.get
+    val st = List(
+        "dep" -> doc("dep v0"),
+        "consumer" -> flagged("dep"),
+        "grand" -> flagged("consumer"),
+        "plain" -> pinned("dep"))
+      .foldLeft(Store.empty)((s, p) => s.put(p._1, p._2)._1)
+    val m = init.copy(workspace = init.workspace.copy(
+      store = st, openUrl = Some("dep"), openVersion = Some(0),
+      doc = Some(doc("dep v0"))))
+    val u = doSave(m, "dep", doc("dep v1"))
+    val st2 = u.state.workspace.store
+    // Each opted-in dependent bumped its pins and republished —
+    // transitively (grand bumped to consumer@1 in the same cascade).
+    assertEquals(st2.head("consumer").map(_._1), Some(1))
+    assertEquals(st2.head("grand").map(_._1), Some(1))
+    assertEquals(
+      typeRefOf(st2.get("consumer", 1).get).map(_.documentVersionId), Some(1))
+    assertEquals(
+      typeRefOf(st2.get("grand", 1).get).map(_.documentVersionId), Some(1))
+    // Unflagged dependents keep their pins.
+    assertEquals(st2.head("plain").map(_._1), Some(0))
+    // The save and each bumped version queued for persistence.
+    assertEquals(u.state.storageQ.length, 3)
+  }
 }

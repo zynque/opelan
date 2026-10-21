@@ -23,6 +23,13 @@ Each item is described in the cited `DESIGN.md` section.
   root; imports, title, content layout; every construct imported once and
   used by `InternalNodeRef`, so renaming a construct in its `lang:` doc
   renames every use (tested).
+- **Version pins select execution** (§4): language resolution reads the
+  pinned `url@version`, not the head; `pendingUpdates` finds a
+  document's refs pinning behind a head, the toolbar's **Update** button
+  accepts them as one ordinary edit, and a `setting(auto-update, true)`
+  node opts a document into accepting without the click — in the pane,
+  and in a fixpoint cascade on save that republishes flagged dependents
+  (tested end-to-end: `/` → sheet v1 → budget).
 - **Version DAG** (`foundation/version`, §3): LSCA merge base; drives
   editor history (branching undo, history column).
 - **Expression and sheet languages** (`examples/`, §4): the recovering
@@ -69,13 +76,13 @@ Each item is described in the cited `DESIGN.md` section.
   - *Healing is derived:* a healed hole computes in both views, but the
     document still holds the hole text until the cell is re-committed
     (e.g. from the `formulas` view).
-  - *Pins select navigation, not yet behavior:* bumping the budget's
-    type ref to a later `lang: sheet` version changes where
-    go-to-definition lands, but execution still resolves at head, so an
-    old pin renders with the current definition. The model (DESIGN §4):
-    execution honors the pin; a dependent whose refs pin behind a head
-    surfaces pending updates, and accepting — or a per-document
-    auto-update opt-in — rewrites the pins as an ordinary edit.
+  - *Update edges:* the save-time cascade skips synced documents (their
+    sessions own their text) and only runs on local saves — a remote
+    head arrived via sync leaves pending updates for the accept click;
+    a pin whose node vanished at the newer version is just unresolvable
+    — no broken-import surface; and a pin bump reparses a language's
+    holes whole, since `changedSince` can't describe the versioned
+    kind-refs difference.
   - *`currency` formats computed cells only;* price inputs stay plain
     numbers.
 - **Only the text cell parses incrementally.** Projected cell commits
@@ -93,9 +100,7 @@ Each item is described in the cited `DESIGN.md` section.
   "unresolved" rather than offering creation; refs into old pinned
   versions open read-write, and saving appends a new head rather than
   branching; cross-document paste doesn't externalize and re-import refs
-  (`extractExternalized` and `internalizeRefs` are the primitives);
-  refs pinned behind a head are neither detected nor offered a bump —
-  the pending-update accept, DESIGN §4.
+  (`extractExternalized` and `internalizeRefs` are the primitives).
 - **Old stores aren't migrated.** Stores from before the by-reference
   format degrade to holes; use **Reset** to reseed. Seeds' construct ids
   must match code's canonical encodings (`metaKindIds`, `kindRefs`), so
@@ -242,15 +247,15 @@ Each item is described in the cited `DESIGN.md` section.
    15. **Self-description.** The language-definition language's own
        syntax is written as `means` rules, closing the bootstrap loop.
 2. **Pins, pending updates, auto-update** (DESIGN §4, *Pins select
-   behavior*). Execution honors `url@version`: language resolution reads
-   the pinned version rather than the head. A document whose external
-   refs pin behind a head surfaces pending updates; the accept gesture
-   rewrites the pins as one ordinary edit (a pin whose node vanished at
-   the newer version surfaces as a broken import instead). A
-   per-document auto-update flag accepts automatically — still as a
-   recorded, versioned edit. The demo beat: adding `/` to
-   `lang: expression` pends `lang: sheet`; accepting publishes sheet
-   v1, which pends the budget — the hole heals on the budget's accept.
+   behavior*). Built: pin-faithful resolution, `pendingUpdates` /
+   `acceptUpdates`, the toolbar Update button, the
+   `setting(auto-update, true)` flag with in-pane auto-accept, and the
+   save-time cascade (synced docs skipped). Open: broken-import
+   surfacing, cascades triggered by remote heads, and expressing a
+   version bump to `changedSince` so only affected holes reparse. The
+   demo beat: adding `/` to `lang: expression` pends `lang: sheet`;
+   accepting publishes sheet v1, which pends the budget — the hole
+   heals on the budget's accept.
 3. **History and sync.** A network transport (signaling) and presence
    (cursors, selections, eventually keystroke-level preview, as
    ephemeral broadcast state off the change graph); debounce-coalesced

@@ -34,11 +34,17 @@ Three surfaces over one document:
   tooltip and select that node in the structural editor when clicked.
 
 Toolbar also shows the document's type label ("raw document", the
-language name, or `unknown:` ref). **Expr sample** loads a typed
-expression-language document; **Sheet sample** loads the typed
-"Household budget" spreadsheet — rows of label, literal, and formula
-cells (`qty * price`, a summed total, `total / people`) whose `sheet`
-view computes values and whose `formulas` view shows the expressions.
+language name, or `unknown:` ref), plus two update controls: **Update
+(N)** appears when `N` of the document's external refs pin versions
+behind a store head — a pending update — and clicking it bumps every
+pin to its head as one ordinary, versioned edit; **auto-update** writes
+an opt-in flag into the document so those accepts happen without the
+click (saving a dependency cascades pin bumps through every flagged
+dependent). **Expr sample** loads a typed expression-language document;
+**Sheet sample** loads the typed "Household budget" spreadsheet — rows
+of label, literal, and formula cells (`qty * price`, a summed total,
+`total / people`) whose `sheet` view computes values and whose
+`formulas` view shows the expressions.
 
 Sheet cells are projected editors: value cells (labels, numbers, holes)
 and every cell in the `formulas` view show a text box — edit in place,
@@ -47,10 +53,12 @@ source node in place, so formulas referencing the cell recompute.
 Typing `?` writes a hole; text that parses as an expression (numbers,
 `ref:N`, `a * b`) becomes formula content; text that doesn't parse but
 mentions a cell (`ref:N`) is kept as a hole; anything else is a label.
-Hole cells show in yellow. The cell grammar is `lang: expression` as
-stored, so a hole heals (computes) as soon as a saved edit to that
-definition can read it. Computed values are formatted by the `sheet`
-view's `currency` setting in `lang: sheet`.
+Hole cells show in yellow. The cell grammar is `lang: expression` at
+the version the sheet's ref pins, so a hole heals (computes) once the
+sheet's pin bumps to a version that can read it — via the Update
+button or auto-update, not just by saving the definition. Computed
+values are formatted by the `sheet` view's `currency` setting in
+`lang: sheet`.
 
 The seeded `lang: expression` starts without `/`, so the budget's
 `per person` cell starts as a hole: the demo's healing moment

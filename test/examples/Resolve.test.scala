@@ -27,12 +27,17 @@ class ResolveSuite extends FunSuite {
     }
   }
 
-  test("resolution reads the head version — an edited def takes effect") {
+  test("resolution reads the pinned version — a save pends, doesn't retarget") {
     val edited = exprDef.copy(name = "Expressions v2")
     val s2 = seededStore.put(
       ExprLanguage.typeRef.documentUrl, langDefDoc(edited))._1
+    // The ref pins v0; the v1 edit resolves only after the pin bumps.
     assertEquals(
       languageForRef(ExprLanguage.typeRef, s2).map(_.name),
+      Some(ExprLanguage.name))
+    assertEquals(
+      languageForRef(
+        ExprLanguage.typeRef.copy(documentVersionId = 1), s2).map(_.name),
       Some("Expressions v2"))
     // The untouched def still resolves too.
     assertEquals(
@@ -71,24 +76,37 @@ class ResolveSuite extends FunSuite {
       withKindRefs(docLanguageDef))
   }
 
-  // The demo's healing moment, end to end through the store: with `/`
-  // missing from the stored lang: expression, the budget's per-person
-  // cell is a hole and rejected formula text stays one; saving the
-  // definition with `/` heals it on the next render.
-  test("a stored hole heals when the referred language gains the operator") {
+  // The demo's healing moment under pin semantics: `/` saved as
+  // expression v1 changes nothing until the sheet def accepts its
+  // pending update (cell-grammar ref → v1, publishing sheet v1) and
+  // the budget accepts the sheet's — the hole heals on the last bump.
+  test("a stored hole heals as each layer accepts its pending update") {
     import opelan.foundation.view.ViewTree
-    val staged = seededStore.put(
-      ExprLanguage.typeRef.documentUrl, langDefDoc(demoExprDef))._1
+    // Seeded like the demo: lang: expression v0 staged without `/`,
+    // so every pin to it lands on the staged grammar.
+    val staged = List(ExprLanguage, SheetLanguage, DocLanguage)
+      .foldLeft(Store.empty)((s, l) => s.put(
+        l.typeRef.documentUrl,
+        if (l == ExprLanguage) langDefDoc(demoExprDef) else l.langDoc)._1)
     val budget = SheetLanguage.sampleDoc
-    def perPerson(st: Store) = languageForDoc(budget, st).get
-      .render("sheet", budget).map(ViewTree.flatten).toOption.get
-      .split("\n")(6)
-    assert(perPerson(staged).contains("?ref:"), perPerson(staged))
+    def perPerson(st: Store, b: Document[NodeData]) =
+      languageForDoc(b, st).get
+        .render("sheet", b).map(ViewTree.flatten).toOption.get
+        .split("\n")(6)
+    assert(perPerson(staged, budget).contains("?ref:"), perPerson(staged, budget))
     val sheet = languageForDoc(budget, staged).get
     assertEquals(sheet.parseCell("ref:1 / ref:2").map(_.data),
       Some(NodeData.GapData("ref:1 / ref:2")))
+    // Saving `/` as expression v1: pins unchanged — still a hole.
     val fixed = staged.put(
       ExprLanguage.typeRef.documentUrl, ExprLanguage.langDoc)._1
-    assertEquals(perPerson(fixed), "per person\t\t\t$8.10")
+    assert(perPerson(fixed, budget).contains("?ref:"), perPerson(fixed, budget))
+    // lang: sheet accepts: its cell-grammar ref bumps to expression v1.
+    val sheetDoc = fixed.get("opelan:languages/sheet", 0).get
+    val s2 = fixed.put(
+      "opelan:languages/sheet", acceptUpdates(sheetDoc, fixed).get)._1
+    // The budget accepts: type ref and kind imports bump — the hole heals.
+    val budget2 = acceptUpdates(budget, s2).get
+    assertEquals(perPerson(s2, budget2), "per person\t\t\t$8.10")
   }
 }

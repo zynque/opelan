@@ -22,9 +22,11 @@ def registryForDoc(doc: Document[NodeData]): Option[Language] =
 // type ref names its definition *document*, and when the store holds a
 // doc at that URL typed as a definition (langDefTypeRef) the doc IS the
 // language — decoded and interpreted on the spot. Resolution reads the
-// store's head version, so saving an edited def doc changes the
-// language live; a URL with no def-typed doc falls through to the
-// registry, which is also where DocLanguage itself bottoms out.
+// pinned version — execution honors `url@version`, so saving an edited
+// def doc appends a head without retargeting dependents (a pin bump is
+// the accept-update gesture); head is the fallback when the pinned
+// version isn't stored. A URL with no def-typed doc falls through to
+// the registry, which is also where DocLanguage itself bottoms out.
 def languageForRef(
     ref: ExternalNodeReference, store: Store): Option[Language] =
   storedLanguage(ref, store).orElse(registryForRef(ref))
@@ -36,14 +38,24 @@ def languageForDoc(
 
 // A def interpreted as a live language: impls bound from the
 // foundational pair whose type ref the def claims; language refs (a
-// cell grammar's) resolve through the same store, so editing a
-// referred language heals its dependents.
+// cell grammar's) resolve through the same store — pinned, so a
+// referred language's new version reaches dependents only when their
+// refs bump to it.
 def languageFromDef(d: LanguageDef, store: Store = Store.empty): Language =
   new DefLanguage(d, implsFor(d), ref => languageForRef(ref, store))
 
 private def storedLanguage(
     ref: ExternalNodeReference, store: Store): Option[Language] =
   for {
-    (v, doc) <- store.head(ref.documentUrl)
+    (v, doc) <- pinnedOrHead(ref, store)
     if typeRefOf(doc).contains(langDefTypeRef)
   } yield languageFromDef(langDefFromDocument(ref.documentUrl, doc, v), store)
+
+// The pinned version, falling back to head when the pin isn't stored
+// (an older or pruned store) — the URL still names a def-typed doc.
+private def pinnedOrHead(
+    ref: ExternalNodeReference,
+    store: Store): Option[(Int, Document[NodeData])] =
+  store.get(ref.documentUrl, ref.documentVersionId)
+    .map(ref.documentVersionId -> _)
+    .orElse(store.head(ref.documentUrl))

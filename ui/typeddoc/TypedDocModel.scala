@@ -92,6 +92,12 @@ enum TypedDocInput {
   // Go to definition: follow the document's type ref — the owner opens
   // the language document it names (the app's "implementation").
   case GoToDefinition
+  // Accept pending updates: every external ref pinned behind a head
+  // bumps to it — one ordinary edit, recorded as a version.
+  case AcceptUpdates
+  // Toggle the document's auto-update flag — pending pins then accept
+  // without the click (still a recorded, versioned edit).
+  case ToggleAutoUpdate
   case FromEditor(out: EditorOutput)
 }
 

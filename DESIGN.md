@@ -253,19 +253,26 @@ edit can never silently retarget a dependent (*Never broken* — the
 *Towers* opt-in made concrete). What a newer head produces on a
 dependent is a *pending update*: any of its external refs — the type
 ref, an imports entry, a def's cell-grammar ref — that pins behind the
-store's head. Accepting rewrites the pins as one ordinary edit, which
-appends a new version of the dependent and may in turn pend the layer
-above; since every use routes through the imports section, one bumped
-entry retargets all uses. (A pin whose node no longer resolves at the
-newer version is a broken import, not an update.) A document can opt
-into automatic updates: the same recorded accept then happens without
-the click — pins are still rewritten as a versioned edit, never
-resolved at head invisibly. Interim: execution still resolves at head
-(STATUS); go-to-definition already opens the pinned version, and name
-projections read names at head so a rename shows at once — display,
-not semantics. Deriving content migrations for dependents when a
-definition changes (*Evolvable*) — rewriting stored subtrees, not just
-pins — is the deeper half of the same question and stays open.
+store's head. `pendingUpdates` finds them by scanning the document's
+reachable `ExternalNodeRef`s against the heads; accepting rewrites the
+pins as one ordinary edit, which appends a new version of the dependent
+and may in turn pend the layer above; since every use routes through
+the imports section, one bumped entry retargets all uses. (A pin whose
+node no longer resolves at the newer version is a broken import, not
+an update.) A document opts into automatic updates with a
+`setting(auto-update, true)` node under its root — ordinary data the
+raw outline shows and edits. The same recorded accept then happens
+without the click, in two places: in the pane whenever a flagged open
+document has pending pins, and in a fixpoint pass on save that bumps
+every flagged dependent still pinned behind a head — skipping the open
+document (its pane handles it) and synced documents (their sessions
+own their text). Pins are still rewritten as a versioned edit, never
+resolved at head invisibly. Go-to-definition opens the pinned version,
+and name projections read names at head so a rename shows at once —
+display, not semantics. Deriving content migrations for dependents
+when a definition changes (*Evolvable*) — rewriting stored subtrees,
+not just pins — is the deeper half of the same question and stays
+open.
 
 **Expression language** (`ExprLanguage`, `Expr`/`ExprDoc`, `ExprLexicon`,
 `ExprParse`, `ExprView`): the demonstration language. It has int and

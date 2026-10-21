@@ -2,6 +2,7 @@ package opelan.ui.typeddoc
 
 import opelan.examples.{ExprLanguage, SheetLanguage, languageForDoc}
 import opelan.foundation.document._
+import opelan.foundation.langdef.{autoUpdateEnabled, setAutoUpdate}
 import opelan.foundation.language.{
   HoleRetry, TextSession, applyDocContent, applyDocText, docText, holeCount}
 import opelan.ui.editor.{DocPush, EditorOutput, SelectTarget}
@@ -10,15 +11,36 @@ import TypedDocInput._
 import TypedDocOutput._
 
 // The pure transition function for the typed-document pane. After each
-// step the pane re-remembers its document's hole attempts against the
-// current store, so the next render reuses every attempt a language
-// change didn't touch.
+// step: an auto-update-opted document accepts pending pin bumps without
+// the click (the same recorded edit as AcceptUpdates), and the pane
+// re-remembers its document's hole attempts against the current store,
+// so the next render reuses every attempt a language change didn't
+// touch. Both are skipped when the step moved neither doc nor store.
 def typedDocUpdate(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel, TypedDocOutput, TypedDocInput] = {
-  val u = step(m, input)
+  val u = autoAccept(step(m, input))
   val s = u.state
-  val retry = languageForDoc(s.doc, s.store)
-    .fold(HoleRetry())(_.rememberHoles(s.doc, s.holeRetry))
+  val retry =
+    if ((s.doc eq m.doc) && (s.store eq m.store)) s.holeRetry
+    else languageForDoc(s.doc, s.store)
+      .fold(HoleRetry())(_.rememberHoles(s.doc, s.holeRetry))
   u.copy(state = s.copy(holeRetry = retry))
+}
+
+private def autoAccept(
+    u: Update[TypedDocModel, TypedDocOutput, TypedDocInput])
+    : Update[TypedDocModel, TypedDocOutput, TypedDocInput] = {
+  val s = u.state
+  if (!autoUpdateEnabled(s.doc)) u
+  else acceptUpdates(s.doc, s.store) match {
+    case Some(d) =>
+      val msg = "Pins auto-updated to their heads"
+      u.copy(
+        state = s.copy(
+          doc = d, pushedDoc = d,
+          pushMode = DocPush.Merge("Auto-update"), status = msg),
+        out = u.out ++ Vector(DocChanged(d), Status(msg)))
+    case None => u
+  }
 }
 
 private def step(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel, TypedDocOutput, TypedDocInput] =
@@ -147,6 +169,34 @@ private def step(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel, 
         case None =>
           Update(m.copy(status = "Untyped document"),
             Vector(Status("Untyped document")))
+      }
+
+    case AcceptUpdates =>
+      acceptUpdates(m.doc, m.store) match {
+        case Some(d) =>
+          val msg = "Refs updated to their heads"
+          Update(
+            m.copy(
+              doc = d, pushedDoc = d, pushedSelect = None,
+              pushMode = DocPush.Merge("Accept updates"), status = msg),
+            Vector(DocChanged(d), Status(msg)))
+        case None =>
+          Update(m.copy(status = "No pending updates"),
+            Vector(Status("No pending updates")))
+      }
+
+    case ToggleAutoUpdate =>
+      setAutoUpdate(m.doc, !autoUpdateEnabled(m.doc)) match {
+        case Right(d) =>
+          val on = autoUpdateEnabled(d)
+          val msg = s"Auto-update ${if (on) "on" else "off"}"
+          Update(
+            m.copy(
+              doc = d, pushedDoc = d, pushedSelect = None,
+              pushMode = DocPush.Merge("Auto-update"), status = msg),
+            Vector(DocChanged(d), Status(msg)))
+        case Left(err) =>
+          Update(m.copy(status = err), Vector(Status(err)))
       }
 
     // A projected cell edit: parse through the doc's language and commit
