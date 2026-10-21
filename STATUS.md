@@ -288,8 +288,13 @@ Each item is described in the cited `DESIGN.md` section.
      store identity.
 3. **History and sync.** A network transport (signaling) and presence
    (cursors, selections, eventually keystroke-level preview, as
-   ephemeral broadcast state off the change graph); debounce-coalesced
-   edit bursts; undo stacks rebuilt on resume; branch interception for
+   ephemeral broadcast state off the change graph); actor attribution
+   on curated versions, with background changes (auto-update accepts,
+   LLM edits) authored by non-user actors arriving through the merge
+   path — and LLM edits possibly as *proposals* via the pending-update
+   UX (DESIGN §7, *Attribution*); debounce-coalesced edit bursts,
+   including per-turn coalescing for streamed collaborator edits;
+   undo stacks rebuilt on resume; branch interception for
    text-cell edits; branch merge-back; durable history beyond a tab's
    lifetime (the op log already persists in `automerge_docs`) and for
    unsynced documents; curated checkpoints; the synced meta-log for

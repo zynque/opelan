@@ -1015,6 +1015,31 @@ Consequences:
   so every peer renders the same labels. Once accounts exist, an
   `actorId → name` map synced inside the document can re-key names
   without changing the mechanism.
+- *Attribution follows initiation — the workbench is a collaborator.*
+  Three classes of change touch a document, and only one is the user's:
+  synchronous in-cursor edits (typing, shortcuts, mechanical
+  refactorings) are the user's actor and land on their undo stack;
+  background edits — the auto-update cascade accepting pins, an LLM
+  pass — are authored by a *non-user actor* and arrive like any remote
+  change, through the same merge path rather than a privileged channel
+  that mutates the document underneath the user; ephemeral state
+  (cursors, selections, presence) never becomes a change at all. The
+  actor names who initiated, not which code ran: `acceptUpdates` behind
+  the Update button is the user's edit, behind the `auto-update` flag
+  the workbench's — and per-actor undo then does the right thing, since
+  a background edit never enters the user's stack. Per-source actor
+  names (`auto-update`, `llm`, …) beat one generic `workbench`: the name
+  carries provenance and lets policy differ — an auto-update applies
+  silently (the document opted in), while an LLM's edits could
+  *propose*, arriving as pending updates the document accepts (the
+  suggest-and-accept shape §4 already defines for dependency bumps).
+  Two pieces are missing for this to be real: curated `url@v` versions
+  don't carry an author — only the synced change graph does, so an
+  author field is a `Store`/persistence schema change — and a
+  collaborator streaming edits wants the same debounce-coalescing a
+  typing burst does (*Granularity*), one change per turn rather than
+  per keystroke. Attribution itself needs no session: an author field
+  on the version suffices until peers exist.
 - *Granularity* (planned). A history entry is an Automerge change, not a
   keystroke. `DocSession` should coalesce rapid consecutive local edits
   into one change on a short debounce, so a typing burst becomes one
