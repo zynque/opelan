@@ -50,7 +50,8 @@ Each item is described in the cited `DESIGN.md` section.
 - **`means` rule groundwork** (`foundation/means`, `foundation/grammar`,
   §4): rule model, checker, reader, and role-tagged printer;
   scannerless combinators; the incremental packrat engine (`Memo`,
-  `ParseSession`), driving the text cell through `TextSession`, and
+  `ParseSession`), driving the text cell through `TextSession`,
+  projected cell commits through per-cell `CellSessions`, and
   stored-hole retries through `HoleRetry` — a hole reparses only when
   a language change touched a rule its last attempt consulted;
   id-preserving reconcile (`commitContent`) on both commit paths.
@@ -62,7 +63,7 @@ Each item is described in the cited `DESIGN.md` section.
   version DAG; per-actor undo; local navigation; checkout + edit forks a
   branch draft that peers can rejoin.
 - **Build/test** (§9): `build.bat`/`build.sh`, `test.bat`/`test.sh`;
-  310 munit tests over the pure core, UI update functions, and
+  344 munit tests over the pure core, UI update functions, and
   DocSession convergence under real Automerge in Node. A fresh clone
   needs a `webpack.config.js` (see `README.md`).
 
@@ -84,10 +85,11 @@ Each item is described in the cited `DESIGN.md` section.
     migration, broken-import repair — is item 2 in next steps.
   - *`currency` formats computed cells only;* price inputs stay plain
     numbers.
-- **Only the text cell parses incrementally.** Projected cell commits
-  still parse each committed text whole (they are short, one cell at a
-  time), and synced remote text is the `Serial` outline, parsed by the
-  outline codec rather than a language grammar.
+- **Synced remote text doesn't parse incrementally.** It is the
+  `Serial` outline, parsed by the outline codec rather than a language
+  grammar. Cell sessions are pane-local and start fresh after a reload
+  or for a cell's first commit; builtin cell parsers (the registry
+  `SheetLanguage`'s `parseCellText`) parse whole.
 - **Synced history:** remote changes apply as a whole-text reparse;
   text-cell edits made while browsing a version still write to the main
   session (branching covers structural edits); undo stacks are
@@ -161,9 +163,10 @@ Each item is described in the cited `DESIGN.md` section.
    *Phase A — the rule engine (pure, `foundation/`):*
 
    1. **Finish incremental parsing** (DESIGN §4, *Incremental parsing*):
-      - *Wiring:* the text cell is done (`TextSession`, below). Still
-        whole reparses: projected cell commits, and synced remote text
-        once sync carries language text rather than the outline.
+      - *Wiring:* the text cell (`TextSession`) and projected cell
+        commits (`CellSessions`) are done. Still a whole reparse:
+        synced remote text, once sync carries language text rather
+        than the outline.
       - *Memo in the document:* parse results live in document nodes,
         with only failed attempts in a side table.
       - *Rule identity by reference:* rules are identified by name until

@@ -2,7 +2,8 @@ package opelan.foundation.langdef
 
 import opelan.foundation.document._
 import opelan.foundation.grammar._
-import opelan.foundation.language.{HoleRetry, Language, SyntaxChange, TextSyntax}
+import opelan.foundation.language.{
+  CellSessions, HoleRetry, Language, SyntaxChange, TextSyntax}
 
 // A Language interpreted from a LanguageDef — the bootstrap mechanism:
 // the def carries the grammar as data and names its semantics through
@@ -55,7 +56,7 @@ class DefLanguage(
         case None => Left(s"$name: unknown builtin view '${vb.builtin}'")
         case Some(b) => contentId(doc)
           .toRight(s"$name: typed document has no content")
-          .map(id => b(doc, id, ViewContext(vb.settings, parseCellWith(retry))))
+          .map(id => b(doc, id, ViewContext(vb.settings, cells.parse(retry))))
       }
     }
 
@@ -83,60 +84,16 @@ class DefLanguage(
       })
 
   override def parseCell(text: String): Option[DetachedNode[NodeData]] =
-    parseCellWith(HoleRetry())(text)
+    cells.parse(HoleRetry())(text)
+
+  override def commitCell(id: Int, text: String, sessions: CellSessions)
+      : Option[(DetachedNode[NodeData], CellSessions)] =
+    cells.commit(id, text, sessions)
 
   override def rememberHoles(
       doc: Document[NodeData], retry: HoleRetry): HoleRetry =
-    rememberCellHoles(doc, cellSyntax, retry)
+    rememberCellHoles(doc, cells.syntax, retry)
 
-  // The incremental syntax of the language a cell grammar refers to.
-  private def cellSyntax: Option[TextSyntax] =
-    languageDef.cellParser
-      .collect { case CellParserDef.Language(ref, _) => ref }
-      .flatMap(resolve).flatMap(_.textSyntax)
-
-  private def parseCellWith(retry: HoleRetry)(
-      text: String): Option[DetachedNode[NodeData]] =
-    languageDef.cellParser.map {
-      case CellParserDef.Builtin(name) =>
-        impls.cellParsers.get(name)
-          .map(_(text))
-          .getOrElse(DetachedNode.leaf(NodeData.GapData(text)))
-      case CellParserDef.Language(ref, fb) => cellVia(ref, fb, text, retry)
-    }
-
-  // A cell parsed by another language's grammar: explicit "?"-holes and
-  // whitespace-only cells aside, the referenced language's total parse
-  // either yields real content or — when the root is a pure hole — the
-  // fallback value (a label string or a gap). Rejected text that
-  // mentions a reference is a formula the grammar can't read yet, so it
-  // stays a hole even under the label fallback, ready to heal.
-  private def cellVia(
-      ref: ExternalNodeReference, fb: CellFallback,
-      text: String, retry: HoleRetry): DetachedNode[NodeData] =
-    if (text.startsWith("?")) DetachedNode.leaf(NodeData.GapData(text.drop(1)))
-    else if (text.trim.isEmpty) DetachedNode.leaf(fallbackData(fb, ""))
-    else resolve(ref).flatMap(l => l.textSyntax
-        .map(retry.parse(_, text)._1).orElse(l.parse(text))) match {
-      case Some(t) if isHoleLeaf(t) && mentionsRef(ref, text) =>
-        DetachedNode.leaf(NodeData.GapData(text))
-      case Some(t) if isHoleLeaf(t) =>
-        DetachedNode.leaf(fallbackData(fb, text))
-      case Some(t) => t
-      case None    => DetachedNode.leaf(fallbackData(fb, text))
-    }
-
-  private def mentionsRef(ref: ExternalNodeReference, text: String): Boolean =
-    resolve(ref).exists(l => text.split("\\s+").exists(w =>
-      l.parse(w).exists(t =>
-        t.children.isEmpty && t.data.isInstanceOf[NodeData.InternalNodeRef])))
-
-  private def isHoleLeaf(t: DetachedNode[NodeData]): Boolean =
-    t.children.isEmpty && t.data.isInstanceOf[NodeData.GapData]
-
-  private def fallbackData(fb: CellFallback, text: String): NodeData =
-    fb match {
-      case CellFallback.Label => NodeData.StringData(text)
-      case CellFallback.Hole  => NodeData.GapData(text)
-    }
+  private lazy val cells =
+    CellGrammar(languageDef.cellParser, impls, resolve)
 }

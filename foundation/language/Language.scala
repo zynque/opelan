@@ -45,6 +45,13 @@ trait Language {
   // the node it edits. None = the language's views are read-only.
   def parseCell(text: String): Option[DetachedNode[NodeData]] = None
 
+  // A projected cell commit through the host's per-cell sessions, so
+  // re-editing a cell reparses in proportion to the edit. Its content
+  // must equal `parseCell`'s; the default parses whole.
+  def commitCell(id: Int, text: String, cells: CellSessions)
+      : Option[(DetachedNode[NodeData], CellSessions)] =
+    parseCell(text).map((_, cells))
+
   // The text syntax as an incremental parser, if the language has one:
   // the text surface keeps a TextSession over it, so an edit reparses in
   // proportion to its size. Its content must equal `parse`'s.

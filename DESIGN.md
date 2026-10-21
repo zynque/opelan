@@ -611,8 +611,15 @@ relative form that form needs:
   text, so a session that missed a re-derived text is still correct.
   A re-decoded but unchanged `lang:` def has the same key and keeps the
   session; a changed one carries it through `changeRules` with the
-  rules `changedRules` reports. Projected cell commits still parse
-  whole (STATUS).
+  rules `changedRules` reports.
+- Projected cells run on sessions too: the pane keeps `CellSessions`,
+  a `TextSession` per cell node id (commits keep the cell's id, so the
+  key is stable), and a commit goes through `Language.commitCell`. A
+  def's `CellGrammar` reads the text through the referred language's
+  session when it parses incrementally, then classifies the result
+  exactly as `parseCell` does (`?`-holes, blanks, label fallback,
+  ref-mentioning holes); builtin cell parsers still parse whole.
+  Sessions of cells that left the document are dropped on commit.
 - Stored holes retry the same way — and only holes need to. A hole is
   the one node that still holds its source text; every other node is
   committed structure, re-*evaluated* by each render's recovering read

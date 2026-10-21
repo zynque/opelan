@@ -199,46 +199,12 @@ private def step(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel, 
           Update(m.copy(status = err), Vector(Status(err)))
       }
 
-    // A projected cell edit: parse through the doc's language and commit
-    // the content in place — the node's id survives, and so do the ids
-    // of every child whose content didn't change (commitContent). An
-    // unchanged commit — e.g. a blur with no edit — is a no-op, so
-    // projections can't churn versions. Parsed constructs arrive as
-    // inline refs; the commit imports them (internalizeRefs).
-    case CommitCellText(id, t) =>
-      languageForDoc(m.doc, m.store).flatMap(_.parseCell(t)) match {
-        case Some(content) if unchangedCell(m.doc, id, content) =>
-          Update(m)
-        case Some(content) =>
-          commitContent(id, content, m.doc)
-              .flatMap(internalizeRefs(_, id)) match {
-            case Right(d) =>
-              val msg = "Cell updated"
-              Update(
-                m.copy(
-                  doc = d, pushedDoc = d, pushedSelect = None,
-                  pushMode = DocPush.Merge("Cell edit"),
-                  text = docText(d, langFor(m)), textEpoch = m.textEpoch + 1,
-                  status = msg),
-                Vector(DocChanged(d), Status(msg)))
-            case Left(err) =>
-              Update(m.copy(status = err), Vector(Status(err)))
-          }
-        case None =>
-          Update(m.copy(status = "No cell grammar"),
-            Vector(Status("No cell grammar")))
-      }
+    case CommitCellText(id, t) => commitCellText(m, id, t)
   }
-
-// A cell commit that reproduces the node's current content (compared
-// with its imports inlined, as the parser writes constructs).
-private def unchangedCell(
-    d: Document[NodeData], id: Int, content: DetachedNode[NodeData]): Boolean =
-  extractExternalized(d, id).contains(content)
 
 // The resolver handed to the text-surface functions: type refs resolve
 // through the store prop, same as the derived views.
-private def langFor(m: TypedDocModel)
+private[typeddoc] def langFor(m: TypedDocModel)
     : Document[NodeData] => Option[opelan.foundation.language.Language] =
   d => languageForDoc(d, m.store)
 

@@ -189,6 +189,34 @@ class TypedDocSuite extends munit.FunSuite {
     assertNotEquals(after(1), refs(1))
   }
 
+  test("re-committing a cell reparses through its session") {
+    // Seeded def docs make the sheet a DefLanguage, whose cell grammar
+    // reads through lang: expression's incremental syntax.
+    val seeded = List(ExprLanguage, SheetLanguage).foldLeft(Store.empty)(
+      (s, l) => s.put(l.typeRef.documentUrl, l.langDoc)._1)
+    val m = typedDocUpdate(
+      init.copy(store = seeded), TypedDocInput.LoadSheetSample).state
+    val total = cellId(m.doc, 1, 3)
+    val Seq(NodeData.InternalNodeRef(qty), _) =
+      m.doc.childrenOf(total).map(id => m.doc.getNode(id).get.data)
+    // Parenthesized terms: each is its own memoized rule application.
+    val long = (1 to 10).map(i => s"(ref:$qty * $i)").mkString(" + ")
+    val u1 = typedDocUpdate(m, TypedDocInput.CommitCellText(total, long))
+    assertEquals(u1.state.cellSessions.sessions.keySet, Set(total))
+    val edited = long.replace("* 5", "* 6")
+    val u2 = typedDocUpdate(u1.state, TypedDocInput.CommitCellText(total, edited))
+    val session = u2.state.cellSessions.sessions(total)
+    val fresh = opelan.foundation.language.TextSession.start(
+      session.syntax, edited)
+    assert(session.evaluations * 4 < fresh.evaluations,
+      s"${session.evaluations} vs ${fresh.evaluations}")
+    assertEquals(
+      exprFromDocument(u2.state.doc, total).map(_.toString),
+      exprFromDocument(
+        typedDocUpdate(m, TypedDocInput.CommitCellText(total, edited))
+          .state.doc, total).map(_.toString))
+  }
+
   test("a text edit keeps the ids of unchanged content") {
     val m = init
     // TextEdited goes through applyDocText: recommitting the current
