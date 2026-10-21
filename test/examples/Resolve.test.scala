@@ -20,10 +20,10 @@ class ResolveSuite extends FunSuite {
     val l = languageForRef(SheetLanguage.typeRef, seededStore)
     assert(l.isDefined)
     assertEquals(l.get.name, sheetDef.name)
-    // Cell behavior identical to the compiled SheetLanguage.
+    // Input behavior identical to the compiled SheetLanguage.
     List("Apples", "4", "1.5", "ref:1 * 2", "?stuck", "").foreach { t =>
-      assertEquals(l.get.parseCell(t), SheetLanguage.parseCell(t),
-        s"cell input: $t")
+      assertEquals(l.get.parseInput(t), SheetLanguage.parseInput(t),
+        s"input: $t")
     }
   }
 
@@ -78,7 +78,7 @@ class ResolveSuite extends FunSuite {
 
   // The demo's healing moment under pin semantics: `/` saved as
   // expression v1 changes nothing until the sheet def accepts its
-  // pending update (cell-grammar ref → v1, publishing sheet v1) and
+  // pending update (input-grammar ref → v1, publishing sheet v1) and
   // the budget accepts the sheet's — the hole heals on the last bump.
   test("a stored hole heals as each layer accepts its pending update") {
     import opelan.foundation.view.ViewTree
@@ -95,13 +95,13 @@ class ResolveSuite extends FunSuite {
         .split("\n")(6)
     assert(perPerson(staged, budget).contains("?ref:"), perPerson(staged, budget))
     val sheet = languageForDoc(budget, staged).get
-    assertEquals(sheet.parseCell("ref:1 / ref:2").map(_.data),
+    assertEquals(sheet.parseInput("ref:1 / ref:2").map(_.data),
       Some(NodeData.GapData("ref:1 / ref:2")))
     // Saving `/` as expression v1: pins unchanged — still a hole.
     val fixed = staged.put(
       ExprLanguage.typeRef.documentUrl, ExprLanguage.langDoc)._1
     assert(perPerson(fixed, budget).contains("?ref:"), perPerson(fixed, budget))
-    // lang: sheet accepts: its cell-grammar ref bumps to expression v1.
+    // lang: sheet accepts: its input-grammar ref bumps to expression v1.
     val sheetDoc = fixed.get("opelan:languages/sheet", 0).get
     val s2 = fixed.put(
       "opelan:languages/sheet", acceptUpdates(sheetDoc, fixed).get)._1

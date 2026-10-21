@@ -6,7 +6,7 @@ import opelan.foundation.view.ViewTree._
 
 // The "def" view of a language-definition document: decode the doc and
 // lay the definition out readably — title, description, schema kinds,
-// the grammar as indented combinator text, view bindings, and the cell
+// the grammar as indented combinator text, view bindings, and the input
 // grammar's target. The document is still the source of truth; this is
 // the skim-friendly rendering of it.
 def defView(doc: Document[NodeData], contentRootId: Int)
@@ -21,8 +21,8 @@ def defView(doc: Document[NodeData], contentRootId: Int)
       section("syntax", grammarLines(s.grammar).map(txt))),
     Some(section("views", d.views.map(v =>
       txt(s"${v.name} → ${v.builtin}${settingsText(v.settings)}")))),
-    d.cellParser.map(cp =>
-      section("cells", List(txt(cellText(cp)))))).flatten*)
+    d.inputParser.map(cp =>
+      section("inputs", List(txt(inputParserText(cp)))))).flatten*)
 }
 
 // One item per line: each entry is its own block.
@@ -41,9 +41,9 @@ private def shapeName(s: NodeShape): String = s match {
   case NodeShape.Fixed(n) => s"fixed $n"
 }
 
-private def cellText(cp: CellParserDef): String = cp match {
-  case CellParserDef.Builtin(name) => s"builtin $name"
-  case CellParserDef.Language(ref, fb) =>
+private def inputParserText(cp: InputParserDef): String = cp match {
+  case InputParserDef.Builtin(name) => s"builtin $name"
+  case InputParserDef.Language(ref, fb) =>
     s"language ${ref.documentUrl}#${ref.nodeId} (fallback: $fb)"
 }
 

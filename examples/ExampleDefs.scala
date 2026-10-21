@@ -55,7 +55,7 @@ val exprDef = LanguageDef(
   views = List(
     ViewBinding("print", "expr-print"),
     ViewBinding("eval", "expr-eval")),
-  cellParser = None)
+  inputParser = None)
 
 // The demo's starting point for lang: expression: `/` is missing, so the
 // budget's per-person formula sits as a hole until the audience adds the
@@ -84,8 +84,8 @@ val sheetDef = LanguageDef(
   // Cells parse with the expression language's grammar — by pinned
   // ref, so a new lang: expression version heals sheet cells once the
   // pin bumps to it.
-  cellParser = Some(
-    CellParserDef.Language(ExprLanguage.typeRef, CellFallback.Label)))
+  inputParser = Some(
+    InputParserDef.Language(ExprLanguage.typeRef, InputFallback.Label)))
 
 // The code-side semantics each example language's def names — kept
 // beside the defs that reference them.
@@ -100,7 +100,7 @@ val sheetImpls = Impls(
   views = Map(
     "sheet-grid"     -> ((doc, id, ctx) => sheetView(doc, id, ctx)),
     "sheet-formulas" -> ((doc, id, ctx) => formulasView(doc, id, ctx))),
-  cellParsers = Map("sheet-cell" -> parseCellText))
+  inputParsers = Map("sheet-cell" -> parseCellText))
 
 // The foundational languages, each paired with the implementations its
 // def names. This list is the only built-in registry: a def decoded

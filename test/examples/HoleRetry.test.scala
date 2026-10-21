@@ -2,7 +2,7 @@ package opelan.examples
 
 import opelan.foundation.document._
 import opelan.foundation.language.{HoleRetry, SyntaxChange, TextSyntax}
-import opelan.foundation.langdef.rememberCellHoles
+import opelan.foundation.langdef.rememberInputHoles
 import munit.FunSuite
 
 // Holes retried on a language change: only an attempt that consulted a
@@ -79,7 +79,7 @@ class HoleRetrySuite extends FunSuite {
       Node(0, NodeData.GapData("ref:3 / ref:4"), Nil, Some(0)),
       Node(0, NodeData.StringData("x"), Nil, Some(0))))
     val stale = HoleRetry().parse(staged, "1 +")._2
-    val r = rememberCellHoles(doc, Some(staged), stale)
+    val r = rememberInputHoles(doc, Some(staged), stale)
     assertEquals(r.attempts.keySet, Set("ref:3 / ref:4"))
   }
 }

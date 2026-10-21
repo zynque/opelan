@@ -52,7 +52,7 @@ private def step(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel, 
     // would feed back into the session as a local text.
     case SyncHistory(d, h) =>
       // Only bump the epoch when the text actually changed — a push
-      // echoing our own edit would remount the text cell mid-typing.
+      // echoing our own edit would remount the text surface mid-typing.
       val t = docText(d, langFor(m))
       Update(m.copy(
         doc = d,
@@ -199,7 +199,7 @@ private def step(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel, 
           Update(m.copy(status = err), Vector(Status(err)))
       }
 
-    case CommitCellText(id, t) => commitCellText(m, id, t)
+    case CommitInputText(id, t) => commitInputText(m, id, t)
   }
 
 // The resolver handed to the text-surface functions: type refs resolve
@@ -209,7 +209,7 @@ private[typeddoc] def langFor(m: TypedDocModel)
   d => languageForDoc(d, m.store)
 
 // Mirror a document the editor is showing: re-derive its text, bumping
-// the epoch when it changed (the bump remounts the text cell).
+// the epoch when it changed (the bump remounts the text surface).
 private def mirrorDoc(
     m: TypedDocModel,
     d: Document[NodeData],

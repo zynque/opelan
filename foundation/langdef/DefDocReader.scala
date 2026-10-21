@@ -79,18 +79,18 @@ private class DefDocReader(doc: Document[NodeData], root: Int) {
       childStr(opId, 0).map(_ -> refName(kids(opId).lift(1)))
     }.toMap
 
-  def cellParserFrom(id: Int): Option[CellParserDef] =
+  def inputParserFrom(id: Int): Option[InputParserDef] =
     kids(id).headOption.flatMap { c =>
       cons(c) match {
         case Some("language") =>
-          Some(CellParserDef.Language(
+          Some(InputParserDef.Language(
             kids(c).headOption.flatMap(externalRefOf(doc, _))
               .getOrElse(ExternalNodeReference("", 0, 0)),
             kids(c).lift(1).flatMap(cons) match {
-              case Some("as-gap") => CellFallback.Hole
-              case _              => CellFallback.Label
+              case Some("as-gap") => InputFallback.Hole
+              case _              => InputFallback.Label
             }))
-        case Some("builtin") => childStr(c, 0).map(CellParserDef.Builtin(_))
+        case Some("builtin") => childStr(c, 0).map(InputParserDef.Builtin(_))
         case _               => None
       }
     }

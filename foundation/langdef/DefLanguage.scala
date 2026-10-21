@@ -3,7 +3,7 @@ package opelan.foundation.langdef
 import opelan.foundation.document._
 import opelan.foundation.grammar._
 import opelan.foundation.language.{
-  CellSessions, HoleRetry, Language, SyntaxChange, TextSyntax}
+  HoleRetry, InputSessions, Language, SyntaxChange, TextSyntax}
 
 // A Language interpreted from a LanguageDef — the bootstrap mechanism:
 // the def carries the grammar as data and names its semantics through
@@ -12,7 +12,7 @@ import opelan.foundation.language.{
 //
 // `impls` holds the implementations the def names — callers assemble it
 // (e.g. the examples' implsFor binds the foundational bundle whose type
-// ref the def claims). `resolve` finds the language a cell grammar
+// ref the def claims). `resolve` finds the language an input grammar
 // refers to; the default resolves nothing.
 class DefLanguage(
     val languageDef: LanguageDef,
@@ -56,7 +56,7 @@ class DefLanguage(
         case None => Left(s"$name: unknown builtin view '${vb.builtin}'")
         case Some(b) => contentId(doc)
           .toRight(s"$name: typed document has no content")
-          .map(id => b(doc, id, ViewContext(vb.settings, cells.parse(retry))))
+          .map(id => b(doc, id, ViewContext(vb.settings, inputs.parse(retry))))
       }
     }
 
@@ -83,17 +83,17 @@ class DefLanguage(
         case _ => None
       })
 
-  override def parseCell(text: String): Option[DetachedNode[NodeData]] =
-    cells.parse(HoleRetry())(text)
+  override def parseInput(text: String): Option[DetachedNode[NodeData]] =
+    inputs.parse(HoleRetry())(text)
 
-  override def commitCell(id: Int, text: String, sessions: CellSessions)
-      : Option[(DetachedNode[NodeData], CellSessions)] =
-    cells.commit(id, text, sessions)
+  override def commitInput(id: Int, text: String, sessions: InputSessions)
+      : Option[(DetachedNode[NodeData], InputSessions)] =
+    inputs.commit(id, text, sessions)
 
   override def rememberHoles(
       doc: Document[NodeData], retry: HoleRetry): HoleRetry =
-    rememberCellHoles(doc, cells.syntax, retry)
+    rememberInputHoles(doc, inputs.syntax, retry)
 
-  private lazy val cells =
-    CellGrammar(languageDef.cellParser, impls, resolve)
+  private lazy val inputs =
+    InputGrammar(languageDef.inputParser, impls, resolve)
 }

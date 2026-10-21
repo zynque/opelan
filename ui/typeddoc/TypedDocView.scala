@@ -9,11 +9,11 @@ import opelan.ui.fp.Dsl._
 import opelan.ui.text.CodeMirror
 
 // Pure view: a toolbar choosing the editing surface, a split body — the
-// structural editor / text cell on the left, the language's live derived
+// structural editor / text surface on the left, the language's live derived
 // views in the sidebar on the right — and a status bar. The editor mount
-// and text cell stay mounted in every mode; hiding with display:none
+// and text surface stay mounted in every mode; hiding with display:none
 // keeps the child's DOM — and its focus/edit state — intact. The text
-// cell remounts only when textEpoch changes (external doc edits).
+// surface remounts only when textEpoch changes (external doc edits).
 def typedDocView(m: TypedDocModel): View[TypedDocInput] =
   el("div", style("height: 100%; display: flex; flex-direction: column;"))(
     toolbar(m),

@@ -50,8 +50,8 @@ Each item is described in the cited `DESIGN.md` section.
 - **`means` rule groundwork** (`foundation/means`, `foundation/grammar`,
   §4): rule model, checker, reader, and role-tagged printer;
   scannerless combinators; the incremental packrat engine (`Memo`,
-  `ParseSession`), driving the text cell through `TextSession`,
-  projected cell commits through per-cell `CellSessions`, and
+  `ParseSession`), driving the text surface through `TextSession`,
+  projected input commits through per-input `InputSessions`, and
   stored-hole retries through `HoleRetry` — a hole reparses only when
   a language change touched a rule its last attempt consulted;
   id-preserving reconcile (`commitContent`) on both commit paths.
@@ -87,11 +87,11 @@ Each item is described in the cited `DESIGN.md` section.
     numbers.
 - **Synced remote text doesn't parse incrementally.** It is the
   `Serial` outline, parsed by the outline codec rather than a language
-  grammar. Cell sessions are pane-local and start fresh after a reload
-  or for a cell's first commit; builtin cell parsers (the registry
+  grammar. Input sessions are pane-local and start fresh after a reload
+  or for an input's first commit; builtin input parsers (the registry
   `SheetLanguage`'s `parseCellText`) parse whole.
 - **Synced history:** remote changes apply as a whole-text reparse;
-  text-cell edits made while browsing a version still write to the main
+  text-surface edits made while browsing a version still write to the main
   session (branching covers structural edits); undo stacks are
   session-local and lost on resume; branch merge-back is manual; edits
   made before first sync contact resolve last-writer-wins rather than
@@ -163,8 +163,8 @@ Each item is described in the cited `DESIGN.md` section.
    *Phase A — the rule engine (pure, `foundation/`):*
 
    1. **Finish incremental parsing** (DESIGN §4, *Incremental parsing*):
-      - *Wiring:* the text cell (`TextSession`) and projected cell
-        commits (`CellSessions`) are done. Still a whole reparse:
+      - *Wiring:* the text surface (`TextSession`) and projected input
+        commits (`InputSessions`) are done. Still a whole reparse:
         synced remote text, once sync carries language text rather
         than the outline.
       - *Memo in the document:* parse results live in document nodes,
@@ -204,7 +204,7 @@ Each item is described in the cited `DESIGN.md` section.
    6. **Rule encoding.** `lang:` documents hold `means(pattern, meaning)`
       nodes, a binding list, and examples; the recovering decoder turns a
       malformed rule into a hole rule that never applies.
-   7. **`means` text surface.** The `def` view and text cell for `lang:`
+   7. **`means` text surface.** The `def` view and text surface for `lang:`
       documents read and write the `means` notation (the existing
       printer and `RuleGrammar` reader), so editing a language reads like
       the DESIGN.md examples rather than an outline of combinators. The
@@ -298,7 +298,7 @@ Each item is described in the cited `DESIGN.md` section.
    UX (DESIGN §7, *Attribution*); debounce-coalesced edit bursts,
    including per-turn coalescing for streamed collaborator edits;
    undo stacks rebuilt on resume; branch interception for
-   text-cell edits; branch merge-back; durable history beyond a tab's
+   text-surface edits; branch merge-back; durable history beyond a tab's
    lifetime (the op log already persists in `automerge_docs`) and for
    unsynced documents; curated checkpoints; the synced meta-log for
    pruning and compaction; then a tree-native CRDT.

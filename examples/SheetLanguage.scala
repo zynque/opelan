@@ -29,14 +29,14 @@ object SheetLanguage extends Language {
   private def context(view: String): ViewContext =
     ViewContext(
       sheetDef.views.find(_.name == view).map(_.settings).getOrElse(Map.empty),
-      parseCell)
+      parseInput)
 
   private def content(doc: Document[NodeData]): Either[String, Int] =
     contentId(doc).toRight(s"$name: typed document has no content")
 
   // Cells are editable projections: committed text parses per the
-  // sheet's cell grammar (formula, ref, literal, hole, or label).
-  override def parseCell(text: String): Option[DetachedNode[NodeData]] =
+  // sheet's input grammar (formula, ref, literal, hole, or label).
+  override def parseInput(text: String): Option[DetachedNode[NodeData]] =
     Some(parseCellText(text))
 
   // The demo's app: a small household budget. Cells are positional;
@@ -92,7 +92,7 @@ object SheetLanguage extends Language {
         DetachedNode.leaf(NodeData.GapData("r:4,3 / r:5,1"))))
 
   // The language document is the encoded definition itself — its
-  // `cells` section names the expression language by ref, so following
+  // `inputs` section names the expression language by ref, so following
   // it lands on lang: expression (and DocLanguage resolves it at step
   // 10).
   def langDoc: Document[NodeData] =

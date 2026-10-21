@@ -7,44 +7,44 @@ import opelan.ui.editor.DocPush
 import opelan.ui.fp.Update
 import TypedDocOutput._
 
-// A projected cell edit: parse through the doc's language — via the
-// pane's per-cell session, so re-editing a cell reparses in proportion
+// A projected input edit: parse through the doc's language — via the
+// pane's per-input session, so re-editing an input reparses in proportion
 // to the edit — and commit the content in place. The node's id
 // survives, and so do the ids of every child whose content didn't
 // change (commitContent). An unchanged commit — e.g. a blur with no
 // edit — is a no-op, so projections can't churn versions. Parsed
 // constructs arrive as inline refs; the commit imports them
 // (internalizeRefs).
-private[typeddoc] def commitCellText(
+private[typeddoc] def commitInputText(
     m: TypedDocModel, id: Int,
     text: String): Update[TypedDocModel, TypedDocOutput, TypedDocInput] =
   languageForDoc(m.doc, m.store)
-    .flatMap(_.commitCell(id, text, m.cellSessions)) match {
-    case Some((content, _)) if unchangedCell(m.doc, id, content) =>
+    .flatMap(_.commitInput(id, text, m.inputSessions)) match {
+    case Some((content, _)) if unchangedInput(m.doc, id, content) =>
       Update(m)
     case Some((content, sessions)) =>
       commitContent(id, content, m.doc)
           .flatMap(internalizeRefs(_, id)) match {
         case Right(d) =>
-          val msg = "Cell updated"
+          val msg = "Input updated"
           val live = reachableIds(d)
           Update(
             m.copy(
               doc = d, pushedDoc = d, pushedSelect = None,
-              pushMode = DocPush.Merge("Cell edit"),
+              pushMode = DocPush.Merge("Input edit"),
               text = docText(d, langFor(m)), textEpoch = m.textEpoch + 1,
-              status = msg, cellSessions = sessions.retain(live)),
+              status = msg, inputSessions = sessions.retain(live)),
             Vector(DocChanged(d), Status(msg)))
         case Left(err) =>
           Update(m.copy(status = err), Vector(Status(err)))
       }
     case None =>
-      Update(m.copy(status = "No cell grammar"),
-        Vector(Status("No cell grammar")))
+      Update(m.copy(status = "No input grammar"),
+        Vector(Status("No input grammar")))
   }
 
-// A cell commit that reproduces the node's current content (compared
+// An input commit that reproduces the node's current content (compared
 // with its imports inlined, as the parser writes constructs).
-private def unchangedCell(
+private def unchangedInput(
     d: Document[NodeData], id: Int, content: DetachedNode[NodeData]): Boolean =
   extractExternalized(d, id).contains(content)

@@ -11,7 +11,7 @@ import opelan.ui.workbench.WorkbenchInput._
 
 // A CodeMirror-free stand-in for the TypedDoc pane: accepts Pane props,
 // applies Load/SyncHistory pushes, and records what landed so the test
-// can see it. No editor child, no text cell.
+// can see it. No editor child, no text surface.
 private class FakePane extends Component[TypedDocInput, TypedDocOutput] {
   type State = Option[Document[NodeData]]
   var lastPushed: Option[Document[NodeData]] = None

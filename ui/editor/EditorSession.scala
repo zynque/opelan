@@ -93,7 +93,7 @@ def syncDocument(
         status = "Document synced").copy(
         claimFocus = select.forall(_.focus)))
     case DocPush.Merge(label) =>
-      // The same document updated from outside (a text-cell edit) is
+      // The same document updated from outside (a text-surface edit) is
       // recorded as a version so undo walks it. An unchanged push is
       // just the echo of our own doc — but a selection it carries is
       // still news: pure navigation, no version recorded.

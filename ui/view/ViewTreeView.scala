@@ -103,7 +103,7 @@ private def inputView[I](
 }
 
 // A box over a hole (its surface text starts with "?") wears the hole
-// chip's colors, so a stuck cell reads as one at a glance.
+// chip's colors, so a stuck input reads as one at a glance.
 private def inputCss(current: String): String =
   if (current.startsWith("?"))
     "border: 1px solid #e8d48a; border-radius: 3px; background: #fdf3d7; color: #8a6d1a; "

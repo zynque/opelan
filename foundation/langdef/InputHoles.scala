@@ -3,11 +3,11 @@ package opelan.foundation.langdef
 import opelan.foundation.document._
 import opelan.foundation.language.{HoleRetry, TextSyntax}
 
-// Remember a parse attempt for every hole cell in `doc` under the cell
+// Remember a parse attempt for every hole in `doc` under the input
 // grammar's current syntax. Attempts the last language change left
 // valid are reused (HoleRetry.parse); attempts for texts no longer in
 // the document are dropped.
-def rememberCellHoles(
+def rememberInputHoles(
     doc: Document[NodeData], syntax: Option[TextSyntax],
     retry: HoleRetry): HoleRetry =
   syntax.fold(retry) { s =>

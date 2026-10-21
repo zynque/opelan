@@ -32,7 +32,7 @@ val HRowTag = "hrow"
 def sheetView(
     doc: Document[NodeData], sheetId: Int,
     ctx: ViewContext = ViewContext()): DetachedNode[NodeData] = {
-  val d = healHoles(doc, sheetId, ctx.parseCell)
+  val d = healHoles(doc, sheetId, ctx.parseInput)
   val currency = ctx.settings.get("currency")
   grid(d.childrenOf(sheetId).map(r => rowView(d, r, isHRow(d, r), currency))*)
 }
@@ -42,7 +42,7 @@ def sheetView(
 def formulasView(
     doc: Document[NodeData], sheetId: Int,
     ctx: ViewContext = ViewContext()): DetachedNode[NodeData] = {
-  val d = healHoles(doc, sheetId, ctx.parseCell)
+  val d = healHoles(doc, sheetId, ctx.parseInput)
   grid(d.childrenOf(sheetId).map(r => formulaRow(d, r, isHRow(d, r)))*)
 }
 
@@ -119,7 +119,7 @@ def cellText(doc: Document[NodeData], cellId: Int): String =
     case _ => ViewTree.flatten(printTree(readLocExpr(doc, cellId)))
   }
 
-// The sheet's cell grammar (Language.parseCell): text committed in a
+// The sheet's input grammar (Language.parseInput): text committed in a
 // cell's box becomes the cell's new content. A leading '?' writes a hole
 // (matching the outline codec's `?text` gaps); otherwise a full
 // expression parses to its subtree — numbers, refs, whole formulas;

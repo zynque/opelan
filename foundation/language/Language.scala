@@ -35,22 +35,22 @@ trait Language {
   // can point back at the document nodes that produced them.
   def render(view: String, doc: Document[NodeData]): Either[String, DetachedNode[NodeData]]
 
-  // Text syntax, if the language has one: parse cell text into a content
+  // Text syntax, if the language has one: parse text into a content
   // subtree. Recovering parsers return Some even for malformed input,
   // embedding holes (GapData nodes) where the text does not fit.
   def parse(text: String): Option[DetachedNode[NodeData]] = None
 
-  // Cell grammar, if the language's views emit "input" elements: parse
+  // Input grammar, if the language's views emit "input" elements: parse
   // text committed in a projected editor into a replacement subtree for
   // the node it edits. None = the language's views are read-only.
-  def parseCell(text: String): Option[DetachedNode[NodeData]] = None
+  def parseInput(text: String): Option[DetachedNode[NodeData]] = None
 
-  // A projected cell commit through the host's per-cell sessions, so
-  // re-editing a cell reparses in proportion to the edit. Its content
-  // must equal `parseCell`'s; the default parses whole.
-  def commitCell(id: Int, text: String, cells: CellSessions)
-      : Option[(DetachedNode[NodeData], CellSessions)] =
-    parseCell(text).map((_, cells))
+  // A projected input commit through the host's per-input sessions, so
+  // re-editing an input reparses in proportion to the edit. Its content
+  // must equal `parseInput`'s; the default parses whole.
+  def commitInput(id: Int, text: String, inputs: InputSessions)
+      : Option[(DetachedNode[NodeData], InputSessions)] =
+    parseInput(text).map((_, inputs))
 
   // The text syntax as an incremental parser, if the language has one:
   // the text surface keeps a TextSession over it, so an edit reparses in

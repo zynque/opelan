@@ -80,7 +80,7 @@ class SheetSuite extends munit.FunSuite {
     val noGrammar = ViewTree.flatten(sheetView(doc, sid))
     assert(noGrammar.split("\n")(6).contains("?ref:"), noGrammar)
     val healed = ViewTree.flatten(
-      sheetView(doc, sid, ViewContext(parseCell = t => Some(parseCellText(t)))))
+      sheetView(doc, sid, ViewContext(parseInput = t => Some(parseCellText(t)))))
     assertEquals(healed.split("\n")(6), "per person\t\t\t8.1")
     // the document itself still holds the hole
     assert(doc.getNode(cellId(6, 3)).exists(_.data.isInstanceOf[NodeData.GapData]))

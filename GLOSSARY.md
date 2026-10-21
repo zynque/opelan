@@ -56,3 +56,25 @@ The fixed, minimal builtin vocabulary the rules regress bottoms out in —
 the irreducible primitives and effects (arithmetic, IO, randomness,
 rendering) that cannot themselves be documents. The Scala substrate is
 expected to shrink toward it over time.
+
+## Surfaces
+
+**Surface**:
+One projection of a document, filling the pane or a section of it: the
+structural editor, the text surface, or one of the language's derived
+views (which shown alone is the "app" surface).
+
+**Text surface**:
+A document rendered as editable text — its language's print/parse
+round-trip, or the outline codec for raw documents. Edits reparse into
+the content subtree, keeping the ids of what didn't change.
+_Avoid_: text cell
+
+**Input**:
+An editable text box a derived view projects over a document node — the
+view tree's `input` element. Committing parses the text through the
+language's input grammar and rewrites the node in place; a language
+without an input grammar projects read-only views.
+_Avoid_: cell — "cell" is reserved for the worksheet's grid entries
+(the sheet example) and table cells in view-tree grids, not for
+projected text boxes.

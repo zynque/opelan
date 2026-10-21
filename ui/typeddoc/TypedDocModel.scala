@@ -1,11 +1,11 @@
 package opelan.ui.typeddoc
 
 import opelan.foundation.document._
-import opelan.foundation.language.{CellSessions, HoleRetry, TextSession}
+import opelan.foundation.language.{HoleRetry, InputSessions, TextSession}
 import opelan.ui.editor.{DocPush, EditorOutput, SelectTarget, SyncedHistory}
 
 // Which surface fills the pane: the generic structural editor, the
-// CodeMirror text cell over the document's text surface, or one of the
+// CodeMirror text surface over the document's text, or one of the
 // language's derived views shown alone (the "app" surface — the
 // spreadsheet without the machinery). Derived views also stay live in
 // the sidebar while editing.
@@ -22,10 +22,10 @@ enum DocView {
 // are never sent back — reloading the child would reset its selection,
 // edit mode, and undo.
 //
-// `text` mirrors the text cell's content; `textEpoch` is bumped when
+// `text` mirrors the text surface's content; `textEpoch` is bumped when
 // text is re-derived from the document (structural edits, loads), which
 // remounts the editor with the new text. TextEdited never bumps it —
-// the cell already holds that text — so typed input never echoes back.
+// the surface already holds that text — so typed input never echoes back.
 //
 // `pushedSelect` rides along with `pushedDoc`: a load can name a node to
 // select (e.g. a followed ref's target). It only matters when pushedDoc
@@ -33,7 +33,7 @@ enum DocView {
 //
 // `pushMode` says how the pushed doc relates to the one shown: Open
 // restarts history, Merge records it as a version under a label
-// (text-cell edits), Synced rebuilds the DAG from the session's shared
+// (text-surface edits), Synced rebuilds the DAG from the session's shared
 // change graph — identical on every peer.
 case class TypedDocModel(
     doc: Document[NodeData],
@@ -45,7 +45,7 @@ case class TypedDocModel(
     textEpoch: Int = 0,
     status: String = "Ready",
     // The document store, delivered as a prop: language refs (a doc's
-    // type, a cell grammar's language) resolve against it, so an edited
+    // type, an input grammar's language) resolve against it, so an edited
     // `lang:` doc re-interprets dependents on the next render.
     store: Store = Store.empty,
     // The text surface's incremental parse, carried across text edits.
@@ -53,8 +53,8 @@ case class TypedDocModel(
     // Each hole's last parse attempt, so a language change retries only
     // the holes that consulted a changed rule.
     holeRetry: HoleRetry = HoleRetry(),
-    // Projected cells' incremental parses, carried across commits.
-    cellSessions: CellSessions = CellSessions(),
+    // Projected inputs' incremental parses, carried across commits.
+    inputSessions: InputSessions = InputSessions(),
     // Props bookkeeping for the Pane input: which push/pull serials were
     // already applied, so re-delivery of unchanged props is a no-op.
     appliedPushSeq: Int = -1,
@@ -88,9 +88,9 @@ enum TypedDocInput {
   // A provenance-tagged fragment of a derived view was clicked: select
   // the source node in the structural editor.
   case SelectSource(nodeId: Int)
-  // A projected cell editor committed text: parse it through the
-  // language's cell grammar and rewrite the node in place.
-  case CommitCellText(nodeId: Int, text: String)
+  // A projected input committed text: parse it through the
+  // language's input grammar and rewrite the node in place.
+  case CommitInputText(nodeId: Int, text: String)
   // Go to definition: follow the document's type ref — the owner opens
   // the language document it names (the app's "implementation").
   case GoToDefinition
@@ -107,7 +107,7 @@ enum TypedDocInput {
 enum TypedDocOutput {
   case DocChanged(doc: Document[NodeData])
   // The editor's view moved to another version without producing a change
-  // — update mirrors (save target, text cell) but never feed a session.
+  // — update mirrors (save target, text surface) but never feed a session.
   case DocViewed(doc: Document[NodeData])
   case Status(message: String)
   // The editor's request to follow an external ref; resolved by whoever

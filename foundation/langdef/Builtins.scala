@@ -4,7 +4,7 @@ import opelan.foundation.document._
 import opelan.foundation.grammar.Lexicon
 
 // The code-side semantics a language definition names. A LanguageDef
-// references lexicons, views, and cell parsers by name — behavior lives
+// references lexicons, views, and input parsers by name — behavior lives
 // in code while the demo bootstraps — and each language carries an
 // Impls bundle holding its own implementations (see the examples
 // package for the concrete bundles). docImpls is the meta-language's:
@@ -12,20 +12,20 @@ import opelan.foundation.grammar.Lexicon
 
 type BuiltinView =
   (Document[NodeData], Int, ViewContext) => DetachedNode[NodeData]
-type BuiltinCellParser = String => DetachedNode[NodeData]
+type BuiltinInputParser = String => DetachedNode[NodeData]
 
 case class Impls(
     lexicons: Map[String, Lexicon] = Map.empty,
     views: Map[String, BuiltinView] = Map.empty,
-    cellParsers: Map[String, BuiltinCellParser] = Map.empty)
+    inputParsers: Map[String, BuiltinInputParser] = Map.empty)
 
 // What a builtin view gets from the language rendering it: the view's
-// settings as written in the def doc, and the language's current cell
+// settings as written in the def doc, and the language's current input
 // grammar — so a view can retry holes against it (a hole whose text
 // now parses renders healed).
 case class ViewContext(
     settings: Map[String, String] = Map.empty,
-    parseCell: String => Option[DetachedNode[NodeData]] = _ => None)
+    parseInput: String => Option[DetachedNode[NodeData]] = _ => None)
 
 val docImpls = Impls(
   views = Map("def-view" -> ((doc, id, _) => defView(doc, id))))

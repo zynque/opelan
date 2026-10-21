@@ -51,16 +51,16 @@ class LangDefDocSuite extends FunSuite {
       exprDef.schema.map(_.name))
   }
 
-  test("sheetDef round-trips, including the cell language ref") {
+  test("sheetDef round-trips, including the input language ref") {
     val url = sheetDef.typeRef.documentUrl
     val doc = langDefDoc(sheetDef)
     val back = langDefFromDocument(url, doc)
     assertEquals(back, withKindRefs(sheetDef))
-    // The cell grammar really does name the expression language.
+    // The input grammar really does name the expression language.
     assertEquals(
-      back.cellParser,
-      Some(CellParserDef.Language(
-        ExprLanguage.typeRef, CellFallback.Label)))
+      back.inputParser,
+      Some(InputParserDef.Language(
+        ExprLanguage.typeRef, InputFallback.Label)))
   }
 
   test("the seeded lang docs decode to their defs") {
@@ -112,13 +112,13 @@ class LangDefDocSuite extends FunSuite {
       Some(GrammarDef.Choice(List(GrammarDef.Hole))))
   }
 
-  test("sheet cell parsing goes through the language ref") {
+  test("sheet input parsing goes through the language ref") {
     val defed = languageFromDef(sheetDef)
     val inputs = List("Apples", "4", "1.5", "ref:5", "ref:1 * 2",
       "?stuck", "", "a b", "1 +")
     inputs.foreach { t =>
-      assertEquals(defed.parseCell(t), SheetLanguage.parseCell(t),
-        s"cell input: ${"\"" + t + "\""}")
+      assertEquals(defed.parseInput(t), SheetLanguage.parseInput(t),
+        s"input: ${"\"" + t + "\""}")
     }
   }
 

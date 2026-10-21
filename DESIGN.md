@@ -173,7 +173,7 @@ trait Language {
   def defaultView: Option[String]             // first view by default
   def render(view, doc): Either[String, DetachedNode[NodeData]]  // a view tree
   def parse(text): Option[DetachedNode[NodeData]]      // optional text syntax
-  def parseCell(text): Option[DetachedNode[NodeData]]  // optional cell grammar
+  def parseInput(text): Option[DetachedNode[NodeData]]  // optional input grammar
   def langDoc: Document[NodeData]             // the document typeRef names
 }
 ```
@@ -191,7 +191,7 @@ machinery, not per-language behavior.
 
 `input` reuses that convention with a stronger meaning: its `SourceRef`
 names the node the text box *edits*. A commit parses the text with the
-language's cell grammar (`parseCell`) and rewrites that node in place
+language's input grammar (`parseInput`) and rewrites that node in place
 (`commitContent`; the node keeps its id, so refs into it keep
 resolving — and unchanged children keep theirs); an unchanged commit is
 a no-op, so a blur records no version. This is the
@@ -211,7 +211,7 @@ on it.
 bootstrap path, and *Frictionless* in practice. A `LanguageDef` is a
 language as data: identity, a schema of node kinds, a compositional
 grammar (`GrammarDef`, the data twin of the `foundation/grammar`
-combinators), view bindings, and a cell grammar. `langDefDoc` encodes a
+combinators), view bindings, and an input grammar. `langDefDoc` encodes a
 def as a typed `lang:` document; `langDefFromDocument` reads it back
 recoveringly; `interpret` turns grammar data into a total parser; and
 `DefLanguage` turns a def into a live `Language`. A def doc's sections,
@@ -223,9 +223,9 @@ from encoding `docLanguageDef`). It knows an example language's
 constructs by the ids its canonical encoding assigns (`kindRefs`,
 `exprKinds`, `sheetKinds`). Each decoded `NodeKind` carries its `ref`,
 and a def-interpreted parser emits that ref for each node it builds. Semantics the def names
-by string — lexicons, view renderers, builtin cell parsers — resolve
+by string — lexicons, view renderers, builtin input parsers — resolve
 through an `Impls` bundle: honest scaffolding while behavior still lives
-in code. The cell grammar (`CellParserDef.Language(ref, fallback)`)
+in code. The input grammar (`InputParserDef.Language(ref, fallback)`)
 names another language by ref, which is how the sheet's cells parse
 with `lang: expression`. `DefDocEncode`/`DefDocDecode`/`DefDocReader`
 are the codec, with sets and op tables sorted so encoding is
@@ -248,11 +248,11 @@ navigation: a document runs against the language version its type ref
 pins, and a `lang:` document reads the languages *its* refs pin —
 transitively. Saving an edit to `lang: expression` appends a version
 there and nothing else: a budget pinned to `lang: sheet@0` keeps running
-sheet v0, whose cell-grammar ref still pins expression v0. A definition
+sheet v0, whose input-grammar ref still pins expression v0. A definition
 edit can never silently retarget a dependent (*Never broken* — the
 *Towers* opt-in made concrete). What a newer head produces on a
 dependent is a *pending update*: any of its external refs — the type
-ref, an imports entry, a def's cell-grammar ref — that pins behind the
+ref, an imports entry, a def's input-grammar ref — that pins behind the
 store's head. `pendingUpdates` finds them by scanning the document's
 reachable `ExternalNodeRef`s against the heads; accepting rewrites the
 pins as one ordinary edit, which appends a new version of the dependent
@@ -303,7 +303,7 @@ ref bumps to it, not when the expression doc is saved. Rejected text that mentio
 cell (`ref:N`) is kept as a hole rather than a label: a formula the
 grammar can't read yet. Both views render a *healed* sheet: builtin views
 receive a `ViewContext` (the view's settings plus the language's current
-cell grammar), and `healHoles` retries each hole cell's text against that
+input grammar), and `healHoles` retries each hole cell's text against that
 grammar, so a hole that now parses renders as the formula it reads as.
 The document keeps the hole (what the user wrote) until the cell is
 committed again. View settings are data in the def doc
@@ -505,7 +505,7 @@ grammar (`RuleGrammar`) over a rule lexicon. Why this direction:
   builtin character-level rules (`n means number(n) where n: digits`)
   instead of a tokenizer outside the language definition.
 - *Composition.* A separate tokenizer imposes one global token set, so a
-  cell cannot embed a language with different lexical rules. Character
+  input cannot embed a language with different lexical rules. Character
   parsers compose freely (STATUS, *Language composition*), and context-dependent
   lexing (`ref:3,4`, units like `5kg`, string interpolation) is natural.
 - *`glued` gains its meaning* (with the rule compiler). Following Ohm's
@@ -540,8 +540,8 @@ rules it called. That one mechanism answers three different needs:
   content keep their node ids, at any depth — refs, selection, and
   history survive a reparse. Matching by content subsumes parse
   provenance (a reused subtree is identical content anyway), so the
-  same reconcile covers session reparses, whole-cell commits, and
-  languages without combinator cell grammars.
+  same reconcile covers session reparses, whole-input commits, and
+  languages without combinator input grammars.
 - *Language changes.* Drop only the results that called a changed rule.
   Rules have stable identities (their node ids in the `lang:` document,
   per *Everything by reference*), so the memo key survives renames and
@@ -596,7 +596,7 @@ relative form that form needs:
 - Document identity is handled a layer down: `commitContent`
   (`foundation/document/Reconcile`) commits a parse's detached output
   into a node, keeping the ids of every subtree whose content didn't
-  change — at any depth. Both commit paths — projected cells and
+  change — at any depth. Both commit paths — projected inputs and
   whole-text edits — use it.
 - Verified by property tests over a multi-rule grammar and the
   interpreted expression language: after hundreds of random edits, with
@@ -604,7 +604,7 @@ relative form that form needs:
   positions, examined extents). A one-statement edit in a 20-statement
   text reruns under a quarter of the rule bodies, and untouched subtrees
   are the same objects, even after length-changing edits.
-- The text cell runs on a session. A language offers its syntax as a
+- The text surface runs on a session. A language offers its syntax as a
   `TextSyntax` (parser, lexicon, a key identifying the grammar, and how
   a tree becomes content); the pane keeps a `TextSession` and applies
   each new text as one prefix/suffix edit against the session's own
@@ -612,14 +612,14 @@ relative form that form needs:
   A re-decoded but unchanged `lang:` def has the same key and keeps the
   session; a changed one carries it through `changeRules` with the
   rules `changedRules` reports.
-- Projected cells run on sessions too: the pane keeps `CellSessions`,
-  a `TextSession` per cell node id (commits keep the cell's id, so the
-  key is stable), and a commit goes through `Language.commitCell`. A
-  def's `CellGrammar` reads the text through the referred language's
+- Projected inputs run on sessions too: the pane keeps `InputSessions`,
+  a `TextSession` per input node id (commits keep the input's id, so the
+  key is stable), and a commit goes through `Language.commitInput`. A
+  def's `InputGrammar` reads the text through the referred language's
   session when it parses incrementally, then classifies the result
-  exactly as `parseCell` does (`?`-holes, blanks, label fallback,
-  ref-mentioning holes); builtin cell parsers still parse whole.
-  Sessions of cells that left the document are dropped on commit.
+  exactly as `parseInput` does (`?`-holes, blanks, label fallback,
+  ref-mentioning holes); builtin input parsers still parse whole.
+  Sessions of inputs that left the document are dropped on commit.
 - Stored holes retry the same way — and only holes need to. A hole is
   the one node that still holds its source text; every other node is
   committed structure, re-*evaluated* by each render's recovering read
@@ -627,16 +627,16 @@ relative form that form needs:
   change is migration, gated by the pending-update machinery, not a
   render step. The pane keeps a `HoleRetry`: for each hole text in its
   document, the last attempt's syntax, content, and every rule the
-  parse consulted. Views ask the cell grammar through it
+  parse consulted. Views ask the input grammar through it
   (`Language.renderWith`), so a hole is reparsed only when the syntax
   changed and the change either touched a consulted rule or can't name
   its rules; otherwise the failed attempt stands — reused content is
   migrated (kind tags re-pin) — sound because the consulted set is
   closed under calls, so a change disjoint from it replays identically.
   After each update the pane re-remembers its
-  holes (`rememberCellHoles`) against the current store and drops
+  holes (`rememberInputHoles`) against the current store and drops
   attempts for texts no longer present. What moves a stored document's
-  cell grammar is a pin bump, so healing follows the accept-update
+  input grammar is a pin bump, so healing follows the accept-update
   gesture, not the dependency's save.
 
 **Rules as documents.** A `lang:` document stores each rule as a
@@ -741,7 +741,7 @@ rendered as a tree — dogfooding.
 
 The workbench's typed-document pane. It composes `DocumentEditor` as a
 child and offers several surfaces (`DocView`): **Editor** (structural),
-**Text** (a `Managed` CodeMirror cell bound to `docText`/`applyDocText`),
+**Text** (a `Managed` CodeMirror surface bound to `docText`/`applyDocText`),
 and **Derived** views offered by the document's language (`print`,
 `eval`, `sheet`, `formulas`). Derived views also stay live in a sidebar
 while editing. Shown alone, a derived view is the *app* surface — the
@@ -754,7 +754,7 @@ to the language document — the app's implementation). Notable mechanics:
 - `doc` vs `pushedDoc`: editor-originated changes update the mirror but
   are never pushed back down (that would reset the child's state);
   text-originated changes are pushed.
-- `textEpoch` bumps remount the CodeMirror cell only when the text was
+- `textEpoch` bumps remount the CodeMirror surface only when the text was
   re-derived externally, so typed input never echoes.
 - The document `store` arrives as a prop and is the language-resolution
   context (§4), so an edited `lang:` document takes effect immediately.
@@ -867,7 +867,7 @@ to language-invented jumps.
   layer rather than being a semantic query. Position follows via stable
   node identity plus the parser's span map: a node selected in the
   structural editor lands on the corresponding text range, not the top of
-  the cell — and vice versa.
+  the input — and vice versa.
 - *Peek*: `ExternalNodeRef` is already transclusion-style; peek-definition
   renders the target inline instead of navigating away.
 

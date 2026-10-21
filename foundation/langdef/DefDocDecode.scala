@@ -46,7 +46,7 @@ def langDefFromDocument(
         r.entries(k, "setting").flatMap(s =>
           r.childStr(s, 0).map(_ -> r.childStr(s, 1).getOrElse(""))).toMap))
     },
-    cellParser = r.section("cells").flatMap(r.cellParserFrom))
+    inputParser = r.section("inputs").flatMap(r.inputParserFrom))
 }
 
 // A def's kinds with their identities: a decoded def has them; a def

@@ -22,7 +22,7 @@ import opelan.foundation.document.Detached._
 //       syntax       "expr"  phrase(named("expr", precedence(…)), "")
 //       views        view("print", "expr-print") …
 //                    view("sheet", "sheet-grid", setting("currency", "$"))
-//       cells        language(&import, as-label)
+//       inputs       language(&import, as-label)
 def langDefDoc(d: LanguageDef): Document[NodeData] = encodeDef(d)._1
 
 // The document plus each schema kind's node id. lang: language itself
@@ -42,7 +42,7 @@ private[langdef] def encodeDef(
   val doc2 = add(doc1, cid, List(
     d.syntax.map(s => n(pending("syntax"), sl(s.lexicon), grammarNode(s.grammar, kindIds))),
     Some(n(pending("views"), d.views.map(viewNode)*)),
-    d.cellParser.map(cp => n(pending("cells"), cellsNode(cp)))).flatten*)._1
+    d.inputParser.map(cp => n(pending("inputs"), inputsNode(cp)))).flatten*)._1
   val metaIds =
     if (d.typeRef.documentUrl == langDefTypeRef.documentUrl) kindIds else metaKindIds
   val doc3 = resolvePending(linkUses(doc2, cid), name =>
@@ -74,12 +74,12 @@ private def kindNode(k: NodeKind): DetachedNode[NodeData] =
     case NodeShape.Fixed(a) => n(pending("fixed"), il(a))
   })
 
-private def cellsNode(cp: CellParserDef): DetachedNode[NodeData] = cp match {
-  case CellParserDef.Builtin(name) =>
+private def inputsNode(cp: InputParserDef): DetachedNode[NodeData] = cp match {
+  case InputParserDef.Builtin(name) =>
     n(pending("builtin"), sl(name))
-  case CellParserDef.Language(ref, fb) =>
+  case InputParserDef.Language(ref, fb) =>
     n(pending("language"), erl(ref), DetachedNode.leaf(pending(fb match {
-      case CellFallback.Label => "as-label"
-      case CellFallback.Hole  => "as-gap"
+      case InputFallback.Label => "as-label"
+      case InputFallback.Hole  => "as-gap"
     })))
 }

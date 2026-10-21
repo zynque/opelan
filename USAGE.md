@@ -23,9 +23,9 @@ root, open `index.html`.
 Three surfaces over one document:
 
 - **editor** — the structural outliner (below).
-- **text** — a CodeMirror cell holding the document's text surface.
+- **text** — the document's text surface in a CodeMirror editor.
   Typed documents use their language's parse/print; everything else uses
-  the outline format. Edits reparse the whole cell; malformed input
+  the outline format. Edits reparse the whole text; malformed input
   becomes holes, not errors.
 - **Sidebar** — the language's derived views (e.g. `print`, `eval` for the
   expression language; `sheet`, `formulas` for the sheet language),

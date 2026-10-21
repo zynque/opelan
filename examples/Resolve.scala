@@ -37,8 +37,8 @@ def languageForDoc(
   typeRefOf(doc).flatMap(ref => languageForRef(ref, store))
 
 // A def interpreted as a live language: impls bound from the
-// foundational pair whose type ref the def claims; language refs (a
-// cell grammar's) resolve through the same store — pinned, so a
+// foundational pair whose type ref the def claims; language refs (an
+// input grammar's) resolve through the same store — pinned, so a
 // referred language's new version reaches dependents only when their
 // refs bump to it.
 def languageFromDef(d: LanguageDef, store: Store = Store.empty): Language =

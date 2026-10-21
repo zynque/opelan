@@ -101,7 +101,7 @@ object EditorModel {
 enum DocPush {
   // A different document being opened: history restarts at a fresh root.
   case Open
-  // The same document updated from outside (e.g. a text-cell edit): the
+  // The same document updated from outside (e.g. a text-surface edit): the
   // pushed doc is recorded as a new version under `label` so it sits in
   // history and undoes like a local edit.
   case Merge(label: String)

@@ -53,13 +53,13 @@ class DefLanguageSuite extends FunSuite {
     assertEquals(defed.render("eval", doc), hand.render("eval", doc))
   }
 
-  test("edge cases: unknown view, no content, no cell grammar") {
+  test("edge cases: unknown view, no content, no input grammar") {
     val empty = makeTyped(hand.typeRef, NodeData.ExternalNodeRef(docTitleRef),
       NodeData.ExternalNodeRef(docImportsRef),
       NodeData.StringData("t"), DetachedNode.leaf(NodeData.IntData(0)))
     assertEquals(defed.render("nope", empty), hand.render("nope", empty))
-    assert(defed.parseCell("1").isEmpty)
-    assert(defed.parseCell("x").isEmpty)
+    assert(defed.parseInput("1").isEmpty)
+    assert(defed.parseInput("x").isEmpty)
   }
 
   test("a def claiming a foundational type ref inherits its impls") {

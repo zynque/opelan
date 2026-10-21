@@ -28,15 +28,15 @@ private[langdef] val metaKinds: List[NodeKind] = List(
   NodeKind("schema", Any),
   NodeKind("syntax", Fixed(2)),    // builtin lexicon name + grammar
   NodeKind("views", Any),
-  NodeKind("cells", Fixed(1)),
+  NodeKind("inputs", Fixed(1)),
   NodeKind("kind", Fixed(2)),      // schema entry: name + shape
   NodeKind("view", Fixed(2)),      // view entry: name + builtin
-  NodeKind("language", Fixed(2)),  // cell grammar by language ref + fallback
-  NodeKind("builtin", Fixed(1)),   // cell grammar by builtin name
+  NodeKind("language", Fixed(2)),  // input grammar by language ref + fallback
+  NodeKind("builtin", Fixed(1)),   // input grammar by builtin name
   NodeKind("leaf", Fixed(0)),      // shapes
   NodeKind("any", Fixed(0)),
   NodeKind("fixed", Fixed(1)),
-  NodeKind("as-label", Fixed(0)),  // cell fallbacks
+  NodeKind("as-label", Fixed(0)),  // input fallbacks
   NodeKind("as-gap", Fixed(0)),
   NodeKind("tok", Fixed(2)),       // grammar combinators
   NodeKind("choice", Any),
@@ -68,6 +68,6 @@ val docLanguageDef = LanguageDef(
   schema = metaKinds,
   syntax = None,
   views = List(ViewBinding("def", "def-view")),
-  cellParser = None)
+  inputParser = None)
 
 val DocLanguage: Language = new DefLanguage(docLanguageDef, docImpls)

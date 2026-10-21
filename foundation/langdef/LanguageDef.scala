@@ -4,10 +4,10 @@ import opelan.foundation.document._
 
 // A language definition as data — the in-memory form of what a `lang:`
 // document encodes: identity (title/name/description), schema, a
-// compositional grammar, view bindings to named builtins, and a cell
+// compositional grammar, view bindings to named builtins, and an input
 // grammar. A def is interpreted into a Language by DefLanguage and
 // encoded into a document by langDefToDetached; semantics named in it
-// (lexer, views, builtin cell parsers) resolve through the builtins
+// (lexer, views, builtin input parsers) resolve through the builtins
 // registry — honest scaffolding while behavior lives in code.
 case class LanguageDef(
     typeRef: ExternalNodeReference,
@@ -17,7 +17,7 @@ case class LanguageDef(
     schema: List[NodeKind],
     syntax: Option[SyntaxDef],
     views: List[ViewBinding],
-    cellParser: Option[CellParserDef])
+    inputParser: Option[InputParserDef])
 
 // A node kind in the language's schema. Descriptive for now — nothing
 // checks arity yet — but the doc encoding carries it. `ref` is the
@@ -45,19 +45,19 @@ case class ViewBinding(
     name: String, builtin: String,
     settings: Map[String, String] = Map.empty)
 
-// The grammar for projected cell editors — the text committed in a
-// cell's box becomes a replacement subtree. A Language ref names
+// The grammar for projected inputs — the text committed in an input's
+// box becomes a replacement subtree. A Language ref names
 // *another language's grammar* (e.g. the sheet's cells parse with the
 // expression language), so editing that language's definition document
 // heals both surfaces.
-enum CellParserDef {
+enum InputParserDef {
   case Builtin(name: String)
-  case Language(ref: ExternalNodeReference, fallback: CellFallback)
+  case Language(ref: ExternalNodeReference, fallback: InputFallback)
 }
 
-// What a cell commit produces when the text doesn't fit the grammar:
+// What an input commit produces when the text doesn't fit the grammar:
 // Label keeps it as a string value (sheets), Hole keeps it as a gap.
-enum CellFallback { case Label, Hole }
+enum InputFallback { case Label, Hole }
 
 // A grammar as a combinator composition — the data twin of
 // foundation/grammar. Named/Ref encode recursion (a precedence grammar
