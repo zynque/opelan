@@ -29,3 +29,23 @@ language-design decision, and why usability — not grammar expressiveness —
 is the bar a new language must clear. `ADOPTION.md` makes the same point from
 the market's side: the moat is the user experience *around* the language, not
 the language definition itself.
+
+## Streaming, reactive, incremental by default
+
+*Reactive* and *Incremental* are promises to the user, and they hold only if
+the implementation is built that way from the start. A batch design (collect
+everything, then process; recompute the whole on every change; poll for
+updates) rarely becomes incremental later: its interfaces take whole inputs
+and return whole outputs, and identity is lost at every rebuild, taking
+references, selections, and history with it. So the default shape for any
+new mechanism is a stream of changes: dependents are notified of deltas,
+work is proportional to the change, and unchanged results keep their
+identity. The same shape is what *Real Time Collaboration* needs, since a
+collaborator's edits arrive as a stream too.
+
+The incremental parser is the template. A full parse still exists, but as
+the oracle a property test checks incremental reparses against, not as the
+path the user runs. That is also the price: incremental designs carry
+bookkeeping (memo tables, examined ranges, dependency tracking) and harder
+correctness arguments. We accept it, and pay it down with tests that compare
+the incremental result against a from-scratch one.

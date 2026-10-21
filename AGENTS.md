@@ -26,6 +26,15 @@
 - **Pure logic separated from effects**: keep document/tree operations pure
   (`foundation/`) and DOM/event code thin (`ui/`). Pure helpers that tests can
   exercise live on companion objects (e.g. `DocumentEditor.parseNodeData`).
+- **Streaming, reactive, incremental by default**: when choosing an
+  approach, prefer processing data as it arrives over collecting it into a
+  batch first, pushing changes to dependents over polling or recomputing on
+  demand, and updating only what a change touches over rebuilding from
+  scratch, keeping the identity of whatever didn't change. Template: the
+  incremental packrat parser (`foundation/grammar`: `Memo`, `ParseSession`)
+  with its id-preserving reconcile. A full recompute is fine as the oracle a
+  test checks the incremental path against, or as a stated first stage with
+  the incremental form named as the target. Rationale: `PRINCIPLES.md`.
 - **Scala 3 top-level definitions**: stateless helpers that aren't tied to a
   type live at package top level — don't wrap them in an `object` just to
   hold functions (Scala 2 style). Keep `object` only for companions of a
