@@ -28,7 +28,7 @@ def ruleSetIssues(ruleSet: RuleSet): List[String] = {
   val unknown = tiered.filterNot(p => byKey.contains(p.key))
     .map(p => s"binding list names '${show(p)}', which has no rule")
   val notOperators = tiered.filter(p =>
-    byKey.contains(p.key) && !shapeOf(p).isOperator)
+    byKey.contains(p.key) && !isOperatorPattern(p))
     .map(p => s"'${show(p)}' is not an operator; it needs no binding")
   val listedTwice = tiered.groupBy(_.key).collect {
     case (_, ps) if ps.length > 1 =>
@@ -36,7 +36,7 @@ def ruleSetIssues(ruleSet: RuleSet): List[String] = {
   }.toList
   val tieredKeys = tiered.map(_.key).toSet
   val untiered = ruleSet.rules.filter(r =>
-    r.shape.isOperator && !tieredKeys.contains(r.pattern.key))
+    isOperatorPattern(r.pattern) && !tieredKeys.contains(r.pattern.key))
     .map(r => s"'${show(r.pattern)}' is an operator with no binding")
   val definedTwice = byKey.collect {
     case (_, rules) if rules.length > 1 =>

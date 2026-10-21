@@ -23,6 +23,15 @@ def readRule(text: String): Either[String, Rule] = {
   } yield Rule(Pattern(pieces(tokensIn(pattern))), readMeaning(meaning), constraints)
 }
 
+// A malformed rule becomes a rule that never applies — the Never
+// Broken counterpart of `readRule`'s error report (DESIGN.md,
+// STATUS Phase C: "a malformed rule into a hole rule"). Nothing in
+// it compiles — an empty pattern is neither operator- nor
+// sequence-shaped — but `ruleIssues` still reports it, so the
+// mistake shows up in checking rather than disappearing.
+def readRuleOrHole(text: String): Rule =
+  readRule(text).getOrElse(Rule(Pattern(Nil), Meaning.Phrase(Nil)))
+
 // A bare pattern — how the binding list names a rule (`a * b`).
 def readPattern(text: String): Pattern = {
   val tree = many(NodeData.StringData("pattern"))(anyToken)(In(text, ruleLexicon), 0).tree

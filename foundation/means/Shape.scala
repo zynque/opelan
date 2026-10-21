@@ -34,3 +34,22 @@ def shapeOf(pattern: Pattern): Shape = {
     }
   }
 }
+
+// Whether a pattern is operator-shaped in the compile sense: edge
+// placeholders only, literals contiguous between them —
+//
+//   a + b   a is not b   n x   (Infix, possibly literal-free)
+//   -a      not a        (Prefix)
+//   a %                  (Postfix)
+//
+// A keyword-led form like `if c then a else b` is Prefix-*shaped* by
+// its edges but has placeholders inside, so it is not an operator: it
+// compiles to a sequence and needs no binding (DESIGN.md §4).
+def isOperatorPattern(pattern: Pattern): Boolean = {
+  val pieces = pattern.pieces
+  def placeholder(piece: Piece) = piece.isInstanceOf[Piece.Placeholder]
+  def literal(piece: Piece) = piece.isInstanceOf[Piece.Literal]
+  pieces.length >= 2 &&
+    (placeholder(pieces.head) || placeholder(pieces.last)) &&
+    pieces.drop(1).dropRight(1).forall(literal)
+}

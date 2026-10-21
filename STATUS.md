@@ -55,6 +55,11 @@ Each item is described in the cited `DESIGN.md` section.
   stored-hole retries through `HoleRetry` — a hole reparses only when
   a language change touched a rule its last attempt consulted;
   id-preserving reconcile (`commitContent`) on both commit paths.
+  The compiler is in: `operatorTable` covers prefix, postfix, and
+  left/right/non-associative infix driven by the binding list, and
+  `compileRules` turns a `RuleSet` into a parser — `exprRules`
+  (`examples/ExprRules.scala`) matches the hand-written expression
+  grammar on every input in the battery, spans included.
 - **UI** (`ui/`, §5): fp runtime, `DocumentEditor`, `TypedDoc` with the
   app surface and its Raw / Definition (F12) exits, `Workbench` with
   seeded demo documents and ref following.
@@ -172,20 +177,20 @@ Each item is described in the cited `DESIGN.md` section.
       - *Rule identity by reference:* rules are identified by name until
         they live in `lang:` documents (step 6), then by node id, so a
         rename invalidates nothing.
-   2. **Operator combinator + rule compiler.** Generalize
-      `precedenceTable` (left-associative infix only) into a
-      precedence-climbing operator combinator covering prefix, postfix,
-      and right- and non-associative infix, driven by the binding list.
-      Compile rules to combinator compositions: operator-shaped rules
-      join the operator combinator; bracketed, keyword-led, and sequence
-      rules compile to sequence/choice and serve as its atoms. Recovery
-      stays in the combinators, so `Junk`/`Phrase`/stop sets never appear
-      in an authored definition. `Signum`'s fused negative literals
-      become a parse-time meaning (`-n means literal(-n) where n:
-      number`). Also deferred from the scannerless work: glued pieces
-      compile to lexical sequencing, a shared set of builtin lexical
-      rules (number, whole number, name, text), and recovery driven by
-      the grammar's literals rather than kind names.
+   2. **Operator combinator + rule compiler** — *done:*
+      `operatorTable` (`foundation/grammar/Operators.scala`) climbs
+      the binding list with prefix, postfix, and left/right/
+      non-associative infix; `compileRules`
+      (`foundation/means/Compile.scala`) puts operator-shaped rules in
+      the table and compiles the rest to sequences serving as its
+      operands — closed rules recover like `parens`, untiered
+      operators compile loosest, and `Phrase` meanings reparse with
+      the language's own rules. Still open from this item:
+      `Signum`'s fused negative literals as a parse-time meaning
+      (`-n means literal(-n) where n: number`), glued pieces as
+      lexical sequencing, builtin lexical rules (number, whole
+      number, name, text) so the `atom` argument goes away, and
+      example-driven associativity overrides.
    3. **Derived printer.** Invert constructor meanings and use the
       binding list for minimal parentheses. Property test:
       `parse(print(t)) == t` over generated trees and the parser battery.
@@ -194,10 +199,13 @@ Each item is described in the cited `DESIGN.md` section.
 
    *Phase B — the expression language on rules:*
 
-   5. **`exprRules` at parity.** Write the expression language as rules;
-      `DefLanguage` accepts rule-based syntax next to `GrammarDef`. Done
-      when the rule form is identical to `ExprLanguage` (trees, spans,
-      printing, eval) on the 28-input battery and the full parser suite.
+   5. **`exprRules` at parity.** *Started:* `exprRules`
+      (`examples/ExprRules.scala`) is the expression language as rules,
+      and the compiled grammar is tree- and span-identical to
+      `exprGrammar` on the full parser battery (`ExprRulesSuite`).
+      Remaining: `DefLanguage` accepts rule-based syntax next to
+      `GrammarDef` (so a `lang:` doc can hold rules), and print/eval
+      parity via the derived printer (item 3).
 
    *Phase C — rules as documents:*
 

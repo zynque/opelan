@@ -70,6 +70,13 @@ class RuleReadSuite extends FunSuite {
     assert(readRule("a + b means add(a, b) where a b").isLeft)
   }
 
+  test("a malformed line reads as a hole rule that never applies") {
+    val r = readRuleOrHole("a + b") // missing 'means'
+    assertEquals(r.pattern.pieces, Nil)
+    assertEquals(r.meaning, Phrase(Nil))
+    assert(ruleIssues(r).nonEmpty) // still reported as malformed
+  }
+
   test("a call that doesn't span the whole meaning is a phrase") {
     assertEquals(read("a means abs(a) + 1").meaning,
       Phrase(List(Literal("abs"), Literal("(", true), Placeholder("a", true),
