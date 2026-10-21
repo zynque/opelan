@@ -30,6 +30,22 @@ deployment choice, not a different implementation — the document remains
 the truth, and shipping without it is a build-time optimization.
 _Avoid_: disable, strip
 
+**Pin**:
+The `version` in an `url@version#node` reference. Execution resolves
+the pinned version of a language document, so a dependency's new head
+changes a dependent only when the dependent's pins are bumped.
+
+**Pending update**:
+The state of a document whose external refs pin versions behind a
+store head. Accepting pending updates rewrites the pins as one ordinary
+edit — a new version of the dependent, which may itself pend the layer
+above.
+
+**Auto-update**:
+A per-document opt-in that accepts pending updates automatically — the
+pins are still rewritten as a recorded, versioned edit, never resolved
+at head invisibly.
+
 **State-as-document**:
 The choice that a running application's state is itself a typed document,
 so history, branching, sync, and inspection apply to it unchanged.

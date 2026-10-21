@@ -1,7 +1,7 @@
 package opelan.ui.typeddoc
 
 import opelan.foundation.document._
-import opelan.foundation.language.TextSession
+import opelan.foundation.language.{HoleRetry, TextSession}
 import opelan.ui.editor.{DocPush, EditorOutput, SelectTarget, SyncedHistory}
 
 // Which surface fills the pane: the generic structural editor, the
@@ -50,6 +50,9 @@ case class TypedDocModel(
     store: Store = Store.empty,
     // The text surface's incremental parse, carried across text edits.
     textSession: Option[TextSession] = None,
+    // Each hole's last parse attempt, so a language change retries only
+    // the holes that consulted a changed rule.
+    holeRetry: HoleRetry = HoleRetry(),
     // Props bookkeeping for the Pane input: which push/pull serials were
     // already applied, so re-delivery of unchanged props is a no-op.
     appliedPushSeq: Int = -1,

@@ -81,8 +81,9 @@ val sheetDef = LanguageDef(
   views = List(
     ViewBinding("sheet", "sheet-grid", Map("currency" -> "$")),
     ViewBinding("formulas", "sheet-formulas")),
-  // Cells parse with the expression language's grammar — by ref, so
-  // editing lang: expression heals sheet cells too.
+  // Cells parse with the expression language's grammar — by pinned
+  // ref, so a new lang: expression version heals sheet cells once the
+  // pin bumps to it.
   cellParser = Some(
     CellParserDef.Language(ExprLanguage.typeRef, CellFallback.Label)))
 

@@ -40,7 +40,9 @@ Each item is described in the cited `DESIGN.md` section.
 - **`means` rule groundwork** (`foundation/means`, `foundation/grammar`,
   §4): rule model, checker, reader, and role-tagged printer;
   scannerless combinators; the incremental packrat engine (`Memo`,
-  `ParseSession`), driving the text cell through `TextSession`;
+  `ParseSession`), driving the text cell through `TextSession`, and
+  stored-hole retries through `HoleRetry` — a hole reparses only when
+  a language change touched a rule its last attempt consulted;
   id-preserving reconcile (`commitContent`) on both commit paths.
 - **UI** (`ui/`, §5): fp runtime, `DocumentEditor`, `TypedDoc` with the
   app surface and its Raw / Definition (F12) exits, `Workbench` with
@@ -66,12 +68,14 @@ Each item is described in the cited `DESIGN.md` section.
     with one readable line.
   - *Healing is derived:* a healed hole computes in both views, but the
     document still holds the hole text until the cell is re-committed
-    (e.g. from the `formulas` view). Retrying holes on each render is
-    whole-sheet, not incremental.
-  - *Pins don't select behavior:* bumping the budget's type ref to a
-    later `lang: sheet` version changes where go-to-definition lands, but
-    execution always resolves at head, so an old pin renders with the
-    current definition.
+    (e.g. from the `formulas` view).
+  - *Pins select navigation, not yet behavior:* bumping the budget's
+    type ref to a later `lang: sheet` version changes where
+    go-to-definition lands, but execution still resolves at head, so an
+    old pin renders with the current definition. The model (DESIGN §4):
+    execution honors the pin; a dependent whose refs pin behind a head
+    surfaces pending updates, and accepting — or a per-document
+    auto-update opt-in — rewrites the pins as an ordinary edit.
   - *`currency` formats computed cells only;* price inputs stay plain
     numbers.
 - **Only the text cell parses incrementally.** Projected cell commits
@@ -90,7 +94,8 @@ Each item is described in the cited `DESIGN.md` section.
   versions open read-write, and saving appends a new head rather than
   branching; cross-document paste doesn't externalize and re-import refs
   (`extractExternalized` and `internalizeRefs` are the primitives);
-  import pins are never offered a bump.
+  refs pinned behind a head are neither detected nor offered a bump —
+  the pending-update accept, DESIGN §4.
 - **Old stores aren't migrated.** Stores from before the by-reference
   format degrade to holes; use **Reset** to reseed. Seeds' construct ids
   must match code's canonical encodings (`metaKindIds`, `kindRefs`), so
@@ -155,8 +160,6 @@ Each item is described in the cited `DESIGN.md` section.
       - *Wiring:* the text cell is done (`TextSession`, below). Still
         whole reparses: projected cell commits, and synced remote text
         once sync carries language text rather than the outline.
-      - *Stored documents on a language change:* retry only the holes
-        whose failed parse called a changed rule.
       - *Memo in the document:* parse results live in document nodes,
         with only failed attempts in a side table.
       - *Rule identity by reference:* rules are identified by name until
@@ -238,7 +241,17 @@ Each item is described in the cited `DESIGN.md` section.
        only rules below it in the DAG.
    15. **Self-description.** The language-definition language's own
        syntax is written as `means` rules, closing the bootstrap loop.
-2. **History and sync.** A network transport (signaling) and presence
+2. **Pins, pending updates, auto-update** (DESIGN §4, *Pins select
+   behavior*). Execution honors `url@version`: language resolution reads
+   the pinned version rather than the head. A document whose external
+   refs pin behind a head surfaces pending updates; the accept gesture
+   rewrites the pins as one ordinary edit (a pin whose node vanished at
+   the newer version surfaces as a broken import instead). A
+   per-document auto-update flag accepts automatically — still as a
+   recorded, versioned edit. The demo beat: adding `/` to
+   `lang: expression` pends `lang: sheet`; accepting publishes sheet
+   v1, which pends the budget — the hole heals on the budget's accept.
+3. **History and sync.** A network transport (signaling) and presence
    (cursors, selections, eventually keystroke-level preview, as
    ephemeral broadcast state off the change graph); debounce-coalesced
    edit bursts; undo stacks rebuilt on resume; branch interception for
@@ -246,9 +259,9 @@ Each item is described in the cited `DESIGN.md` section.
    lifetime (the op log already persists in `automerge_docs`) and for
    unsynced documents; curated checkpoints; the synced meta-log for
    pruning and compaction; then a tree-native CRDT.
-3. **Schemas and typing.** Check documents against their node kinds and
+4. **Schemas and typing.** Check documents against their node kinds and
    fold the gap/typing machinery into the document model.
-4. **Further roadmap:**
+5. **Further roadmap:**
    - A visual schema editor and interactive diagram editing as document
      views.
    - In-workbench help: `USAGE.md` is an interim measure; per *self

@@ -3,14 +3,25 @@ package opelan.ui.typeddoc
 import opelan.examples.{ExprLanguage, SheetLanguage, languageForDoc}
 import opelan.foundation.document._
 import opelan.foundation.language.{
-  TextSession, applyDocContent, applyDocText, docText, holeCount}
+  HoleRetry, TextSession, applyDocContent, applyDocText, docText, holeCount}
 import opelan.ui.editor.{DocPush, EditorOutput, SelectTarget}
 import opelan.ui.fp.Update
 import TypedDocInput._
 import TypedDocOutput._
 
-// The pure transition function for the typed-document pane.
-def typedDocUpdate(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel, TypedDocOutput, TypedDocInput] =
+// The pure transition function for the typed-document pane. After each
+// step the pane re-remembers its document's hole attempts against the
+// current store, so the next render reuses every attempt a language
+// change didn't touch.
+def typedDocUpdate(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel, TypedDocOutput, TypedDocInput] = {
+  val u = step(m, input)
+  val s = u.state
+  val retry = languageForDoc(s.doc, s.store)
+    .fold(HoleRetry())(_.rememberHoles(s.doc, s.holeRetry))
+  u.copy(state = s.copy(holeRetry = retry))
+}
+
+private def step(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel, TypedDocOutput, TypedDocInput] =
   input match {
     case SwitchView(v) => Update(m.copy(view = v))
     case Load(d, sel)  => load(m, d, sel, "Document loaded")

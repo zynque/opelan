@@ -77,19 +77,26 @@ freshly seeded (**Reset** reseeds a used store).
 
    plus `a * b, a / b` on the binding list (before rules land, a copy of
    the `*` op node in the grammar's first precedence level, changed to
-   `/` building `div`). Save, then return to the budget: the
-   `total / people` hole has healed — the cell computes. No rebuild, no
-   redeploy; a running application's language changed by editing a
-   document. **The moment.**
+   `/` building `div`). Save → `lang: expression` is v1 — and the budget
+   is unchanged: its pin keeps it on `lang: sheet` v0, whose own pin
+   keeps it on expression v0. `lang: sheet` shows a pending update;
+   accepting bumps its cell-grammar ref and publishes `lang: sheet` v1,
+   which pends the budget. Back on the budget, one accept → the
+   `total / people` hole heals and the cell computes. No rebuild, no
+   redeploy: a running application's language changed by editing a
+   document, and adopting it was an explicit, versioned gesture at each
+   layer — opting a document into automatic updates makes the same
+   recorded accepts happen without the clicks. **The moment.**
 8. Cosmetic contrast: edit the `sheet` view's `currency` setting in
    `lang: sheet` (`$` → `€`) and save → the computed column restyles.
    View specs are data too.
 
 **Act 3 — the substrate flex.**
 
-9. The budget's type ref is `opelan:languages/sheet@0` — pinned. Bumping
-   to a later version is itself an edit ("the app upgraded"); the pinned
-   old version still opens and computes correctly. (*Evolvable*.)
+9. The budget's type ref is `opelan:languages/sheet@0` — a pin execution
+   honors. The accepts in step 7 were real upgrades, recorded as
+   versions; the pinned old versions still open and compute correctly.
+   (*Evolvable*.)
 10. Second tab → Sync → edit a price in one tab, totals update in both.
 
 Close: the app, its data, and its implementation are three documents in
@@ -98,6 +105,7 @@ compiled.
 
 ## Scope
 
-Explicit cuts: no type system, no auto-migrations of dependents, no
-network transport. Projectional editing is limited to the grid's cells
+Explicit cuts: no type system, no derived migrations of stored content
+(pending updates move pins, they don't rewrite subtrees; auto-update is
+a per-document opt-in, never the default), no network transport. Projectional editing is limited to the grid's cells
 and the definitions' text surface.

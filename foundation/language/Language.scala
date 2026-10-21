@@ -50,6 +50,16 @@ trait Language {
   // proportion to its size. Its content must equal `parse`'s.
   def textSyntax: Option[TextSyntax] = None
 
+  // Render with the host's remembered hole attempts, so holes are
+  // retried only when a language change touched a rule they consulted.
+  def renderWith(view: String, doc: Document[NodeData], retry: HoleRetry)
+      : Either[String, DetachedNode[NodeData]] = render(view, doc)
+
+  // Remember a parse attempt for each hole in `doc` (reusing `retry`'s
+  // attempts where a language change left them valid).
+  def rememberHoles(doc: Document[NodeData], retry: HoleRetry): HoleRetry =
+    retry
+
   // The document `typeRef` names: a readable description of this
   // language, seeded into the document store so following a typed
   // document's type ref lands on a real node. Descriptive, not

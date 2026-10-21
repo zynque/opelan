@@ -234,18 +234,38 @@ deterministic. `DefLanguage(exprDef)` is held identical to
 regression anchor for any change to the definition machinery.
 
 Resolution is store-first (`examples/Resolve.scala`): `languageForRef`
-looks up the type ref's URL in the document store, and if the head there
-is a `lang:` document, that document *is* the language. Otherwise it
-falls back to the code registry (`allLanguages`: `ExprLanguage`,
+looks up the type ref's URL in the document store, and if the document
+there is a `lang:` document, that document *is* the language. Otherwise
+it falls back to the code registry (`allLanguages`: `ExprLanguage`,
 `SheetLanguage`, and `DocLanguage`, the code-resident language that
 `lang:` documents are themselves typed by — where the regress stops).
-Saving an edited `lang:` document therefore re-interprets every dependent
-document on its next render (*Reactive*); deriving migrations for those
-dependents when a definition changes (*Evolvable*) is open. The split is
-deliberate: *execution* resolves at head (live), while go-to-definition
-refs stay version-pinned. Malformed defs degrade to holes: missing refs,
-cyclic grammars, and cyclic documents are all guarded, and an old store
-with untyped `lang:` docs falls back to the registry.
+Malformed defs degrade to holes: missing refs, cyclic grammars, and
+cyclic documents are all guarded, and an old store with untyped `lang:`
+docs falls back to the registry.
+
+**Pins select behavior.** A ref's `url@version` pins execution, not only
+navigation: a document runs against the language version its type ref
+pins, and a `lang:` document reads the languages *its* refs pin —
+transitively. Saving an edit to `lang: expression` appends a version
+there and nothing else: a budget pinned to `lang: sheet@0` keeps running
+sheet v0, whose cell-grammar ref still pins expression v0. A definition
+edit can never silently retarget a dependent (*Never broken* — the
+*Towers* opt-in made concrete). What a newer head produces on a
+dependent is a *pending update*: any of its external refs — the type
+ref, an imports entry, a def's cell-grammar ref — that pins behind the
+store's head. Accepting rewrites the pins as one ordinary edit, which
+appends a new version of the dependent and may in turn pend the layer
+above; since every use routes through the imports section, one bumped
+entry retargets all uses. (A pin whose node no longer resolves at the
+newer version is a broken import, not an update.) A document can opt
+into automatic updates: the same recorded accept then happens without
+the click — pins are still rewritten as a versioned edit, never
+resolved at head invisibly. Interim: execution still resolves at head
+(STATUS); go-to-definition already opens the pinned version, and name
+projections read names at head so a rename shows at once — display,
+not semantics. Deriving content migrations for dependents when a
+definition changes (*Evolvable*) — rewriting stored subtrees, not just
+pins — is the deeper half of the same question and stays open.
 
 **Expression language** (`ExprLanguage`, `Expr`/`ExprDoc`, `ExprLexicon`,
 `ExprParse`, `ExprView`): the demonstration language. It has int and
@@ -270,8 +290,9 @@ document whose content subtree is `sheet > row/hrow > cell`. Label cells
 expression and evaluated, with `InternalNodeRef` leaves addressing other
 cells. The `sheet` view renders the computed grid; `formulas` renders
 each cell's expression instead of its value. Cells parse with the
-expression language's grammar, referenced by type ref, so editing
-`lang: expression` changes sheet cells too. Rejected text that mentions a
+expression language's grammar, referenced by type ref — pinned, so a
+new `lang: expression` version reaches sheet cells when the sheet's
+ref bumps to it, not when the expression doc is saved. Rejected text that mentions a
 cell (`ref:N`) is kept as a hole rather than a label: a formula the
 grammar can't read yet. Both views render a *healed* sheet: builtin views
 receive a `ViewContext` (the view's settings plus the language's current
@@ -582,6 +603,23 @@ relative form that form needs:
   session; a changed one carries it through `changeRules` with the
   rules `changedRules` reports. Projected cell commits still parse
   whole (STATUS).
+- Stored holes retry the same way — and only holes need to. A hole is
+  the one node that still holds its source text; every other node is
+  committed structure, re-*evaluated* by each render's recovering read
+  but never re-*parsed* — rewriting committed structure on a language
+  change is migration, gated by the pending-update machinery, not a
+  render step. The pane keeps a `HoleRetry`: for each hole text in its
+  document, the last attempt's syntax, content, and every rule the
+  parse consulted. Views ask the cell grammar through it
+  (`Language.renderWith`), so a hole is reparsed only when the syntax
+  changed and the change either touched a consulted rule or can't name
+  its rules; otherwise the failed attempt stands — sound because the
+  consulted set is closed under calls, so a change disjoint from it
+  replays identically. After each update the pane re-remembers its
+  holes (`rememberCellHoles`) against the current store and drops
+  attempts for texts no longer present. What moves a stored document's
+  cell grammar is a pin bump, so healing follows the accept-update
+  gesture, not the dependency's save.
 
 **Rules as documents.** A `lang:` document stores each rule as a
 `means(pattern, meaning)` node. Like every construct use, a meaning names
@@ -623,7 +661,9 @@ shadows an inherited rule. Narrowing is by non-import: a layer's usable
 vocabulary is exactly the constructs it imports plus what it declares.
 "This lower rule needs changing" is a signal the layer below wasn't
 general enough — the fix is to generalize it there and publish a new
-version; dependents' `url@version` pins make adopting it opt-in.
+version; dependents' `url@version` pins hold them on the old one until
+they accept the pending update (or auto-update), so adopting it is
+opt-in by construction.
 
 **Every layer is fixable or forkable.** Inspecting a layer is the
 ordinary follow-the-type-ref mechanism (F12), and editing a layer one

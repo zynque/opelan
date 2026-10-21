@@ -36,7 +36,7 @@ private def section(
       el("div",
         style("font-family: Consolas, monospace; font-size: 16px; " +
           "white-space: pre-wrap;"))(
-        body(lang.render(viewName, m.doc)))))
+        body(lang.renderWith(viewName, m.doc, m.holeRetry)))))
 
 private[typeddoc] def body(
     r: Either[String, DetachedNode[NodeData]]): View[TypedDocInput] =
