@@ -60,7 +60,28 @@ class TextSessionSuite extends FunSuite {
     // over, and still equals a full parse
     val withDiv = languageFromDef(exprDef)
     val s1 = s0.retext(withDiv.textSyntax.get, text)
-    assertEquals(withDiv.textSyntax.get.changedSince(s0.syntax), Some(Set("expr")))
+    assertEquals(withDiv.textSyntax.get.changedSince(s0.syntax).map(_.rules),
+      Some(Set("expr")))
     assertEquals(Some(s1.content), withDiv.parse(text))
+  }
+
+  test("a def version bump carries the session — kept results re-pin") {
+    import opelan.foundation.langdef.{langDefDoc, langDefFromDocument}
+    val doc = langDefDoc(exprDef)
+    val url = exprDef.typeRef.documentUrl
+    val at = (v: Int) =>
+      languageFromDef(langDefFromDocument(url, doc, v)).textSyntax.get
+    val text = (1 to 5).map(i => s"($i * $i)").mkString(" + ")
+    val s0 = TextSession.start(at(0), text)
+    val s1 = s0.retext(at(1), text)
+    // the memo carries: the rerun re-evaluates only the boundary
+    // entries the edit dropped, not every position a fresh parse runs
+    val fresh = TextSession.start(at(1), text)
+    assert(s1.evaluations < fresh.evaluations,
+      s"${s1.evaluations} vs ${fresh.evaluations}")
+    // and content equals a fresh parse under the bumped version —
+    // kind tags pin @1, not the @0 a plain reuse would have kept
+    assertEquals(Some(s1.content),
+      languageFromDef(langDefFromDocument(url, doc, 1)).parse(text))
   }
 }

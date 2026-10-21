@@ -6,6 +6,17 @@ import opelan.foundation.document._
 def toDetached(t: PTree): DetachedNode[NodeData] =
   DetachedNode(t.data, t.kids.map(toDetached))
 
+// Map every node's data — a kind-tag migration rewrites a kept parse
+// tree without touching its spans. Identity-preserving: a subtree
+// whose data all mapped to itself stays the same object, so reused
+// parses keep their sharing.
+def mapTreeData(f: NodeData => NodeData)(t: PTree): PTree = {
+  val d = f(t.data)
+  val kids = t.kids.map(mapTreeData(f))
+  if ((d eq t.data) && kids.corresponds(t.kids)(_ eq _)) t
+  else t.copy(data = d, kids = kids)
+}
+
 // A kid adopted into a parent whose span starts at `base`: its `from`,
 // absolute while it stood alone, becomes an offset from `base`. Shallow
 // — the kid's own children are already relative, so nothing below moves.

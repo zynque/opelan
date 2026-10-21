@@ -2,7 +2,7 @@ package opelan.foundation.langdef
 
 import opelan.foundation.document._
 import opelan.foundation.grammar._
-import opelan.foundation.language.{HoleRetry, Language, TextSyntax}
+import opelan.foundation.language.{HoleRetry, Language, SyntaxChange, TextSyntax}
 
 // A Language interpreted from a LanguageDef — the bootstrap mechanism:
 // the def carries the grammar as data and names its semantics through
@@ -66,15 +66,19 @@ class DefLanguage(
   // The interpreted grammar as an incremental parser. Its key is the
   // grammar data plus the construct refs it emits (they pin the def's
   // version), so a session survives re-decoding an unchanged def; after
-  // an edit to the def, only rules whose definitions changed rerun.
+  // an edit to the def, only rules whose definitions changed rerun —
+  // and a version bump re-pins kept content's kind tags rather than
+  // reparsing.
   override def textSyntax: Option[TextSyntax] =
     for {
       s <- languageDef.syntax
       (lexicon, parser) <- syntax
     } yield TextSyntax(parser, lexicon, (s.lexicon, s.grammar, kindTags),
       changedSince = previous => previous.key match {
-        case (s.lexicon, before: GrammarDef, `kindTags`) =>
-          Some(changedRules(before, s.grammar))
+        case (s.lexicon, before: GrammarDef,
+              beforeTags: Map[String, NodeData] @unchecked) =>
+          Some(SyntaxChange(
+            changedRules(before, s.grammar), retagBy(beforeTags, kindTag)))
         case _ => None
       })
 

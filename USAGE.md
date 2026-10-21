@@ -40,7 +40,9 @@ behind a store head — a pending update — and clicking it bumps every
 pin to its head as one ordinary, versioned edit; **auto-update** writes
 an opt-in flag into the document so those accepts happen without the
 click (saving a dependency cascades pin bumps through every flagged
-dependent). **Expr sample** loads a typed expression-language document;
+dependent). A **broken: N** marker counts refs pinning a node that no
+longer exists at the head — they can't be bumped; the tooltip lists
+them. **Expr sample** loads a typed expression-language document;
 **Sheet sample** loads the typed "Household budget" spreadsheet — rows
 of label, literal, and formula cells (`qty * price`, a summed total,
 `total / people`) whose `sheet` view computes values and whose

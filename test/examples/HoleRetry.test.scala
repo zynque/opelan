@@ -1,7 +1,7 @@
 package opelan.examples
 
 import opelan.foundation.document._
-import opelan.foundation.language.{HoleRetry, TextSyntax}
+import opelan.foundation.language.{HoleRetry, SyntaxChange, TextSyntax}
 import opelan.foundation.langdef.rememberCellHoles
 import munit.FunSuite
 
@@ -31,7 +31,7 @@ class HoleRetrySuite extends FunSuite {
     // withDiv's parser would heal it; the change claims to touch only an
     // unconsulted rule, so the failed attempt stands.
     val unrelated = TextSyntax(withDiv.parser, withDiv.lexicon, "other",
-      changedSince = _ => Some(Set("unconsulted")))
+      changedSince = _ => Some(SyntaxChange(Set("unconsulted"))))
     val (c1, r1) = r0.parse(unrelated, "ref:3 / ref:4")
     assert(c1.data.isInstanceOf[NodeData.GapData], c1.toString)
     assertEquals(r1.attempts("ref:3 / ref:4").syntax.key, "other")
@@ -42,6 +42,35 @@ class HoleRetrySuite extends FunSuite {
     val opaque = TextSyntax(withDiv.parser, withDiv.lexicon, "opaque")
     val (c1, _) = r0.parse(opaque, "ref:3 / ref:4")
     assert(!c1.data.isInstanceOf[NodeData.GapData], c1.toString)
+  }
+
+  test("a reused attempt migrates the content the change moved") {
+    val (_, r0) = HoleRetry().parse(staged, "ref:3 / ref:4")
+    val migrate: NodeData => NodeData = {
+      case NodeData.GapData(t) => NodeData.GapData(s"$t!")
+      case d                   => d
+    }
+    val bumped = TextSyntax(withDiv.parser, withDiv.lexicon, "bumped",
+      changedSince = _ => Some(SyntaxChange(Set.empty, migrate)))
+    val (c1, r1) = r0.parse(bumped, "ref:3 / ref:4")
+    assertEquals(c1.data, NodeData.GapData("ref:3 / ref:4!"))
+    assertEquals(r1.attempts("ref:3 / ref:4").content, c1)
+  }
+
+  test("a def version bump re-pins kind tags without touching rules") {
+    import opelan.foundation.langdef.{langDefDoc, langDefFromDocument}
+    val doc = langDefDoc(exprDef)
+    val url = exprDef.typeRef.documentUrl
+    val s0 = languageFromDef(langDefFromDocument(url, doc, 0)).textSyntax.get
+    val s1 = languageFromDef(langDefFromDocument(url, doc, 1)).textSyntax.get
+    val ch = s1.changedSince(s0).get
+    assertEquals(ch.rules, Set.empty[String])
+    // Content parsed under v0 re-pins its construct refs to v1 on reuse.
+    val (c0, r0) = HoleRetry().parse(s0, "1 + 2")
+    val (c1, _) = r0.parse(s1, "1 + 2")
+    assertNotEquals(c1, c0)
+    assertEquals(Some(c1),
+      languageFromDef(langDefFromDocument(url, doc, 1)).parse("1 + 2"))
   }
 
   test("remembered holes follow the document's hole texts") {

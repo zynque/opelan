@@ -589,7 +589,10 @@ relative form that form needs:
   wholesale — nothing inside an entry or a subtree is touched, so an
   edit shifts no positions. `changeRules(grammar, names)` drops results
   of the named rules and of every rule that called one. `changedRules`
-  diffs two `GrammarDef`s to supply the names.
+  diffs two `GrammarDef`s to supply the names. A version bump is a
+  special change: the rules may be identical, but kind tags pin the
+  def's version — `changedSince` reports the rule diff plus a
+  migration, and kept results re-pin their tags rather than reparse.
 - Document identity is handled a layer down: `commitContent`
   (`foundation/document/Reconcile`) commits a parse's detached output
   into a node, keeping the ids of every subtree whose content didn't
@@ -620,9 +623,10 @@ relative form that form needs:
   parse consulted. Views ask the cell grammar through it
   (`Language.renderWith`), so a hole is reparsed only when the syntax
   changed and the change either touched a consulted rule or can't name
-  its rules; otherwise the failed attempt stands — sound because the
-  consulted set is closed under calls, so a change disjoint from it
-  replays identically. After each update the pane re-remembers its
+  its rules; otherwise the failed attempt stands — reused content is
+  migrated (kind tags re-pin) — sound because the consulted set is
+  closed under calls, so a change disjoint from it replays identically.
+  After each update the pane re-remembers its
   holes (`rememberCellHoles`) against the current store and drops
   attempts for texts no longer present. What moves a stored document's
   cell grammar is a pin bump, so healing follows the accept-update

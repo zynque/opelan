@@ -40,11 +40,18 @@ class UpdatesSuite extends FunSuite {
 
   test("a ref whose node vanished at head is a broken import, not an update") {
     val gone = ExternalNodeReference("dep", 0, 99)
+    val d: Document[NodeData] =
+      buildDocument(DetachedNode.leaf(NodeData.ExternalNodeRef(gone)))
+    assertEquals(pendingUpdates(d, store), Nil)
     assertEquals(
-      pendingUpdates(
-        buildDocument(DetachedNode.leaf(NodeData.ExternalNodeRef(gone))),
-        store),
-      Nil)
+      brokenRefs(d, store).map { case (_, r, v) => (r, v) },
+      List(gone -> 1))
+    // Accept leaves it pinned — a bump would lose the node.
+    assertEquals(acceptUpdates(d, store), None)
+  }
+
+  test("a ref whose node exists at head is pending, not broken") {
+    assertEquals(brokenRefs(pinned, store), Nil)
   }
 
   test("acceptUpdates bumps every pinned ref to the head") {

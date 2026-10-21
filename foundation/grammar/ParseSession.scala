@@ -1,5 +1,7 @@
 package opelan.foundation.grammar
 
+import opelan.foundation.document.NodeData
+
 // Incremental parsing: a parse that survives changes. A session holds
 // the text, the grammar, and the memo of its last parse — one column
 // per position, each holding the results of rules applied there,
@@ -54,10 +56,16 @@ case class ParseSession(
 
   // A language change: `changed` names the rules whose definitions
   // differ. Results of those rules, and of any rule that called one,
-  // are dropped; everything else is reused under the new grammar.
-  def changeRules(newGrammar: Parser, changed: Set[String]): ParseSession = {
-    val kept = memo.map(_.filter { case (name, entry) =>
-      !changed(name) && !entry.calls.exists(changed) })
+  // are dropped; everything else is reused under the new grammar —
+  // `migrate` rewrites node data a kept result carries (e.g. kind tags
+  // re-pinning to a newer definition version).
+  def changeRules(newGrammar: Parser, changed: Set[String],
+      migrate: NodeData => NodeData = identity): ParseSession = {
+    val kept = memo.map(_.collect { case (name, entry)
+        if !changed(name) && !entry.calls.exists(changed) =>
+      name -> entry.copy(result =
+        entry.result.copy(tree = mapTreeData(migrate)(entry.result.tree)))
+    })
     ParseSession.run(newGrammar, lexicon, text, kept)
   }
 }

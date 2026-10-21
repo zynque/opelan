@@ -6,6 +6,10 @@ package opelan.foundation.document
 case class DetachedNode[A](data: A, children: List[DetachedNode[A]] = Nil) {
   // Total number of nodes in this tree.
   def size: Int = 1 + children.map(_.size).sum
+
+  // This tree with every node's data mapped — shape preserved.
+  def map[B](f: A => B): DetachedNode[B] =
+    DetachedNode(f(data), children.map(_.map(f)))
 }
 
 object DetachedNode {

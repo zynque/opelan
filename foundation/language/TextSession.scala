@@ -4,17 +4,25 @@ import opelan.foundation.document._
 import opelan.foundation.grammar.{Lexicon, ParseSession, Parser, PTree, toDetached}
 import opelan.foundation.grammar.{Edit => TextEdit}
 
+// What changed between two syntaxes: the rules whose definitions
+// differ (callers keep every result those rules didn't produce), and a
+// migration for content a kept result carries — e.g. kind tags pinning
+// an older definition version re-pin rather than reparse. `migrate`
+// maps node data; results that hold other data are untouched.
+case class SyntaxChange(
+    rules: Set[String],
+    migrate: NodeData => NodeData = identity)
+
 // A language's text syntax as an incremental parser: the grammar, its
 // lexicon, a `key` identifying both (equal keys parse identically), and
-// how a parse tree becomes content. `changedSince` names the rules that
-// differ from an earlier syntax's grammar when the language can tell —
-// a session then keeps every result those rules didn't produce — and
-// None when it can't, which restarts the parse.
+// how a parse tree becomes content. `changedSince` describes the change
+// from an earlier syntax when the language can tell, and returns None
+// when it can't, which restarts the parse.
 case class TextSyntax(
     parser: Parser,
     lexicon: Lexicon,
     key: Any,
-    changedSince: TextSyntax => Option[Set[String]] = _ => None,
+    changedSince: TextSyntax => Option[SyntaxChange] = _ => None,
     toContent: PTree => DetachedNode[NodeData] = toDetached)
 
 // A text surface's parse carried across edits (*Incremental*). Each new
@@ -32,7 +40,8 @@ case class TextSession(syntax: TextSyntax, session: ParseSession) {
   def retext(next: TextSyntax, text: String): TextSession = {
     val carried =
       if (next.key == syntax.key) Some(session)
-      else next.changedSince(syntax).map(session.changeRules(next.parser, _))
+      else next.changedSince(syntax).map(ch =>
+        session.changeRules(next.parser, ch.rules, ch.migrate))
     carried match {
       case Some(s) => TextSession(next, s.edit(textEdit(s.text, text)))
       case None    => TextSession.start(next, text)

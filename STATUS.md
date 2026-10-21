@@ -29,7 +29,10 @@ Each item is described in the cited `DESIGN.md` section.
   accepts them as one ordinary edit, and a `setting(auto-update, true)`
   node opts a document into accepting without the click — in the pane,
   and in a fixpoint cascade on save that republishes flagged dependents
-  (tested end-to-end: `/` → sheet v1 → budget).
+  (tested end-to-end: `/` → sheet v1 → budget). Pins whose node is gone
+  at head surface as `broken: N` (an accept can't bump them), and a
+  bump itself is cheap: `changedSince` reports a version move as a
+  kind-tag migration, so kept parses re-pin rather than reparse.
 - **Version DAG** (`foundation/version`, §3): LSCA merge base; drives
   editor history (branching undo, history column).
 - **Expression and sheet languages** (`examples/`, §4): the recovering
@@ -76,13 +79,9 @@ Each item is described in the cited `DESIGN.md` section.
   - *Healing is derived:* a healed hole computes in both views, but the
     document still holds the hole text until the cell is re-committed
     (e.g. from the `formulas` view).
-  - *Update edges:* the save-time cascade skips synced documents (their
-    sessions own their text) and only runs on local saves — a remote
-    head arrived via sync leaves pending updates for the accept click;
-    a pin whose node vanished at the newer version is just unresolvable
-    — no broken-import surface; and a pin bump reparses a language's
-    holes whole, since `changedSince` can't describe the versioned
-    kind-refs difference.
+  - *Update edges:* the cascade runs on local saves only and skips
+    synced docs; the full list of pin edges — remote heads, content
+    migration, broken-import repair — is item 2 in next steps.
   - *`currency` formats computed cells only;* price inputs stay plain
     numbers.
 - **Only the text cell parses incrementally.** Projected cell commits
@@ -249,13 +248,44 @@ Each item is described in the cited `DESIGN.md` section.
 2. **Pins, pending updates, auto-update** (DESIGN §4, *Pins select
    behavior*). Built: pin-faithful resolution, `pendingUpdates` /
    `acceptUpdates`, the toolbar Update button, the
-   `setting(auto-update, true)` flag with in-pane auto-accept, and the
-   save-time cascade (synced docs skipped). Open: broken-import
-   surfacing, cascades triggered by remote heads, and expressing a
-   version bump to `changedSince` so only affected holes reparse. The
-   demo beat: adding `/` to `lang: expression` pends `lang: sheet`;
-   accepting publishes sheet v1, which pends the budget — the hole
-   heals on the budget's accept.
+   `setting(auto-update, true)` flag with in-pane auto-accept, the
+   save-time cascade (synced docs skipped), broken imports surfaced in
+   the toolbar (`broken: N`), and version bumps carried through
+   `changedSince` as a kind-tag migration — only affected holes
+   reparse. The demo beat: adding `/` to `lang: expression` pends
+   `lang: sheet`; accepting publishes sheet v1, which pends the budget
+   — the hole heals on the budget's accept.
+
+   Still open:
+
+   - *Remote heads.* The Update scan and the cascade run against this
+     tab's store, which changes only on local saves and boot hydration
+     — a save in another tab never enters it (sync streams the open
+     document's text, not store versions), so a cross-tab dependency
+     bump doesn't even *surface* as pending until reload. Two tabs can
+     also publish divergent v1s of the same url — version ids are
+     computed per tab. This is really the store-convergence half of
+     item 3: once a remote head is observable, the cascade should run
+     against it.
+   - *Content migration.* Accepting bumps refs but never rewrites
+     committed structure — a cell parsed under expression v0 keeps its
+     v0 shape and meaning forever; only source-bearing holes re-lift
+     eagerly. Deriving content migrations for dependents when a
+     definition changes (the *Evolvable* question) is the deep half of
+     this item: today "update" means pins only.
+   - *Broken-import repair.* `broken: N` reports refs whose node is
+     gone at head; there is no gesture to repoint one to a surviving
+     node, swap the import, or convert it to a hole.
+   - *Accept granularity.* Update bumps every pending ref at once —
+     per-ref acceptance (bump the language, hold that import) isn't
+     offered.
+   - *Head fallback.* `pinnedOrHead` resolves at head when the pinned
+     version isn't stored — unreachable while the store is
+     append-only, but it becomes a silent semantic change if
+     compaction ever prunes versions.
+   - *Scan cost.* pending/broken detection walks all reachable refs on
+     every render — fine at demo size, wants caching keyed on doc and
+     store identity.
 3. **History and sync.** A network transport (signaling) and presence
    (cursors, selections, eventually keystroke-level preview, as
    ephemeral broadcast state off the change graph); debounce-coalesced

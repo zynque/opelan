@@ -118,9 +118,11 @@ private def toolbar(m: TypedDocModel): View[TypedDocInput] =
 
 // Pending pin updates + the auto-update opt-in: the accept button
 // appears only when a ref pins behind a head; the toggle writes the
-// flag into the document itself.
+// flag into the document itself. A ref whose node is gone at the head
+// can't be bumped — it surfaces as a broken count, not an update.
 private def pendingControls(m: TypedDocModel): Vector[View[TypedDocInput]] = {
   val n = pendingUpdates(m.doc, m.store).length
+  val broken = brokenRefs(m.doc, m.store)
   Vector(
     el("button",
       style("padding: 3px 8px; margin-left: 6px;" +
@@ -130,8 +132,23 @@ private def pendingControls(m: TypedDocModel): Vector[View[TypedDocInput]] = {
     el("button",
       style("padding: 3px 8px; margin-left: 6px;"),
       events = on("click", TypedDocInput.ToggleAutoUpdate))(
-      text(s"auto-update: ${if (autoUpdateEnabled(m.doc)) "on" else "off"}")))
+      text(s"auto-update: ${if (autoUpdateEnabled(m.doc)) "on" else "off"}"))) ++
+    brokenChip(broken)
 }
+
+private def brokenChip(
+    broken: List[(Int, ExternalNodeReference, Int)])
+    : Vector[View[TypedDocInput]] =
+  if (broken.isEmpty) Vector.empty
+  else Vector(els[TypedDocInput]("span",
+    attrs = Map(
+      "style" -> "color: #a33; margin-left: 6px;",
+      "title" -> broken.map { case (_, r, v) =>
+        s"${r.documentUrl}@${r.documentVersionId}#${r.nodeId} " +
+          s"pins a node gone at v$v"
+      }.mkString("\n")))(
+    Vector(text(s"broken: ${broken.length}"))))
+
 
 private def viewButton(label: String, v: DocView, m: TypedDocModel): View[TypedDocInput] = {
   val active = m.view == v

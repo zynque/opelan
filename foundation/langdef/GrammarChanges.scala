@@ -1,5 +1,7 @@
 package opelan.foundation.langdef
 
+import opelan.foundation.document.NodeData
+
 // The named rules of a grammar, by name. When a name is defined twice
 // the first definition wins, everywhere it is used.
 def namedRules(top: GrammarDef): Map[String, GrammarDef] = {
@@ -26,4 +28,18 @@ def namedRules(top: GrammarDef): Map[String, GrammarDef] = {
 def changedRules(before: GrammarDef, after: GrammarDef): Set[String] = {
   val (a, b) = (namedRules(before), namedRules(after))
   (a.keySet ++ b.keySet).filter(name => a.get(name) != b.get(name))
+}
+
+// The content migration between two kind-tag tables (kind name → the
+// data a parse emits): a tag that changed — a construct ref re-pinning
+// to a newer def version, or a kind gone from the schema — rewrites to
+// what a fresh parse would emit; every other node data is untouched.
+def retagBy(
+    before: Map[String, NodeData],
+    tag: String => NodeData): NodeData => NodeData = {
+  val diff = before.iterator
+    .map { case (kind, d) => d -> tag(kind) }
+    .filter { case (a, b) => a != b }
+    .toMap
+  d => diff.getOrElse(d, d)
 }
