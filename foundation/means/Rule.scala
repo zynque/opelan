@@ -28,31 +28,70 @@ case class Pattern(pieces: List[Piece]) {
     pieces.collect { case Piece.Placeholder(name, _) => name }
 }
 
-// What a pattern stands for:
-//   Build   a tree constructor — `add(a, b)` builds an `add` node;
-//   Use     a bare placeholder — `(a) means a`;
-//   Phrase  a phrase of the same language, read with its own rules —
-//           `a % means a / 100`.
+// What a pattern stands for — a term, evaluated (DESIGN.md §4, *A
+// meaning is a term, evaluated*): `add(a, b)` applies a construct of
+// the defined language; a bare `a` reads as `use(a)`, the bound tree
+// itself; a phrase like `a / 100` reads as `reparse` — its template,
+// held in `phrase`, splices the placeholders' bound text and re-reads
+// the result with the language's own rules. `use`, `source`,
+// `reparse`, `builtin` are meaning-language builtins — `lang:`'s own
+// constructs: they operate on bound values and never materialize a
+// node of their own.
 //
 // Names here are labels, as in NodeKind and GrammarDef: in a `lang:`
 // document a constructor is a ref to its kind's schema entry and a
 // placeholder use an internal ref to the pattern's placeholder node
 // (DESIGN.md §4, *Everything by reference*). `reference` carries that
-// identity once a rule is read from a document; rules written in code or
-// text have none until encoded, and a placeholder resolves by name
-// within its rule.
-enum Meaning {
-  case Build(tag: String, arguments: List[Meaning],
-      reference: Option[ExternalNodeReference] = None)
-  case Use(placeholder: String)
-  case Phrase(pieces: List[Piece])
-}
+// identity once a rule is read from a document — a construct's schema
+// entry, a placeholder's pattern piece; rules written in code or text
+// have none until encoded, and a placeholder resolves by name within
+// its rule.
+case class Meaning(
+    tag: String,
+    arguments: List[Meaning] = Nil,
+    reference: Option[ExternalNodeReference] = None,
+    phrase: Option[Pattern] = None)
 
 object Meaning {
-  def placeholders(meaning: Meaning): List[String] = meaning match {
-    case Build(_, arguments, _) => arguments.flatMap(placeholders)
-    case Use(placeholder)       => List(placeholder)
-    case Phrase(pieces)         => Pattern(pieces).placeholders
+  // The meaning-language's vocabulary — `lang:`'s own constructs, never
+  // the defined language's kinds (so a `use` must never reach
+  // schemaFrom). `builtin` is reserved for evaluation-time meanings
+  // (`add(a, b) means builtin num-add`, Phase D).
+  val builtins: Set[String] = Set("use", "source", "reparse", "builtin")
+
+  def isBuiltin(tag: String): Boolean = builtins(tag)
+  def isConstruct(m: Meaning): Boolean = !builtins(m.tag)
+
+  // `add(a, b)` — a construct of the defined language.
+  def construct(tag: String, arguments: List[Meaning] = Nil,
+      reference: Option[ExternalNodeReference] = None): Meaning =
+    Meaning(tag, arguments, reference)
+
+  // A bare name's term — `use`/`source`/`builtin`'s operand; its
+  // `reference` is the pattern piece's identity once rules are read
+  // from a document.
+  def nameTerm(name: String): Meaning = Meaning(name)
+
+  def use(name: String): Meaning = Meaning("use", List(nameTerm(name)))
+  def source(name: String): Meaning = Meaning("source", List(nameTerm(name)))
+  // Transitional — a phrase entered through a language-aware input
+  // desugars to term nodes as it is typed (DESIGN §4, *Phrases desugar
+  // at entry*); `reparse` remains for text/code readers that have no
+  // language context, then leaves the model with `phrase`.
+  def reparse(pieces: List[Piece]): Meaning =
+    Meaning("reparse", phrase = Some(Pattern(pieces)))
+
+  // The name a bare term carries — `use`/`source`'s operand — or None
+  // for a term that isn't a name leaf.
+  def nameOf(m: Meaning): Option[String] =
+    if (isBuiltin(m.tag) || m.arguments.nonEmpty) None else Some(m.tag)
+
+  // The placeholder names a meaning binds — `use`/`source` operands
+  // and `reparse` template placeholders.
+  def placeholders(meaning: Meaning): List[String] = meaning.tag match {
+    case "use" | "source" => meaning.arguments.flatMap(nameOf)
+    case "reparse" => meaning.phrase.toList.flatMap(_.placeholders)
+    case _         => meaning.arguments.flatMap(placeholders)
   }
 }
 

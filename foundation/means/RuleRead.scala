@@ -33,7 +33,7 @@ def readRuleOrHole(text: String): Rule =
   readRule(text).getOrElse(holeRule)
 
 // The hole rule itself, for decoders keeping a slot they can't read.
-val holeRule: Rule = Rule(Pattern(Nil), Meaning.Phrase(Nil))
+val holeRule: Rule = Rule(Pattern(Nil), Meaning.reparse(Nil))
 
 // A bare pattern — how the binding list names a rule (`a * b`).
 def readPattern(text: String): Pattern = {
@@ -85,10 +85,20 @@ private def readMeaning(t: PTree): Meaning = tagOf(t) match {
     val list =
       if (tagOf(arguments) != "arguments") Nil
       else arguments.kids(0) :: arguments.kids(1).kids.map(_.kids(1))
-    Meaning.Build(t.kids(0).text, list.map(readMeaning))
-  case "use" => Meaning.Use(t.kids(0).text)
-  case _     => Meaning.Phrase(pieces(tokensIn(t)))
+    val tag = t.kids(0).text
+    // A meaning-language builtin spelled like a construct — `source(a)`
+    // — takes name-leaf operands; a construct takes meaning terms.
+    if (Meaning.builtins(tag)) Meaning(tag, list.map(nameTermOf))
+    else Meaning(tag, list.map(readMeaning))
+  case "use" => Meaning.use(t.kids(0).text)
+  case _     => Meaning.reparse(pieces(tokensIn(t)))
 }
+
+// A builtin's operand as a name term — `source(a)` binds `a`'s name,
+// not its meaning.
+private def nameTermOf(t: PTree): Meaning =
+  if (tagOf(t) == "use") Meaning.nameTerm(t.kids(0).text)
+  else readMeaning(t)
 
 // `a, b: number; c: whole number` — one constraint per group.
 private def readWhere(t: PTree): Either[String, List[Constraint]] = {

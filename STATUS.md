@@ -70,10 +70,17 @@ Each item is described in the cited `DESIGN.md` section.
   it. Language-change
   diffing names the top rule plus changed `means:` sequence names,
   so adding a rule heals holes through the same session carry.
-  Schema and checks derive too: `schemaFrom` turns `Build` meanings
-  into the def's construct kinds, and worked examples in the `def`
+  Schema and checks derive too: `schemaFrom` turns construct
+  meanings into the def's kinds, and worked examples in the `def`
   view are checked live against the interpreted definition — a
   failing one shows as a hole chip saying what the input read as.
+  The meaning model itself is the unified term of DESIGN §4 (*A
+  meaning is a term, evaluated*): one `tag`/`arguments`/`reference`/
+  `phrase` node, with `use`/`source`/`reparse`/`builtin` as
+  meaning-language builtins rather than separate cases —
+  `applyMeaning` evaluates by tag, `readRule` spells a bare `a` as
+  `use(a)` and a phrase as `reparse`, and an unknown builtin is a
+  hole rather than a node.
 - **UI** (`ui/`, §5): fp runtime, `DocumentEditor`, `TypedDoc` with the
   app surface and its Raw / Definition (F12) exits, `Workbench` with
   seeded demo documents and ref following.
@@ -82,7 +89,7 @@ Each item is described in the cited `DESIGN.md` section.
   version DAG; per-actor undo; local navigation; checkout + edit forks a
   branch draft that peers can rejoin.
 - **Build/test** (§9): `build.bat`/`build.sh`, `test.bat`/`test.sh`;
-  389 munit tests over the pure core, UI update functions, and
+  392 munit tests over the pure core, UI update functions, and
   DocSession convergence under real Automerge in Node. A fresh clone
   needs a `webpack.config.js` (see `README.md`).
 
@@ -198,7 +205,7 @@ Each item is described in the cited `DESIGN.md` section.
       (`foundation/means/Compile.scala`) puts operator-shaped rules in
       the table and compiles the rest to sequences serving as its
       operands — closed rules recover like `parens`, untiered
-      operators compile loosest, and `Phrase` meanings reparse with
+      operators compile loosest, and `reparse` meanings reparse with
       the language's own rules. Still open from this item:
       `Signum`'s fused negative literals as a parse-time meaning
       (`-n means literal(-n) where n: number`), glued pieces as
@@ -206,7 +213,8 @@ Each item is described in the cited `DESIGN.md` section.
       number, name, text) so the `atom` argument goes away, and
       example-driven associativity overrides.
    3. **Derived printer.** *Done at string level:* `printWith`
-      (`foundation/means/Print.scala`) reads Build rules as templates
+      (`foundation/means/Print.scala`) reads construct-meaning rules as
+      templates
       and the binding list for minimal parens — left-assoc infix keeps
       its left operand at its level and asks one tighter of the right,
       postfix applies to the whole level, prefix asks one tighter
@@ -218,9 +226,11 @@ Each item is described in the cited `DESIGN.md` section.
       document nodes with ids, not detached trees) and the round-trip
       property `parse(print(t)) == t` over generated trees.
    4. **Derived schema.** *Landed for code-written defs:* `schemaFrom`
-      (`foundation/langdef/DeriveSchema.scala`) collects every `Build`
-      meaning — nested ones included — into `NodeKind`s (name, arity,
-      the meaning's `reference` when it has one); `exprDef`'s construct
+      (`foundation/langdef/DeriveSchema.scala`) collects every
+      construct meaning — nested ones included — into `NodeKind`s
+      (name, arity, the meaning's `reference` when it has one);
+      builtin terms and their name operands declare nothing, so
+      `use`/`reparse` never become kinds. `exprDef`'s construct
       kinds derive this way. Remaining: leaf kinds still list by hand
       (the atom's token productions aren't rules yet, item 2), and def
       *documents* keep their own explicit schema section — derivation
@@ -241,13 +251,17 @@ Each item is described in the cited `DESIGN.md` section.
    6. **Rule encoding.** *Transitional form landed:* `lang:` documents
       hold each rule as its text plus `binding`/`example` entries, and
       the recovering decoder turns a malformed line into a hole rule
-      that never applies. Remaining: `means(pattern, meaning)` nodes —
-      placeholders and constructors by reference — so a renamed kind
-      or placeholder heals every use. The target form is recorded in
-      DESIGN.md (*A meaning is a term, evaluated*): one meaning tree
-      over `use`/`source`/`reparse` meta-constructs, so a meaning node
-      encodes as a plain subtree and bound placeholders splice at tree
-      level, keeping node identity.
+      that never applies, and the meaning model is already the target
+      form: one term node (`tag`/`arguments`/`reference`/`phrase`)
+      over `use`/`source`/`reparse`/`builtin` builtins, so a meaning
+      node encodes as a plain subtree. Remaining: `means(pattern,
+      meaning)` nodes — placeholders and constructors by reference —
+      so a renamed kind or placeholder heals every use; and the
+      decided desugar (DESIGN §4, *Phrases desugar at entry*): a
+      meaning input parses its phrase against the
+      language-defined-so-far as it is entered, storing term nodes
+      with `use` placeholders and quoted subtrees — `reparse` and
+      the `phrase` field leave once readers are language-aware.
    7. **`means` text surface.** The `def` view and text surface for `lang:`
       documents read and write the `means` notation (the existing
       printer and `RuleGrammar` reader), so editing a language reads like

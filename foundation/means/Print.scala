@@ -3,11 +3,11 @@ package opelan.foundation.means
 import opelan.foundation.document._
 
 // A rule set read backwards — printing trees as text the rules read
-// back (DESIGN.md §4, *The meaning side*): every Build rule is a
-// template whose literals print verbatim and whose placeholders print
-// their argument trees, and the binding list supplies the parentheses
-// — the same minimal-parens dance Expr.print encodes by hand, derived
-// instead.
+// back (DESIGN.md §4, *The meaning side*): every construct-meaning
+// rule is a template whose literals print verbatim and whose
+// placeholders print their argument trees, and the binding list
+// supplies the parentheses — the same minimal-parens dance Expr.print
+// encodes by hand, derived instead.
 //
 // An operator rule prints each edge operand in the context the parser
 // gave it: left-associative infix keeps its left operand at its own
@@ -36,12 +36,10 @@ def printWith(
     tiers.zipWithIndex.flatMap { case (rs, i) =>
       rs.map(r => r.pattern.key -> (count - i)) }.toMap
   val builders: Map[NodeData, Rule] = set.rules.reverse.flatMap { r =>
-    r.meaning match {
-      case Meaning.Build(name, _, ref) =>
-        List(ref.map(NodeData.ExternalNodeRef(_))
-          .getOrElse(kindTag(name)) -> r)
-      case _ => Nil
-    }
+    if (Meaning.isConstruct(r.meaning))
+      List(r.meaning.reference.map(NodeData.ExternalNodeRef(_))
+        .getOrElse(kindTag(r.meaning.tag)) -> r)
+    else Nil
   }.toMap
 
   // `ctx` is the print level a node must meet to stand bare.
@@ -85,7 +83,7 @@ def printWith(
       isOperatorPattern(r.pattern) && r.shape == Shape.Prefix &&
         levels.get(r.pattern.key).contains(pl))
 
-  // Walk a Build rule's pattern: placeholders render their argument
+  // Walk a construct rule's pattern: placeholders render their argument
   // tree, literals verbatim; `glued` suppresses the space before a
   // piece, as in the rule's own text.
   def walk(
@@ -109,13 +107,13 @@ def printWith(
   // the tree it prints. A name repeated (`add(a, a)`) binds the first;
   // a pattern placeholder the meaning never names prints as a hole.
   def argumentIndex(rule: Rule): Map[String, Int] =
-    rule.meaning match {
-      case Meaning.Build(_, arguments, _) =>
-        arguments.zipWithIndex.collect {
-          case (Meaning.Use(name), i) => name -> i
-        }.reverse.toMap
-      case _ => Map.empty
-    }
+    if (Meaning.isConstruct(rule.meaning))
+      rule.meaning.arguments.zipWithIndex.flatMap { case (a, i) =>
+        if (a.tag == "use")
+          a.arguments.headOption.flatMap(Meaning.nameOf).map(_ -> i)
+        else None
+      }.reverse.toMap
+    else Map.empty
 
   (tree => render(tree, 0))
 }

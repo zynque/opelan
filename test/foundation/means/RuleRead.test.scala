@@ -11,7 +11,7 @@ class RuleReadSuite extends FunSuite {
   test("infix rule with a constructor meaning") {
     val r = read("a + b means add(a, b)")
     assertEquals(r.pattern.pieces, List(Placeholder("a"), Literal("+"), Placeholder("b")))
-    assertEquals(r.meaning, Build("add", List(Use("a"), Use("b"))))
+    assertEquals(r.meaning, construct("add", List(use("a"), use("b"))))
     assertEquals(r.where, Nil)
   }
 
@@ -26,17 +26,22 @@ class RuleReadSuite extends FunSuite {
   }
 
   test("a bare placeholder meaning") {
-    assertEquals(read("(a) means a").meaning, Use("a"))
+    assertEquals(read("(a) means a").meaning, use("a"))
+  }
+
+  test("builtins spelled like constructs read as builtin terms") {
+    assertEquals(read("a means use(a)").meaning, use("a"))
+    assertEquals(read("a means source(a)").meaning, source("a"))
   }
 
   test("a phrase meaning in the same language") {
     assertEquals(read("a % means a / 100").meaning,
-      Phrase(List(Placeholder("a"), Literal("/"), Literal("100"))))
+      reparse(List(Placeholder("a"), Literal("/"), Literal("100"))))
   }
 
   test("nested constructor arguments") {
     assertEquals(read("-n means literal(neg(n))").meaning,
-      Build("literal", List(Build("neg", List(Use("n"))))))
+      construct("literal", List(construct("neg", List(use("n"))))))
   }
 
   test("where clause with several groups and multi-word kinds") {
@@ -73,13 +78,13 @@ class RuleReadSuite extends FunSuite {
   test("a malformed line reads as a hole rule that never applies") {
     val r = readRuleOrHole("a + b") // missing 'means'
     assertEquals(r.pattern.pieces, Nil)
-    assertEquals(r.meaning, Phrase(Nil))
+    assertEquals(r.meaning, reparse(Nil))
     assert(ruleIssues(r).nonEmpty) // still reported as malformed
   }
 
   test("a call that doesn't span the whole meaning is a phrase") {
     assertEquals(read("a means abs(a) + 1").meaning,
-      Phrase(List(Literal("abs"), Literal("(", true), Placeholder("a", true),
+      reparse(List(Literal("abs"), Literal("(", true), Placeholder("a", true),
         Literal(")", true), Literal("+"), Literal("1"))))
   }
 }

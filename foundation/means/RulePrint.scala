@@ -53,13 +53,27 @@ private def quoteIfNeeded(text: String): String = {
   if (plain) text else s"'$text'"
 }
 
-private def meaningSpans(meaning: Meaning): List[Styled] = meaning match {
-  case Meaning.Use(placeholder) => List(Styled(placeholder, Role.Placeholder))
-  case Meaning.Phrase(pieces)   => pieceSpans(pieces)
-  case Meaning.Build(tag, arguments, _) =>
+private def meaningSpans(meaning: Meaning): List[Styled] =
+  meaning.tag match {
+  case "use" =>
+    meaning.arguments.flatMap(operandSpans)
+  case "reparse" =>
+    meaning.phrase.toList.flatMap(p => pieceSpans(p.pieces))
+  case "source" | "builtin" =>
+    (Styled(meaning.tag, Role.Keyword) :: punctuation("(") ::
+      joined(meaning.arguments.map(operandSpans), ",")) :+ punctuation(")")
+  case tag =>
     (Styled(tag, Role.Tag) :: punctuation("(") ::
-      joined(arguments.map(meaningSpans), ",")) :+ punctuation(")")
+      joined(meaning.arguments.map(meaningSpans), ",")) :+ punctuation(")")
 }
+
+// A builtin's operand — `source(a)`/`builtin(num-add)` bind a name, so
+// a name leaf prints as a placeholder, anything else as a term.
+private def operandSpans(m: Meaning): List[Styled] =
+  Meaning.nameOf(m) match {
+    case Some(name) => List(Styled(name, Role.Placeholder))
+    case None       => meaningSpans(m)
+  }
 
 // Items joined by a separator (", " between arguments, "; " between groups).
 private def joined(items: List[List[Styled]], separator: String): List[Styled] =

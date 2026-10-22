@@ -3,7 +3,7 @@ package opelan.foundation.means
 import munit.FunSuite
 import opelan.foundation.document._
 
-// The derived printer: Build rules are templates, the binding list
+// The derived printer: construct-meaning rules are templates, the binding list
 // supplies minimal parentheses — mirroring the contexts operatorTable
 // parses operands under.
 class PrintSuite extends FunSuite {

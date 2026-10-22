@@ -48,10 +48,15 @@ class RulePrintSuite extends FunSuite {
       ")" -> Role.Punctuation))
   }
 
+  test("an explicit use term prints as the bare placeholder") {
+    assertEquals(printRule(read("a means use(a)")), "a means a")
+    assertEquals(printRule(read("a means source(a)")), "a means source(a)")
+  }
+
   test("literals that would misread are quoted") {
     val r = Rule(
       Pattern(List(Piece.Placeholder("a"), Piece.Literal("where"), Piece.Placeholder("b"))),
-      Meaning.Use("a"))
+      Meaning.use("a"))
     assertEquals(printRule(r), "a 'where' b means a")
   }
 }
