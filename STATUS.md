@@ -243,7 +243,11 @@ Each item is described in the cited `DESIGN.md` section.
       the recovering decoder turns a malformed line into a hole rule
       that never applies. Remaining: `means(pattern, meaning)` nodes —
       placeholders and constructors by reference — so a renamed kind
-      or placeholder heals every use.
+      or placeholder heals every use. The target form is recorded in
+      DESIGN.md (*A meaning is a term, evaluated*): one meaning tree
+      over `use`/`source`/`reparse` meta-constructs, so a meaning node
+      encodes as a plain subtree and bound placeholders splice at tree
+      level, keeping node identity.
    7. **`means` text surface.** The `def` view and text surface for `lang:`
       documents read and write the `means` notation (the existing
       printer and `RuleGrammar` reader), so editing a language reads like
@@ -274,7 +278,9 @@ Each item is described in the cited `DESIGN.md` section.
       derived from meaning rules bottoming out in builtins, replacing the
       hand-coded `Expr.eval` behind `expr-eval`. The rule dependency DAG
       and derived layers are computed; a cycle renders as a hole at the
-      closing edge.
+      closing edge. Parse-time and eval-time meanings are one term form
+      (DESIGN.md, *A meaning is a term, evaluated*) — `builtin` joins
+      `use`/`source`/`reparse` as a meaning-language construct.
    10. **Migrate stored definitions.** Users' IndexedDB stores hold
        `lang:` docs in the combinator format, and seeding never
        overwrites. Convert legacy grammar subtrees to rules on read (or

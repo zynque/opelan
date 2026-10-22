@@ -362,9 +362,10 @@ a difference in content. The reader and printer exist
 (`foundation/means`): rules print as role-tagged spans (keyword, literal,
 placeholder, constructor tag, constraint kind, marker), so a highlighting
 surface and plain text come from one source. A `Rule(pattern, meaning,
-where)` has a pattern of literal and placeholder pieces and a meaning
-that is a constructor (`add(a, b)`), a bare placeholder (`(a) means a`),
-or a phrase in the same language (`a % means a / 100`); a rule set adds
+where)` has a pattern of literal and placeholder pieces; a meaning reads
+as a constructor (`add(a, b)`), a bare placeholder (`(a) means a`),
+or a phrase in the same language (`a % means a / 100`) — surface spellings
+of one form, the meaning term below. A rule set adds
 binding-list tiers and worked examples. A rule's shape (leaf, closed,
 prefix, postfix, infix) is derived from its pattern's edges, and
 `ruleIssues`/`ruleSetIssues` report unbound or duplicate placeholders and
@@ -378,6 +379,24 @@ follows from the binding list, replacing hand-written `Expr.pp`. Several
 surfaces may mean the same tree (`a × b`, `a times b`, `product of a, b`
 all `means mul(a, b)`), so choosing a notation means choosing which rule
 set prints the view — *Polysyntactic* as data.
+
+**A meaning is a term, evaluated.** The three meaning spellings unify
+into one form: a meaning is a tree over a small vocabulary — `add(a, b)`
+constructs a node, a bare `a` is a bound-value reference, `reparse` and
+`source` are meaning builtins underneath the phrase spelling. The meaning
+tree is the program; the produced tree is the value — `use(a)` evaluates
+to the bound tree and never materializes a `use` node in the output. Two
+consequences: placeholders splice at tree level, so `5 %` producing
+`div(5, 100)` keeps the `5` node's identity rather than re-parsing a copy
+(today's text-level phrase reparse loses it); and meaning builtins
+(`use`, `source`, `reparse`) belong to `lang:`'s vocabulary, not the
+defined language's, so schema and kind derivation must not turn them into
+constructs. Evaluation-time meanings (`add(a, b) means builtin num-add`)
+are the same form — one evaluation story for parse-time and eval-time
+layers alike. Whether a phrase desugars at read time (parse it through
+the rules being defined — self-application, ordering-sensitive) or at
+apply time (today's tolerant reparse) is a choice per rule; apply-time
+stays the default so a meaning may use syntax the set defines later.
 
 **Precedence is an ordered list**, tightest first — the PEMDAS card, not
 binding-power numbers and not inferred. Associativity defaults to left and
