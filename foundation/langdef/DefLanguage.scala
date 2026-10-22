@@ -2,7 +2,7 @@ package opelan.foundation.langdef
 
 import opelan.foundation.document._
 import opelan.foundation.grammar._
-import opelan.foundation.means.{compileRules, RuleSet}
+import opelan.foundation.means.{compileRules, desugarRuleSet, RuleSet}
 import opelan.foundation.language.{
   HoleRetry, InputSessions, Language, SyntaxChange, TextSyntax}
 
@@ -51,8 +51,13 @@ class DefLanguage(
       // combinator form writes by hand. `phrase` supplies the to-EOF
       // recovery the combinator form encodes explicitly.
       case Some(rules) =>
-        (lexicon, phrase(compileRules(rules, interpret(s.grammar, kindTag),
-          kindTag, s.lexicon), Set.empty))
+        val atom = interpret(s.grammar, kindTag)
+        // Phrase meanings desugar to term trees at interpretation —
+        // the document form of *Phrases desugar at entry* (DESIGN §4).
+        val desugared =
+          desugarRuleSet(rules, atom, kindTag, s.lexicon, lexicon)
+        (lexicon, phrase(compileRules(desugared, atom, kindTag, s.lexicon),
+          Set.empty))
       case None => (lexicon, interpret(s.grammar, kindTag))
     }
 

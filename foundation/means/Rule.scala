@@ -1,6 +1,7 @@
 package opelan.foundation.means
 
 import opelan.foundation.document.ExternalNodeReference
+import opelan.foundation.grammar.PTree
 
 // The model behind `pattern means meaning` language definitions
 // (DESIGN.md §4, *Defining languages by `means` rules*):
@@ -45,19 +46,24 @@ case class Pattern(pieces: List[Piece]) {
 // identity once a rule is read from a document — a construct's schema
 // entry, a placeholder's pattern piece; rules written in code or text
 // have none until encoded, and a placeholder resolves by name within
-// its rule.
+// its rule. `quoted` holds a `quote` term's subtree — concrete content
+// a phrase desugared to, stored as a parse tree whose kids' offsets
+// are relative, ready to re-span onto a match.
 case class Meaning(
     tag: String,
     arguments: List[Meaning] = Nil,
     reference: Option[ExternalNodeReference] = None,
-    phrase: Option[Pattern] = None)
+    phrase: Option[Pattern] = None,
+    quoted: Option[PTree] = None)
 
 object Meaning {
   // The meaning-language's vocabulary — `lang:`'s own constructs, never
   // the defined language's kinds (so a `use` must never reach
   // schemaFrom). `builtin` is reserved for evaluation-time meanings
-  // (`add(a, b) means builtin num-add`, Phase D).
-  val builtins: Set[String] = Set("use", "source", "reparse", "builtin")
+  // (`add(a, b) means builtin num-add`, Phase D); `quote` carries a
+  // desugared phrase's concrete subtree.
+  val builtins: Set[String] =
+    Set("use", "source", "reparse", "builtin", "quote")
 
   def isBuiltin(tag: String): Boolean = builtins(tag)
   def isConstruct(m: Meaning): Boolean = !builtins(m.tag)
@@ -80,6 +86,11 @@ object Meaning {
   // language context, then leaves the model with `phrase`.
   def reparse(pieces: List[Piece]): Meaning =
     Meaning("reparse", phrase = Some(Pattern(pieces)))
+
+  // A quoted subtree — concrete content a phrase desugared to
+  // (`a / 100`'s `100`). At apply the stored subtree is the value,
+  // re-spanned onto the match.
+  def quote(node: PTree): Meaning = Meaning("quote", quoted = Some(node))
 
   // The name a bare term carries — `use`/`source`'s operand — or None
   // for a term that isn't a name leaf.

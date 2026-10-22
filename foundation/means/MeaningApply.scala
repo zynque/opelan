@@ -19,6 +19,8 @@ import opelan.foundation.grammar._
 //            language-aware input lands as term nodes — `div(use(a),
 //            quoted 100)` — and this apply-time text splice, which
 //            loses the bound node's identity, goes away with it.
+//   quote    a desugared phrase's concrete subtree — the stored tree,
+//            re-spanned onto the match
 //   builtin  not yet — evaluation-time meanings are Phase D; an
 //            unknown builtin is a hole, Never Broken
 //   other    a construct: the meaning's `reference` when it carries
@@ -56,6 +58,11 @@ def applyMeaning(
     val r = expression(In(text, in.lexicon), 0)
     r.tree.copy(text = in.input.substring(from, to),
       from = from, length = to - from)
+  case "quote" => meaning.quoted match {
+      case Some(q) => q.copy(text = in.input.substring(from, to),
+          from = from, length = to - from)
+      case None    => gapNode(in, from, to)
+    }
   case "builtin" => gapNode(in, from, to)
   case construct if Meaning.isConstruct(meaning) =>
     PTree(

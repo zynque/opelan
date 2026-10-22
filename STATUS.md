@@ -76,11 +76,15 @@ Each item is described in the cited `DESIGN.md` section.
   failing one shows as a hole chip saying what the input read as.
   The meaning model itself is the unified term of DESIGN §4 (*A
   meaning is a term, evaluated*): one `tag`/`arguments`/`reference`/
-  `phrase` node, with `use`/`source`/`reparse`/`builtin` as
-  meaning-language builtins rather than separate cases —
+  `phrase`/`quoted` node, with `use`/`source`/`reparse`/`builtin`/
+  `quote` as meaning-language builtins rather than separate cases —
   `applyMeaning` evaluates by tag, `readRule` spells a bare `a` as
   `use(a)` and a phrase as `reparse`, and an unknown builtin is a
-  hole rather than a node.
+  hole rather than a node. Phrases desugar at interpretation:
+  `desugarRuleSet` parses a template through the whole rule set
+  (placeholders as atoms) into `use`/construct/`quote` terms, so a
+  bound operand's node lands in the output rather than a reparsed
+  copy.
 - **UI** (`ui/`, §5): fp runtime, `DocumentEditor`, `TypedDoc` with the
   app surface and its Raw / Definition (F12) exits, `Workbench` with
   seeded demo documents and ref following.
@@ -89,7 +93,7 @@ Each item is described in the cited `DESIGN.md` section.
   version DAG; per-actor undo; local navigation; checkout + edit forks a
   branch draft that peers can rejoin.
 - **Build/test** (§9): `build.bat`/`build.sh`, `test.bat`/`test.sh`;
-  392 munit tests over the pure core, UI update functions, and
+  398 munit tests over the pure core, UI update functions, and
   DocSession convergence under real Automerge in Node. A fresh clone
   needs a `webpack.config.js` (see `README.md`).
 
@@ -252,16 +256,22 @@ Each item is described in the cited `DESIGN.md` section.
       hold each rule as its text plus `binding`/`example` entries, and
       the recovering decoder turns a malformed line into a hole rule
       that never applies, and the meaning model is already the target
-      form: one term node (`tag`/`arguments`/`reference`/`phrase`)
-      over `use`/`source`/`reparse`/`builtin` builtins, so a meaning
-      node encodes as a plain subtree. Remaining: `means(pattern,
-      meaning)` nodes — placeholders and constructors by reference —
-      so a renamed kind or placeholder heals every use; and the
-      decided desugar (DESIGN §4, *Phrases desugar at entry*): a
-      meaning input parses its phrase against the
-      language-defined-so-far as it is entered, storing term nodes
-      with `use` placeholders and quoted subtrees — `reparse` and
-      the `phrase` field leave once readers are language-aware.
+      form: one term node (`tag`/`arguments`/`reference`/`phrase`/
+      `quoted`) over `use`/`source`/`reparse`/`builtin`/`quote`
+      builtins, so a meaning node encodes as a plain subtree. The
+      decided desugar is live (DESIGN §4, *Phrases desugar at
+      entry*): `desugarRuleSet`/`desugarPhrase`
+      (`foundation/means/Desugar.scala`) parse a `reparse` template
+      through the whole set — placeholders lexing as atoms — and
+      translate the tree to `use`/construct/`quote` terms, so bound
+      placeholders splice at tree level keeping node identity;
+      `DefLanguage` and `exprRuleGrammar` interpret the desugared
+      set. Remaining: `means(pattern, meaning)` nodes — placeholders
+      and constructors by reference — so a renamed kind or
+      placeholder heals every use; meaning *inputs* desugaring per
+      keystroke with hole-retry healing (today a `lang:` doc's rule
+      lines still hold text); then `reparse`/`phrase` leave the
+      model.
    7. **`means` text surface.** The `def` view and text surface for `lang:`
       documents read and write the `means` notation (the existing
       printer and `RuleGrammar` reader), so editing a language reads like

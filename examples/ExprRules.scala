@@ -31,7 +31,7 @@ val exprRules = RuleSet(
 // constraints bind placeholders to a kind vocabulary. The same
 // choice ExprParse writes, minus `parens`: `(a) means a` supplies
 // them now.
-private lazy val ruleAtom: Parser = choice(
+lazy val ruleAtom: Parser = choice(
   tok("int")(t => t.text.toIntOption.map(NodeData.IntData(_))
     .getOrElse(NodeData.GapData(t.text))),
   tok("float")(t => t.text.toDoubleOption.map(NodeData.FloatData(_))
@@ -47,4 +47,6 @@ private lazy val ruleAtom: Parser = choice(
 // parser memoizes under — placeholders recurse through it, so it is
 // what a language change names to invalidate the syntax's results.
 lazy val exprRuleGrammar: Parser =
-  phrase(compileRules(exprRules, ruleAtom, exprTag, "expr"), Set.empty)
+  phrase(compileRules(
+    desugarRuleSet(exprRules, ruleAtom, exprTag, "expr", exprLexicon),
+    ruleAtom, exprTag, "expr"), Set.empty)
