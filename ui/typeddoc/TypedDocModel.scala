@@ -48,6 +48,11 @@ case class TypedDocModel(
     // type, an input grammar's language) resolve against it, so an edited
     // `lang:` doc re-interprets dependents on the next render.
     store: Store = Store.empty,
+    // The URL the shown document is stored under — a document's
+    // identity, delivered as a prop alongside the store. A `lang:` def
+    // doc's URL is the language it defines; views that interpret the
+    // document itself (the def view's worked-example checks) need it.
+    docUrl: Option[String] = None,
     // The text surface's incremental parse, carried across text edits.
     textSession: Option[TextSession] = None,
     // Each hole's last parse attempt, so a language change retries only
@@ -78,10 +83,11 @@ enum TypedDocInput {
   // applied when `pushSeq` is new — same-doc re-delivery can't reload;
   // bump `pushSeq` to force a re-push. A `pull` bump re-emits DocChanged.
   // `store` is the owner's current document store — the language
-  // resolution context.
+  // resolution context; `docUrl` the shown document's own URL (its
+  // stored identity, when it has one).
   case Pane(
       push: Option[TypedDocInput], pushSeq: Int, pull: Int,
-      store: Store = Store.empty)
+      store: Store = Store.empty, docUrl: Option[String] = None)
   case LoadExprSample
   case LoadSheetSample
   case TextEdited(text: String)

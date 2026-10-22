@@ -46,7 +46,8 @@ class Workbench(
         SyncMsg.Props(SyncProps(s.synced, s.syncCmd)), FromSync(_)),
       Child("doc", docPane,
         TypedDocInput.Pane(
-          s.panePush, s.pushSeq, s.pullSerial, s.workspace.store),
+          s.panePush, s.pushSeq, s.pullSerial, s.workspace.store,
+          s.workspace.openUrl),
         FromPane(_), slot = "doc"),
       Child("demo", CounterList, CounterListInput.Noop,
         o => FromDemo(o.toString), slot = "demo"))

@@ -70,6 +70,10 @@ Each item is described in the cited `DESIGN.md` section.
   it. Language-change
   diffing names the top rule plus changed `means:` sequence names,
   so adding a rule heals holes through the same session carry.
+  Schema and checks derive too: `schemaFrom` turns `Build` meanings
+  into the def's construct kinds, and worked examples in the `def`
+  view are checked live against the interpreted definition — a
+  failing one shows as a hole chip saying what the input read as.
 - **UI** (`ui/`, §5): fp runtime, `DocumentEditor`, `TypedDoc` with the
   app surface and its Raw / Definition (F12) exits, `Workbench` with
   seeded demo documents and ref following.
@@ -78,7 +82,7 @@ Each item is described in the cited `DESIGN.md` section.
   version DAG; per-actor undo; local navigation; checkout + edit forks a
   branch draft that peers can rejoin.
 - **Build/test** (§9): `build.bat`/`build.sh`, `test.bat`/`test.sh`;
-  381 munit tests over the pure core, UI update functions, and
+  389 munit tests over the pure core, UI update functions, and
   DocSession convergence under real Automerge in Node. A fresh clone
   needs a `webpack.config.js` (see `README.md`).
 
@@ -213,8 +217,14 @@ Each item is described in the cited `DESIGN.md` section.
       `src:` spans for click-through, which needs printing over
       document nodes with ids, not detached trees) and the round-trip
       property `parse(print(t)) == t` over generated trees.
-   4. **Derived schema.** `NodeKind`s (name and arity) come from the
-      rules' meanings; the hand-written schema list goes away.
+   4. **Derived schema.** *Landed for code-written defs:* `schemaFrom`
+      (`foundation/langdef/DeriveSchema.scala`) collects every `Build`
+      meaning — nested ones included — into `NodeKind`s (name, arity,
+      the meaning's `reference` when it has one); `exprDef`'s construct
+      kinds derive this way. Remaining: leaf kinds still list by hand
+      (the atom's token productions aren't rules yet, item 2), and def
+      *documents* keep their own explicit schema section — derivation
+      of a doc's schema is what retires the hand-written list there.
 
    *Phase B — the expression language on rules:*
 
@@ -246,9 +256,17 @@ Each item is described in the cited `DESIGN.md` section.
       emphasized, placeholders styled), a detail-level toggle switching
       `means` to `=>` and hiding `where`, and the `lang:` text surface
       itself reading/writing rules rather than leaf strings.
-   8. **Worked examples as live checks.** `examples:` entries are checked
-      on every render; a failing example shows as a hole in the `def`
-      view (*Learnable and self documenting*, *Reactive*).
+   8. **Worked examples as live checks.** *Landed:* the `def` view
+      interprets the decoded def through `ctx.interpretDef` and
+      compares each `example`'s input and expected trees; a mismatch
+      trails a hole chip saying what the input actually read as (the
+      derived printer), and an example that can't be checked — no
+      interpretation context — stays unmarked rather than marked
+      wrong. The doc's stored URL flows `Pane` → `TypedDocModel` →
+      `renderWith` → `ViewContext.docUrl`, since a def doc's URL is
+      the language it defines — interpretation needs it to bind
+      implementations. `exprRules` carries
+      `1 + 2 * 3 means 1 + (2 * 3)` as the exercised example.
 
    *Phase D — meaning layers; demote the old model:*
 

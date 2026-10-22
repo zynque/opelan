@@ -11,19 +11,25 @@ import opelan.foundation.view.ViewTree._
 // re-reads it — a malformed line reads as a hole rule, never an error.
 // Falls back to None when the document has no `rules` node (a def
 // decoded but never written as one), so callers can print instead.
+// `check` runs a worked example — input text, expected text — and
+// returns a failure detail the line shows as a hole.
 private[langdef] def docRuleLines(
-    doc: Document[NodeData], rootId: Int)
+    doc: Document[NodeData], rootId: Int,
+    check: (String, String) => Option[String])
     : Option[List[DetachedNode[NodeData]]] =
   for {
     syn <- doc.childrenOf(rootId).find(docCons(doc, _).contains("syntax"))
     rs  <- doc.childrenOf(syn).find(docCons(doc, _).contains("rules"))
-  } yield doc.childrenOf(rs).flatMap(ruleLine(doc, _))
+  } yield doc.childrenOf(rs).flatMap(ruleLine(doc, _, check))
 
 // One `rules` entry as a line: a `rule` edits its text leaf; a
 // `binding` shows its tiers as comma-separated pattern inputs; an
-// `example` is input and expected side by side.
+// `example` is input and expected side by side, checked live — a
+// mismatch trails a hole saying what the input read as.
 private def ruleLine(
-    doc: Document[NodeData], id: Int): List[DetachedNode[NodeData]] =
+    doc: Document[NodeData], id: Int,
+    check: (String, String) => Option[String])
+    : List[DetachedNode[NodeData]] =
   docCons(doc, id) match {
     case Some("rule") =>
       List(doc.childrenOf(id).headOption match {
@@ -36,8 +42,12 @@ private def ruleLine(
         .map(t => flow((txt("  ") +: commaInputs(doc, t))*))
     case Some("example") =>
       List(flow((doc.childrenOf(id) match {
-        case a :: b :: _ => List(txt("e.g. "), input(a, txt(leafText(doc, a))),
-          txt(" means "), input(b, txt(leafText(doc, b))))
+        case a :: b :: _ =>
+          val (inText, outText) = (leafText(doc, a), leafText(doc, b))
+          List(txt("e.g. "), input(a, txt(inText)),
+            txt(" means "), input(b, txt(outText))) ++
+            check(inText, outText).map(t => List(txt(" "), hole(t)))
+              .getOrElse(Nil)
         case a :: _      => List(txt("e.g. "), input(a, txt(leafText(doc, a))))
         case _           => List(hole("example"))
       })*))

@@ -14,11 +14,14 @@ import opelan.foundation.language.{
 // `impls` holds the implementations the def names — callers assemble it
 // (e.g. the examples' implsFor binds the foundational bundle whose type
 // ref the def claims). `resolve` finds the language an input grammar
-// refers to; the default resolves nothing.
+// refers to; `interpretDef` runs a decoded definition as a live
+// language — both store-dependent, both defaulting to nothing outside
+// one.
 class DefLanguage(
     val languageDef: LanguageDef,
     impls: Impls,
-    resolve: ExternalNodeReference => Option[Language] = (_ => None))
+    resolve: ExternalNodeReference => Option[Language] = (_ => None),
+    interpretDef: LanguageDef => Option[Language] = (_ => None))
     extends Language {
 
   def typeRef = languageDef.typeRef
@@ -58,7 +61,8 @@ class DefLanguage(
     renderWith(view, doc, HoleRetry())
 
   override def renderWith(
-      view: String, doc: Document[NodeData], retry: HoleRetry)
+      view: String, doc: Document[NodeData], retry: HoleRetry,
+      docUrl: Option[String] = None)
       : Either[String, DetachedNode[NodeData]] =
     languageDef.views.find(_.name == view) match {
       case None => Left(s"$name has no '$view' view")
@@ -66,7 +70,8 @@ class DefLanguage(
         case None => Left(s"$name: unknown builtin view '${vb.builtin}'")
         case Some(b) => contentId(doc)
           .toRight(s"$name: typed document has no content")
-          .map(id => b(doc, id, ViewContext(vb.settings, inputs.parse(retry))))
+          .map(id => b(doc, id, ViewContext(
+            vb.settings, inputs.parse(retry), interpretDef, docUrl)))
       }
     }
 

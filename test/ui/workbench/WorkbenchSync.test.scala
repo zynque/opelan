@@ -21,7 +21,7 @@ private class FakePane extends Component[TypedDocInput, TypedDocOutput] {
   def update(s: State, in: TypedDocInput)
       : Update[State, TypedDocOutput, TypedDocInput] =
     in match {
-      case TypedDocInput.Pane(Some(inner), _, _, _) =>
+      case TypedDocInput.Pane(Some(inner), _, _, _, _) =>
         inner match {
           case TypedDocInput.Load(d, _)        => applied(d)
           case TypedDocInput.SyncHistory(d, _) => applied(d)

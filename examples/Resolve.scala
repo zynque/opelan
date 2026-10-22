@@ -42,7 +42,8 @@ def languageForDoc(
 // referred language's new version reaches dependents only when their
 // refs bump to it.
 def languageFromDef(d: LanguageDef, store: Store = Store.empty): Language =
-  new DefLanguage(d, implsFor(d), ref => languageForRef(ref, store))
+  new DefLanguage(d, implsFor(d), ref => languageForRef(ref, store),
+    dd => Some(languageFromDef(dd, store)))
 
 private def storedLanguage(
     ref: ExternalNodeReference, store: Store): Option[Language] =

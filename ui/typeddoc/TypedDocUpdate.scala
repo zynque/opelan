@@ -67,10 +67,10 @@ private def step(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel, 
     // The owner's props: apply the push when its serial is new; emit the
     // live doc when the pull serial moved. The push recurses into this
     // same update — its outputs propagate, its inputs stay internal.
-    case Pane(push, pushSeq, pull, store) =>
+    case Pane(push, pushSeq, pull, store, docUrl) =>
       // The store prop applies before the push so a load resolves the
       // new document's language against the current resolution context.
-      val m0 = m.copy(store = store)
+      val m0 = m.copy(store = store, docUrl = docUrl)
       val applying = push.filter(_ => pushSeq != m.appliedPushSeq)
       val u = applying.map(in => typedDocUpdate(m0, in)).getOrElse(Update(m0))
       val m2 = u.state.copy(

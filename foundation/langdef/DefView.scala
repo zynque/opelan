@@ -11,10 +11,14 @@ import opelan.foundation.view.ViewTree._
 // still the source of truth; this is the skim-friendly rendering of it.
 // A rules section renders each line as a projected input bound to its
 // text leaf, so editing a rule commits through the doc language's
-// input parser and the next decode re-reads it.
-def defView(doc: Document[NodeData], contentRootId: Int)
-    : DetachedNode[NodeData] = {
-  val d = langDefFromDocument("", doc)
+// input parser and the next decode re-reads it; and `ctx.interpret`
+// runs each worked example against the live definition, a failing one
+// showing as a hole. `ctx.docUrl` supplies the document's stored
+// identity — a def doc's URL is the language it defines, and the
+// decode needs it so interpretation binds the right implementations.
+def defView(doc: Document[NodeData], contentRootId: Int,
+    ctx: ViewContext = ViewContext()): DetachedNode[NodeData] = {
+  val d = langDefFromDocument(ctx.docUrl.getOrElse(""), doc)
   block(List(
     Some(heading(txt(d.title))),
     Some(txt(d.description)),
@@ -23,7 +27,8 @@ def defView(doc: Document[NodeData], contentRootId: Int)
     d.syntax.map(s =>
       section("syntax", grammarLines(s.grammar).map(txt) ++
         s.rules.toList.flatMap(rs =>
-          docRuleLines(doc, contentRootId).getOrElse(ruleLines(rs))))),
+          docRuleLines(doc, contentRootId, exampleChecker(d, ctx))
+            .getOrElse(ruleLines(rs))))),
     Some(section("views", d.views.map(v =>
       txt(s"${v.name} → ${v.builtin}${settingsText(v.settings)}")))),
     d.inputParser.map(cp =>

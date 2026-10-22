@@ -55,14 +55,12 @@ val exprDef = LanguageDef(
   title = "lang: expression",
   name = ExprLanguage.name,
   description = "the arithmetic-expression language",
+  // Leaf kinds name the atom's token productions; the construct kinds
+  // derive from the rules' Build meanings (DeriveSchema.scala).
   schema = List(
     NodeKind("literal", Leaf),
     NodeKind("ref", Leaf),
-    NodeKind("gap", Leaf),
-    NodeKind("add", Fixed(2)),
-    NodeKind("sub", Fixed(2)),
-    NodeKind("mul", Fixed(2)),
-    NodeKind("div", Fixed(2))),
+    NodeKind("gap", Leaf)) ++ schemaFrom(exprRules),
   syntax = Some(SyntaxDef("expr", exprAtom, Some(exprRules))),
   views = List(
     ViewBinding("print", "expr-print"),

@@ -95,6 +95,40 @@ class LangDefDocSuite extends FunSuite {
     case _ => t.children.flatMap(inputSourceIds)
   }
 
+  // GapData leaves in a view tree — the hole chips a check reports.
+  private def gapChips(t: DetachedNode[NodeData]): List[String] = t match {
+    case DetachedNode(NodeData.GapData(s), _) => List(s)
+    case _ => t.children.flatMap(gapChips)
+  }
+
+  // The live example check needs the doc's stored identity — a def
+  // doc's URL is the language it defines — and a way to interpret it.
+  private def checkCtx: ViewContext = ViewContext(
+    interpretDef = d => Some(languageFromDef(d)),
+    docUrl = Some(exprDef.typeRef.documentUrl))
+
+  test("a worked example that holds renders unmarked") {
+    val doc = langDefDoc(exprDef)
+    val view = defView(doc, contentId(doc).get, checkCtx)
+    assert(!gapChips(view).exists(_.startsWith("reads as")))
+  }
+
+  test("a worked example that fails marks itself with what it read as") {
+    val doc = langDefDoc(exprDef)
+    val input = stringLeafId(doc, "1 + 2 * 3")
+    val broken = updateNodeData(input, s("1 - 2 * 3"), doc).toOption.get
+    val view = defView(broken, contentId(broken).get, checkCtx)
+    assertEquals(gapChips(view).filter(_.startsWith("reads as")),
+      List("reads as 1 - 2 * 3"))
+  }
+
+  test("without an interpretation context examples stay unmarked") {
+    // Never Broken: no way to check means no claim of failure.
+    val doc = langDefDoc(exprDef)
+    val view = defView(doc, contentId(doc).get)
+    assert(!gapChips(view).exists(_.startsWith("reads as")))
+  }
+
   private def stringLeafId(doc: Document[NodeData], text: String): Int =
     doc.nodes.indices.find(id => doc.getNode(id)
       .exists(_.data == NodeData.StringData(text))).get

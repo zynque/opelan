@@ -21,15 +21,23 @@ case class Impls(
     inputParsers: Map[String, BuiltinInputParser] = Map.empty)
 
 // What a builtin view gets from the language rendering it: the view's
-// settings as written in the def doc, and the language's current input
+// settings as written in the def doc, the language's current input
 // grammar — so a view can retry holes against it (a hole whose text
-// now parses renders healed).
+// now parses renders healed) — and `interpretDef`, a way to run a
+// decoded definition as a live language (the "def" view checks worked
+// examples through it; absent where no resolution context exists).
 case class ViewContext(
     settings: Map[String, String] = Map.empty,
-    parseInput: String => Option[DetachedNode[NodeData]] = _ => None)
+    parseInput: String => Option[DetachedNode[NodeData]] = _ => None,
+    interpretDef: LanguageDef => Option[opelan.foundation.language.Language]
+      = _ => None,
+    // The rendered document's own URL, when the host knows it — a def
+    // doc's URL is the identity of the language it defines, so decoding
+    // it for interpretation needs it.
+    docUrl: Option[String] = None)
 
 val docImpls = Impls(
-  views = Map("def-view" -> ((doc, id, _) => defView(doc, id))),
+  views = Map("def-view" -> ((doc, id, ctx) => defView(doc, id, ctx))),
   // "text": the committed string becomes the node's StringData — how a
   // def doc's projected inputs (rule lines and friends) write back.
   inputParsers = Map("text" -> (t => sl(t))))

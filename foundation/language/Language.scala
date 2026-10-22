@@ -59,7 +59,10 @@ trait Language {
 
   // Render with the host's remembered hole attempts, so holes are
   // retried only when a language change touched a rule they consulted.
-  def renderWith(view: String, doc: Document[NodeData], retry: HoleRetry)
+  // `docUrl` is the shown document's own URL — its stored identity,
+  // when the host knows it (a def doc's URL is the language it defines).
+  def renderWith(view: String, doc: Document[NodeData], retry: HoleRetry,
+      docUrl: Option[String] = None)
       : Either[String, DetachedNode[NodeData]] = render(view, doc)
 
   // Remember a parse attempt for each hole in `doc` (reusing `retry`'s
