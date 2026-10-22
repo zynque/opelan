@@ -73,6 +73,9 @@ val docLanguageDef = LanguageDef(
   schema = metaKinds,
   syntax = None,
   views = List(ViewBinding("def", "def-view")),
-  inputParser = None)
+  // Projected inputs in a def doc — rule lines, binding patterns,
+  // example lines — commit their text as a plain string leaf; the
+  // recovering decode (readRuleOrHole & co.) turns it back into content.
+  inputParser = Some(InputParserDef.Builtin("text")))
 
 val DocLanguage: Language = new DefLanguage(docLanguageDef, docImpls)

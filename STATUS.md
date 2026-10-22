@@ -64,7 +64,10 @@ Each item is described in the cited `DESIGN.md` section.
   a combinator operand atom (`SyntaxDef.rules`), `DefLanguage`
   compiles them, `lang:` docs encode rules as text lines (the
   transitional form — by-reference pieces are Phase C), and the def
-  view prints `means` lines plus the binding list. Language-change
+  view projects each rule, binding pattern, and example field as an
+  `input` bound to its text leaf — editing a rule line commits through
+  the doc language's "text" input parser and the next decode re-reads
+  it. Language-change
   diffing names the top rule plus changed `means:` sequence names,
   so adding a rule heals holes through the same session carry.
 - **UI** (`ui/`, §5): fp runtime, `DocumentEditor`, `TypedDoc` with the
@@ -198,9 +201,18 @@ Each item is described in the cited `DESIGN.md` section.
       lexical sequencing, builtin lexical rules (number, whole
       number, name, text) so the `atom` argument goes away, and
       example-driven associativity overrides.
-   3. **Derived printer.** Invert constructor meanings and use the
-      binding list for minimal parentheses. Property test:
-      `parse(print(t)) == t` over generated trees and the parser battery.
+   3. **Derived printer.** *Done at string level:* `printWith`
+      (`foundation/means/Print.scala`) reads Build rules as templates
+      and the binding list for minimal parens — left-assoc infix keeps
+      its left operand at its level and asks one tighter of the right,
+      postfix applies to the whole level, prefix asks one tighter
+      (except a same-tier prefix). `ExprRulesSuite` proves it emits
+      exactly `Expr.print`'s output on the full parser battery, and
+      `PrintSuite` covers prefix/postfix/closed/unbound cases.
+      Remaining: a provenance-tagged variant (the "print" view emits
+      `src:` spans for click-through, which needs printing over
+      document nodes with ids, not detached trees) and the round-trip
+      property `parse(print(t)) == t` over generated trees.
    4. **Derived schema.** `NodeKind`s (name and arity) come from the
       rules' meanings; the hand-written schema list goes away.
 
@@ -210,8 +222,9 @@ Each item is described in the cited `DESIGN.md` section.
       `exprRules` — `DefLanguage` compiles rule-based syntax next to
       `GrammarDef` and `lang:` docs hold the rules (item 6), so every
       existing suite (DefLanguage, incremental sessions, hole retry,
-      sheet inputs) exercises the rules path. Remaining: print/eval
-      parity via the derived printer (item 3).
+      sheet inputs) exercises the rules path, and `printWith` matches
+      `Expr.print` on the battery. Remaining: eval as meanings
+      (Phase D) and the print view emitting provenance spans (item 3).
 
    *Phase C — rules as documents:*
 
@@ -224,10 +237,15 @@ Each item is described in the cited `DESIGN.md` section.
    7. **`means` text surface.** The `def` view and text surface for `lang:`
       documents read and write the `means` notation (the existing
       printer and `RuleGrammar` reader), so editing a language reads like
-      the DESIGN.md examples rather than an outline of combinators. The
-      view renders the printer's role spans: `means` emphasized,
-      placeholders styled, and a detail-level toggle switching `means` to
-      `=>` and hiding `where`.
+      the DESIGN.md examples rather than an outline of combinators.
+      *Editing landed:* the `def` view projects each `rule`, `tier`
+      pattern, and `example` field as a projected `input` bound to its
+      text leaf — commits go through `commitInput` and re-decode, so a
+      rule edited in the view heals dependent documents through the same
+      session carry. Remaining: the printer's role spans (`means`
+      emphasized, placeholders styled), a detail-level toggle switching
+      `means` to `=>` and hiding `where`, and the `lang:` text surface
+      itself reading/writing rules rather than leaf strings.
    8. **Worked examples as live checks.** `examples:` entries are checked
       on every render; a failing example shows as a hole in the `def`
       view (*Learnable and self documenting*, *Reactive*).

@@ -1,15 +1,17 @@
 package opelan.foundation.langdef
 
 import opelan.foundation.document._
-import opelan.foundation.means.{printPattern, printRule, RuleSet}
 import opelan.foundation.view.ViewTree
 import opelan.foundation.view.ViewTree._
 
 // The "def" view of a language-definition document: decode the doc and
 // lay the definition out readably — title, description, schema kinds,
-// the grammar as indented combinator text, view bindings, and the input
-// grammar's target. The document is still the source of truth; this is
-// the skim-friendly rendering of it.
+// the grammar as indented combinator text, the means rules as editable
+// lines, view bindings, and the input grammar's target. The document is
+// still the source of truth; this is the skim-friendly rendering of it.
+// A rules section renders each line as a projected input bound to its
+// text leaf, so editing a rule commits through the doc language's
+// input parser and the next decode re-reads it.
 def defView(doc: Document[NodeData], contentRootId: Int)
     : DetachedNode[NodeData] = {
   val d = langDefFromDocument("", doc)
@@ -20,12 +22,22 @@ def defView(doc: Document[NodeData], contentRootId: Int)
       txt(s"${k.name} — ${shapeName(k.shape)}")))),
     d.syntax.map(s =>
       section("syntax", grammarLines(s.grammar).map(txt) ++
-        s.rules.toList.flatMap(ruleLines))),
+        s.rules.toList.flatMap(rs =>
+          docRuleLines(doc, contentRootId).getOrElse(ruleLines(rs))))),
     Some(section("views", d.views.map(v =>
       txt(s"${v.name} → ${v.builtin}${settingsText(v.settings)}")))),
     d.inputParser.map(cp =>
       section("inputs", List(txt(inputParserText(cp)))))).flatten*)
 }
+
+// The meta construct a node applies, by identity — the reader's `cons`.
+private[langdef] def docCons(
+    doc: Document[NodeData], id: Int): Option[String] =
+  externalRefOf(doc, id).flatMap(metaNameOf)
+
+private[langdef] def leafText(doc: Document[NodeData], id: Int): String =
+  doc.getNode(id).map(_.data).collect { case NodeData.StringData(s) => s }
+    .getOrElse("")
 
 // One item per line: each entry is its own block.
 private def section(
@@ -74,14 +86,6 @@ private def grammarLines(g: GrammarDef, indent: String = ""): List[String] =
     case GrammarDef.Ref(name) => List(s"${indent}ref $name")
     case GrammarDef.Hole      => List(s"${indent}?")
   }
-
-// A rule set, printed as it reads: one means line per rule, then the
-// binding list tightest-first.
-private def ruleLines(set: RuleSet): List[DetachedNode[NodeData]] =
-  set.rules.map(r => txt(printRule(r))) ++
-    (if (set.tiers.isEmpty) Nil
-     else txt("binding:") +: set.tiers.map(t =>
-       txt("  " + t.patterns.map(printPattern).mkString(", "))))
 
 private def opsText(ops: Map[String, String]): String =
   ops.toList.sortBy(_._1).map { case (sym, tag) => s"$sym → $tag" }

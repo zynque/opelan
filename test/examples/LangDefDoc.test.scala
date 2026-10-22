@@ -2,6 +2,8 @@ package opelan.examples
 
 import opelan.foundation.document._
 import opelan.foundation.langdef._
+import opelan.foundation.language.InputSessions
+import opelan.foundation.means.printRule
 import opelan.foundation.document.Detached._
 import munit.FunSuite
 
@@ -46,6 +48,56 @@ class LangDefDocSuite extends FunSuite {
         .syntax.get.rules,
       Some(exprRules))
   }
+
+  test("the def view projects rule lines as inputs bound to their text leaves") {
+    val doc = langDefDoc(exprDef)
+    val bound = inputSourceIds(defView(doc, contentId(doc).get)).toSet
+    // Rules, binding patterns, and example fields are each editable.
+    Set("a / b means div(a, b)", "a * b", "1 + 2 * 3", "1 + (2 * 3)")
+      .foreach(text => assert(
+        bound.contains(stringLeafId(doc, text)),
+        s"no input bound to leaf \"$text\""))
+  }
+
+  test("a rule line commits through the doc language's input parser") {
+    val url = exprDef.typeRef.documentUrl
+    val doc = langDefDoc(exprDef)
+    val line = stringLeafId(doc, "a / b means div(a, b)")
+    val (content, _) = DocLanguage
+      .commitInput(line, "a % b means add(a, b)", InputSessions()).get
+    val updated = commitContent(line, content, doc).toOption.get
+    val d = langDefFromDocument(url, updated)
+    assert(d.syntax.get.rules.get.rules.map(r => printRule(r))
+      .contains("a % b means add(a, b)"))
+    // And the edited language really parses with the new rule.
+    val parsed = languageFromDef(d).parse("6 % 4").get
+    assertEquals(parsed.data, NodeData.ExternalNodeRef(
+      kindRefs(withKindRefs(exprDef))("add")))
+  }
+
+  test("a malformed rule line commit lands as a hole rule") {
+    val url = exprDef.typeRef.documentUrl
+    val doc = langDefDoc(exprDef)
+    val line = stringLeafId(doc, "a - b means sub(a, b)")
+    val (content, _) =
+      DocLanguage.commitInput(line, "means only", InputSessions()).get
+    val updated = commitContent(line, content, doc).toOption.get
+    val d = langDefFromDocument(url, updated)
+    assert(d.syntax.get.rules.get.rules.exists(_.pattern.pieces.isEmpty))
+    assert(languageFromDef(d).parse("1 + 2").isDefined)
+  }
+
+  // The SourceRef ids of every `input` element in a view tree.
+  private def inputSourceIds(t: DetachedNode[NodeData]): List[Int] = t match {
+    case DetachedNode(NodeData.StringData("input"), kids) =>
+      kids.collect { case DetachedNode(NodeData.SourceRef(id), _) => id } ++
+        kids.flatMap(inputSourceIds)
+    case _ => t.children.flatMap(inputSourceIds)
+  }
+
+  private def stringLeafId(doc: Document[NodeData], text: String): Int =
+    doc.nodes.indices.find(id => doc.getNode(id)
+      .exists(_.data == NodeData.StringData(text))).get
 
   test("a rule line that doesn't parse decodes as a hole rule") {
     // Never Broken for rules too: garbled text becomes a rule that

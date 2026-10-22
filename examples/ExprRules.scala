@@ -23,7 +23,8 @@ val exprRules = RuleSet(
     "a - b means sub(a, b)").map(readRuleOrHole),
   tiers = List(
     Tier(List(readPattern("a * b"), readPattern("a / b"))),
-    Tier(List(readPattern("a + b"), readPattern("a - b")))))
+    Tier(List(readPattern("a + b"), readPattern("a - b")))),
+  examples = List(Example("1 + 2 * 3", "1 + (2 * 3)")))
 
 // The operand syntax rules don't yet describe — leaf tokens, the
 // signum, and the recovering junk fallback — until `where`

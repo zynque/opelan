@@ -1,6 +1,8 @@
 package opelan.examples
 
+import opelan.foundation.document._
 import opelan.foundation.grammar._
+import opelan.foundation.means.printWith
 
 // The `means`-compiled expression grammar (examples/ExprRules) must
 // produce exactly the hand-written grammar's parse — trees and spans
@@ -33,5 +35,25 @@ class ExprRulesSuite extends munit.FunSuite {
   test("the expression rule set is well formed") {
     import opelan.foundation.means.ruleSetIssues
     assertEquals(ruleSetIssues(exprRules), Nil)
+  }
+
+  // The leaf half of the derived printer — what the atom's tokens
+  // print as, mirroring Expr.print's leaf cases.
+  private val exprLeaf: NodeData => String = {
+    case NodeData.IntData(v)          => v.toString
+    case NodeData.FloatData(f)        => f.toString
+    case NodeData.InternalNodeRef(id) => s"ref:$id"
+    case NodeData.GapData(t)          => if (t.isEmpty) "?" else t
+    case other                        => holeText(other)
+  }
+
+  test("the rule-derived printer matches Expr.print") {
+    val print = printWith(exprRules, exprTag, exprLeaf)
+    inputs.foreach { input =>
+      val tree = toDetached(
+        exprRuleGrammar(In(input, exprLexicon), 0).tree)
+      assertEquals(print(tree), Expr.print(exprFromDetached(tree)),
+        s"print of '$input'")
+    }
   }
 }

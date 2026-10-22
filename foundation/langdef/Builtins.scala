@@ -1,6 +1,7 @@
 package opelan.foundation.langdef
 
 import opelan.foundation.document._
+import opelan.foundation.document.Detached._
 import opelan.foundation.grammar.Lexicon
 
 // The code-side semantics a language definition names. A LanguageDef
@@ -28,4 +29,7 @@ case class ViewContext(
     parseInput: String => Option[DetachedNode[NodeData]] = _ => None)
 
 val docImpls = Impls(
-  views = Map("def-view" -> ((doc, id, _) => defView(doc, id))))
+  views = Map("def-view" -> ((doc, id, _) => defView(doc, id))),
+  // "text": the committed string becomes the node's StringData — how a
+  // def doc's projected inputs (rule lines and friends) write back.
+  inputParsers = Map("text" -> (t => sl(t))))

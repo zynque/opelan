@@ -68,8 +68,9 @@ def compileRules(
 
 // Operator-shaped rules in binding order: each tier's patterns
 // resolve to their rules, and any operator the list forgot appends
-// as one loosest tier — it compiles rather than disappearing.
-private def orderedOperatorRules(set: RuleSet): List[List[Rule]] = {
+// as one loosest tier — it compiles rather than disappearing. Also
+// the printer's binding-strength table (printWith).
+private[means] def orderedOperatorRules(set: RuleSet): List[List[Rule]] = {
   val operators = set.rules.filter(r => isOperatorPattern(r.pattern))
   val byKey = operators.map(r => r.pattern.key -> r).toMap
   val tiered = set.tiers.map(t => t.patterns.flatMap(p => byKey.get(p.key)))
