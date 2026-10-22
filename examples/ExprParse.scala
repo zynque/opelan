@@ -47,9 +47,12 @@ private lazy val opLevels = List(
   Map("+" -> exprTag(Expr.AddTag), "-" -> exprTag(Expr.SubTag)))
 
 private def atom: Parser = choice(
-  tok("int")(t => NodeData.IntData(t.text.toInt)),
-  tok("float")(t => NodeData.FloatData(t.text.toDouble)),
-  tok("ref")(t => NodeData.InternalNodeRef(t.text.drop(4).toInt)),
+  tok("int")(t => t.text.toIntOption.map(NodeData.IntData(_))
+    .getOrElse(NodeData.GapData(t.text))),
+  tok("float")(t => t.text.toDoubleOption.map(NodeData.FloatData(_))
+    .getOrElse(NodeData.GapData(t.text))),
+  tok("ref")(t => t.text.drop(4).toIntOption
+    .map(NodeData.InternalNodeRef(_)).getOrElse(NodeData.GapData(t.text))),
   tok("hole")(_ => NodeData.GapData("")),
   parens(exprCore),
   signum,

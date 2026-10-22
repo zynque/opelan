@@ -1,6 +1,7 @@
 package opelan.foundation.langdef
 
 import opelan.foundation.document._
+import opelan.foundation.means.{printPattern, printRule, RuleSet}
 import opelan.foundation.view.ViewTree
 import opelan.foundation.view.ViewTree._
 
@@ -18,7 +19,8 @@ def defView(doc: Document[NodeData], contentRootId: Int)
     Some(section("schema", d.schema.map(k =>
       txt(s"${k.name} — ${shapeName(k.shape)}")))),
     d.syntax.map(s =>
-      section("syntax", grammarLines(s.grammar).map(txt))),
+      section("syntax", grammarLines(s.grammar).map(txt) ++
+        s.rules.toList.flatMap(ruleLines))),
     Some(section("views", d.views.map(v =>
       txt(s"${v.name} → ${v.builtin}${settingsText(v.settings)}")))),
     d.inputParser.map(cp =>
@@ -72,6 +74,14 @@ private def grammarLines(g: GrammarDef, indent: String = ""): List[String] =
     case GrammarDef.Ref(name) => List(s"${indent}ref $name")
     case GrammarDef.Hole      => List(s"${indent}?")
   }
+
+// A rule set, printed as it reads: one means line per rule, then the
+// binding list tightest-first.
+private def ruleLines(set: RuleSet): List[DetachedNode[NodeData]] =
+  set.rules.map(r => txt(printRule(r))) ++
+    (if (set.tiers.isEmpty) Nil
+     else txt("binding:") +: set.tiers.map(t =>
+       txt("  " + t.patterns.map(printPattern).mkString(", "))))
 
 private def opsText(ops: Map[String, String]): String =
   ops.toList.sortBy(_._1).map { case (sym, tag) => s"$sym → $tag" }

@@ -71,8 +71,10 @@ def signum: Parser =
     tokWhere("op")(t => t.text == "+" || t.text == "-")(
       t => NodeData.StringData(t.text)),
     choice(
-      tok("int")(t => NodeData.IntData(t.text.toInt)),
-      tok("float")(t => NodeData.FloatData(t.text.toDouble))))(
+      tok("int")(t => t.text.toIntOption.map(NodeData.IntData(_))
+        .getOrElse(NodeData.GapData(t.text))),
+      tok("float")(t => t.text.toDoubleOption.map(NodeData.FloatData(_))
+        .getOrElse(NodeData.GapData(t.text)))))(
     (op, num) => {
       val negative = op.text == "-"
       val data = num.data match {

@@ -1,6 +1,7 @@
 package opelan.foundation.langdef
 
 import opelan.foundation.document._
+import opelan.foundation.means.RuleSet
 
 // A language definition as data — the in-memory form of what a `lang:`
 // document encodes: identity (title/name/description), schema, a
@@ -36,8 +37,16 @@ enum NodeShape {
 }
 
 // The text syntax: a named builtin lexicon — the character-level lexical
-// rules the grammar's token kinds name — plus the grammar itself.
-case class SyntaxDef(lexicon: String, grammar: GrammarDef)
+// rules the grammar's token kinds name — plus the grammar itself, in one
+// of two forms. With `rules` unset, `grammar` is the whole combinator
+// composition. With `rules` set, the means rules compile over `grammar`
+// as the operand atom — the productions rules don't yet express (leaf
+// tokens, the signum, the junk fallback) until `where`-kinds bind
+// placeholders to a lexical rule vocabulary.
+case class SyntaxDef(
+    lexicon: String,
+    grammar: GrammarDef,
+    rules: Option[RuleSet] = None)
 
 // A derived view bound to a builtin: view "eval" → builtin "expr-eval",
 // with optional settings the builtin reads (the sheet's currency).

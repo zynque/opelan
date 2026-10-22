@@ -31,15 +31,19 @@ val exprRules = RuleSet(
 // choice ExprParse writes, minus `parens`: `(a) means a` supplies
 // them now.
 private lazy val ruleAtom: Parser = choice(
-  tok("int")(t => NodeData.IntData(t.text.toInt)),
-  tok("float")(t => NodeData.FloatData(t.text.toDouble)),
-  tok("ref")(t => NodeData.InternalNodeRef(t.text.drop(4).toInt)),
+  tok("int")(t => t.text.toIntOption.map(NodeData.IntData(_))
+    .getOrElse(NodeData.GapData(t.text))),
+  tok("float")(t => t.text.toDoubleOption.map(NodeData.FloatData(_))
+    .getOrElse(NodeData.GapData(t.text))),
+  tok("ref")(t => t.text.drop(4).toIntOption
+    .map(NodeData.InternalNodeRef(_)).getOrElse(NodeData.GapData(t.text))),
   tok("hole")(_ => NodeData.GapData("")),
   signum,
   junk(Set("op", "junk"), Set("int", "float", "ref", "junk", "hole")))
 
 // The same wrapper ExprParse gives the hand-written grammar — the
-// named rule inside a to-EOF phrase.
+// grammar inside a to-EOF phrase. The `expr` name is the rule the
+// parser memoizes under — placeholders recurse through it, so it is
+// what a language change names to invalidate the syntax's results.
 lazy val exprRuleGrammar: Parser =
-  phrase(rule("expr")(compileRules(exprRules, ruleAtom, exprTag)),
-    Set.empty)
+  phrase(compileRules(exprRules, ruleAtom, exprTag, "expr"), Set.empty)

@@ -1,6 +1,7 @@
 package opelan.foundation.langdef
 
 import opelan.foundation.document._
+import opelan.foundation.means._
 
 // Tolerant readers over a `lang:` document — every lookup optional,
 // every leaf read string-or-nothing. `root` is the definition's root:
@@ -78,6 +79,18 @@ private class DefDocReader(doc: Document[NodeData], root: Int) {
     kid.toList.flatMap(kids).filter(cons(_).contains("op")).flatMap { opId =>
       childStr(opId, 0).map(_ -> refName(kids(opId).lift(1)))
     }.toMap
+
+  // A `rules` section: each `rule` node's text through the recovering
+  // rule reader (a malformed line becomes a hole rule), `binding` tiers
+  // as pattern texts, `example` pairs.
+  def ruleSetFrom(id: Int): RuleSet = RuleSet(
+    rules = entries(id, "rule").map(k =>
+      childStr(k, 0).map(readRuleOrHole).getOrElse(holeRule)),
+    tiers = entries(id, "binding").flatMap(b =>
+      entries(b, "tier").map(t =>
+        Tier(kids(t).flatMap(str).map(readPattern)))),
+    examples = entries(id, "example").flatMap(e =>
+      childStr(e, 0).map(i => Example(i, childStr(e, 1).getOrElse("")))))
 
   def inputParserFrom(id: Int): Option[InputParserDef] =
     kids(id).headOption.flatMap { c =>

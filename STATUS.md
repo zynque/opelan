@@ -59,7 +59,14 @@ Each item is described in the cited `DESIGN.md` section.
   left/right/non-associative infix driven by the binding list, and
   `compileRules` turns a `RuleSet` into a parser — `exprRules`
   (`examples/ExprRules.scala`) matches the hand-written expression
-  grammar on every input in the battery, spans included.
+  grammar on every input in the battery, spans included. Rules are
+  now live in the definition path: `exprDef` carries `exprRules` over
+  a combinator operand atom (`SyntaxDef.rules`), `DefLanguage`
+  compiles them, `lang:` docs encode rules as text lines (the
+  transitional form — by-reference pieces are Phase C), and the def
+  view prints `means` lines plus the binding list. Language-change
+  diffing names the top rule plus changed `means:` sequence names,
+  so adding a rule heals holes through the same session carry.
 - **UI** (`ui/`, §5): fp runtime, `DocumentEditor`, `TypedDoc` with the
   app surface and its Raw / Definition (F12) exits, `Workbench` with
   seeded demo documents and ref following.
@@ -68,7 +75,7 @@ Each item is described in the cited `DESIGN.md` section.
   version DAG; per-actor undo; local navigation; checkout + edit forks a
   branch draft that peers can rejoin.
 - **Build/test** (§9): `build.bat`/`build.sh`, `test.bat`/`test.sh`;
-  344 munit tests over the pure core, UI update functions, and
+  381 munit tests over the pure core, UI update functions, and
   DocSession convergence under real Automerge in Node. A fresh clone
   needs a `webpack.config.js` (see `README.md`).
 
@@ -199,19 +206,21 @@ Each item is described in the cited `DESIGN.md` section.
 
    *Phase B — the expression language on rules:*
 
-   5. **`exprRules` at parity.** *Started:* `exprRules`
-      (`examples/ExprRules.scala`) is the expression language as rules,
-      and the compiled grammar is tree- and span-identical to
-      `exprGrammar` on the full parser battery (`ExprRulesSuite`).
-      Remaining: `DefLanguage` accepts rule-based syntax next to
-      `GrammarDef` (so a `lang:` doc can hold rules), and print/eval
+   5. **`exprRules` at parity.** *Mostly done:* `exprDef` carries
+      `exprRules` — `DefLanguage` compiles rule-based syntax next to
+      `GrammarDef` and `lang:` docs hold the rules (item 6), so every
+      existing suite (DefLanguage, incremental sessions, hole retry,
+      sheet inputs) exercises the rules path. Remaining: print/eval
       parity via the derived printer (item 3).
 
    *Phase C — rules as documents:*
 
-   6. **Rule encoding.** `lang:` documents hold `means(pattern, meaning)`
-      nodes, a binding list, and examples; the recovering decoder turns a
-      malformed rule into a hole rule that never applies.
+   6. **Rule encoding.** *Transitional form landed:* `lang:` documents
+      hold each rule as its text plus `binding`/`example` entries, and
+      the recovering decoder turns a malformed line into a hole rule
+      that never applies. Remaining: `means(pattern, meaning)` nodes —
+      placeholders and constructors by reference — so a renamed kind
+      or placeholder heals every use.
    7. **`means` text surface.** The `def` view and text surface for `lang:`
       documents read and write the `means` notation (the existing
       printer and `RuleGrammar` reader), so editing a language reads like

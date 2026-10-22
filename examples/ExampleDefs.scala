@@ -14,6 +14,8 @@ import GrammarDef._
 import NodeShape._
 import LeafKind._
 
+import opelan.foundation.means._
+
 private val mulDiv = Map("*" -> Expr.MulTag, "/" -> Expr.DivTag)
 private val addSub = Map("+" -> Expr.AddTag, "-" -> Expr.SubTag)
 
@@ -21,6 +23,16 @@ private val addSub = Map("+" -> Expr.AddTag, "-" -> Expr.SubTag)
 // writes by hand, with "expr" named so parens recurses to the
 // precedence level (not the phrase wrapper).
 private val exprGrammarDef: GrammarDef = exprGrammarWith(List(mulDiv, addSub))
+
+// The operand atom the means rules compile over — leaf tokens, the
+// signum, and the recovering junk fallback; the productions rules don't
+// yet express until `where`-kinds bind placeholders to a lexical rule
+// vocabulary. The same choice ExprParse writes, minus `parens`:
+// `(a) means a` supplies them.
+private val exprAtom: GrammarDef = Choice(List(
+  Tok("int", IntLit), Tok("float", FloatLit), Tok("ref", RefLit("ref:")),
+  Tok("hole", HoleLeaf), Signum,
+  Junk(Set("op", "junk"), Set("int", "float", "ref", "junk", "hole"))))
 
 private def exprGrammarWith(levels: List[Map[String, String]]): GrammarDef =
   Phrase(
@@ -51,18 +63,32 @@ val exprDef = LanguageDef(
     NodeKind("sub", Fixed(2)),
     NodeKind("mul", Fixed(2)),
     NodeKind("div", Fixed(2))),
-  syntax = Some(SyntaxDef("expr", exprGrammarDef)),
+  syntax = Some(SyntaxDef("expr", exprAtom, Some(exprRules))),
   views = List(
     ViewBinding("print", "expr-print"),
     ViewBinding("eval", "expr-eval")),
   inputParser = None)
 
-// The demo's starting point for lang: expression: `/` is missing, so the
-// budget's per-person formula sits as a hole until the audience adds the
-// operator to the definition document. The schema still declares `div`,
-// so kind ids match exprDef's.
+// The expression grammar in combinator form — the fixture for
+// GrammarDef interpretation and its rule-diffing while both forms
+// coexist (the def itself carries means rules now).
+val exprCombinatorDef: LanguageDef =
+  exprDef.copy(syntax = Some(SyntaxDef("expr", exprGrammarDef)))
+
+// The demo's starting point for lang: expression: the `/` rule and its
+// binding are missing, so the budget's per-person formula sits as a hole
+// until the audience adds them to the definition document. The schema
+// still declares `div`, so kind ids match exprDef's.
 val demoExprDef = exprDef.copy(syntax =
-  Some(SyntaxDef("expr", exprGrammarWith(List(mulDiv - "/", addSub)))))
+  Some(SyntaxDef("expr", exprAtom, Some(withoutPattern(exprRules, "a / b")))))
+
+// A rule set minus one pattern — its rule and every binding entry.
+private def withoutPattern(set: RuleSet, text: String): RuleSet = {
+  val key = readPattern(text).key
+  set.copy(
+    rules = set.rules.filterNot(_.pattern.key == key),
+    tiers = set.tiers.map(t => Tier(t.patterns.filterNot(_.key == key))))
+}
 
 val sheetDef = LanguageDef(
   typeRef = SheetLanguage.typeRef,

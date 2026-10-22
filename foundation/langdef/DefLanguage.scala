@@ -2,6 +2,7 @@ package opelan.foundation.langdef
 
 import opelan.foundation.document._
 import opelan.foundation.grammar._
+import opelan.foundation.means.{compileRules, RuleSet}
 import opelan.foundation.language.{
   HoleRetry, InputSessions, Language, SyntaxChange, TextSyntax}
 
@@ -41,7 +42,16 @@ class DefLanguage(
     for {
       s <- languageDef.syntax
       lexicon <- impls.lexicons.get(s.lexicon)
-    } yield (lexicon, interpret(s.grammar, kindTag))
+    } yield s.rules match {
+      // Rules compile over the interpreted grammar as their operand
+      // atom, under the lexicon's name — the `named`/`use` shape the
+      // combinator form writes by hand. `phrase` supplies the to-EOF
+      // recovery the combinator form encodes explicitly.
+      case Some(rules) =>
+        (lexicon, phrase(compileRules(rules, interpret(s.grammar, kindTag),
+          kindTag, s.lexicon), Set.empty))
+      case None => (lexicon, interpret(s.grammar, kindTag))
+    }
 
   def render(view: String, doc: Document[NodeData])
       : Either[String, DetachedNode[NodeData]] =
@@ -74,12 +84,15 @@ class DefLanguage(
     for {
       s <- languageDef.syntax
       (lexicon, parser) <- syntax
-    } yield TextSyntax(parser, lexicon, (s.lexicon, s.grammar, kindTags),
+    } yield TextSyntax(parser, lexicon,
+      (s.lexicon, s.grammar, s.rules, kindTags),
       changedSince = previous => previous.key match {
         case (s.lexicon, before: GrammarDef,
+              beforeRules: Option[RuleSet] @unchecked,
               beforeTags: Map[String, NodeData] @unchecked) =>
           Some(SyntaxChange(
-            changedRules(before, s.grammar), retagBy(beforeTags, kindTag)))
+            syntaxChanges(SyntaxDef(s.lexicon, before, beforeRules), s),
+            retagBy(beforeTags, kindTag)))
         case _ => None
       })
 

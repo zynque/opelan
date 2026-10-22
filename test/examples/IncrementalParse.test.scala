@@ -10,14 +10,14 @@ import munit.FunSuite
 // parse — recovery (holes, junk runs) included.
 class IncrementalParseSuite extends FunSuite {
 
-  private val language = new DefLanguage(exprDef, implsFor(exprDef))
-  private val grammarDef = exprDef.syntax.get.grammar
+  private val language = new DefLanguage(exprCombinatorDef, implsFor(exprCombinatorDef))
+  private val grammarDef = exprCombinatorDef.syntax.get.grammar
   private val grammar = interpret(grammarDef, language.kindTag)
 
   private def normal(r: POut) = (r.pos, r.ok, r.examined, r.tree)
   private def full(g: Parser, text: String) = normal(g(In(text, exprLexicon), 0))
 
-  test("property: random edits to expressions match full reparses") {
+  private def editsMatchFull(grammar: Parser): Unit = {
     val random = new Random(3)
     val alphabet = "0123456789+-*/(). ?xref:"
     var s = ParseSession.start(grammar, exprLexicon, "(1 + 2) * 3 - ref:4 / 5")
@@ -28,6 +28,14 @@ class IncrementalParseSuite extends FunSuite {
       s = s.edit(Edit(from, to, inserted))
       assertEquals(normal(s.result), full(grammar, s.text), s"edit $i on: '${s.text}'")
     }
+  }
+
+  test("property: random edits to expressions match full reparses") {
+    editsMatchFull(grammar)
+  }
+
+  test("property: random edits against the rules-compiled grammar match") {
+    editsMatchFull(exprRuleGrammar)
   }
 
   test("a grammar change invalidates by rule and matches a full parse") {
@@ -44,5 +52,19 @@ class IncrementalParseSuite extends FunSuite {
     val s0 = ParseSession.start(grammar, exprLexicon, "8 / 2 + (3 / 1)")
     val s1 = s0.changeRules(newGrammar, changedRules(grammarDef, edited))
     assertEquals(normal(s1.result), full(newGrammar, s1.text))
+  }
+
+  test("a rules change carries the session — a means entry drops with its caller") {
+    // Under the staged rules, `(7 / 7)` doesn't fit: its `(a)` sequence
+    // result is memoized. Adding the `/` rule marks only `expr` changed,
+    // but `(a)`'s placeholder recursed through `expr`, so its entry
+    // falls with it — no stale result survives.
+    val staged = languageFromDef(demoExprDef).textSyntax.get
+    val withDiv = languageFromDef(exprDef).textSyntax.get
+    val names = withDiv.changedSince(staged).map(_.rules).get
+    assertEquals(names, Set("expr"))
+    val s0 = ParseSession.start(staged.parser, exprLexicon, "(7 / 7)")
+    val s1 = s0.changeRules(withDiv.parser, names)
+    assertEquals(normal(s1.result), full(withDiv.parser, s1.text))
   }
 }

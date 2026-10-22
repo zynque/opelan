@@ -78,9 +78,12 @@ def operatorTable(atom: => Parser, tiers: List[List[Operator]]): Parser = {
       var seen = first.examined
       var more = true
       while (more) {
-        matchOperator(i, in, cur) match {
-          case Some((op, litEnd, litSeen)) =>
-            seen = seen.max(litSeen)
+        // A miss is still lookahead: the probe that decided no
+        // operator starts here read input, so its examined counts.
+        val (hit, opSeen) = matchOperator(i, in, cur)
+        seen = seen.max(opSeen)
+        hit match {
+          case Some((op, litEnd)) =>
             op.shape match {
               case OperatorShape.Postfix =>
                 acc = op.build(List(acc), in, acc.from, litEnd)
@@ -109,9 +112,10 @@ def operatorTable(atom: => Parser, tiers: List[List[Operator]]): Parser = {
   }
 
   // The first tier-i infix/postfix operator whose literals start at
-  // `cur`, with its end position and how far deciding read.
+  // `cur`, with its end position — plus how far deciding read,
+  // whether one matched or not.
   def matchOperator(
-      i: Int, in: In, cur: Int): Option[(Operator, Int, Int)] = {
+      i: Int, in: In, cur: Int): (Option[(Operator, Int)], Int) = {
     var seen = cur
     var found: Option[(Operator, Int)] = None
     val ops = table(i).iterator.filter(_.shape != OperatorShape.Prefix)
@@ -121,7 +125,7 @@ def operatorTable(atom: => Parser, tiers: List[List[Operator]]): Parser = {
       seen = seen.max(s)
       m.foreach { case (end, _) => found = Some((op, end)) }
     }
-    found.map { case (op, end) => (op, end, seen) }
+    (found, seen)
   }
 
   if (table.isEmpty) lazyAtom else level(table.length - 1)

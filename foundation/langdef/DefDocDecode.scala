@@ -37,7 +37,8 @@ def langDefFromDocument(
       SyntaxDef(
         r.childStr(sid, 0).getOrElse(""),
         r.kids(sid).lift(1).map(k => r.grammarFrom(k))
-          .getOrElse(GrammarDef.Hole))
+          .getOrElse(GrammarDef.Hole),
+        r.entries(sid, "rules").headOption.map(r.ruleSetFrom))
     },
     views = r.section("views").toList.flatMap { vid =>
       r.entries(vid, "view").map(k => ViewBinding(

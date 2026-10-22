@@ -30,7 +30,7 @@ def sequenceRule(
     case Piece.Literal(text, _) => Some(text)
     case _                      => None
   }
-  rule(s"means:${theRule.pattern.key.mkString(" ")}") { (in, pos) =>
+  rule(sequenceRuleName(theRule.pattern)) { (in, pos) =>
     var seen = pos
     val first = scanAt(in, pos)
     seen = seen.max(first.examined)

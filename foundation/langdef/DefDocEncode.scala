@@ -40,7 +40,9 @@ private[langdef] def encodeDef(
     n(pending("schema"), d.schema.map(kindNode)*))
   val kindIds = d.schema.map(_.name).zip(doc1.childrenOf(schemaId)).toMap
   val doc2 = add(doc1, cid, List(
-    d.syntax.map(s => n(pending("syntax"), sl(s.lexicon), grammarNode(s.grammar, kindIds))),
+    d.syntax.map(s => n(pending("syntax"),
+      List(sl(s.lexicon), grammarNode(s.grammar, kindIds)) ++
+        s.rules.toList.map(rulesNode)*)),
     Some(n(pending("views"), d.views.map(viewNode)*)),
     d.inputParser.map(cp => n(pending("inputs"), inputsNode(cp)))).flatten*)._1
   val metaIds =

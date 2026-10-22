@@ -26,7 +26,7 @@ private[langdef] val metaKinds: List[NodeKind] = List(
   NodeKind("description", Fixed(1)),
   NodeKind("name", Fixed(1)),
   NodeKind("schema", Any),
-  NodeKind("syntax", Fixed(2)),    // builtin lexicon name + grammar
+  NodeKind("syntax", Any),         // builtin lexicon name + grammar (+ rules)
   NodeKind("views", Any),
   NodeKind("inputs", Fixed(1)),
   NodeKind("kind", Fixed(2)),      // schema entry: name + shape
@@ -58,7 +58,12 @@ private[langdef] val metaKinds: List[NodeKind] = List(
   NodeKind("text", Fixed(0)),
   NodeKind("gap", Fixed(0)),
   NodeKind("ref", Fixed(1)),
-  NodeKind("setting", Fixed(2)))  // view setting: key + value
+  NodeKind("setting", Fixed(2)),  // view setting: key + value
+  NodeKind("rules", Any),         // a def's means rules + binding + examples
+  NodeKind("rule", Fixed(1)),     // one means rule, as its text
+  NodeKind("binding", Any),       // the binding list: tiers, tightest first
+  NodeKind("tier", Any),          // one binding level: pattern texts
+  NodeKind("example", Fixed(2)))  // worked example: input + expected
 
 val docLanguageDef = LanguageDef(
   typeRef = langDefTypeRef,

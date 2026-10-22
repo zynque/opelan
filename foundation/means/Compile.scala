@@ -7,15 +7,17 @@ import opelan.foundation.grammar._
 // shaped rules join the operator table in binding-list order; every
 // other rule compiles to a sequence and serves as an operand.
 //
-//   compileRules(exprRules, leafAtom, kindTag)
+//   compileRules(exprRules, leafAtom, kindTag, "expr")
 //
 // `atom` supplies the operand syntax rules don't yet describe —
 // leaf tokens, the signum, the recovering junk fallback — until
 // where-constraints bind placeholders to a kind vocabulary. `tag`
 // turns a constructor name into node data (DefLanguage.kindTag), so
-// built nodes name their construct by reference. The result is the
-// bare expression parser; callers wrap it in `rule`/`phrase` like
-// any grammar.
+// built nodes name their construct by reference. `name` is the rule
+// the parser memoizes under: every placeholder recurses through it,
+// so a language change can invalidate by name like the combinator
+// grammar's `named`/`use` pair. Callers wrap the result in `phrase`
+// for to-EOF recovery, like any grammar.
 //
 // Compiles as far as it can (Never Broken): rules the binding list
 // forgot join loosest, a pattern a sequence can't compile (leading
@@ -26,17 +28,21 @@ import opelan.foundation.grammar._
 def compileRules(
     set: RuleSet,
     atom: Parser,
-    tag: String => NodeData): Parser = {
-  // `self` is the parser placeholders recurse through; the extra
-  // indirection keeps its initialization trivial — `compiled` forces
+    tag: String => NodeData,
+    name: String): Parser = {
+  // `self` is the parser placeholders recurse through — the named
+  // rule, so recursion memoizes and records the call for invalidation
+  // (the same shape as `named`/`use` in the combinator form). The
+  // inner lambda keeps its initialization trivial: `compiled` forces
   // `operand`, which names `self`, so `self` must be set first.
-  lazy val self: Parser = (in, pos) => compiled(in, pos)
+  lazy val self: Parser = rule(name)((in, pos) => compiled(in, pos))
   lazy val compiled: Parser = operatorTable(operand, operatorTiers)
   lazy val operand: Parser =
     choice(sequences.map(sequenceParser) :+ atom*)
   lazy val operatorTiers: List[List[Operator]] =
     orderedOperatorRules(set).map(_.map(toOperator))
-  lazy val sequences: List[Rule] = set.rules.filter(isSequenceRule)
+  lazy val sequences: List[Rule] =
+    set.rules.filter(r => isSequencePattern(r.pattern))
 
   def toOperator(theRule: Rule): Operator = {
     val names = theRule.pattern.placeholders
@@ -72,9 +78,7 @@ private def orderedOperatorRules(set: RuleSet): List[List[Rule]] = {
   if (untiered.isEmpty) tiered else tiered :+ untiered
 }
 
-// A rule that compiles to a sequence: not operator-shaped, and
-// starting with a literal — a leading-placeholder pattern like
-// `a , b , c` would left-recurse, so it is skipped.
-private def isSequenceRule(rule: Rule): Boolean =
-  !isOperatorPattern(rule.pattern) &&
-    rule.pattern.pieces.headOption.exists(_.isInstanceOf[Piece.Literal])
+// The memo name a sequence rule compiles under — how a language
+// change names it for invalidation until rules carry references.
+def sequenceRuleName(pattern: Pattern): String =
+  s"means:${pattern.key.mkString(" ")}"

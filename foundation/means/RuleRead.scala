@@ -30,7 +30,10 @@ def readRule(text: String): Either[String, Rule] = {
 // sequence-shaped — but `ruleIssues` still reports it, so the
 // mistake shows up in checking rather than disappearing.
 def readRuleOrHole(text: String): Rule =
-  readRule(text).getOrElse(Rule(Pattern(Nil), Meaning.Phrase(Nil)))
+  readRule(text).getOrElse(holeRule)
+
+// The hole rule itself, for decoders keeping a slot they can't read.
+val holeRule: Rule = Rule(Pattern(Nil), Meaning.Phrase(Nil))
 
 // A bare pattern — how the binding list names a rule (`a * b`).
 def readPattern(text: String): Pattern = {

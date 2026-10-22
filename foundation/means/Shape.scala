@@ -53,3 +53,13 @@ def isOperatorPattern(pattern: Pattern): Boolean = {
     (placeholder(pieces.head) || placeholder(pieces.last)) &&
     pieces.drop(1).dropRight(1).forall(literal)
 }
+
+// A pattern that compiles to a sequence — an operand production:
+// not operator-shaped, and starting with a literal. A leading-
+// placeholder pattern like `a , b , c` would left-recurse, so it
+// is skipped. These are the rules the compiler memoizes under a
+// `means:` name, so this is also the classification language-change
+// diffing uses to name them.
+def isSequencePattern(pattern: Pattern): Boolean =
+  !isOperatorPattern(pattern) &&
+    pattern.pieces.headOption.exists(_.isInstanceOf[Piece.Literal])

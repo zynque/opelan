@@ -35,7 +35,7 @@ class CompileSuite extends FunSuite {
 
   private def parse(set: RuleSet, text: String): DetachedNode[NodeData] =
     toDetached(
-      compileRules(set, atom, NodeData.StringData(_))(In(text, lex), 0).tree)
+      compileRules(set, atom, NodeData.StringData(_), "e")(In(text, lex), 0).tree)
 
   private def node(name: String, kids: DetachedNode[NodeData]*) =
     DetachedNode(NodeData.StringData(name), kids.toList)

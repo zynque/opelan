@@ -28,9 +28,36 @@ class LangDefDocSuite extends FunSuite {
     val imported = importEntries(doc).map(_._2)
     assert(imported.contains(metaRef("kind").get))
     assert(imported.forall(_.documentUrl == langDefTypeRef.documentUrl))
-    // Operators name the kind they build by internal ref to its entry.
-    val mulEntry = kindRefs(withKindRefs(exprDef))("mul").nodeId
-    assert(doc.nodes.exists(_.data == NodeData.InternalNodeRef(mulEntry)))
+    // The combinator form's operators name the kind they build by
+    // internal ref to its schema entry.
+    val combinatorDoc = langDefDoc(exprCombinatorDef)
+    val mulEntry = kindRefs(withKindRefs(exprCombinatorDef))("mul").nodeId
+    assert(combinatorDoc.nodes.exists(
+      _.data == NodeData.InternalNodeRef(mulEntry)))
+  }
+
+  test("means rules encode as text lines and decode back") {
+    val doc = langDefDoc(exprDef)
+    val strings = doc.nodes.map(_.data)
+      .collect { case NodeData.StringData(t) => t }
+    assert(strings.contains("a / b means div(a, b)"), strings)
+    assertEquals(
+      langDefFromDocument(exprDef.typeRef.documentUrl, doc)
+        .syntax.get.rules,
+      Some(exprRules))
+  }
+
+  test("a rule line that doesn't parse decodes as a hole rule") {
+    // Never Broken for rules too: garbled text becomes a rule that
+    // never applies, and the rest of the set still compiles.
+    val doc = langDefDoc(exprDef)
+    val ruleText = doc.nodes.indices.find(id =>
+      doc.getNode(id).exists(
+        _.data == NodeData.StringData("a / b means div(a, b)"))).get
+    val broken = updateNodeData(ruleText, s("not a rule"), doc).toOption.get
+    val d = langDefFromDocument(exprDef.typeRef.documentUrl, broken)
+    assert(d.syntax.get.rules.get.rules.exists(_.pattern.pieces.isEmpty))
+    assert(languageFromDef(d).parse("1 + 2").isDefined)
   }
 
   test("renaming a construct's definition renames its uses, decoding unaffected") {
