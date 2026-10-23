@@ -6,7 +6,7 @@ import opelan.foundation.document._
 def toDetached(t: PTree): DetachedNode[NodeData] =
   DetachedNode(t.data, t.kids.map(toDetached))
 
-// Map every node's data — a kind-tag migration rewrites a kept parse
+// Map every node's data — a term-tag migration rewrites a kept parse
 // tree without touching its spans. Identity-preserving: a subtree
 // whose data all mapped to itself stays the same object, so reused
 // parses keep their sharing.

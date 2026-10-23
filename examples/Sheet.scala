@@ -5,7 +5,7 @@ import opelan.foundation.view.ViewTree
 import opelan.foundation.view.ViewTree._
 import opelan.foundation.langdef.ViewContext
 
-// The sheet document schema: the content subtree is a `sheet` node whose
+// The sheet document layout: the content subtree is a `sheet` node whose
 // children are rows — `row`, or `hrow` for a header row — and a row's
 // children are the cells. A cell holds its content directly: a literal,
 // a label (a plain string leaf), a hole, or an expression subtree that
@@ -18,7 +18,7 @@ import opelan.foundation.langdef.ViewContext
 //     row     "Apples"  4    1.20     mul(&qtyCell, &priceCell)
 //     ...
 
-// Kind names — keys into sheetKinds, never stored.
+// Kind names — keys into sheetTerms, never stored.
 val SheetTag = "sheet"
 val RowTag = "row"
 val HRowTag = "hrow"
@@ -47,7 +47,7 @@ def formulasView(
 }
 
 private def isHRow(doc: Document[NodeData], rowId: Int): Boolean =
-  kindOf(sheetKinds, doc, rowId).contains(HRowTag)
+  termOf(sheetTerms, doc, rowId).contains(HRowTag)
 
 private def rowView(
     doc: Document[NodeData], rowId: Int,

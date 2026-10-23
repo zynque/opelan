@@ -39,7 +39,7 @@ private def pieceFrom(doc: Document[NodeData], id: Int): Piece = {
 // `use`/`source`/`builtin` operands are name terms (a linked one
 // carries the piece node's ref), `reparse` its template pieces,
 // `quote` its stored subtree; anything else is a construct of the
-// defined language, named and referenced through its kind entry.
+// defined language, named and referenced through its term entry.
 private def meaningFromDoc(
     doc: Document[NodeData], url: String,
     version: Int, id: Int): Meaning = metaConsOf(doc, id) match {
@@ -92,7 +92,7 @@ private def treeFrom(doc: Document[NodeData], id: Int): PTree =
   PTree(doc.getNode(id).map(_.data).getOrElse(NodeData.GapData("")),
     "", 0, 0, doc.childrenOf(id).map(treeFrom(doc, _)))
 
-// A constraint's strings are its placeholder names then its kind.
+// A constraint's strings are its placeholder names then its term.
 private def constraintFrom(
     doc: Document[NodeData], id: Int): Option[Constraint] =
   doc.childrenOf(id).flatMap(strOf(doc, _)) match {

@@ -7,12 +7,12 @@ import opelan.foundation.grammar._
 // shaped rules join the operator table in binding-list order; every
 // other rule compiles to a sequence and serves as an operand.
 //
-//   compileRules(exprRules, leafAtom, kindTag, "expr")
+//   compileRules(exprRules, leafAtom, termTag, "expr")
 //
 // `atom` supplies the operand syntax rules don't yet describe —
 // leaf tokens, the signum, the recovering junk fallback — until
-// where-constraints bind placeholders to a kind vocabulary. `tag`
-// turns a constructor name into node data (DefLanguage.kindTag), so
+// where-constraints bind placeholders to a term vocabulary. `tag`
+// turns a constructor name into node data (DefLanguage.termTag), so
 // built nodes name their construct by reference. `name` is the rule
 // the parser memoizes under: every placeholder recurses through it,
 // so a language change can invalidate by name like the combinator

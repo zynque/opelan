@@ -11,9 +11,9 @@ import opelan.foundation.grammar._
 // to an unknown name produces a hole rather than crashing — a def doc
 // can contain typos and stay Never Broken.
 //
-// Operator tables name node kinds; `tag` turns a kind name into the
+// Operator tables name node terms; `tag` turns a term name into the
 // node data the parser emits — the construct's ref (see
-// DefLanguage.kindTag), so parsed trees use constructs by reference.
+// DefLanguage.termTag), so parsed trees use constructs by reference.
 //
 // Each named grammar is one memoized rule (foundation/grammar `rule`),
 // reached the same way from its definition site and from every Ref, so

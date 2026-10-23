@@ -5,7 +5,7 @@ import opelan.foundation.grammar._
 
 // Read one rule from text:
 //
-//   pattern means meaning [where a, b: kind; c: kind]
+//   pattern means meaning [where a, b: term; c: term]
 //
 // `=>` is accepted wherever `means` is — the terse spelling. The text is
 // parsed by RuleGrammar, which always produces a tree; this turns the
@@ -106,9 +106,9 @@ private def readWhere(t: PTree): Either[String, List[Constraint]] = {
   groups.foldRight[Either[String, List[Constraint]]](Right(Nil)) { (g, acc) =>
     val names = tokensIn(g.kids(0)).map(_._2.text).filterNot(_ == ",")
     val typed = g.kids(1)
-    val kind = if (tagOf(typed) == "typed") tokensIn(typed.kids(1)).map(_._2.text) else Nil
-    if (tagOf(typed) != "typed") Left("where needs 'placeholders: kind'")
-    else if (names.isEmpty || kind.isEmpty) Left("incomplete where clause")
-    else acc.map(Constraint(names, kind.mkString(" ")) :: _)
+    val term = if (tagOf(typed) == "typed") tokensIn(typed.kids(1)).map(_._2.text) else Nil
+    if (tagOf(typed) != "typed") Left("where needs 'placeholders: term'")
+    else if (names.isEmpty || term.isEmpty) Left("incomplete where clause")
+    else acc.map(Constraint(names, term.mkString(" ")) :: _)
   }
 }

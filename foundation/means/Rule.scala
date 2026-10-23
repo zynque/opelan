@@ -39,12 +39,12 @@ case class Pattern(pieces: List[Piece]) {
 // constructs: they operate on bound values and never materialize a
 // node of their own.
 //
-// Names here are labels, as in NodeKind and GrammarDef: in a `lang:`
-// document a constructor is a ref to its kind's schema entry and a
+// Names here are labels, as in NodeTerm and GrammarDef: in a `lang:`
+// document a constructor is a ref to its term's vocabulary entry and a
 // placeholder use an internal ref to the pattern's placeholder node
 // (DESIGN.md §4, *Everything by reference*). `reference` carries that
-// identity once a rule is read from a document — a construct's schema
-// entry, a placeholder's pattern piece; rules written in code or text
+// identity once a rule is read from a document — a construct's
+// vocabulary entry, a placeholder's pattern piece; rules written in code or text
 // have none until encoded, and a placeholder resolves by name within
 // its rule. `quoted` holds a `quote` term's subtree — concrete content
 // a phrase desugared to, stored as a parse tree whose kids' offsets
@@ -58,8 +58,8 @@ case class Meaning(
 
 object Meaning {
   // The meaning-language's vocabulary — `lang:`'s own constructs, never
-  // the defined language's kinds (so a `use` must never reach
-  // schemaFrom). `builtin` is reserved for evaluation-time meanings
+  // the defined language's terms (so a `use` must never reach
+  // vocabularyFrom). `builtin` is reserved for evaluation-time meanings
   // (`add(a, b) means builtin num-add`, Phase D); `quote` carries a
   // desugared phrase's concrete subtree.
   val builtins: Set[String] =
@@ -107,8 +107,8 @@ object Meaning {
 }
 
 // `where c, r: whole number` — what may fill the named placeholders.
-// The kind is free text until a type vocabulary exists.
-case class Constraint(placeholders: List[String], kind: String)
+// The term is free text until a type vocabulary exists.
+case class Constraint(placeholders: List[String], term: String)
 
 case class Rule(
     pattern: Pattern,

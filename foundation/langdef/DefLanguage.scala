@@ -32,14 +32,15 @@ class DefLanguage(
   // holds in the store.
   def langDoc = langDefDoc(languageDef)
 
-  // What a parsed node of `kind` carries: the construct's ref (inline —
-  // the destination document imports it on insert). A kind the schema
-  // doesn't define becomes a hole that keeps its parsed children.
-  def kindTag(kind: String): NodeData =
-    kindTags.getOrElse(kind, NodeData.GapData(kind))
+  // What a parsed node of `term` carries: the construct's ref (inline —
+  // the destination document imports it on insert). A term the
+  // vocabulary doesn't define becomes a hole that keeps its parsed
+  // children.
+  def termTag(term: String): NodeData =
+    termTags.getOrElse(term, NodeData.GapData(term))
 
-  private lazy val kindTags: Map[String, NodeData] =
-    kindRefs(languageDef).view.mapValues(NodeData.ExternalNodeRef(_)).toMap
+  private lazy val termTags: Map[String, NodeData] =
+    termRefs(languageDef).view.mapValues(NodeData.ExternalNodeRef(_)).toMap
 
   private lazy val syntax: Option[(Lexicon, Parser)] =
     for {
@@ -51,14 +52,14 @@ class DefLanguage(
       // combinator form writes by hand. `phrase` supplies the to-EOF
       // recovery the combinator form encodes explicitly.
       case Some(rules) =>
-        val atom = interpret(s.grammar, kindTag)
+        val atom = interpret(s.grammar, termTag)
         // Phrase meanings desugar to term trees at interpretation —
         // the document form of *Phrases desugar at entry* (DESIGN §4).
         val desugared =
-          desugarRuleSet(rules, atom, kindTag, s.lexicon, lexicon)
-        (lexicon, phrase(compileRules(desugared, atom, kindTag, s.lexicon),
+          desugarRuleSet(rules, atom, termTag, s.lexicon, lexicon)
+        (lexicon, phrase(compileRules(desugared, atom, termTag, s.lexicon),
           Set.empty))
-      case None => (lexicon, interpret(s.grammar, kindTag))
+      case None => (lexicon, interpret(s.grammar, termTag))
     }
 
   def render(view: String, doc: Document[NodeData])
@@ -88,21 +89,21 @@ class DefLanguage(
   // grammar data plus the construct refs it emits (they pin the def's
   // version), so a session survives re-decoding an unchanged def; after
   // an edit to the def, only rules whose definitions changed rerun —
-  // and a version bump re-pins kept content's kind tags rather than
+  // and a version bump re-pins kept content's term tags rather than
   // reparsing.
   override def textSyntax: Option[TextSyntax] =
     for {
       s <- languageDef.syntax
       (lexicon, parser) <- syntax
     } yield TextSyntax(parser, lexicon,
-      (s.lexicon, s.grammar, s.rules, kindTags),
+      (s.lexicon, s.grammar, s.rules, termTags),
       changedSince = previous => previous.key match {
         case (s.lexicon, before: GrammarDef,
               beforeRules: Option[RuleSet] @unchecked,
               beforeTags: Map[String, NodeData] @unchecked) =>
           Some(SyntaxChange(
             syntaxChanges(SyntaxDef(s.lexicon, before, beforeRules), s),
-            retagBy(beforeTags, kindTag)))
+            retagBy(beforeTags, termTag)))
         case _ => None
       })
 

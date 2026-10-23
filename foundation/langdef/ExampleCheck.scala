@@ -25,7 +25,7 @@ private def actualText(
     d: LanguageDef, t: DetachedNode[NodeData]): String =
   d.syntax.flatMap(_.rules) match {
     case Some(set) =>
-      val krefs = kindRefs(d)
+      val krefs = termRefs(d)
       printWith(set,
         k => krefs.get(k).map(NodeData.ExternalNodeRef(_))
           .getOrElse(NodeData.GapData(k)),

@@ -6,7 +6,7 @@ import Expr._
 // The document<->AST codec for expressions: the subtree conventions of
 // Expr's content encoding (see Expr object). Operations are constructs
 // used by reference — a node whose data names lang: expression's `add`
-// schema entry, never the string "add".
+// vocabulary entry, never the string "add".
 
 def exprToDetached(e: Expr): DetachedNode[NodeData] = e match {
   case Lit(v)    => DetachedNode.leaf(NodeData.IntData(v))
@@ -40,7 +40,7 @@ private def binOf(tag: String): (Expr, Expr) => Expr = tag match {
 def exprFromDocument(doc: Document[NodeData], nodeId: Int): Either[String, Expr] =
   doc.getNode(nodeId) match {
     case None => Left(s"Expr: node id $nodeId does not exist in document")
-    case Some(node) => kindOf(exprKinds, doc, nodeId) match {
+    case Some(node) => termOf(exprTerms, doc, nodeId) match {
       case Some(tag) if binTags(tag) && node.childIds.length == 2 =>
         for {
           left <- exprFromDocument(doc, node.childIds(0))
@@ -54,7 +54,7 @@ def exprFromDocument(doc: Document[NodeData], nodeId: Int): Either[String, Expr]
 // The detached-tree counterpart of exprFromDocument — same recovery:
 // anything that is not valid expression syntax reads as a hole.
 def exprFromDetached(t: DetachedNode[NodeData]): Expr =
-  kindOfData(exprKinds, t.data) match {
+  termOfData(exprTerms, t.data) match {
     case Some(tag) if binTags(tag) && t.children.length == 2 =>
       binOf(tag)(exprFromDetached(t.children(0)), exprFromDetached(t.children(1)))
     case _ => leafExpr(t.data, t.children.isEmpty)

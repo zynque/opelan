@@ -18,7 +18,7 @@ class SheetSuite extends munit.FunSuite {
     assertEquals(registryForDoc(doc), Some(SheetLanguage))
     // The content root applies lang: sheet's `sheet` construct by ref,
     // through the imports section — no "sheet" string in the document.
-    assertEquals(kindOf(sheetKinds, doc, sheetId), Some(SheetTag))
+    assertEquals(termOf(sheetTerms, doc, sheetId), Some(SheetTag))
     assert(doc.getNode(sheetId).exists(_.data.isInstanceOf[NodeData.InternalNodeRef]))
     assert(!doc.nodes.exists(_.data == NodeData.StringData(SheetTag)))
     // Each construct is imported once: title, sheet, hrow, row, mul,
@@ -114,7 +114,7 @@ class SheetSuite extends munit.FunSuite {
     assertEquals(inputs.length, rowIds.map(doc.childrenOf(_).length).sum)
   }
 
-  test("cellText is the canonical surface text for every cell kind") {
+  test("cellText is the canonical surface text for every cell term") {
     assertEquals(cellText(doc, cellId(0, 0)), "item")        // label
     assertEquals(cellText(doc, cellId(1, 1)), "4")           // int literal
     assertEquals(cellText(doc, cellId(1, 2)), "1.2")         // float literal
@@ -153,7 +153,7 @@ class SheetSuite extends munit.FunSuite {
       cid, parseCellText(s"ref:${cellId(2, 1)} + 1"), doc)
       .flatMap(internalizeRefs(_, cid)).toOption.get
     val node = edited.getNode(cid).get
-    assertEquals(kindOf(exprKinds, edited, cid), Some(Expr.AddTag))
+    assertEquals(termOf(exprTerms, edited, cid), Some(Expr.AddTag))
     // `add` was already imported (the total row uses it) — reused.
     assertEquals(importEntries(edited), importEntries(doc))
     assertEquals(node.childIds.length, 2)

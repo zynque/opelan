@@ -4,8 +4,8 @@ package opelan.foundation.document
 // the name shown for a reference is read from the referenced definition
 // at display time — so renaming a definition renames every use.
 
-// A definition's name: its first string child (a schema entry reads
-// kind("mul", fixed 2)); a document root's name is its label.
+// A definition's name: its first string child (a vocabulary entry reads
+// term("mul", fixed 2)); a document root's name is its label.
 def definitionName(doc: Document[NodeData], id: Int): Option[String] =
   if (id == doc.rootId) Store.labelOf(doc)
   else doc.childrenOf(id).iterator.flatMap(doc.getNode).map(_.data)

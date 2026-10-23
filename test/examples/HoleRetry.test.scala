@@ -57,7 +57,7 @@ class HoleRetrySuite extends FunSuite {
     assertEquals(r1.attempts("ref:3 / ref:4").content, c1)
   }
 
-  test("a def version bump re-pins kind tags without touching rules") {
+  test("a def version bump re-pins term tags without touching rules") {
     import opelan.foundation.langdef.{langDefDoc, langDefFromDocument}
     val doc = langDefDoc(exprDef)
     val url = exprDef.typeRef.documentUrl

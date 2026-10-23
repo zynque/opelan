@@ -6,7 +6,7 @@ import opelan.foundation.grammar.{Edit => TextEdit}
 
 // What changed between two syntaxes: the rules whose definitions
 // differ (callers keep every result those rules didn't produce), and a
-// migration for content a kept result carries — e.g. kind tags pinning
+// migration for content a kept result carries — e.g. term tags pinning
 // an older definition version re-pin rather than reparse. `migrate`
 // maps node data; results that hold other data are untouched.
 case class SyntaxChange(

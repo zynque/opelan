@@ -6,7 +6,7 @@ the demo being worked toward see `DEMO.md`.
 
 Last updated: 2026-10-20
 
-The project is in Phase 1 (foundation & schema system). **Next major
+The project is in Phase 1 (foundation & vocabulary system). **Next major
 series:** replacing combinator-based language definitions with
 `pattern means meaning` rules compiled onto the same combinators (*Next
 steps*, item 1).
@@ -32,7 +32,7 @@ Each item is described in the cited `DESIGN.md` section.
   (tested end-to-end: `/` → sheet v1 → budget). Pins whose node is gone
   at head surface as `broken: N` (an accept can't bump them), and a
   bump itself is cheap: `changedSince` reports a version move as a
-  kind-tag migration, so kept parses re-pin rather than reparse.
+  term-tag migration, so kept parses re-pin rather than reparse.
 - **Version DAG** (`foundation/version`, §3): LSCA merge base; drives
   editor history (branching undo, history column).
 - **Expression and sheet languages** (`examples/`, §4): both are
@@ -70,16 +70,16 @@ Each item is described in the cited `DESIGN.md` section.
   compiles them, `lang:` docs store rules as `means(pattern,
   meaning)` nodes — `placeholder`/`literal` pieces (`glued` markers
   preserve spacing), meaning terms as subtrees, constructs by
-  internal ref to the def's schema entries — and the def view
+  internal ref to the def's vocabulary entries — and the def view
   projects each rule line as an `input` bound to the `rule` node,
   so a commit rewrites it as structured nodes (`commitMetaInput`),
-  constructs bound to the doc's own kinds. The decoder also reads
+  constructs bound to the doc's own terms. The decoder also reads
   the older text form, so docs written before the structured
   encoding and mid-edit states still decode. Language-change
   diffing names the top rule plus changed `means:` sequence names,
   so adding a rule heals holes through the same session carry.
-  Schema and checks derive too: `schemaFrom` turns construct
-  meanings into the def's kinds, and worked examples in the `def`
+  Schema and checks derive too: `vocabularyFrom` turns construct
+  meanings into the def's terms, and worked examples in the `def`
   view are checked live against the interpreted definition — a
   failing one shows as a hole chip saying what the input read as.
   The meaning model itself is the unified term of DESIGN §4 (*A
@@ -113,7 +113,7 @@ Each item is described in the cited `DESIGN.md` section.
   awkwardly:
   - *Adding `/` takes outline surgery:* copy the `*` op node, paste it
     (it lands as a child; outdent it), then edit its symbol and retarget
-    its kind ref by node id (`&33`). The `means` series replaces this
+    its term ref by node id (`&33`). The `means` series replaces this
     with one readable line.
   - *Healing is derived:* a healed hole computes in both views, but the
     document still holds the hole text until the cell is re-committed
@@ -142,9 +142,9 @@ Each item is described in the cited `DESIGN.md` section.
   (`extractExternalized` and `internalizeRefs` are the primitives).
 - **Old stores aren't migrated.** Stores from before the by-reference
   format degrade to holes; use **Reset** to reseed. Seeds' construct ids
-  must match code's canonical encodings (`metaKindIds`, `kindRefs`), so
+  must match code's canonical encodings (`metaTermIds`, `termRefs`), so
   changing a seed's layout needs a reset or a migration.
-- **Schemas are descriptive only:** node kinds aren't checked, and the
+- **Vocabularies are descriptive only:** node terms aren't checked, and the
   gap/typing machinery isn't folded into the document model.
 - **No network transport or presence:** sync is tab-to-tab only.
 
@@ -189,7 +189,7 @@ Each item is described in the cited `DESIGN.md` section.
 ## Next steps
 
 1. **`means` rules — the next major series.** Replace authoring of the
-   combinator-based model (`GrammarDef`, a hand-written schema list,
+   combinator-based model (`GrammarDef`, a hand-written vocabulary list,
    hand-written printers, builtin views) with `pattern means meaning`
    rules plus a tightest-first binding list, compiled onto the existing
    recovering combinators (DESIGN §4, *Defining languages by `means`
@@ -237,16 +237,16 @@ Each item is described in the cited `DESIGN.md` section.
       `src:` spans for click-through, which needs printing over
       document nodes with ids, not detached trees) and the round-trip
       property `parse(print(t)) == t` over generated trees.
-   4. **Derived schema.** *Landed for code-written defs:* `schemaFrom`
-      (`foundation/langdef/DeriveSchema.scala`) collects every
-      construct meaning — nested ones included — into `NodeKind`s
+   4. **Derived vocabulary.** *Landed for code-written defs:* `vocabularyFrom`
+      (`foundation/langdef/DeriveVocabulary.scala`) collects every
+      construct meaning — nested ones included — into `NodeTerm`s
       (name, arity, the meaning's `reference` when it has one);
       builtin terms and their name operands declare nothing, so
-      `use`/`reparse` never become kinds. `exprDef`'s construct
-      kinds derive this way. Remaining: leaf kinds still list by hand
+      `use`/`reparse` never become terms. `exprDef`'s construct
+      terms derive this way. Remaining: leaf terms still list by hand
       (the atom's token productions aren't rules yet, item 2), and def
-      *documents* keep their own explicit schema section — derivation
-      of a doc's schema is what retires the hand-written list there.
+      *documents* keep their own explicit vocabulary section — derivation
+      of a doc's vocabulary is what retires the hand-written list there.
 
    *Phase B — the expression language on rules:*
 
@@ -264,13 +264,13 @@ Each item is described in the cited `DESIGN.md` section.
       hold each rule as `rule(pattern, meaning, where)` nodes —
       pieces as `placeholder`/`literal` (a `glued` marker preserves
       spacing), meanings as term subtrees, constructs by internal
-      ref to the def's schema entries so a renamed kind entry
+      ref to the def's vocabulary entries so a renamed term entry
       renames its meaning uses — and the decoder reads that form
       plus the older text form (a `rule` whose first child is a
       string goes through `readRuleOrHole`), so malformed lines and
       mid-migration docs still land as hole rules, never errors.
       Rule-line commits produce the same structure
-      (`commitMetaInput`), constructs bound to the doc's own kinds.
+      (`commitMetaInput`), constructs bound to the doc's own terms.
       The meaning model is the target form: one term node
       (`tag`/`arguments`/`reference`/`phrase`/`quoted`) over
       `use`/`source`/`reparse`/`builtin`/`quote` builtins, so a
@@ -361,7 +361,7 @@ Each item is described in the cited `DESIGN.md` section.
    `setting(auto-update, true)` flag with in-pane auto-accept, the
    save-time cascade (synced docs skipped), broken imports surfaced in
    the toolbar (`broken: N`), and version bumps carried through
-   `changedSince` as a kind-tag migration — only affected holes
+   `changedSince` as a term-tag migration — only affected holes
    reparse. The demo beat: adding `/` to `lang: expression` pends
    `lang: sheet`; accepting publishes sheet v1, which pends the budget
    — the hole heals on the budget's accept.
@@ -409,15 +409,15 @@ Each item is described in the cited `DESIGN.md` section.
    lifetime (the op log already persists in `automerge_docs`) and for
    unsynced documents; curated checkpoints; the synced meta-log for
    pruning and compaction; then a tree-native CRDT.
-4. **Schemas and typing.** Check documents against their node kinds and
+4. **Schemas and typing.** Check documents against their node terms and
    fold the gap/typing machinery into the document model.
 5. **Further roadmap:**
-   - A visual schema editor and interactive diagram editing as document
+   - A visual vocabulary editor and interactive diagram editing as document
      views.
    - In-workbench help: `USAGE.md` is an interim measure; per *self
      documenting*, help belongs in the workbench as documents. F1 on a
      construct opens its help page (what it is, an example), linked by
-     ref from its node kind, and from there on to the implementation
+     ref from its node term, and from there on to the implementation
      (language def, grammar, builtin) through the go-to-definition
      machinery.
    - A fuller evaluation engine beyond the expression language's `eval`.

@@ -28,10 +28,10 @@ object Expr {
   // Content encoding: an IntData/FloatData leaf is a literal; an
   // InternalNodeRef leaf (to a node that isn't an import) is a reference;
   // a node applying the add/sub/mul/div construct — its data refers to
-  // the kind's schema entry in lang: expression, through an import —
+  // the term's vocabulary entry in lang: expression, through an import —
   // with exactly two children is a binary operation; a GapData node is a
-  // hole. The tags below are kind names, used only to look the
-  // constructs up (exprKinds).
+  // hole. The tags below are term names, used only to look the
+  // constructs up (exprTerms).
   val AddTag = "add"
   val SubTag = "sub"
   val MulTag = "mul"

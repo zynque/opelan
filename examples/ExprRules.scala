@@ -28,7 +28,7 @@ val exprRules = RuleSet(
 
 // The operand syntax rules don't yet describe — leaf tokens, the
 // signum, and the recovering junk fallback — until `where`
-// constraints bind placeholders to a kind vocabulary. The same
+// constraints bind placeholders to a term vocabulary. The same
 // choice ExprParse writes, minus `parens`: `(a) means a` supplies
 // them now.
 lazy val ruleAtom: Parser = choice(

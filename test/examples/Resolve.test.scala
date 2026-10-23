@@ -3,7 +3,7 @@ package opelan.examples
 import opelan.foundation.document._
 import opelan.foundation.langdef.{
   DocLanguage, docLanguageDef, langDefDoc, langDefFromDocument,
-  langDefTypeRef, withKindRefs}
+  langDefTypeRef, withTermRefs}
 import munit.FunSuite
 
 // Store-first language resolution: a type ref names a def doc, and the
@@ -73,7 +73,7 @@ class ResolveSuite extends FunSuite {
     assertEquals(
       langDefFromDocument(
         langDefTypeRef.documentUrl, DocLanguage.langDoc),
-      withKindRefs(docLanguageDef))
+      withTermRefs(docLanguageDef))
   }
 
   // The demo's healing moment under pin semantics: `/` saved as
@@ -105,7 +105,7 @@ class ResolveSuite extends FunSuite {
     val sheetDoc = fixed.get("opelan:languages/sheet", 0).get
     val s2 = fixed.put(
       "opelan:languages/sheet", acceptUpdates(sheetDoc, fixed).get)._1
-    // The budget accepts: type ref and kind imports bump — the hole heals.
+    // The budget accepts: type ref and term imports bump — the hole heals.
     val budget2 = acceptUpdates(budget, s2).get
     assertEquals(perPerson(s2, budget2), "per person\t\t\t$8.10")
   }

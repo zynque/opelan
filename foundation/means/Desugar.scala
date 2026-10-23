@@ -83,7 +83,7 @@ private def placeholderAtom(names: Set[String]): Parser =
 // The parsed phrase's tree as a meaning term: marks become `use`,
 // nodes carrying a construct's data become construct terms (keeping
 // the ref a `lang:` doc's nodes would hold), and everything else —
-// leaves, gaps, nodes no kind names — is quoted verbatim.
+// leaves, gaps, nodes no term names — is quoted verbatim.
 private def toTerm(t: PTree, names: Map[NodeData, String]): Meaning =
   if (t.data == PlaceholderMark) Meaning.use(t.text)
   else names.get(t.data) match {

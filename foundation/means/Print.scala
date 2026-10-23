@@ -18,13 +18,13 @@ import opelan.foundation.document._
 // content — and leaves and construct nodes no rule claims print through
 // `leaf` / as `?` (Never Broken).
 //
-// `kindTag` is the same constructor the compile takes (DefLanguage's
-// kind-name → node-data map), so a printed node is identified by the
+// `termTag` is the same constructor the compile takes (DefLanguage's
+// term-name → node-data map), so a printed node is identified by the
 // data a parse would emit — refs, not names. The trees are detached
 // nodes in parser-output form (constructs by ExternalNodeRef).
 def printWith(
     set: RuleSet,
-    kindTag: String => NodeData,
+    termTag: String => NodeData,
     leaf: NodeData => String): DetachedNode[NodeData] => String = {
   val tiers = orderedOperatorRules(set)
   val count = tiers.length
@@ -38,7 +38,7 @@ def printWith(
   val builders: Map[NodeData, Rule] = set.rules.reverse.flatMap { r =>
     if (Meaning.isConstruct(r.meaning))
       List(r.meaning.reference.map(NodeData.ExternalNodeRef(_))
-        .getOrElse(kindTag(r.meaning.tag)) -> r)
+        .getOrElse(termTag(r.meaning.tag)) -> r)
     else Nil
   }.toMap
 

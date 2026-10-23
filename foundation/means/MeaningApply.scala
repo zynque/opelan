@@ -24,8 +24,8 @@ import opelan.foundation.grammar._
 //   builtin  not yet — evaluation-time meanings are Phase D; an
 //            unknown builtin is a hole, Never Broken
 //   other    a construct: the meaning's `reference` when it carries
-//            one, else `tag(name)` maps the kind name to node data
-//            (DefLanguage.kindTag)
+//            one, else `tag(name)` maps the term name to node data
+//            (DefLanguage.termTag)
 //
 // Malformed input stays Never Broken: an unbound placeholder or a
 // degenerated operand becomes a hole covering the match.

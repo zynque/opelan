@@ -3,7 +3,7 @@ package opelan.foundation.document
 // The imports section of a standard document (see Typed). An external
 // node is imported once — an ExternalNodeRef leaf under the imports node
 // — and every use of it in the content is an InternalNodeRef to that
-// entry. A language construct (`mul`, `kind`, `schema`) is such a node:
+// entry. A language construct (`mul`, `term`, `vocabulary`) is such a node:
 // documents store which definition they use, never its name, so a
 // rename touches only the definition.
 //

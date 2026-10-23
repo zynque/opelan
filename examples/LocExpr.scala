@@ -24,7 +24,7 @@ enum LocExpr {
 def readLocExpr(doc: Document[NodeData], nodeId: Int): LocExpr =
   doc.getNode(nodeId) match {
     case None => LocExpr.LocHole(nodeId, "missing")
-    case Some(node) => kindOf(exprKinds, doc, nodeId) match {
+    case Some(node) => termOf(exprTerms, doc, nodeId) match {
       case Some(tag) if binTags(tag) && node.childIds.length == 2 =>
         binNode(tag, nodeId,
           readLocExpr(doc, node.childIds(0)), readLocExpr(doc, node.childIds(1)))

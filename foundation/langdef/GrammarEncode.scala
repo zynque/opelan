@@ -6,12 +6,12 @@ import opelan.foundation.document.Detached._
 // A grammar combinator as a node subtree. The sub-grammar comes first
 // (parens inner, chain atom, precedence atom, phrase inner, named's
 // body) with parameters after — matching how the combinators read.
-// An operator's tag is an internal ref to the schema entry of the kind
-// it builds (`kindIds`); a kind missing from the schema stays a string
+// An operator's tag is an internal ref to the vocabulary entry of the term
+// it builds (`termIds`); a term missing from the vocabulary stays a string
 // the reader degrades. `use` is written with the rule's name and linked
 // to its `named` node once the document exists (linkUses).
 private[langdef] def grammarNode(
-    g: GrammarDef, kindIds: Map[String, Int]): DetachedNode[NodeData] = {
+    g: GrammarDef, termIds: Map[String, Int]): DetachedNode[NodeData] = {
   def go(g: GrammarDef): DetachedNode[NodeData] = g match {
     case GrammarDef.Tok(kind, leaf) => n(pending("tok"), sl(kind), leafNode(leaf))
     case GrammarDef.Choice(alts)    => n(pending("choice"), alts.map(go)*)
@@ -32,7 +32,7 @@ private[langdef] def grammarNode(
   }
   def opPairs(ops: Map[String, String]): List[DetachedNode[NodeData]] =
     ops.toList.sortBy(_._1).map { case (sym, tag) =>
-      n(pending("op"), sl(sym), DetachedNode.leaf(kindIds.get(tag)
+      n(pending("op"), sl(sym), DetachedNode.leaf(termIds.get(tag)
         .map(NodeData.InternalNodeRef(_)).getOrElse(NodeData.StringData(tag))))
     }
   go(g)

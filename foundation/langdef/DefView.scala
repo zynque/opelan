@@ -5,10 +5,11 @@ import opelan.foundation.view.ViewTree
 import opelan.foundation.view.ViewTree._
 
 // The "def" view of a language-definition document: decode the doc and
-// lay the definition out readably — title, description, schema kinds,
-// the grammar as indented combinator text, the means rules as editable
-// lines, view bindings, and the input grammar's target. The document is
-// still the source of truth; this is the skim-friendly rendering of it.
+// lay the definition out readably — title, description, the vocabulary
+// of terms, the grammar as indented combinator text, the means rules as
+// editable lines, view bindings, and the input grammar's target. The
+// document is still the source of truth; this is the skim-friendly
+// rendering of it.
 // A rules section renders each line as a projected input bound to its
 // text leaf, so editing a rule commits through the doc language's
 // input parser and the next decode re-reads it; and `ctx.interpret`
@@ -22,8 +23,8 @@ def defView(doc: Document[NodeData], contentRootId: Int,
   block(List(
     Some(heading(txt(d.title))),
     Some(txt(d.description)),
-    Some(section("schema", d.schema.map(k =>
-      txt(s"${k.name} — ${shapeName(k.shape)}")))),
+    Some(section("vocabulary", d.vocabulary.map(t =>
+      txt(s"${t.name} — ${shapeName(t.shape)}")))),
     d.syntax.map(s =>
       section("syntax", grammarLines(s.grammar).map(txt) ++
         s.rules.toList.flatMap(rs =>

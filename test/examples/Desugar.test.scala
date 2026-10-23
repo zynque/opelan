@@ -32,7 +32,7 @@ class DesugarSuite extends munit.FunSuite {
   test("a phrase meaning becomes construct/use/quote terms") {
     val meaning = desugared(set).rules.last.meaning
     assertEquals(meaning.tag, "div")
-    assertEquals(meaning.reference, Some(exprKinds("div")))
+    assertEquals(meaning.reference, Some(exprTerms("div")))
     assertEquals(meaning.arguments.map(_.tag), List("use", "quote"))
     assertEquals(
       meaning.arguments(0).arguments.flatMap(Meaning.nameOf), List("a"))

@@ -114,15 +114,15 @@ private def sequenceRuleNames(set: Option[RuleSet]): Set[String] =
   set.toList.flatMap(_.rules).filter(r => isSequencePattern(r.pattern))
     .map(r => sequenceRuleName(r.pattern)).toSet
 
-// The content migration between two kind-tag tables (kind name → the
+// The content migration between two term-tag tables (term name → the
 // data a parse emits): a tag that changed — a construct ref re-pinning
-// to a newer def version, or a kind gone from the schema — rewrites to
+// to a newer def version, or a term gone from the vocabulary — rewrites to
 // what a fresh parse would emit; every other node data is untouched.
 def retagBy(
     before: Map[String, NodeData],
     tag: String => NodeData): NodeData => NodeData = {
   val diff = before.iterator
-    .map { case (kind, d) => d -> tag(kind) }
+    .map { case (term, d) => d -> tag(term) }
     .filter { case (a, b) => a != b }
     .toMap
   d => diff.getOrElse(d, d)

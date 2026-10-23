@@ -12,7 +12,7 @@ class IncrementalParseSuite extends FunSuite {
 
   private val language = new DefLanguage(exprCombinatorDef, implsFor(exprCombinatorDef))
   private val grammarDef = exprCombinatorDef.syntax.get.grammar
-  private val grammar = interpret(grammarDef, language.kindTag)
+  private val grammar = interpret(grammarDef, language.termTag)
 
   private def normal(r: POut) = (r.pos, r.ok, r.examined, r.tree)
   private def full(g: Parser, text: String) = normal(g(In(text, exprLexicon), 0))
@@ -48,7 +48,7 @@ class IncrementalParseSuite extends FunSuite {
     }
     assertEquals(changedRules(grammarDef, edited), Set("expr"))
     assertEquals(changedRules(grammarDef, grammarDef), Set.empty[String])
-    val newGrammar = interpret(edited, language.kindTag)
+    val newGrammar = interpret(edited, language.termTag)
     val s0 = ParseSession.start(grammar, exprLexicon, "8 / 2 + (3 / 1)")
     val s1 = s0.changeRules(newGrammar, changedRules(grammarDef, edited))
     assertEquals(normal(s1.result), full(newGrammar, s1.text))

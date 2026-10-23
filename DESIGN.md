@@ -141,23 +141,23 @@ children the ext-ref entries — second the *title* node, carrying a ref
 to the `title` declaration with the raw text as its child, third the
 *content* subtree (the AST). Imports come first so they are in scope for
 everything after them. Even the structural words are declared once in
-`lang: language`'s schema and used by reference, so a standard document
+`lang: language`'s vocabulary and used by reference, so a standard document
 contains no repeated names at all. This is olw-p2's header,
 dependencies, content layout with the header folded onto the root.
 Untyped documents are "raw".
 
 **Everything by reference.** Content never spells a language construct
-by name. A node applying `mul` (or `schema`, `kind`, `row`) has as its
+by name. A node applying `mul` (or `vocabulary`, `term`, `row`) has as its
 data an `InternalNodeRef` to an import entry. That entry is an
-`ExternalNodeRef` to the construct's schema entry in its `lang:`
+`ExternalNodeRef` to the construct's vocabulary entry in its `lang:`
 document, e.g. `opelan:languages/int-expression@0#28`. A construct's
-identity is that address, and readers match on it (`kindOf`,
+identity is that address, and readers match on it (`termOf`,
 `DefDocReader.cons`), never on a string. Renaming a construct therefore
 edits one node, its definition, and every use, in every document, picks
 up the new name. The editor shows each use projectionally: the resolved
 name in bold, with the raw `&n` beside it. References *within* a
 definition are plain internal refs to the defining node, for example an
-operator to the kind it builds or a `use` to a `named` grammar rule.
+operator to the term it builds or a `use` to a `named` grammar rule.
 Only a definition's own names, literal syntax (`"*"`), builtin names,
 and user data remain strings. The type and imports slots are positional;
 the imports node's `"imports"` label is a caption, not a key.
@@ -209,19 +209,19 @@ on it.
 
 **Language definitions as documents** (`foundation/langdef`) — the
 bootstrap path, and *Frictionless* in practice. A `LanguageDef` is a
-language as data: identity, a schema of node kinds, a compositional
+language as data: identity, a vocabulary of node terms, a compositional
 grammar (`GrammarDef`, the data twin of the `foundation/grammar`
 combinators), view bindings, and an input grammar. `langDefDoc` encodes a
 def as a typed `lang:` document; `langDefFromDocument` reads it back
 recoveringly; `interpret` turns grammar data into a total parser; and
 `DefLanguage` turns a def into a live `Language`. A def doc's sections,
-schema entries, and grammar combinators are constructs of
-`lang: language` (`metaKinds`), imported like any other construct.
-`lang: language` imports them from its own schema, which is the bootstrap
-fixpoint. Code knows meta constructs by node id (`metaKindIds`, taken
+vocabulary entries, and grammar combinators are constructs of
+`lang: language` (`metaTerms`), imported like any other construct.
+`lang: language` imports them from its own vocabulary, which is the bootstrap
+fixpoint. Code knows meta constructs by node id (`metaTermIds`, taken
 from encoding `docLanguageDef`). It knows an example language's
-constructs by the ids its canonical encoding assigns (`kindRefs`,
-`exprKinds`, `sheetKinds`). Each decoded `NodeKind` carries its `ref`,
+constructs by the ids its canonical encoding assigns (`termRefs`,
+`exprTerms`, `sheetTerms`). Each decoded `NodeTerm` carries its `ref`,
 and a def-interpreted parser emits that ref for each node it builds. Semantics the def names
 by string — lexicons, view renderers, builtin input parsers — resolve
 through an `Impls` bundle: honest scaffolding while behavior still lives
@@ -320,7 +320,7 @@ household budget.
 ### Defining languages by `means` rules (in progress)
 
 Today a language's meaning is scattered: the grammar maps `"*"` to the tag
-`"mul"` inside a combinator tree, the schema separately declares `mul` as
+`"mul"` inside a combinator tree, the vocabulary separately declares `mul` as
 `Fixed(2)`, `Expr.pp` re-encodes precedence for printing, and eval matches
 `Mul` in Scala — four artifacts held together by a string. Authoring one
 requires knowing parser combinators (`Signum`, `Junk`, `Phrase`, stop
@@ -360,7 +360,7 @@ terse spelling is `=>` (`a + b => add(a, b)`). Both read back as the same
 rule — which spelling a surface shows is a detail-level setting (§6), not
 a difference in content. The reader and printer exist
 (`foundation/means`): rules print as role-tagged spans (keyword, literal,
-placeholder, constructor tag, constraint kind, marker), so a highlighting
+placeholder, constructor tag, constraint term, marker), so a highlighting
 surface and plain text come from one source. A `Rule(pattern, meaning,
 where)` has a pattern of literal and placeholder pieces; a meaning reads
 as a constructor (`add(a, b)`), a bare placeholder (`(a) means a`),
@@ -370,10 +370,10 @@ binding-list tiers and worked examples. A rule's shape (leaf, closed,
 prefix, postfix, infix) is derived from its pattern's edges, and
 `ruleIssues`/`ruleSetIssues` report unbound or duplicate placeholders and
 binding-list mistakes. Names are labels for now; a constructor carries an
-optional kind ref, filled in once rules are read from a document.
+optional term ref, filled in once rules are read from a document.
 
 **One rule, every concern.** Read left to right, a rule is a production;
-its meaning names a node kind and its arity (the schema); read right to
+its meaning names a node term and its arity (the vocabulary); read right to
 left, a constructor meaning is the printer — minimal-parenthesis printing
 follows from the binding list, replacing hand-written `Expr.pp`. Several
 surfaces may mean the same tree (`a × b`, `a times b`, `product of a, b`
@@ -389,7 +389,7 @@ evaluates to the bound tree and never materializes a `use` node in the
 output. Two consequences: placeholders splice at tree level, so `5 %`
 producing `div(5, 100)` keeps the `5` node's identity; and meaning
 builtins belong to `lang:`'s vocabulary, not the defined language's, so
-schema and kind derivation must not turn them into constructs.
+vocabulary derivation must not turn them into constructs.
 Evaluation-time meanings (`add(a, b) means builtin num-add`) are the
 same form — one evaluation story for parse-time and eval-time layers
 alike.
@@ -622,7 +622,7 @@ relative form that form needs:
   edit shifts no positions. `changeRules(grammar, names)` drops results
   of the named rules and of every rule that called one. `changedRules`
   diffs two `GrammarDef`s to supply the names. A version bump is a
-  special change: the rules may be identical, but kind tags pin the
+  special change: the rules may be identical, but term tags pin the
   def's version — `changedSince` reports the rule diff plus a
   migration, and kept results re-pin their tags rather than reparse.
 - Document identity is handled a layer down: `commitContent`
@@ -663,7 +663,7 @@ relative form that form needs:
   (`Language.renderWith`), so a hole is reparsed only when the syntax
   changed and the change either touched a consulted rule or can't name
   its rules; otherwise the failed attempt stands — reused content is
-  migrated (kind tags re-pin) — sound because the consulted set is
+  migrated (term tags re-pin) — sound because the consulted set is
   closed under calls, so a change disjoint from it replays identically.
   After each update the pane re-remembers its
   holes (`rememberInputHoles`) against the current store and drops
@@ -675,7 +675,7 @@ relative form that form needs:
 `rule(pattern, meaning, where)` node — pieces as `placeholder`/`literal`
 nodes (`glued` marking unspaced adjacency), the meaning as its term
 subtree. Like every construct use, a meaning names its constructor by
-reference: `add(a, b)` is a node whose data refers to the `add` kind
+reference: `add(a, b)` is a node whose data refers to the `add` term
 entry, and `a` spells `use(a)` — an operand ref to the pattern's
 placeholder node — so a rule survives renames on either side. Rules
 compile to `GrammarDef`, which remains the implementation layer the

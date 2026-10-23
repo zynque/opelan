@@ -64,7 +64,7 @@ private val constraints: Parser = {
   val one = sequence(tag("constraint"))(
     many(tag("names"))(tokenExcept(choice(colon, single(";")))),
     optional(sequence(tag("typed"))(colon,
-      many(tag("kind"))(tokenExcept(single(";"))))))
+      many(tag("term"))(tokenExcept(single(";"))))))
   sequence(tag("where"))(whereKeyword, one,
     many(tag("more"))(sequence(tag("next"))(single(";"), one)))
 }

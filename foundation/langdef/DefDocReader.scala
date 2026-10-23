@@ -28,7 +28,7 @@ private class DefDocReader(
   def entries(id: Int, name: String): List[Int] = kids(id).filter(cons(_).contains(name))
 
   // A reference leaf read as the name of what it points at (an op's
-  // kind, a use's rule); a leftover string is taken as the name itself.
+  // term, a use's rule); a leftover string is taken as the name itself.
   def refName(id: Option[Int]): String = id.flatMap(i => data(i)).flatMap {
     case NodeData.InternalNodeRef(t) => definitionName(doc, t)
     case NodeData.StringData(s)      => Some(s)

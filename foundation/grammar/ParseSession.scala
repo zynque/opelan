@@ -57,7 +57,7 @@ case class ParseSession(
   // A language change: `changed` names the rules whose definitions
   // differ. Results of those rules, and of any rule that called one,
   // are dropped; everything else is reused under the new grammar —
-  // `migrate` rewrites node data a kept result carries (e.g. kind tags
+  // `migrate` rewrites node data a kept result carries (e.g. term tags
   // re-pinning to a newer definition version).
   def changeRules(newGrammar: Parser, changed: Set[String],
       migrate: NodeData => NodeData = identity): ParseSession = {

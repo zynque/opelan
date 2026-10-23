@@ -7,7 +7,7 @@ import opelan.foundation.view.Verbosity
 // a highlighting surface (keywords emphasized, placeholders styled as
 // math italicizes variables).
 enum Role {
-  case Keyword, Literal, Placeholder, Tag, Punctuation, Kind, Marker, Space
+  case Keyword, Literal, Placeholder, Tag, Punctuation, Term, Marker, Space
 }
 
 case class Styled(text: String, role: Role)
@@ -85,5 +85,5 @@ private def joined(items: List[List[Styled]], separator: String): List[Styled] =
 private def whereSpans(constraints: List[Constraint]): List[Styled] =
   joined(constraints.map { c =>
     joined(c.placeholders.map(name => List(Styled(name, Role.Placeholder))), ",") ++
-      List(punctuation(":"), space, Styled(c.kind, Role.Kind))
+      List(punctuation(":"), space, Styled(c.term, Role.Term))
   }, ";")

@@ -12,7 +12,7 @@ case class HoleAttempt(
 // touched. Attempts under the same syntax are reused outright; under a
 // changed syntax that can describe itself, an attempt that never
 // consulted a changed rule is reused too — migrated, since kept
-// content may carry data the change moved (a kind tag's version pin).
+// content may carry data the change moved (a term tag's version pin).
 // Anything else — no attempt yet, or a change that can't be described —
 // parses.
 case class HoleRetry(attempts: Map[String, HoleAttempt] = Map.empty) {

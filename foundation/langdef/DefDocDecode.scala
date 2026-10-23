@@ -5,14 +5,14 @@ import opelan.foundation.means.Meaning
 
 // The recovering read of a `lang:` document — the inverse of
 // DefDocEncode. Constructs are recognized by identity (which
-// lang: language schema entry a node's import names), never by name, so
-// a def doc whose meta constructs were renamed still decodes. Every
-// section is optional and every read tolerant: missing children
+// lang: language vocabulary entry a node's import names), never by
+// name, so a def doc whose meta constructs were renamed still decodes.
+// Every section is optional and every read tolerant: missing children
 // default, unrecognized grammar nodes become GrammarDef.Hole, and a def
 // doc under construction keeps decoding (Never Broken applies to
 // language definitions too).
 //
-// `version` is the version of `url` being read: kinds' refs pin it, so
+// `version` is the version of `url` being read: terms' refs pin it, so
 // a construct added in a later version is addressable.
 def langDefFromDocument(
     url: String, doc: Document[NodeData], version: Int = 0): LanguageDef = {
@@ -28,8 +28,8 @@ def langDefFromDocument(
     title = title,
     name = r.section("name").flatMap(r.childStr(_, 0)).getOrElse(title),
     description = r.section("description").flatMap(r.childStr(_, 0)).getOrElse(""),
-    schema = r.section("schema").toList.flatMap { sid =>
-      r.entries(sid, "kind").map(k => NodeKind(
+    vocabulary = r.section("vocabulary").toList.flatMap { sid =>
+      r.entries(sid, "term").map(k => NodeTerm(
         r.childStr(k, 0).getOrElse(""),
         r.shapeFrom(r.kids(k).lift(1)),
         Some(ExternalNodeReference(url, version, k))))
@@ -51,18 +51,18 @@ def langDefFromDocument(
     inputParser = r.section("inputs").flatMap(r.inputParserFrom))
 }
 
-// A def's kinds with their identities — and its rules' construct
+// A def's terms with their identities — and its rules' construct
 // meanings pointed at them, its `use` operands pointed at the
 // pattern's piece nodes: a decoded def has all three (the structured
 // encoding writes refs, never names); a def written in code gets the
 // ones its encoding assigns.
-def withKindRefs(d: LanguageDef): LanguageDef = {
+def withTermRefs(d: LanguageDef): LanguageDef = {
   val url = d.typeRef.documentUrl
   val doc = langDefDoc(d)
-  val schema =
-    if (d.schema.forall(_.ref.isDefined)) d.schema
-    else langDefFromDocument(url, doc).schema
-  val ids = schema.flatMap(k => k.ref.map(k.name -> _.nodeId)).toMap
+  val vocabulary =
+    if (d.vocabulary.forall(_.ref.isDefined)) d.vocabulary
+    else langDefFromDocument(url, doc).vocabulary
+  val ids = vocabulary.flatMap(t => t.ref.map(t.name -> _.nodeId)).toMap
   // The encoding's piece ids, per rule — the `use` operands' link
   // targets.
   val ruleIds = contentId(doc).toList.flatMap(cid =>
@@ -85,7 +85,7 @@ def withKindRefs(d: LanguageDef): LanguageDef = {
         .orElse(m.reference),
       arguments = m.arguments.map(refify(pieces)))
   d.copy(
-    schema = schema,
+    vocabulary = vocabulary,
     syntax = d.syntax.map(s => s.copy(rules = s.rules.map(set =>
       set.copy(rules = set.rules.zipWithIndex.map { case (r, i) =>
         r.copy(meaning = refify(ruleIds.lift(i)
@@ -93,7 +93,7 @@ def withKindRefs(d: LanguageDef): LanguageDef = {
       })))))
 }
 
-// Kind name → the construct's identity, for code that builds or reads
+// Term name → the construct's identity, for code that builds or reads
 // documents in a defined language.
-def kindRefs(d: LanguageDef): Map[String, ExternalNodeReference] =
-  withKindRefs(d).schema.flatMap(k => k.ref.map(k.name -> _)).toMap
+def termRefs(d: LanguageDef): Map[String, ExternalNodeReference] =
+  withTermRefs(d).vocabulary.flatMap(t => t.ref.map(t.name -> _)).toMap

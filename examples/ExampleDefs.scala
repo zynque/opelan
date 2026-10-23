@@ -34,7 +34,7 @@ private val exprGrammarDef: GrammarDef = exprGrammarWith(List(mulDiv, addSub))
 
 // The operand atom the means rules compile over — leaf tokens, the
 // signum, and the recovering junk fallback; the productions rules don't
-// yet express until `where`-kinds bind placeholders to a lexical rule
+// yet express until `where`-terms bind placeholders to a lexical rule
 // vocabulary. The same choice ExprParse writes, minus `parens`:
 // `(a) means a` supplies them.
 private val exprAtom: GrammarDef = Choice(List(
@@ -63,12 +63,12 @@ val exprDef = LanguageDef(
   title = "lang: expression",
   name = "Expressions",
   description = "the arithmetic-expression language",
-  // Leaf kinds name the atom's token productions; the construct kinds
-  // derive from the rules' construct meanings (DeriveSchema.scala).
-  schema = List(
-    NodeKind("literal", Leaf),
-    NodeKind("ref", Leaf),
-    NodeKind("gap", Leaf)) ++ schemaFrom(exprRules),
+  // Leaf terms name the atom's token productions; the construct terms
+  // derive from the rules' construct meanings (DeriveVocabulary.scala).
+  vocabulary = List(
+    NodeTerm("literal", Leaf),
+    NodeTerm("ref", Leaf),
+    NodeTerm("gap", Leaf)) ++ vocabularyFrom(exprRules),
   syntax = Some(SyntaxDef("expr", exprAtom, Some(exprRules))),
   views = List(
     ViewBinding("print", "expr-print"),
@@ -83,8 +83,8 @@ val exprCombinatorDef: LanguageDef =
 
 // The demo's starting point for lang: expression: the `/` rule and its
 // binding are missing, so the budget's per-person formula sits as a hole
-// until the audience adds them to the definition document. The schema
-// still declares `div`, so kind ids match exprDef's.
+// until the audience adds them to the definition document. The vocabulary
+// still declares `div`, so term ids match exprDef's.
 val demoExprDef = exprDef.copy(syntax =
   Some(SyntaxDef("expr", exprAtom, Some(withoutPattern(exprRules, "a / b")))))
 
@@ -101,14 +101,14 @@ val sheetDef = LanguageDef(
   title = "lang: sheet",
   name = "Sheet",
   description = "the spreadsheet language — a grid of cells",
-  schema = List(
-    NodeKind("sheet", Any),
-    NodeKind("hrow", Any),
-    NodeKind("row", Any),
-    NodeKind("label", Leaf),
-    NodeKind("literal", Leaf),
-    NodeKind("ref", Leaf),
-    NodeKind("formula", Any)),
+  vocabulary = List(
+    NodeTerm("sheet", Any),
+    NodeTerm("hrow", Any),
+    NodeTerm("row", Any),
+    NodeTerm("label", Leaf),
+    NodeTerm("literal", Leaf),
+    NodeTerm("ref", Leaf),
+    NodeTerm("formula", Any)),
   syntax = None,
   views = List(
     ViewBinding("sheet", "sheet-grid", Map("currency" -> "$")),

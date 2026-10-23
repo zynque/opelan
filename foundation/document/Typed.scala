@@ -78,7 +78,7 @@ def contentId(doc: Document[NodeData]): Option[Int] =
 // Build a standard-layout document: the type ref on the root's data, a
 // title node carrying `titleConstruct`, an imports node carrying
 // `importsConstruct` (refs to the `title`/`imports` declarations — the
-// encoder passes pending markers while lang: language's own schema is
+// encoder passes pending markers while lang: language's own vocabulary is
 // mid-build), then the content subtree. External refs inside the title
 // and content subtrees — and the imports node's own construct ref —
 // move into the imports section.

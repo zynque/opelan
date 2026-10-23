@@ -9,8 +9,8 @@ import munit.FunSuite
 
 // The def-doc format: encoding and reading must round-trip, and the
 // seeded lang: docs (ExprLanguage.langDoc / SheetLanguage.langDoc)
-// must decode back to the in-memory defs they describe (plus the kind
-// identities the encoding assigns — withKindRefs).
+// must decode back to the in-memory defs they describe (plus the term
+// identities the encoding assigns — withTermRefs).
 class LangDefDocSuite extends FunSuite {
 
   // A meta construct, written inline (makeTyped imports it).
@@ -19,21 +19,21 @@ class LangDefDocSuite extends FunSuite {
   test("exprDef round-trips through the document encoding") {
     val url = exprDef.typeRef.documentUrl
     val doc = langDefDoc(exprDef)
-    assertEquals(langDefFromDocument(url, doc), withKindRefs(exprDef))
+    assertEquals(langDefFromDocument(url, doc), withTermRefs(exprDef))
   }
 
   test("constructs are stored by reference, never by name") {
     val doc = langDefDoc(exprDef)
     val strings = doc.nodes.map(_.data).collect { case NodeData.StringData(t) => t }.toSet
-    assert(!strings.contains("schema") && !strings.contains("kind"), strings)
+    assert(!strings.contains("vocabulary") && !strings.contains("term"), strings)
     // Every meta construct use goes through the imports section.
     val imported = importEntries(doc).map(_._2)
-    assert(imported.contains(metaRef("kind").get))
+    assert(imported.contains(metaRef("term").get))
     assert(imported.forall(_.documentUrl == langDefTypeRef.documentUrl))
-    // The combinator form's operators name the kind they build by
-    // internal ref to its schema entry.
+    // The combinator form's operators name the term they build by
+    // internal ref to its vocabulary entry.
     val combinatorDoc = langDefDoc(exprCombinatorDef)
-    val mulEntry = kindRefs(withKindRefs(exprCombinatorDef))("mul").nodeId
+    val mulEntry = termRefs(withTermRefs(exprCombinatorDef))("mul").nodeId
     assert(combinatorDoc.nodes.exists(
       _.data == NodeData.InternalNodeRef(mulEntry)))
   }
@@ -52,26 +52,26 @@ class LangDefDocSuite extends FunSuite {
     assertEquals(
       langDefFromDocument(exprDef.typeRef.documentUrl, doc)
         .syntax.get.rules,
-      withKindRefs(exprDef).syntax.get.rules)
+      withTermRefs(exprDef).syntax.get.rules)
   }
 
-  test("rule meanings reference their schema entries by node identity") {
+  test("rule meanings reference their vocabulary entries by node identity") {
     // `a / b means div(a, b)` decodes to a construct whose reference
-    // is the `div` kind entry's node — the by-reference encoding.
+    // is the `div` term entry's node — the by-reference encoding.
     val doc = langDefDoc(exprDef)
     val d = langDefFromDocument(exprDef.typeRef.documentUrl, doc)
     val div = d.syntax.get.rules.get.rules
       .find(_.meaning.tag == "div").get.meaning
     assertEquals(div.reference,
-      Some(kindRefs(withKindRefs(exprDef))("div")))
+      Some(termRefs(withTermRefs(exprDef))("div")))
     assertEquals(div.arguments.map(_.tag), List("use", "use"))
   }
 
-  test("renaming a kind entry renames the meanings that use it") {
+  test("renaming a term entry renames the meanings that use it") {
     // The meaning's data is the entry's ref, never the name — so the
     // decoded tag follows a rename (same healing as document uses).
     val doc = langDefDoc(exprDef)
-    val divId = kindRefs(withKindRefs(exprDef))("div").nodeId
+    val divId = termRefs(withTermRefs(exprDef))("div").nodeId
     val renamed = updateNodeData(
       doc.childrenOf(divId).head, s("quotient"), doc).toOption.get
     val d = langDefFromDocument(exprDef.typeRef.documentUrl, renamed)
@@ -124,9 +124,9 @@ class LangDefDocSuite extends FunSuite {
     // And the edited language really parses with the new rule.
     val parsed = languageFromDef(d).parse("6 % 4").get
     assertEquals(parsed.data, NodeData.ExternalNodeRef(
-      kindRefs(withKindRefs(exprDef))("add")))
-    // The construct committed by node ref to the schema entry.
-    val addId = kindRefs(withKindRefs(exprDef))("add").nodeId
+      termRefs(withTermRefs(exprDef))("add")))
+    // The construct committed by node ref to the vocabulary entry.
+    val addId = termRefs(withTermRefs(exprDef))("add").nodeId
     assert(updated.subtreeIds(ruleId).exists(k =>
       updated.getNode(k).exists(
         _.data == NodeData.InternalNodeRef(addId))))
@@ -229,28 +229,28 @@ class LangDefDocSuite extends FunSuite {
   }
 
   test("renaming a construct's definition renames its uses, decoding unaffected") {
-    // Rename the meta `kind` entry in lang: language. Def docs use the
+    // Rename the meta `term` entry in lang: language. Def docs use the
     // entry by id, so decoding ignores the rename and the projected
     // name of every use follows it.
-    val kindEntry = metaRef("kind").get.nodeId
+    val termEntry = metaRef("term").get.nodeId
     val metaDoc = DocLanguage.langDoc
-    val nameLeaf = metaDoc.childrenOf(kindEntry).head
+    val nameLeaf = metaDoc.childrenOf(termEntry).head
     val renamed = updateNodeData(nameLeaf, s("construct"), metaDoc).toOption.get
     val store = Store.empty.put(langDefTypeRef.documentUrl, renamed)._1
     val doc = langDefDoc(exprDef)
-    val kindUse = doc.nodes.indices.find(id =>
-      !isImportEntry(doc, id) && externalRefOf(doc, id).contains(metaRef("kind").get)).get
-    assertEquals(refName(store, doc, kindUse), Some("construct"))
+    val termUse = doc.nodes.indices.find(id =>
+      !isImportEntry(doc, id) && externalRefOf(doc, id).contains(metaRef("term").get)).get
+    assertEquals(refName(store, doc, termUse), Some("construct"))
     assertEquals(
-      langDefFromDocument(exprDef.typeRef.documentUrl, doc).schema.map(_.name),
-      exprDef.schema.map(_.name))
+      langDefFromDocument(exprDef.typeRef.documentUrl, doc).vocabulary.map(_.name),
+      exprDef.vocabulary.map(_.name))
   }
 
   test("sheetDef round-trips, including the input language ref") {
     val url = sheetDef.typeRef.documentUrl
     val doc = langDefDoc(sheetDef)
     val back = langDefFromDocument(url, doc)
-    assertEquals(back, withKindRefs(sheetDef))
+    assertEquals(back, withTermRefs(sheetDef))
     // The input grammar really does name the expression language.
     assertEquals(
       back.inputParser,
@@ -262,11 +262,11 @@ class LangDefDocSuite extends FunSuite {
     assertEquals(
       langDefFromDocument("opelan:languages/int-expression",
         ExprLanguage.langDoc),
-      withKindRefs(exprDef))
+      withTermRefs(exprDef))
     assertEquals(
       langDefFromDocument("opelan:languages/sheet",
         SheetLanguage.langDoc),
-      withKindRefs(sheetDef))
+      withTermRefs(sheetDef))
   }
 
   test("encoding is deterministic") {

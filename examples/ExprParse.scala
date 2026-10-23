@@ -42,7 +42,7 @@ private lazy val exprCore: Parser = rule("expr")(precedenceTable(atom, opLevels)
 lazy val exprGrammar: Parser = phrase(exprCore, Set.empty)
 
 // Each operator builds its construct by ref (exprTag), as the
-// interpreted grammar does through DefLanguage.kindTag.
+// interpreted grammar does through DefLanguage.termTag.
 private lazy val opLevels = List(
   Map("*" -> exprTag(Expr.MulTag), "/" -> exprTag(Expr.DivTag)),
   Map("+" -> exprTag(Expr.AddTag), "-" -> exprTag(Expr.SubTag)))

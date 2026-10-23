@@ -80,7 +80,7 @@ class TextSessionSuite extends FunSuite {
     assert(s1.evaluations < fresh.evaluations,
       s"${s1.evaluations} vs ${fresh.evaluations}")
     // and content equals a fresh parse under the bumped version —
-    // kind tags pin @1, not the @0 a plain reuse would have kept
+    // term tags pin @1, not the @0 a plain reuse would have kept
     assertEquals(Some(s1.content),
       languageFromDef(langDefFromDocument(url, doc, 1)).parse(text))
   }

@@ -4,7 +4,7 @@ import opelan.foundation.document._
 import opelan.foundation.means.RuleSet
 
 // A language definition as data — the in-memory form of what a `lang:`
-// document encodes: identity (title/name/description), schema, a
+// document encodes: identity (title/name/description), vocabulary, a
 // compositional grammar, view bindings to named builtins, and an input
 // grammar. A def is interpreted into a Language by DefLanguage and
 // encoded into a document by langDefToDetached; semantics named in it
@@ -15,18 +15,19 @@ case class LanguageDef(
     title: String,
     name: String,
     description: String,
-    schema: List[NodeKind],
+    vocabulary: List[NodeTerm],
     syntax: Option[SyntaxDef],
     views: List[ViewBinding],
     inputParser: Option[InputParserDef])
 
-// A node kind in the language's schema. Descriptive for now — nothing
-// checks arity yet — but the doc encoding carries it. `ref` is the
-// kind's identity: the address of its schema entry in the def document
+// A term the language's documents can hold — one `term(name, shape)`
+// entry in the def's vocabulary. Descriptive for now — nothing checks
+// arity yet — but the doc encoding carries it. `ref` is the term's
+// identity: the address of its entry in the def document
 // (`url@v#node`). Documents use the construct by that ref, so the name
 // is only a label — renaming the entry renames every use. A def written
-// in code has no refs until encoded (see kindRefs).
-case class NodeKind(
+// in code has no refs until encoded (see termRefs).
+case class NodeTerm(
     name: String, shape: NodeShape,
     ref: Option[ExternalNodeReference] = None)
 
@@ -41,7 +42,7 @@ enum NodeShape {
 // of two forms. With `rules` unset, `grammar` is the whole combinator
 // composition. With `rules` set, the means rules compile over `grammar`
 // as the operand atom — the productions rules don't yet express (leaf
-// tokens, the signum, the junk fallback) until `where`-kinds bind
+// tokens, the signum, the junk fallback) until `where`-terms bind
 // placeholders to a lexical rule vocabulary.
 case class SyntaxDef(
     lexicon: String,

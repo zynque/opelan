@@ -12,7 +12,7 @@ import opelan.foundation.means._
 // `use`/`source`/`builtin` operands name their bound placeholder (by
 // name until a link pass points them at the piece node), `reparse`
 // keeps its template pieces, `quote` keeps its desugared subtree, and
-// a construct's data is its schema kind's ref — the same node a
+// a construct's data is its vocabulary term's ref — the same node a
 // document of the defined language would hold. The binding list stays
 // tiers of pattern texts and examples stay input/expected pairs.
 //
@@ -23,21 +23,21 @@ import opelan.foundation.means._
 // structured encoding and lines edited mid-migration still decode.
 private[langdef] def rulesNode(
     set: RuleSet,
-    kindIds: Map[String, Int],
+    termIds: Map[String, Int],
     meta: String => NodeData): DetachedNode[NodeData] =
   n(meta("rules"),
-    (set.rules.map(ruleNode(_, kindIds, Map.empty, meta)) ++
+    (set.rules.map(ruleNode(_, termIds, Map.empty, meta)) ++
       bindingNode(set.tiers, meta) ++
       set.examples.map(e =>
         n(meta("example"), sl(e.input), sl(e.expected))))*)
 
 private[langdef] def ruleNode(
-    r: Rule, kindIds: Map[String, Int], pieceIds: Map[String, Int],
+    r: Rule, termIds: Map[String, Int], pieceIds: Map[String, Int],
     meta: String => NodeData): DetachedNode[NodeData] =
   n(meta("rule"),
     (List(
       patternNode(r.pattern, meta),
-      n(meta("meaning"), termNode(r.meaning, kindIds, pieceIds, meta))) ++
+      n(meta("meaning"), meaningTermNode(r.meaning, termIds, pieceIds, meta))) ++
       (if (r.where.isEmpty) Nil else List(whereNode(r.where, meta))))*)
 
 private def bindingNode(
@@ -50,7 +50,7 @@ private def bindingNode(
 private def whereNode(
     cs: List[Constraint], meta: String => NodeData): DetachedNode[NodeData] =
   n(meta("where"), cs.map(c =>
-    n(meta("constraint"), (c.placeholders.map(sl) :+ sl(c.kind))*))*)
+    n(meta("constraint"), (c.placeholders.map(sl) :+ sl(c.term))*))*)
 
 private def patternNode(
     p: Pattern, meta: String => NodeData): DetachedNode[NodeData] =
@@ -66,8 +66,8 @@ private def pieceNode(
     (if (p.glued) List(DetachedNode.leaf(meta("glued"))) else Nil))*)
 }
 
-private def termNode(
-    m: Meaning, kindIds: Map[String, Int], pieceIds: Map[String, Int],
+private def meaningTermNode(
+    m: Meaning, termIds: Map[String, Int], pieceIds: Map[String, Int],
     meta: String => NodeData): DetachedNode[NodeData] = m.tag match {
   case "use" | "source" | "builtin" =>
     n(meta(m.tag), m.arguments.flatMap(Meaning.nameOf).map(name =>
@@ -80,21 +80,21 @@ private def termNode(
   case "quote" =>
     n(meta("quote"), m.quoted.toList.map(detachedOf)*)
   case tag =>
-    DetachedNode(constructData(m, tag, kindIds),
-      m.arguments.map(termNode(_, kindIds, pieceIds, meta)))
+    DetachedNode(constructData(m, tag, termIds),
+      m.arguments.map(meaningTermNode(_, termIds, pieceIds, meta)))
 }
 
-// A construct meaning's node data: an internal ref to the schema entry
-// when the kind is in this document, its external ref otherwise, and
-// the bare name when the schema doesn't know it — the reader degrades
-// it like the grammar's `op` leaves do.
+// A construct meaning's node data: an internal ref to the vocabulary
+// entry when the term is in this document, its external ref otherwise,
+// and the bare name when the vocabulary doesn't know it — the reader
+// degrades it like the grammar's `op` leaves do.
 private def constructData(
-    m: Meaning, tag: String, kindIds: Map[String, Int]): NodeData =
+    m: Meaning, tag: String, termIds: Map[String, Int]): NodeData =
   m.reference match {
-    case Some(r) if kindIds.values.toSet(r.nodeId) =>
+    case Some(r) if termIds.values.toSet(r.nodeId) =>
       NodeData.InternalNodeRef(r.nodeId)
     case Some(r) => NodeData.ExternalNodeRef(r)
-    case None    => kindIds.get(tag).map(NodeData.InternalNodeRef(_))
+    case None    => termIds.get(tag).map(NodeData.InternalNodeRef(_))
       .getOrElse(NodeData.StringData(tag))
   }
 
