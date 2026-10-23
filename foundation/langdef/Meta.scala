@@ -24,6 +24,13 @@ private[langdef] def metaNameOf(r: ExternalNodeReference): Option[String] =
 def metaRef(name: String): Option[ExternalNodeReference] =
   metaRefIn(metaKindIds, name)
 
+// The meta construct a node applies, by identity — `None` for any node
+// that doesn't import a lang: language schema entry. Public so hosts
+// (the typed-doc commit path) can tell meta content from a document's
+// own constructs.
+def metaConsOf(doc: Document[NodeData], id: Int): Option[String] =
+  externalRefOf(doc, id).flatMap(metaNameOf)
+
 // The identity of `title` — the document-structure construct a standard
 // document's first child carries. Lives in lang: language's schema, so
 // it is imported like every other construct.

@@ -38,34 +38,68 @@ class LangDefDocSuite extends FunSuite {
       _.data == NodeData.InternalNodeRef(mulEntry)))
   }
 
-  test("means rules encode as text lines and decode back") {
+  test("means rules encode as structure and decode back") {
+    // Each `rule` node carries `pattern` + `meaning` sections — the
+    // line's text is a projection, not the storage.
     val doc = langDefDoc(exprDef)
-    val strings = doc.nodes.map(_.data)
-      .collect { case NodeData.StringData(t) => t }
-    assert(strings.contains("a / b means div(a, b)"), strings)
+    val ruleIds = ruleNodeIds(doc)
+    assertEquals(ruleIds.length, exprRules.rules.length)
+    ruleIds.foreach { id =>
+      val parts = doc.childrenOf(id).flatMap(metaConsOf(doc, _))
+      assert(parts.contains("pattern") && parts.contains("meaning"),
+        parts.mkString(","))
+    }
     assertEquals(
       langDefFromDocument(exprDef.typeRef.documentUrl, doc)
         .syntax.get.rules,
-      Some(exprRules))
+      withKindRefs(exprDef).syntax.get.rules)
   }
 
-  test("the def view projects rule lines as inputs bound to their text leaves") {
+  test("rule meanings reference their schema entries by node identity") {
+    // `a / b means div(a, b)` decodes to a construct whose reference
+    // is the `div` kind entry's node — the by-reference encoding.
+    val doc = langDefDoc(exprDef)
+    val d = langDefFromDocument(exprDef.typeRef.documentUrl, doc)
+    val div = d.syntax.get.rules.get.rules
+      .find(_.meaning.tag == "div").get.meaning
+    assertEquals(div.reference,
+      Some(kindRefs(withKindRefs(exprDef))("div")))
+    assertEquals(div.arguments.map(_.tag), List("use", "use"))
+  }
+
+  test("renaming a kind entry renames the meanings that use it") {
+    // The meaning's data is the entry's ref, never the name — so the
+    // decoded tag follows a rename (same healing as document uses).
+    val doc = langDefDoc(exprDef)
+    val divId = kindRefs(withKindRefs(exprDef))("div").nodeId
+    val renamed = updateNodeData(
+      doc.childrenOf(divId).head, s("quotient"), doc).toOption.get
+    val d = langDefFromDocument(exprDef.typeRef.documentUrl, renamed)
+    assert(d.syntax.get.rules.get.rules
+      .exists(_.meaning.tag == "quotient"))
+  }
+
+  test("the def view projects rule lines as inputs bound to the rule nodes") {
     val doc = langDefDoc(exprDef)
     val bound = inputSourceIds(defView(doc, contentId(doc).get)).toSet
-    // Rules, binding patterns, and example fields are each editable.
-    Set("a / b means div(a, b)", "a * b", "1 + 2 * 3", "1 + (2 * 3)")
+    // A rule's input binds to the rule node itself — a commit
+    // rewrites it as pattern + meaning nodes; binding patterns and
+    // example fields still bind to their text leaves.
+    ruleNodeIds(doc).foreach(id =>
+      assert(bound.contains(id), s"no input bound to rule node $id"))
+    Set("a * b", "1 + 2 * 3", "1 + (2 * 3)")
       .foreach(text => assert(
         bound.contains(stringLeafId(doc, text)),
         s"no input bound to leaf \"$text\""))
   }
 
-  test("a rule line commits through the doc language's input parser") {
+  test("a rule line commits as structured nodes through commitMetaInput") {
     val url = exprDef.typeRef.documentUrl
     val doc = langDefDoc(exprDef)
-    val line = stringLeafId(doc, "a / b means div(a, b)")
-    val (content, _) = DocLanguage
-      .commitInput(line, "a % b means add(a, b)", InputSessions()).get
-    val updated = commitContent(line, content, doc).toOption.get
+    val ruleId = ruleNodeIds(doc)(2) // a / b means div(a, b)
+    val content = commitMetaInput(doc, url, ruleId,
+      "a % b means add(a, b)").get
+    val updated = commitContent(ruleId, content, doc).toOption.get
     val d = langDefFromDocument(url, updated)
     assert(d.syntax.get.rules.get.rules.map(r => printRule(r))
       .contains("a % b means add(a, b)"))
@@ -73,15 +107,20 @@ class LangDefDocSuite extends FunSuite {
     val parsed = languageFromDef(d).parse("6 % 4").get
     assertEquals(parsed.data, NodeData.ExternalNodeRef(
       kindRefs(withKindRefs(exprDef))("add")))
+    // The construct committed by node ref to the schema entry.
+    val addId = kindRefs(withKindRefs(exprDef))("add").nodeId
+    assert(updated.subtreeIds(ruleId).exists(k =>
+      updated.getNode(k).exists(
+        _.data == NodeData.InternalNodeRef(addId))))
   }
 
   test("a malformed rule line commit lands as a hole rule") {
     val url = exprDef.typeRef.documentUrl
     val doc = langDefDoc(exprDef)
-    val line = stringLeafId(doc, "a - b means sub(a, b)")
-    val (content, _) =
-      DocLanguage.commitInput(line, "means only", InputSessions()).get
-    val updated = commitContent(line, content, doc).toOption.get
+    val ruleId = ruleNodeIds(doc).last // a - b means sub(a, b)
+    val content =
+      commitMetaInput(doc, url, ruleId, "means only").get
+    val updated = commitContent(ruleId, content, doc).toOption.get
     val d = langDefFromDocument(url, updated)
     assert(d.syntax.get.rules.get.rules.exists(_.pattern.pieces.isEmpty))
     assert(languageFromDef(d).parse("1 + 2").isDefined)
@@ -133,17 +172,33 @@ class LangDefDocSuite extends FunSuite {
     doc.nodes.indices.find(id => doc.getNode(id)
       .exists(_.data == NodeData.StringData(text))).get
 
-  test("a rule line that doesn't parse decodes as a hole rule") {
-    // Never Broken for rules too: garbled text becomes a rule that
-    // never applies, and the rest of the set still compiles.
+  private def ruleNodeIds(doc: Document[NodeData]): List[Int] =
+    doc.nodes.indices.filter(id =>
+      !isImportEntry(doc, id) &&
+        metaConsOf(doc, id).contains("rule")).toList
+
+  test("a rule node missing its pattern decodes as a hole rule") {
+    // Never Broken for rules too: a malformed rule becomes a rule
+    // that never applies, and the rest of the set still compiles.
     val doc = langDefDoc(exprDef)
-    val ruleText = doc.nodes.indices.find(id =>
-      doc.getNode(id).exists(
-        _.data == NodeData.StringData("a / b means div(a, b)"))).get
-    val broken = updateNodeData(ruleText, s("not a rule"), doc).toOption.get
+    val ruleId = ruleNodeIds(doc)(2) // a / b means div(a, b)
+    val broken = updateNodeChildIds(
+      ruleId, doc.childrenOf(ruleId).tail, doc).toOption.get
     val d = langDefFromDocument(exprDef.typeRef.documentUrl, broken)
     assert(d.syntax.get.rules.get.rules.exists(_.pattern.pieces.isEmpty))
     assert(languageFromDef(d).parse("1 + 2").isDefined)
+  }
+
+  test("a text-form rule still decodes — the transitional encoding") {
+    // A `rule` node whose first child is a string reads through
+    // readRuleOrHole, as docs written before the structured form did.
+    val doc = langDefDoc(exprDef)
+    val ruleId = ruleNodeIds(doc)(2)
+    val texty = commitContent(ruleId,
+      n(meta("rule"), sl("a / b means div(a, b)")), doc).toOption.get
+    val d = langDefFromDocument(exprDef.typeRef.documentUrl, texty)
+    assert(d.syntax.get.rules.get.rules.map(r => printRule(r))
+      .contains("a / b means div(a, b)"))
   }
 
   test("renaming a construct's definition renames its uses, decoding unaffected") {

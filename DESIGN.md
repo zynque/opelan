@@ -672,12 +672,14 @@ relative form that form needs:
   gesture, not the dependency's save.
 
 **Rules as documents.** A `lang:` document stores each rule as a
-`means(pattern, meaning)` node. Like every construct use, a meaning names
-its constructor by reference: `add(a, b)` is a node whose data refers to
-the `add` kind, and `a` is an internal ref to the pattern's placeholder
-node, so a rule survives renames on either side. Rules compile to
-`GrammarDef`, which remains the implementation layer the interpreter
-runs. The `means` notation is the text surface of the
+`rule(pattern, meaning, where)` node — pieces as `placeholder`/`literal`
+nodes (`glued` marking unspaced adjacency), the meaning as its term
+subtree. Like every construct use, a meaning names its constructor by
+reference: `add(a, b)` is a node whose data refers to the `add` kind
+entry, and `a` spells `use(a)` — an operand ref to the pattern's
+placeholder node — so a rule survives renames on either side. Rules
+compile to `GrammarDef`, which remains the implementation layer the
+interpreter runs. The `means` notation is the text surface of the
 language-definition language, eventually described by its own rules.
 
 The step-by-step plan, with how each step is verified, is in `STATUS.md`

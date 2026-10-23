@@ -1,6 +1,7 @@
 package opelan.foundation.langdef
 
 import opelan.foundation.document._
+import opelan.foundation.means.Meaning
 
 // The recovering read of a `lang:` document — the inverse of
 // DefDocEncode. Constructs are recognized by identity (which
@@ -19,7 +20,7 @@ def langDefFromDocument(
   // or damaged one may be a bare outline — read either.
   val root = if (isTyped(doc)) contentId(doc).getOrElse(doc.rootId)
     else doc.rootId
-  val r = new DefDocReader(doc, root)
+  val r = new DefDocReader(doc, root, url, version)
   val title = Store.labelOf(doc).getOrElse(url)
 
   LanguageDef(
@@ -50,12 +51,27 @@ def langDefFromDocument(
     inputParser = r.section("inputs").flatMap(r.inputParserFrom))
 }
 
-// A def's kinds with their identities: a decoded def has them; a def
-// written in code gets the ones its encoding assigns.
-def withKindRefs(d: LanguageDef): LanguageDef =
-  if (d.schema.forall(_.ref.isDefined)) d
-  else d.copy(schema =
-    langDefFromDocument(d.typeRef.documentUrl, langDefDoc(d)).schema)
+// A def's kinds with their identities — and its rules' construct
+// meanings pointed at them: a decoded def has both (a meaning node's
+// data is its kind entry's ref); a def written in code gets the ones
+// its encoding assigns.
+def withKindRefs(d: LanguageDef): LanguageDef = {
+  val schema =
+    if (d.schema.forall(_.ref.isDefined)) d.schema
+    else langDefFromDocument(d.typeRef.documentUrl, langDefDoc(d)).schema
+  val ids = schema.flatMap(k => k.ref.map(k.name -> _.nodeId)).toMap
+  val url = d.typeRef.documentUrl
+  def refify(m: Meaning): Meaning =
+    if (!Meaning.isConstruct(m)) m
+    else m.copy(
+      reference = ids.get(m.tag).map(ExternalNodeReference(url, 0, _))
+        .orElse(m.reference),
+      arguments = m.arguments.map(refify))
+  d.copy(
+    schema = schema,
+    syntax = d.syntax.map(s => s.copy(rules = s.rules.map(set =>
+      set.copy(rules =
+        set.rules.map(r => r.copy(meaning = refify(r.meaning))))))))}
 
 // Kind name → the construct's identity, for code that builds or reads
 // documents in a defined language.

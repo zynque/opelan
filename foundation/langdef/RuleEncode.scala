@@ -2,24 +2,105 @@ package opelan.foundation.langdef
 
 import opelan.foundation.document._
 import opelan.foundation.document.Detached._
+import opelan.foundation.grammar.PTree
 import opelan.foundation.means._
 
-// A rule set as document nodes — the transitional encoding: each rule
-// as its text, the binding list as tiers of pattern texts, worked
-// examples as input/expected pairs. The text form is what a user edits
-// in place; decode reads it back through readRuleOrHole, so a line that
-// doesn't parse lands as a hole rule rather than breaking the def.
-// The by-reference form — pattern pieces and constructors as nodes
-// linked to schema entries — is Phase C's structured encoding.
-private[langdef] def rulesNode(set: RuleSet): DetachedNode[NodeData] =
-  n(pending("rules"),
-    (set.rules.map(r => n(pending("rule"), sl(printRule(r)))) ++
-      bindingNode(set.tiers) ++
+// A rule set as document nodes (DESIGN §4, *Everything by reference*):
+// each `rule` holds `pattern` + `meaning` (+ `where`) sections; pattern
+// pieces are `placeholder`/`literal` nodes with a `glued` marker when
+// the source wrote them unspaced; the meaning is the term subtree —
+// `use`/`source`/`builtin` operands name their bound placeholder (by
+// name until a link pass points them at the piece node), `reparse`
+// keeps its template pieces, `quote` keeps its desugared subtree, and
+// a construct's data is its schema kind's ref — the same node a
+// document of the defined language would hold. The binding list stays
+// tiers of pattern texts and examples stay input/expected pairs.
+//
+// `meta` supplies meta-construct data: `pending` inside a def-doc
+// build, `externalMeta` in detached content (a committed input has no
+// resolvePending pass). The reader also accepts the older text form —
+// a `rule` whose first child is a string — so docs written before the
+// structured encoding and lines edited mid-migration still decode.
+private[langdef] def rulesNode(
+    set: RuleSet,
+    kindIds: Map[String, Int],
+    meta: String => NodeData): DetachedNode[NodeData] =
+  n(meta("rules"),
+    (set.rules.map(ruleNode(_, kindIds, meta)) ++
+      bindingNode(set.tiers, meta) ++
       set.examples.map(e =>
-        n(pending("example"), sl(e.input), sl(e.expected))))*)
+        n(meta("example"), sl(e.input), sl(e.expected))))*)
 
-private def bindingNode(tiers: List[Tier]): List[DetachedNode[NodeData]] =
+private[langdef] def ruleNode(
+    r: Rule, kindIds: Map[String, Int],
+    meta: String => NodeData): DetachedNode[NodeData] =
+  n(meta("rule"),
+    (List(
+      patternNode(r.pattern, meta),
+      n(meta("meaning"), termNode(r.meaning, kindIds, meta))) ++
+      (if (r.where.isEmpty) Nil else List(whereNode(r.where, meta))))*)
+
+private def bindingNode(
+    tiers: List[Tier], meta: String => NodeData): List[DetachedNode[NodeData]] =
   if (tiers.isEmpty) Nil
-  else List(n(pending("binding"),
-    tiers.map(t => n(pending("tier"),
+  else List(n(meta("binding"),
+    tiers.map(t => n(meta("tier"),
       t.patterns.map(p => sl(printPattern(p)))*))*))
+
+private def whereNode(
+    cs: List[Constraint], meta: String => NodeData): DetachedNode[NodeData] =
+  n(meta("where"), cs.map(c =>
+    n(meta("constraint"), (c.placeholders.map(sl) :+ sl(c.kind))*))*)
+
+private def patternNode(
+    p: Pattern, meta: String => NodeData): DetachedNode[NodeData] =
+  n(meta("pattern"), p.pieces.map(pieceNode(_, meta))*)
+
+private def pieceNode(
+    p: Piece, meta: String => NodeData): DetachedNode[NodeData] = {
+  val (tag, text) = p match {
+    case Piece.Placeholder(name, _) => ("placeholder", name)
+    case Piece.Literal(literal, _)  => ("literal", literal)
+  }
+  n(meta(tag), (sl(text) +:
+    (if (p.glued) List(DetachedNode.leaf(meta("glued"))) else Nil))*)
+}
+
+private def termNode(
+    m: Meaning, kindIds: Map[String, Int],
+    meta: String => NodeData): DetachedNode[NodeData] = m.tag match {
+  case "use" | "source" | "builtin" =>
+    n(meta(m.tag), m.arguments.flatMap(Meaning.nameOf).map(sl)*)
+  case "reparse" =>
+    n(meta("reparse"),
+      m.phrase.toList.flatMap(_.pieces.map(pieceNode(_, meta)))*)
+  case "quote" =>
+    n(meta("quote"), m.quoted.toList.map(detachedOf)*)
+  case tag =>
+    DetachedNode(constructData(m, tag, kindIds),
+      m.arguments.map(termNode(_, kindIds, meta)))
+}
+
+// A construct meaning's node data: an internal ref to the schema entry
+// when the kind is in this document, its external ref otherwise, and
+// the bare name when the schema doesn't know it — the reader degrades
+// it like the grammar's `op` leaves do.
+private def constructData(
+    m: Meaning, tag: String, kindIds: Map[String, Int]): NodeData =
+  m.reference match {
+    case Some(r) if kindIds.values.toSet(r.nodeId) =>
+      NodeData.InternalNodeRef(r.nodeId)
+    case Some(r) => NodeData.ExternalNodeRef(r)
+    case None    => kindIds.get(tag).map(NodeData.InternalNodeRef(_))
+      .getOrElse(NodeData.StringData(tag))
+  }
+
+private def detachedOf(t: PTree): DetachedNode[NodeData] =
+  DetachedNode(t.data, t.kids.map(detachedOf))
+
+// Meta-construct data for detached rule content — a real import ref,
+// not a pending marker, so a subtree produced outside a def-doc build
+// (an input commit) still names its constructs.
+private[langdef] def externalMeta(name: String): NodeData =
+  metaRef(name).map(NodeData.ExternalNodeRef(_))
+    .getOrElse(NodeData.GapData(name))

@@ -42,7 +42,7 @@ private[langdef] def encodeDef(
   val doc2 = add(doc1, cid, List(
     d.syntax.map(s => n(pending("syntax"),
       List(sl(s.lexicon), grammarNode(s.grammar, kindIds)) ++
-        s.rules.toList.map(rulesNode)*)),
+        s.rules.toList.map(rulesNode(_, kindIds, pending))*)),
     Some(n(pending("views"), d.views.map(viewNode)*)),
     d.inputParser.map(cp => n(pending("inputs"), inputsNode(cp)))).flatten*)._1
   val metaIds =

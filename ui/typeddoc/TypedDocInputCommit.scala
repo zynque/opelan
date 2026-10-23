@@ -2,6 +2,7 @@ package opelan.ui.typeddoc
 
 import opelan.examples.languageForDoc
 import opelan.foundation.document._
+import opelan.foundation.langdef.commitMetaInput
 import opelan.foundation.language.docText
 import opelan.ui.editor.DocPush
 import opelan.ui.fp.Update
@@ -18,8 +19,10 @@ import TypedDocOutput._
 private[typeddoc] def commitInputText(
     m: TypedDocModel, id: Int,
     text: String): Update[TypedDocModel, TypedDocOutput, TypedDocInput] =
-  languageForDoc(m.doc, m.store)
-    .flatMap(_.commitInput(id, text, m.inputSessions)) match {
+  (commitMetaInput(m.doc, m.docUrl.getOrElse(""), id, text)
+      .map((_, m.inputSessions))
+    .orElse(languageForDoc(m.doc, m.store)
+      .flatMap(_.commitInput(id, text, m.inputSessions)))) match {
     case Some((content, _)) if unchangedInput(m.doc, id, content) =>
       Update(m)
     case Some((content, sessions)) =>

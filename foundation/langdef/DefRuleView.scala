@@ -5,10 +5,10 @@ import opelan.foundation.means.{printPattern, printRule, RuleSet}
 import opelan.foundation.view.ViewTree._
 
 // The rules section of the "def" view, rendered as projected inputs:
-// each rule line, binding pattern, and example field is an `input`
-// element bound to its text leaf's node id. A commit rewrites the leaf
-// in place (the doc language's "text" input parser) and the next decode
-// re-reads it — a malformed line reads as a hole rule, never an error.
+// rule lines bind to their `rule` node — a commit rewrites it as
+// pattern + meaning nodes through commitMetaInput — while binding
+// patterns and example fields bind to their text leaves. A malformed
+// line reads as a hole rule, never an error.
 // Falls back to None when the document has no `rules` node (a def
 // decoded but never written as one), so callers can print instead.
 // `check` runs a worked example — input text, expected text — and
@@ -22,10 +22,13 @@ private[langdef] def docRuleLines(
     rs  <- doc.childrenOf(syn).find(docCons(doc, _).contains("rules"))
   } yield doc.childrenOf(rs).flatMap(ruleLine(doc, _, check))
 
-// One `rules` entry as a line: a `rule` edits its text leaf; a
-// `binding` shows its tiers as comma-separated pattern inputs; an
-// `example` is input and expected side by side, checked live — a
-// mismatch trails a hole saying what the input read as.
+// One `rules` entry as a line: a `rule` edits its text — a text-form
+// rule shows its leaf, a structured one its canonical spelling — and
+// the input binds to the rule node itself, so a commit rewrites it as
+// pattern + meaning nodes (commitMetaInput). A `binding` shows its
+// tiers as comma-separated pattern inputs; an `example` is input and
+// expected side by side, checked live — a mismatch trails a hole
+// saying what the input read as.
 private def ruleLine(
     doc: Document[NodeData], id: Int,
     check: (String, String) => Option[String])
@@ -33,7 +36,12 @@ private def ruleLine(
   docCons(doc, id) match {
     case Some("rule") =>
       List(doc.childrenOf(id).headOption match {
-        case Some(t) => input(t, txt(leafText(doc, t)))
+        case Some(t)
+            if doc.getNode(t).exists(
+              _.data.isInstanceOf[NodeData.StringData]) =>
+          input(id, txt(leafText(doc, t)))
+        case Some(_) =>
+          input(id, txt(printRule(ruleFromDoc(doc, "", 0, id))))
         case None    => hole("rule")
       })
     case Some("binding") =>

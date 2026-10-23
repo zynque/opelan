@@ -1,6 +1,8 @@
 package opelan.foundation.langdef
 
-import opelan.foundation.document.NodeData
+import opelan.foundation.document.{
+  ExternalNodeReference, NodeData, sameNode}
+import opelan.foundation.grammar.PTree
 import opelan.foundation.means._
 
 // The named rules of a grammar, by name. When a name is defined twice
@@ -44,7 +46,7 @@ def syntaxChanges(before: SyntaxDef, after: SyntaxDef): Set[String] =
   else (before.rules, after.rules) match {
     case (None, None) => changedRules(before.grammar, after.grammar)
     case (Some(b), Some(a)) if before.grammar == after.grammar =>
-      if (b.rules == a.rules && b.tiers == a.tiers) Set.empty
+      if (b.tiers == a.tiers && rulesSame(b.rules, a.rules)) Set.empty
       else Set(after.lexicon) ++ changedSequenceNames(b, a)
     case _ =>
       Set(after.lexicon) ++ namedRules(after.grammar).keySet ++
@@ -57,8 +59,53 @@ private def changedSequenceNames(b: RuleSet, a: RuleSet): Set[String] = {
   def byKey(s: RuleSet) = s.rules.filter(r => isSequencePattern(r.pattern))
     .map(r => r.pattern.key -> r).toMap
   val (bm, am) = (byKey(b), byKey(a))
-  (bm.keySet ++ am.keySet).filter(k => bm.get(k) != am.get(k))
-    .map(k => s"means:${k.mkString(" ")}")
+  (bm.keySet ++ am.keySet).filter(k =>
+    (bm.get(k), am.get(k)) match {
+      case (Some(x), Some(y)) => !sameRule(x, y)
+      case (x, y)             => x != y
+    }).map(k => s"means:${k.mkString(" ")}")
+}
+
+// Rule comparison by identity, not by pin: a version bump re-pins a
+// meaning's references to a newer reading of the same nodes — the
+// rules it compiles to are unchanged, so sessions carry over.
+private def rulesSame(a: List[Rule], b: List[Rule]): Boolean =
+  a.length == b.length && a.zip(b).forall(sameRule.tupled)
+
+private def sameRule(a: Rule, b: Rule): Boolean =
+  a.pattern == b.pattern && a.where == b.where &&
+    sameMeaning(a.meaning, b.meaning)
+
+private def sameMeaning(a: Meaning, b: Meaning): Boolean =
+  a.tag == b.tag && a.phrase == b.phrase && sameRef(a.reference, b.reference) &&
+    a.arguments.length == b.arguments.length &&
+    a.arguments.zip(b.arguments).forall(sameMeaning.tupled) &&
+    sameTree(a.quoted, b.quoted)
+
+private def sameRef(
+    a: Option[ExternalNodeReference],
+    b: Option[ExternalNodeReference]): Boolean =
+  (a, b) match {
+    case (Some(r), Some(s)) => sameNode(r, s)
+    case (None, None)       => true
+    case _                  => false
+  }
+
+private def sameTree(a: Option[PTree], b: Option[PTree]): Boolean =
+  (a, b) match {
+    case (Some(x), Some(y)) =>
+      x.text == y.text && x.from == y.from && x.length == y.length &&
+        sameData(x.data, y.data) && x.kids.length == y.kids.length &&
+        x.kids.zip(y.kids).forall { case (p, q) =>
+          sameTree(Some(p), Some(q)) }
+    case (None, None) => true
+    case _            => false
+  }
+
+private def sameData(a: NodeData, b: NodeData): Boolean = (a, b) match {
+  case (NodeData.ExternalNodeRef(r), NodeData.ExternalNodeRef(s)) =>
+    sameNode(r, s)
+  case _ => a == b
 }
 
 // Every memo name a rule set compiles under — the conservative answer

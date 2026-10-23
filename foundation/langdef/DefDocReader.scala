@@ -10,7 +10,9 @@ import opelan.foundation.means._
 // `grammarFrom` decodes combinator subtrees case by case; its `seen`
 // ancestor set guards the walk the way Document.preorder's visited set
 // does — a malformed document can list a node as its own descendant.
-private class DefDocReader(doc: Document[NodeData], root: Int) {
+private class DefDocReader(
+    doc: Document[NodeData], root: Int,
+    url: String = "", version: Int = 0) {
 
   def data(id: Int): Option[NodeData] = doc.getNode(id).map(_.data)
   def kids(id: Int): List[Int] = doc.childrenOf(id)
@@ -80,12 +82,11 @@ private class DefDocReader(doc: Document[NodeData], root: Int) {
       childStr(opId, 0).map(_ -> refName(kids(opId).lift(1)))
     }.toMap
 
-  // A `rules` section: each `rule` node's text through the recovering
-  // rule reader (a malformed line becomes a hole rule), `binding` tiers
-  // as pattern texts, `example` pairs.
+  // A `rules` section: each `rule` node through the recovering reader
+  // (RuleDocDecode — a malformed rule becomes a hole rule), `binding`
+  // tiers as pattern texts, `example` pairs.
   def ruleSetFrom(id: Int): RuleSet = RuleSet(
-    rules = entries(id, "rule").map(k =>
-      childStr(k, 0).map(readRuleOrHole).getOrElse(holeRule)),
+    rules = entries(id, "rule").map(ruleFromDoc(doc, url, version, _)),
     tiers = entries(id, "binding").flatMap(b =>
       entries(b, "tier").map(t =>
         Tier(kids(t).flatMap(str).map(readPattern)))),

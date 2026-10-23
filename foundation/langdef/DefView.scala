@@ -38,7 +38,7 @@ def defView(doc: Document[NodeData], contentRootId: Int,
 // The meta construct a node applies, by identity — the reader's `cons`.
 private[langdef] def docCons(
     doc: Document[NodeData], id: Int): Option[String] =
-  externalRefOf(doc, id).flatMap(metaNameOf)
+  metaConsOf(doc, id)
 
 private[langdef] def leafText(doc: Document[NodeData], id: Int): String =
   doc.getNode(id).map(_.data).collect { case NodeData.StringData(s) => s }

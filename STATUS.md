@@ -62,12 +62,15 @@ Each item is described in the cited `DESIGN.md` section.
   grammar on every input in the battery, spans included. Rules are
   now live in the definition path: `exprDef` carries `exprRules` over
   a combinator operand atom (`SyntaxDef.rules`), `DefLanguage`
-  compiles them, `lang:` docs encode rules as text lines (the
-  transitional form — by-reference pieces are Phase C), and the def
-  view projects each rule, binding pattern, and example field as an
-  `input` bound to its text leaf — editing a rule line commits through
-  the doc language's "text" input parser and the next decode re-reads
-  it. Language-change
+  compiles them, `lang:` docs store rules as `means(pattern,
+  meaning)` nodes — `placeholder`/`literal` pieces (`glued` markers
+  preserve spacing), meaning terms as subtrees, constructs by
+  internal ref to the def's schema entries — and the def view
+  projects each rule line as an `input` bound to the `rule` node,
+  so a commit rewrites it as structured nodes (`commitMetaInput`),
+  constructs bound to the doc's own kinds. The decoder also reads
+  the older text form, so docs written before the structured
+  encoding and mid-edit states still decode. Language-change
   diffing names the top rule plus changed `means:` sequence names,
   so adding a rule heals holes through the same session carry.
   Schema and checks derive too: `schemaFrom` turns construct
@@ -252,34 +255,44 @@ Each item is described in the cited `DESIGN.md` section.
 
    *Phase C — rules as documents:*
 
-   6. **Rule encoding.** *Transitional form landed:* `lang:` documents
-      hold each rule as its text plus `binding`/`example` entries, and
-      the recovering decoder turns a malformed line into a hole rule
-      that never applies, and the meaning model is already the target
-      form: one term node (`tag`/`arguments`/`reference`/`phrase`/
-      `quoted`) over `use`/`source`/`reparse`/`builtin`/`quote`
-      builtins, so a meaning node encodes as a plain subtree. The
-      decided desugar is live (DESIGN §4, *Phrases desugar at
-      entry*): `desugarRuleSet`/`desugarPhrase`
+   6. **Rule encoding.** *Structured form landed:* `lang:` documents
+      hold each rule as `rule(pattern, meaning, where)` nodes —
+      pieces as `placeholder`/`literal` (a `glued` marker preserves
+      spacing), meanings as term subtrees, constructs by internal
+      ref to the def's schema entries so a renamed kind entry
+      renames its meaning uses — and the decoder reads that form
+      plus the older text form (a `rule` whose first child is a
+      string goes through `readRuleOrHole`), so malformed lines and
+      mid-migration docs still land as hole rules, never errors.
+      Rule-line commits produce the same structure
+      (`commitMetaInput`), constructs bound to the doc's own kinds.
+      The meaning model is the target form: one term node
+      (`tag`/`arguments`/`reference`/`phrase`/`quoted`) over
+      `use`/`source`/`reparse`/`builtin`/`quote` builtins, so a
+      meaning node encodes as a plain subtree. The decided desugar
+      is live (DESIGN §4, *Phrases desugar at entry*):
+      `desugarRuleSet`/`desugarPhrase`
       (`foundation/means/Desugar.scala`) parse a `reparse` template
       through the whole set — placeholders lexing as atoms — and
       translate the tree to `use`/construct/`quote` terms, so bound
       placeholders splice at tree level keeping node identity;
       `DefLanguage` and `exprRuleGrammar` interpret the desugared
-      set. Remaining: `means(pattern, meaning)` nodes — placeholders
-      and constructors by reference — so a renamed kind or
-      placeholder heals every use; meaning *inputs* desugaring per
-      keystroke with hole-retry healing (today a `lang:` doc's rule
-      lines still hold text); then `reparse`/`phrase` leave the
+      set. Remaining: `use` operands as piece-node refs rather than
+      names (a link pass, like `linkUses` for grammar nodes), so a
+      renamed placeholder heals its uses; meaning *inputs* parsing
+      per keystroke through the language-under-definition with
+      hole-retry healing (a rule line still commits its whole text
+      through `readRuleOrHole`); then `reparse`/`phrase` leave the
       model.
    7. **`means` text surface.** The `def` view and text surface for `lang:`
       documents read and write the `means` notation (the existing
       printer and `RuleGrammar` reader), so editing a language reads like
       the DESIGN.md examples rather than an outline of combinators.
-      *Editing landed:* the `def` view projects each `rule`, `tier`
-      pattern, and `example` field as a projected `input` bound to its
-      text leaf — commits go through `commitInput` and re-decode, so a
-      rule edited in the view heals dependent documents through the same
+      *Editing landed:* the `def` view projects each `rule` line as an
+      `input` bound to the `rule` node (committed as structured nodes
+      via `commitMetaInput`) and each `tier` pattern and `example`
+      field bound to its text leaf — commits re-decode, so a rule
+      edited in the view heals dependent documents through the same
       session carry. Remaining: the printer's role spans (`means`
       emphasized, placeholders styled), a detail-level toggle switching
       `means` to `=>` and hiding `where`, and the `lang:` text surface

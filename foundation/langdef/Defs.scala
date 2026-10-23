@@ -60,10 +60,21 @@ private[langdef] val metaKinds: List[NodeKind] = List(
   NodeKind("ref", Fixed(1)),
   NodeKind("setting", Fixed(2)),  // view setting: key + value
   NodeKind("rules", Any),         // a def's means rules + binding + examples
-  NodeKind("rule", Fixed(1)),     // one means rule, as its text
+  NodeKind("rule", Any),          // one means rule — its text (transitional)
+                                  // or pattern + meaning (+ where)
   NodeKind("binding", Any),       // the binding list: tiers, tightest first
   NodeKind("tier", Any),          // one binding level: pattern texts
-  NodeKind("example", Fixed(2)))  // worked example: input + expected
+  NodeKind("example", Fixed(2)),  // worked example: input + expected
+  NodeKind("pattern", Any),       // a rule's pattern: piece nodes
+  NodeKind("meaning", Any),       // a rule's meaning: one term subtree
+  NodeKind("where", Any),         // a rule's where-constraints
+  NodeKind("constraint", Any),    // placeholder names, kind text last
+  NodeKind("placeholder", Any),   // pattern piece: name leaf (+ glued)
+  NodeKind("literal", Any),       // pattern piece: text leaf (+ glued)
+  NodeKind("glued", Fixed(0)),    // a piece glued to its predecessor
+  NodeKind("quote", Any),         // meaning builtin: a desugared subtree
+  NodeKind("reparse", Any),       // meaning builtin: an undesugared phrase
+  NodeKind("source", Fixed(1)))   // meaning builtin: bound source text
 
 val docLanguageDef = LanguageDef(
   typeRef = langDefTypeRef,
