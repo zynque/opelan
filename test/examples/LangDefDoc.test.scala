@@ -3,7 +3,7 @@ package opelan.examples
 import opelan.foundation.document._
 import opelan.foundation.langdef._
 import opelan.foundation.language.InputSessions
-import opelan.foundation.means.printRule
+import opelan.foundation.means.{Meaning, printRule}
 import opelan.foundation.document.Detached._
 import munit.FunSuite
 
@@ -79,6 +79,24 @@ class LangDefDocSuite extends FunSuite {
       .exists(_.meaning.tag == "quotient"))
   }
 
+  test("renaming a pattern placeholder renames its meaning uses") {
+    // `use` operands point at the piece node, so the name they decode
+    // to follows the placeholder's name leaf.
+    val doc = langDefDoc(exprDef)
+    val url = exprDef.typeRef.documentUrl
+    val div = langDefFromDocument(url, doc)
+      .syntax.get.rules.get.rules.find(_.meaning.tag == "div").get
+    // The operand `a` of div(a, b) carries the `a` piece's node id.
+    val pieceId = div.meaning.arguments.head
+      .arguments.head.reference.get.nodeId
+    val renamed = updateNodeData(
+      doc.childrenOf(pieceId).head, s("x"), doc).toOption.get
+    val useA = langDefFromDocument(url, renamed)
+      .syntax.get.rules.get.rules.find(_.meaning.tag == "div").get
+      .meaning.arguments.head
+    assertEquals(useA.arguments.flatMap(Meaning.nameOf), List("x"))
+  }
+
   test("the def view projects rule lines as inputs bound to the rule nodes") {
     val doc = langDefDoc(exprDef)
     val bound = inputSourceIds(defView(doc, contentId(doc).get)).toSet
@@ -112,6 +130,15 @@ class LangDefDocSuite extends FunSuite {
     assert(updated.subtreeIds(ruleId).exists(k =>
       updated.getNode(k).exists(
         _.data == NodeData.InternalNodeRef(addId))))
+    // And `use` operands point at the pattern's piece nodes — the
+    // `a` placeholder's node kept its id through the commit.
+    val aLeaf = updated.subtreeIds(ruleId).find(k =>
+      updated.getNode(k).exists(
+        _.data == NodeData.StringData("a"))).get
+    val aPieceId = updated.getNode(aLeaf).get.parentId.get
+    assert(updated.subtreeIds(ruleId).exists(k =>
+      updated.getNode(k).exists(
+        _.data == NodeData.InternalNodeRef(aPieceId))))
   }
 
   test("a malformed rule line commit lands as a hole rule") {

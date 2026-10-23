@@ -2,42 +2,16 @@ package opelan.examples
 
 import opelan.foundation.document._
 import opelan.foundation.document.Detached._
-import opelan.foundation.language.Language
-import opelan.foundation.langdef.ViewContext
+import opelan.foundation.langdef._
 
-// The sheet language: a grid of labeled cells whose formula cells are
-// expressions over refs to other cells (the demo's "Budget" app). The
-// document is the app — the "sheet" view computes it, "formulas" shows
-// the machinery.
-object SheetLanguage extends Language {
-
-  val typeRef = ExternalNodeReference("opelan:languages/sheet", 0, 0)
-
-  def name = "Sheet"
-
-  def views = List("sheet", "formulas")
-
-  def render(view: String, doc: Document[NodeData]): Either[String, DetachedNode[NodeData]] =
-    view match {
-      case "sheet"    => content(doc).map(sheetView(doc, _, context(view)))
-      case "formulas" => content(doc).map(formulasView(doc, _, context(view)))
-      case v          => Left(s"$name has no '$v' view")
-    }
-
-  // The same settings the encoded definition carries, so the registry
-  // fallback renders like the stored lang: sheet.
-  private def context(view: String): ViewContext =
-    ViewContext(
-      sheetDef.views.find(_.name == view).map(_.settings).getOrElse(Map.empty),
-      parseInput)
-
-  private def content(doc: Document[NodeData]): Either[String, Int] =
-    contentId(doc).toRight(s"$name: typed document has no content")
-
-  // Cells are editable projections: committed text parses per the
-  // sheet's input grammar (formula, ref, literal, hole, or label).
-  override def parseInput(text: String): Option[DetachedNode[NodeData]] =
-    Some(parseCellText(text))
+// The spreadsheet language — `sheetDef` interpreted live. The object
+// adds only the seeded sample document; rendering, the cell input
+// grammar (the expression language, by pinned ref), and input sessions
+// come from DefLanguage.
+object SheetLanguage extends DefLanguage(
+    sheetDef, sheetImpls,
+    ref => languageForRef(ref, Store.empty),
+    dd => Some(languageFromDef(dd))) {
 
   // The demo's app: a small household budget. Cells are positional;
   // formula refs are InternalNodeRefs to other cells, seeded here with
@@ -46,8 +20,7 @@ object SheetLanguage extends Language {
   // once the cell grammar (lang: expression) can read `/`.
   def sampleDoc: Document[NodeData] = {
     val doc0 = makeTyped(typeRef,
-      er(opelan.foundation.langdef.docTitleRef),
-      er(opelan.foundation.langdef.docImportsRef),
+      er(docTitleRef), er(docImportsRef),
       NodeData.StringData("Household budget"), sheet)
     wireRefs(doc0).toOption.getOrElse(doc0)
   }
@@ -90,11 +63,4 @@ object SheetLanguage extends Language {
       n(sheetTag(RowTag), sl("people"), il(2), sl(""), sl("")),
       n(sheetTag(RowTag), sl("per person"), sl(""), sl(""),
         DetachedNode.leaf(NodeData.GapData("r:4,3 / r:5,1"))))
-
-  // The language document is the encoded definition itself — its
-  // `inputs` section names the expression language by ref, so following
-  // it lands on lang: expression (and DocLanguage resolves it at step
-  // 10).
-  def langDoc: Document[NodeData] =
-    opelan.foundation.langdef.langDefDoc(sheetDef)
 }

@@ -35,12 +35,17 @@ Each item is described in the cited `DESIGN.md` section.
   kind-tag migration, so kept parses re-pin rather than reparse.
 - **Version DAG** (`foundation/version`, §3): LSCA merge base; drives
   editor history (branching undo, history column).
-- **Expression and sheet languages** (`examples/`, §4): the recovering
-  expression parser, `print`/`eval` views, ref resolution with cycle
-  detection; the sheet's `sheet`/`formulas` grids with projected cell
-  editing, holes that heal when the cell grammar can read them, and a
-  `currency` view setting; the seeded "Household budget", staged for the
-  demo with `/` missing from `lang: expression`.
+- **Expression and sheet languages** (`examples/`, §4): both are
+  `DefLanguage` over `exprDef`/`sheetDef` — the means rules *are* the
+  code-resident languages, with the registry objects kept only as the
+  fallback for a store without the lang: doc (the hand-written
+  `ExprParse` grammar stays as the parity oracle plus
+  `parseCellText`'s reader). `print`/`eval` views, ref resolution
+  with cycle detection; the sheet's `sheet`/`formulas` grids with
+  projected cell editing, holes that heal when the cell grammar can
+  read them, and a `currency` view setting; the seeded "Household
+  budget", staged for the demo with `/` missing from
+  `lang: expression`.
 - **View trees** (`foundation/view`, `ui/view`, §4, §6): one recovering
   interpreter, provenance clicks that select the producing node, and
   `input` commits reconciled in place by `commitContent`.
@@ -96,7 +101,7 @@ Each item is described in the cited `DESIGN.md` section.
   version DAG; per-actor undo; local navigation; checkout + edit forks a
   branch draft that peers can rejoin.
 - **Build/test** (§9): `build.bat`/`build.sh`, `test.bat`/`test.sh`;
-  398 munit tests over the pure core, UI update functions, and
+  402 munit tests over the pure core, UI update functions, and
   DocSession convergence under real Automerge in Node. A fresh clone
   needs a `webpack.config.js` (see `README.md`).
 
@@ -121,8 +126,8 @@ Each item is described in the cited `DESIGN.md` section.
 - **Synced remote text doesn't parse incrementally.** It is the
   `Serial` outline, parsed by the outline codec rather than a language
   grammar. Input sessions are pane-local and start fresh after a reload
-  or for an input's first commit; builtin input parsers (the registry
-  `SheetLanguage`'s `parseCellText`) parse whole.
+  or for an input's first commit; builtin input parsers (a def's
+  `inputParser` naming an impls function) parse whole.
 - **Synced history:** remote changes apply as a whole-text reparse;
   text-surface edits made while browsing a version still write to the main
   session (branching covers structural edits); undo stacks are
@@ -245,12 +250,12 @@ Each item is described in the cited `DESIGN.md` section.
 
    *Phase B — the expression language on rules:*
 
-   5. **`exprRules` at parity.** *Mostly done:* `exprDef` carries
-      `exprRules` — `DefLanguage` compiles rule-based syntax next to
-      `GrammarDef` and `lang:` docs hold the rules (item 6), so every
-      existing suite (DefLanguage, incremental sessions, hole retry,
-      sheet inputs) exercises the rules path, and `printWith` matches
-      `Expr.print` on the battery. Remaining: eval as meanings
+   5. **`exprRules` at parity.** *Done as the live language:* `exprDef`
+      carries `exprRules`, and `ExprLanguage`/`SheetLanguage` are
+      `DefLanguage` over their defs — the means rules drive every
+      parse, session, and view in the workbench, with `ExprParse`'s
+      combinator grammar kept only as the test oracle. `printWith`
+      matches `Expr.print` on the battery. Remaining: eval as meanings
       (Phase D) and the print view emitting provenance spans (item 3).
 
    *Phase C — rules as documents:*
@@ -277,10 +282,12 @@ Each item is described in the cited `DESIGN.md` section.
       translate the tree to `use`/construct/`quote` terms, so bound
       placeholders splice at tree level keeping node identity;
       `DefLanguage` and `exprRuleGrammar` interpret the desugared
-      set. Remaining: `use` operands as piece-node refs rather than
-      names (a link pass, like `linkUses` for grammar nodes), so a
-      renamed placeholder heals its uses; meaning *inputs* parsing
-      per keystroke through the language-under-definition with
+      set. `use` operands link by ref: `linkRuleUses`
+      (`foundation/langdef/RuleLink.scala`) points each meaning-use
+      name at its `placeholder` piece node — `InternalNodeRef` after
+      doc encode, resolvable through the same-node relation — so a
+      renamed placeholder heals its uses. Remaining: meaning *inputs*
+      parsing per keystroke through the language-under-definition with
       hole-retry healing (a rule line still commits its whole text
       through `readRuleOrHole`); then `reparse`/`phrase` leave the
       model.
@@ -323,11 +330,15 @@ Each item is described in the cited `DESIGN.md` section.
        overwrites. Convert legacy grammar subtrees to rules on read (or
        first load): the first real *Evolvable* migration, revertible
        because every version is kept.
-   11. **Demote `GrammarDef` to the implementation layer.** Definitions
-       are authored and stored as rules; `GrammarDef` stays as the
-       compilation target `interpret` runs, shown only under show
-       implementation and still writable there as the escape hatch.
-       Remove the combinators rules made redundant in authored
+   11. **Demote `GrammarDef` to the implementation layer.** *Begun:*
+       the example languages no longer hand-write combinator grammars
+       — `ExprLanguage`/`SheetLanguage` interpret `exprDef`/`sheetDef`
+       — so `GrammarDef` only remains as the atom operand rules
+       compile over, the `interpret` target, and the
+       `exprCombinatorDef` fixture covering that path. Remaining:
+       definitions authored and stored as rules only; `GrammarDef`
+       shown only under show implementation as the escape hatch;
+       remove the combinators rules made redundant in authored
        definitions (`Junk`, `Phrase`, `Signum`, stop sets). Update
        DESIGN.md and the demo.
 

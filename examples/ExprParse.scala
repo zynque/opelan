@@ -16,9 +16,10 @@ import Expr._
 //   levels := ["*"->mul, "/"->div] then ["+"->add, "-"->sub]  (construct refs)
 //             (tightest first — the last level binds loosest)
 //
-// The combinator vocabulary is the point: the same grammar is written
-// as data in examples/ExampleDefs.scala — the interpretation must
-// agree.
+// Transitional: ExprLanguage no longer parses through this file — it
+// runs `exprDef`'s means rules via DefLanguage. What remains here is
+// the hand-written oracle the compiled rules are tested against
+// (ExprRulesSuite) and `parseCellText`'s expression reader.
 
 // Spans now come from the grammar package; keep the old name working.
 type ExprSpan = Span

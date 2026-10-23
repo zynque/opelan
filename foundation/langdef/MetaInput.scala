@@ -13,7 +13,7 @@ def commitMetaInput(
     id: Int, text: String): Option[DetachedNode[NodeData]] =
   metaConsOf(doc, id) match {
     case Some("rule") => Some(ruleNode(readRuleOrHole(text),
-      schemaKindIds(doc, docUrl), externalMeta))
+      schemaKindIds(doc, docUrl), pieceIdsFor(doc, id), externalMeta))
     case _ => None
   }
 

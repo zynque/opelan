@@ -70,11 +70,10 @@ trait Language {
   def rememberHoles(doc: Document[NodeData], retry: HoleRetry): HoleRetry =
     retry
 
-  // The document `typeRef` names: a readable description of this
-  // language, seeded into the document store so following a typed
-  // document's type ref lands on a real node. Descriptive, not
-  // authoritative — the registry still resolves the ref to this
-  // implementation — until the definition format arrives (M2) and the
-  // document *becomes* the language.
+  // The document `typeRef` names: the language's own definition,
+  // seeded into the document store so following a typed document's
+  // type ref lands on a real node. A stored lang: doc is authoritative
+  // — store-first resolution interprets it as the language — and this
+  // implementation is the registry fallback for a store without it.
   def langDoc: Document[NodeData]
 }

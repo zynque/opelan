@@ -52,26 +52,46 @@ def langDefFromDocument(
 }
 
 // A def's kinds with their identities — and its rules' construct
-// meanings pointed at them: a decoded def has both (a meaning node's
-// data is its kind entry's ref); a def written in code gets the ones
-// its encoding assigns.
+// meanings pointed at them, its `use` operands pointed at the
+// pattern's piece nodes: a decoded def has all three (the structured
+// encoding writes refs, never names); a def written in code gets the
+// ones its encoding assigns.
 def withKindRefs(d: LanguageDef): LanguageDef = {
+  val url = d.typeRef.documentUrl
+  val doc = langDefDoc(d)
   val schema =
     if (d.schema.forall(_.ref.isDefined)) d.schema
-    else langDefFromDocument(d.typeRef.documentUrl, langDefDoc(d)).schema
+    else langDefFromDocument(url, doc).schema
   val ids = schema.flatMap(k => k.ref.map(k.name -> _.nodeId)).toMap
-  val url = d.typeRef.documentUrl
-  def refify(m: Meaning): Meaning =
-    if (!Meaning.isConstruct(m)) m
+  // The encoding's piece ids, per rule — the `use` operands' link
+  // targets.
+  val ruleIds = contentId(doc).toList.flatMap(cid =>
+    doc.childrenOf(cid).filter(metaConsOf(doc, _).contains("syntax"))
+      .flatMap(s => doc.childrenOf(s)
+        .filter(metaConsOf(doc, _).contains("rules")))
+      .flatMap(rs => doc.childrenOf(rs)
+        .filter(metaConsOf(doc, _).contains("rule"))))
+  def refify(pieces: Map[String, Int])(m: Meaning): Meaning =
+    if (Set("use", "source", "builtin")(m.tag))
+      m.copy(arguments = m.arguments.map(a =>
+        Meaning.nameOf(a).flatMap(pieces.get) match {
+          case Some(t) =>
+            a.copy(reference = Some(ExternalNodeReference(url, 0, t)))
+          case None    => a
+        }))
+    else if (!Meaning.isConstruct(m)) m
     else m.copy(
       reference = ids.get(m.tag).map(ExternalNodeReference(url, 0, _))
         .orElse(m.reference),
-      arguments = m.arguments.map(refify))
+      arguments = m.arguments.map(refify(pieces)))
   d.copy(
     schema = schema,
     syntax = d.syntax.map(s => s.copy(rules = s.rules.map(set =>
-      set.copy(rules =
-        set.rules.map(r => r.copy(meaning = refify(r.meaning))))))))}
+      set.copy(rules = set.rules.zipWithIndex.map { case (r, i) =>
+        r.copy(meaning = refify(ruleIds.lift(i)
+          .map(pieceIdsFor(doc, _)).getOrElse(Map.empty))(r.meaning))
+      })))))
+}
 
 // Kind name → the construct's identity, for code that builds or reads
 // documents in a defined language.

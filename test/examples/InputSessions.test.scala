@@ -2,6 +2,7 @@ package opelan.examples
 
 import scala.util.Random
 import opelan.foundation.document._
+import opelan.foundation.langdef.InputParserDef
 import opelan.foundation.language.{InputSessions, TextSession}
 import munit.FunSuite
 
@@ -55,9 +56,11 @@ class InputSessionsSuite extends FunSuite {
       assertEquals(Some(content), sheet.parseInput(t))
       assertEquals(inputs, InputSessions())
     }
+    val builtin = languageFromDef(sheetDef.copy(
+      inputParser = Some(InputParserDef.Builtin("sheet-cell"))))
     val (content, inputs) =
-      SheetLanguage.commitInput(1, "ref:1 * 2", InputSessions()).get
-    assertEquals(Some(content), SheetLanguage.parseInput("ref:1 * 2"))
+      builtin.commitInput(1, "ref:1 * 2", InputSessions()).get
+    assertEquals(Some(content), builtin.parseInput("ref:1 * 2"))
     assertEquals(inputs, InputSessions())
   }
 

@@ -47,7 +47,8 @@ private[langdef] def encodeDef(
     d.inputParser.map(cp => n(pending("inputs"), inputsNode(cp)))).flatten*)._1
   val metaIds =
     if (d.typeRef.documentUrl == langDefTypeRef.documentUrl) kindIds else metaKindIds
-  val doc3 = resolvePending(linkUses(doc2, cid), name =>
+  val doc3 = resolvePending(
+    linkRuleUses(linkUses(doc2, cid), cid), name =>
     metaRefIn(metaIds, name).map(NodeData.ExternalNodeRef(_))
       .getOrElse(NodeData.GapData(name)))
   (internalizeStandard(doc3), kindIds)

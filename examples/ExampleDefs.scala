@@ -5,16 +5,24 @@ import opelan.foundation.langdef._
 import opelan.foundation.language.Language
 
 // The example language definitions as data — what their `lang:`
-// documents encode. `exprDef`/`sheetDef` are the regression anchors:
-// DefLanguage applied to them must be behaviorally identical to
-// ExprLanguage/SheetLanguage, and `langDefDoc` must round-trip them
-// through `langDefFromDocument`. Each def is paired with the Impls
-// bundle holding the code-side semantics it names.
+// documents encode. `exprDef`/`sheetDef` ARE the languages now:
+// ExprLanguage/SheetLanguage are DefLanguage over these defs, so a
+// stored lang: doc and the registry fallback run the same machinery.
+// `langDefDoc` must round-trip them through `langDefFromDocument`.
+// Each def is paired with the Impls bundle holding the code-side
+// semantics it names.
 import GrammarDef._
 import NodeShape._
 import LeafKind._
 
 import opelan.foundation.means._
+
+// The languages' identity refs — the URLs their `lang:` documents live
+// at. Constants, not `ExprLanguage.typeRef`: the objects interpreting
+// these defs would otherwise be read while the defs initialize.
+val exprTypeRef =
+  ExternalNodeReference("opelan:languages/int-expression", 0, 0)
+val sheetTypeRef = ExternalNodeReference("opelan:languages/sheet", 0, 0)
 
 private val mulDiv = Map("*" -> Expr.MulTag, "/" -> Expr.DivTag)
 private val addSub = Map("+" -> Expr.AddTag, "-" -> Expr.SubTag)
@@ -51,9 +59,9 @@ private def exprGrammarWith(levels: List[Map[String, String]]): GrammarDef =
     stops = Set.empty)
 
 val exprDef = LanguageDef(
-  typeRef = ExprLanguage.typeRef,
+  typeRef = exprTypeRef,
   title = "lang: expression",
-  name = ExprLanguage.name,
+  name = "Expressions",
   description = "the arithmetic-expression language",
   // Leaf kinds name the atom's token productions; the construct kinds
   // derive from the rules' construct meanings (DeriveSchema.scala).
@@ -89,9 +97,9 @@ private def withoutPattern(set: RuleSet, text: String): RuleSet = {
 }
 
 val sheetDef = LanguageDef(
-  typeRef = SheetLanguage.typeRef,
+  typeRef = sheetTypeRef,
   title = "lang: sheet",
-  name = SheetLanguage.name,
+  name = "Sheet",
   description = "the spreadsheet language — a grid of cells",
   schema = List(
     NodeKind("sheet", Any),
@@ -109,7 +117,7 @@ val sheetDef = LanguageDef(
   // ref, so a new lang: expression version heals sheet cells once the
   // pin bumps to it.
   inputParser = Some(
-    InputParserDef.Language(ExprLanguage.typeRef, InputFallback.Label)))
+    InputParserDef.Language(exprTypeRef, InputFallback.Label)))
 
 // The code-side semantics each example language's def names — kept
 // beside the defs that reference them.

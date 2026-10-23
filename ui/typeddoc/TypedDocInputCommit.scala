@@ -2,7 +2,7 @@ package opelan.ui.typeddoc
 
 import opelan.examples.languageForDoc
 import opelan.foundation.document._
-import opelan.foundation.langdef.commitMetaInput
+import opelan.foundation.langdef.{commitMetaInput, linkRuleUses}
 import opelan.foundation.language.docText
 import opelan.ui.editor.DocPush
 import opelan.ui.fp.Update
@@ -27,7 +27,8 @@ private[typeddoc] def commitInputText(
       Update(m)
     case Some((content, sessions)) =>
       commitContent(id, content, m.doc)
-          .flatMap(internalizeRefs(_, id)) match {
+          .flatMap(internalizeRefs(_, id))
+          .map(linkRuleUses(_, id)) match {
         case Right(d) =>
           val msg = "Input updated"
           val live = reachableIds(d)

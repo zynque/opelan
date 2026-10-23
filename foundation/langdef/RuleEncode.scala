@@ -26,18 +26,18 @@ private[langdef] def rulesNode(
     kindIds: Map[String, Int],
     meta: String => NodeData): DetachedNode[NodeData] =
   n(meta("rules"),
-    (set.rules.map(ruleNode(_, kindIds, meta)) ++
+    (set.rules.map(ruleNode(_, kindIds, Map.empty, meta)) ++
       bindingNode(set.tiers, meta) ++
       set.examples.map(e =>
         n(meta("example"), sl(e.input), sl(e.expected))))*)
 
 private[langdef] def ruleNode(
-    r: Rule, kindIds: Map[String, Int],
+    r: Rule, kindIds: Map[String, Int], pieceIds: Map[String, Int],
     meta: String => NodeData): DetachedNode[NodeData] =
   n(meta("rule"),
     (List(
       patternNode(r.pattern, meta),
-      n(meta("meaning"), termNode(r.meaning, kindIds, meta))) ++
+      n(meta("meaning"), termNode(r.meaning, kindIds, pieceIds, meta))) ++
       (if (r.where.isEmpty) Nil else List(whereNode(r.where, meta))))*)
 
 private def bindingNode(
@@ -67,10 +67,13 @@ private def pieceNode(
 }
 
 private def termNode(
-    m: Meaning, kindIds: Map[String, Int],
+    m: Meaning, kindIds: Map[String, Int], pieceIds: Map[String, Int],
     meta: String => NodeData): DetachedNode[NodeData] = m.tag match {
   case "use" | "source" | "builtin" =>
-    n(meta(m.tag), m.arguments.flatMap(Meaning.nameOf).map(sl)*)
+    n(meta(m.tag), m.arguments.flatMap(Meaning.nameOf).map(name =>
+      pieceIds.get(name)
+        .map(t => DetachedNode.leaf(NodeData.InternalNodeRef(t)))
+        .getOrElse(sl(name)))*)
   case "reparse" =>
     n(meta("reparse"),
       m.phrase.toList.flatMap(_.pieces.map(pieceNode(_, meta)))*)
@@ -78,7 +81,7 @@ private def termNode(
     n(meta("quote"), m.quoted.toList.map(detachedOf)*)
   case tag =>
     DetachedNode(constructData(m, tag, kindIds),
-      m.arguments.map(termNode(_, kindIds, meta)))
+      m.arguments.map(termNode(_, kindIds, pieceIds, meta)))
 }
 
 // A construct meaning's node data: an internal ref to the schema entry
