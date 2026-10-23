@@ -1,6 +1,7 @@
 package opelan.foundation.means
 
 import opelan.foundation.document._
+import opelan.foundation.grammar.toDetached
 
 // A rule set read backwards — printing trees as text the rules read
 // back (DESIGN.md §4, *The meaning side*): every construct-meaning
@@ -117,3 +118,26 @@ def printWith(
 
   (tree => render(tree, 0))
 }
+
+// A meaning term as the detached tree `printWith` renders — the
+// projection of a stored meaning back toward phrase spelling (DESIGN
+// §4, *Phrases desugar at entry*): `use`/`source`/`builtin` operands
+// are name leaves, `quote` its stored subtree, `reparse` its template
+// text, and a construct the data a parse would emit over the argument
+// trees.
+def meaningTree(
+    m: Meaning, tag: String => NodeData): DetachedNode[NodeData] =
+  m.tag match {
+    case "use" | "source" | "builtin" =>
+      DetachedNode(NodeData.StringData(
+        m.arguments.headOption.flatMap(Meaning.nameOf).getOrElse("")), Nil)
+    case "reparse" =>
+      DetachedNode(NodeData.StringData(
+        m.phrase.map(printPattern).getOrElse("")), Nil)
+    case "quote" =>
+      m.quoted.map(toDetached).getOrElse(
+        DetachedNode(NodeData.GapData(""), Nil))
+    case _ => DetachedNode(
+      m.reference.map(NodeData.ExternalNodeRef(_)).getOrElse(tag(m.tag)),
+      m.arguments.map(meaningTree(_, tag)))
+  }

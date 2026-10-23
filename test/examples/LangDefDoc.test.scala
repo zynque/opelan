@@ -153,6 +153,55 @@ class LangDefDocSuite extends FunSuite {
     assert(languageFromDef(d).parse("1 + 2").isDefined)
   }
 
+  test("a phrase meaning commits desugared — terms, not reparse") {
+    val url = exprDef.typeRef.documentUrl
+    val doc = langDefDoc(exprDef)
+    val ruleId = ruleNodeIds(doc)(4) // a - b means sub(a, b)
+    val content = commitMetaInput(doc, url, ruleId,
+      "a % means a / 100", implsFor(exprDef)).get
+    val updated = commitContent(ruleId, content, doc).toOption.get
+    val rule = langDefFromDocument(url, updated)
+      .syntax.get.rules.get.rules(4)
+    // The phrase parsed through the language's own rules at entry —
+    // the stored meaning is the desugared term tree.
+    assertEquals(rule.meaning.tag, "div")
+    assertEquals(rule.meaning.arguments.map(_.tag), List("use", "quote"))
+    // And the def view projects the authored spelling back through
+    // the language's own printer, not the constructor's.
+    val view = defView(updated, contentId(updated).get)
+    val text = opelan.foundation.view.ViewTree.flatten(view)
+    assert(text.contains("a % means a / 100"), text)
+  }
+
+  test("a phrase the set can't read stays reparse and heals on arrival") {
+    val url = demoExprDef.typeRef.documentUrl
+    val doc = langDefDoc(demoExprDef) // no `/` rule yet
+    val pctId = ruleNodeIds(doc)(1)   // a * b means mul(a, b)
+    val pct = commitMetaInput(doc, url, pctId,
+      "a % means a / 100", implsFor(demoExprDef)).get
+    val withPct = commitContent(pctId, pct, doc).toOption.get
+    // The unparseable phrase keeps its reparse form — the transitional
+    // storage that still heals — and reads back as authored.
+    val pctRule = langDefFromDocument(url, withPct)
+      .syntax.get.rules.get.rules(1)
+    assertEquals(pctRule.meaning.tag, "reparse")
+    assertEquals(printRule(pctRule), "a % means a / 100")
+    // Committing `/` into another slot gives the phrase its rule; the
+    // interpretation-time desugar retries — the stored reparse
+    // produces real terms and `5 %` parses as div(5, 100).
+    val subId = ruleNodeIds(withPct)(3) // a - b means sub(a, b)
+    val withDiv = commitContent(subId,
+      commitMetaInput(withPct, url, subId,
+        "a / b means div(a, b)", implsFor(demoExprDef)).get,
+      withPct).toOption.get
+    val d2 = langDefFromDocument(url, withDiv)
+    val parsed = languageFromDef(d2).parse("5 %").get
+    assertEquals(parsed.data,
+      NodeData.ExternalNodeRef(termRefs(d2)("div")))
+    assertEquals(parsed.children.map(_.data),
+      List(NodeData.IntData(5), NodeData.IntData(100)))
+  }
+
   // The SourceRef ids of every `input` element in a view tree.
   private def inputSourceIds(t: DetachedNode[NodeData]): List[Int] = t match {
     case DetachedNode(NodeData.StringData("input"), kids) =>

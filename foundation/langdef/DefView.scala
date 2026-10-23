@@ -28,7 +28,7 @@ def defView(doc: Document[NodeData], contentRootId: Int,
     d.syntax.map(s =>
       section("syntax", grammarLines(s.grammar).map(txt) ++
         s.rules.toList.flatMap(rs =>
-          docRuleLines(doc, contentRootId, exampleChecker(d, ctx))
+          docRuleLines(doc, contentRootId, d, exampleChecker(d, ctx))
             .getOrElse(ruleLines(rs))))),
     Some(section("views", d.views.map(v =>
       txt(s"${v.name} → ${v.builtin}${settingsText(v.settings)}")))),

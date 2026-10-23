@@ -286,11 +286,19 @@ Each item is described in the cited `DESIGN.md` section.
       (`foundation/langdef/RuleLink.scala`) points each meaning-use
       name at its `placeholder` piece node — `InternalNodeRef` after
       doc encode, resolvable through the same-node relation — so a
-      renamed placeholder heals its uses. Remaining: meaning *inputs*
-      parsing per keystroke through the language-under-definition with
-      hole-retry healing (a rule line still commits its whole text
-      through `readRuleOrHole`); then `reparse`/`phrase` leave the
-      model.
+      renamed placeholder heals its uses. Phrase meanings desugar at
+      entry: a `reparse` committed through `commitMetaInput` parses
+      through the doc's own rules (the committed rule swapped into the
+      set, `impls` supplying the lexicon) and stores terms — a phrase
+      the set can't yet read keeps its `reparse` form and the
+      interpretation-time desugar retries it as rules arrive, the
+      healing proven end-to-end (`a % means a / 100` committed before
+      `/` exists parses as `div(5, 100)` once `/` is added). The def
+      view projects a quote-bearing meaning back through `printWith`,
+      so the line reads as authored rather than `div(a, 100)`.
+      Remaining: the meaning field as its own per-keystroke input
+      rather than the rule line's whole-text commit; then
+      `reparse`/`phrase` leave the model.
    7. **`means` text surface.** The `def` view and text surface for `lang:`
       documents read and write the `means` notation (the existing
       printer and `RuleGrammar` reader), so editing a language reads like

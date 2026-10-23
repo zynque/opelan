@@ -1,8 +1,9 @@
 package opelan.ui.typeddoc
 
-import opelan.examples.languageForDoc
+import opelan.examples.{implsFor, languageForDoc}
 import opelan.foundation.document._
-import opelan.foundation.langdef.{commitMetaInput, linkRuleUses}
+import opelan.foundation.langdef.{
+  commitMetaInput, langDefFromDocument, linkRuleUses, metaConsOf, Impls}
 import opelan.foundation.language.docText
 import opelan.ui.editor.DocPush
 import opelan.ui.fp.Update
@@ -19,7 +20,7 @@ import TypedDocOutput._
 private[typeddoc] def commitInputText(
     m: TypedDocModel, id: Int,
     text: String): Update[TypedDocModel, TypedDocOutput, TypedDocInput] =
-  (commitMetaInput(m.doc, m.docUrl.getOrElse(""), id, text)
+  (commitMetaInput(m.doc, m.docUrl.getOrElse(""), id, text, metaImpls(m, id))
       .map((_, m.inputSessions))
     .orElse(languageForDoc(m.doc, m.store)
       .flatMap(_.commitInput(id, text, m.inputSessions)))) match {
@@ -46,6 +47,15 @@ private[typeddoc] def commitInputText(
       Update(m.copy(status = "No input grammar"),
         Vector(Status("No input grammar")))
   }
+
+// The impls a `rule` commit needs to desugar phrase meanings through
+// the def's own syntax — the doc being edited is the def, so its
+// lexicon comes from the foundational bundle the def names.
+private def metaImpls(m: TypedDocModel, id: Int): Impls =
+  if (metaConsOf(m.doc, id).contains("rule"))
+    m.docUrl.map(u => implsFor(langDefFromDocument(u, m.doc)))
+      .getOrElse(Impls())
+  else Impls()
 
 // An input commit that reproduces the node's current content (compared
 // with its imports inlined, as the parser writes constructs).
