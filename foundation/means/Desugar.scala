@@ -26,13 +26,14 @@ def desugarRuleSet(
     atom: Parser,
     tag: String => NodeData,
     name: String,
-    lexicon: Lexicon): RuleSet =
+    lexicon: Lexicon,
+    lexicals: Map[String, LexicalTerm] = Map.empty): RuleSet =
   set.copy(rules = set.rules.map { r =>
     if (r.meaning.tag == "reparse")
       r.copy(meaning = desugarPhrase(
         r.meaning.phrase.getOrElse(Pattern(Nil)),
         r.meaning.phrase.toList.flatMap(_.placeholders).toSet,
-        set, atom, tag, name, lexicon))
+        set, atom, tag, name, lexicon, lexicals))
     else r
   })
 
@@ -47,10 +48,11 @@ def desugarPhrase(
     atom: Parser,
     tag: String => NodeData,
     name: String,
-    lexicon: Lexicon): Meaning = {
+    lexicon: Lexicon,
+    lexicals: Map[String, LexicalTerm] = Map.empty): Meaning = {
   val expression = phrase(
     compileRules(set, choice(placeholderAtom(placeholders), atom),
-      tag, name),
+      tag, name, lexicals),
     Set.empty)
   val text = template.pieces.map {
     case Piece.Placeholder(n, _) => n

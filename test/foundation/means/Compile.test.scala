@@ -33,9 +33,11 @@ class CompileSuite extends FunSuite {
       Tier(List(readPattern("a * b"), readPattern("a / b"))),
       Tier(List(readPattern("a + b"), readPattern("a - b")))))
 
-  private def parse(set: RuleSet, text: String): DetachedNode[NodeData] =
+  private def parse(set: RuleSet, text: String,
+      lexicals: Map[String, LexicalTerm] = Map.empty): DetachedNode[NodeData] =
     toDetached(
-      compileRules(set, atom, NodeData.StringData(_), "e")(In(text, lex), 0).tree)
+      compileRules(set, atom, NodeData.StringData(_), "e",
+        lexicals)(In(text, lex), 0).tree)
 
   private def node(name: String, kids: DetachedNode[NodeData]*) =
     DetachedNode(NodeData.StringData(name), kids.toList)
@@ -113,5 +115,68 @@ class CompileSuite extends FunSuite {
 
   test("a bare placeholder meaning passes the bound tree through") {
     assertEquals(parse(arithmetic, "(1)"), lit(1))
+  }
+
+  // The named leaf vocabulary `where` terms bind to — Impls' leaves
+  // on the def side; a plain term map here at the engine level.
+  private val lexicals = Map(
+    "number" -> LexicalTerm(
+      parser = tok("int")(t => NodeData.IntData(t.text.toInt)),
+      operand = true,
+      check = _.isInstanceOf[NodeData.IntData]))
+
+  test("a lone-placeholder rule bound to a leaf is an operand") {
+    val set = RuleSet(
+      rules = List(
+        aRule("n means n where n: number"),
+        aRule("a + b means add(a, b)")),
+      tiers = List(Tier(List(readPattern("a + b")))))
+    assertEquals(parse(set, "5", lexicals), lit(5))
+    assertEquals(parse(set, "5 + 6", lexicals),
+      node("add", lit(5), lit(6)))
+    // A token the production doesn't accept isn't an operand —
+    // the junk fallback recovers it.
+    assertEquals(parse(set, "x", lexicals), gap("x"))
+  }
+
+  test("a leaf rule's meaning applies over the bound token") {
+    val set = RuleSet(rules = List(
+      aRule("n means tag(n) where n: number")))
+    assertEquals(parse(set, "5", lexicals), node("tag", lit(5)))
+  }
+
+  test("a where-bound sequence placeholder reads its own token") {
+    val set = RuleSet(rules = List(
+      aRule("pick n and m means pair(n, m) where n: number")))
+    assertEquals(parse(set, "pick 5 and x", lexicals),
+      node("pair", lit(5), gap("x")))
+    // `x` isn't a number: the rule fails and junk keeps the text.
+    assertEquals(parse(set, "pick x and 5", lexicals),
+      gap("pick x and 5"))
+  }
+
+  test("an unbound lone-placeholder rule stays dead — Never Broken") {
+    // `n means n` unbound would recurse into itself; it compiles to
+    // nothing and the atom still sees the operand.
+    val set = RuleSet(rules = List(aRule("n means n")))
+    assertEquals(parse(set, "5"), lit(5))
+    assertEquals(parse(set, "x"), gap("x"))
+  }
+
+  test("a where on operator operands surfaces violations as a hole") {
+    val set = RuleSet(
+      rules = List(
+        aRule("(a) means a"),
+        aRule("a + b means add(a, b) where a, b: number")),
+      tiers = List(Tier(List(readPattern("a + b")))))
+    assertEquals(parse(set, "5 + 6", lexicals),
+      node("add", lit(5), lit(6)))
+    // A grown operand keeps its leaf data — parens don't hide it.
+    assertEquals(parse(set, "(5) + 6", lexicals),
+      node("add", lit(5), lit(6)))
+    // A bound gap violates the constraint — the whole application
+    // surfaces as the hole.
+    assertEquals(parse(set, "(x) + 5", lexicals), gap("(x) + 5"))
+    assertEquals(parse(set, "5 + (x)", lexicals), gap("5 + (x)"))
   }
 }

@@ -144,7 +144,7 @@ class LangDefDocSuite extends FunSuite {
   test("a malformed rule line commit lands as a hole rule") {
     val url = exprDef.typeRef.documentUrl
     val doc = langDefDoc(exprDef)
-    val ruleId = ruleNodeIds(doc).last // a - b means sub(a, b)
+    val ruleId = ruleNodeIds(doc).last // any rule slot serves the commit
     val content =
       commitMetaInput(doc, url, ruleId, "means only").get
     val updated = commitContent(ruleId, content, doc).toOption.get

@@ -30,21 +30,24 @@ def commitMetaInput(
 // arrive — the meaning's hole-retry healing.
 private def desugarCommitted(
     doc: Document[NodeData], docUrl: String,
-    id: Int, read: Rule, impls: Impls): Rule =
+    id: Int, read: Rule, impls: Impls): Rule = {
+  val defined = langDefFromDocument(docUrl, doc)
   (for {
-    syn   <- langDefFromDocument(docUrl, doc).syntax
+    syn   <- defined.syntax
     set   <- syn.rules
     lex   <- impls.lexicons.get(syn.lexicon)
     index <- ruleIndex(doc, id)
     if read.meaning.tag == "reparse"
     ph    <- read.meaning.phrase
   } yield {
-    val tag = termTagOf(langDefFromDocument(docUrl, doc))
+    val tag = termTagOf(defined)
     val meaning = desugarPhrase(ph, ph.placeholders.toSet,
       set.copy(rules = set.rules.updated(index, read)),
-      interpret(syn.grammar, tag), tag, syn.lexicon, lex)
+      interpret(syn.grammar, tag), tag, syn.lexicon, lex,
+      lexicalTerms(impls, leafTermNames(defined)))
     if (hasGap(meaning)) read else read.copy(meaning = meaning)
   }).getOrElse(read)
+}
 
 // The committed rule's index in the decoded set: its position among
 // the `rule` children of its `rules` parent.

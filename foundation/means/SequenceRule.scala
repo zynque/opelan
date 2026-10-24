@@ -21,10 +21,16 @@ import opelan.foundation.grammar._
 //
 // Rules are memoized by pattern key — the rule's name for
 // incremental invalidation until rules carry references.
+//
+// `bound` holds this rule's `where`-constrained placeholders as
+// leaf terms (compileRules' boundLexicals): a bound placeholder
+// reads its leaf production's token rather than a full expression,
+// so `ref:c,r where c, r: whole number` can't pick up a phrase.
 def sequenceRule(
     theRule: Rule,
     expression: Parser,
-    tag: String => NodeData): Parser = {
+    tag: String => NodeData,
+    bound: Map[String, LexicalTerm] = Map.empty): Parser = {
   val pieces = theRule.pattern.pieces.toVector
   val closer = pieces.last match {
     case Piece.Literal(text, _) => Some(text)
@@ -53,7 +59,8 @@ def sequenceRule(
                 case None    => failedAt = Some(i)
               }
             case Piece.Placeholder(name, _) =>
-              val r = expression(in, cur)
+              val r = bound.get(name).map(_.parser)
+                .getOrElse(expression)(in, cur)
               seen = seen.max(r.examined)
               bindings += name -> r.tree
               cur = r.pos

@@ -65,15 +65,3 @@ def interpret(top: GrammarDef, tag: String => NodeData): Parser = {
 
   go(top)
 }
-
-private def leafData(leaf: LeafKind, t: Token): NodeData = leaf match {
-  case LeafKind.IntLit =>
-    t.text.toIntOption.map(NodeData.IntData(_)).getOrElse(NodeData.GapData(t.text))
-  case LeafKind.FloatLit =>
-    t.text.toDoubleOption.map(NodeData.FloatData(_)).getOrElse(NodeData.GapData(t.text))
-  case LeafKind.RefLit(prefix) =>
-    t.text.drop(prefix.length).toIntOption
-      .map(NodeData.InternalNodeRef(_)).getOrElse(NodeData.GapData(t.text))
-  case LeafKind.HoleLeaf => NodeData.GapData("")
-  case LeafKind.Text     => NodeData.StringData(t.text)
-}

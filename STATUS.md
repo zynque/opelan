@@ -65,8 +65,10 @@ Each item is described in the cited `DESIGN.md` section.
   `compileRules` turns a `RuleSet` into a parser — `exprRules`
   (`examples/ExprRules.scala`) matches the hand-written expression
   grammar on every input in the battery, spans included. Rules are
-  now live in the definition path: `exprDef` carries `exprRules` over
-  a combinator operand atom (`SyntaxDef.rules`), `DefLanguage`
+  now live in the definition path: `exprDef` carries `exprRules`
+  over a combinator operand fallback of just signum and junk —
+  the leaf tokens come from the vocabulary's leaf terms bound
+  through `Impls.leaves` (`SyntaxDef.rules`), `DefLanguage`
   compiles them, `lang:` docs store rules as `means(pattern,
   meaning)` nodes — `placeholder`/`literal` pieces (`glued` markers
   preserve spacing), meaning terms as subtrees, constructs by
@@ -101,7 +103,7 @@ Each item is described in the cited `DESIGN.md` section.
   version DAG; per-actor undo; local navigation; checkout + edit forks a
   branch draft that peers can rejoin.
 - **Build/test** (§9): `build.bat`/`build.sh`, `test.bat`/`test.sh`;
-  402 munit tests over the pure core, UI update functions, and
+  409 munit tests over the pure core, UI update functions, and
   DocSession convergence under real Automerge in Node. A fresh clone
   needs a `webpack.config.js` (see `README.md`).
 
@@ -218,11 +220,25 @@ Each item is described in the cited `DESIGN.md` section.
       the table and compiles the rest to sequences serving as its
       operands — closed rules recover like `parens`, untiered
       operators compile loosest, and `reparse` meanings reparse with
-      the language's own rules. Still open from this item:
-      `Signum`'s fused negative literals as a parse-time meaning
-      (`-n means literal(-n) where n: number`), glued pieces as
-      lexical sequencing, builtin lexical rules (number, whole
-      number, name, text) so the `atom` argument goes away, and
+      the language's own rules. `where` now binds placeholders to
+      named leaf productions (`Impls.leaves` — the old atom's
+      Tok/LeafKind pairings, named): the vocabulary's leaf terms are
+      the operand leaf vocabulary (a `term(literal, leaf)` entry is
+      an operand production bound through impls), a `where`-bound
+      placeholder inside a sequence reads its production's token
+      rather than a full expression — the mechanism `ref:c,r` needs
+      once glued matching lands — a bound operator operand is
+      checked after binding (`a + b means add(a,b) where a, b: int`
+      surfaces the whole application as a hole on violation), and a
+      lone-placeholder rule bound that way
+      (`n means number(n) where n: digits`) compiles as an operand
+      production — the lexical-rule shape for authored rules. The
+      leaf tokens left `exprAtom`, which now carries only `Signum`
+      and `Junk`. Still open from this item: `Signum`'s fused
+      negative literals as a parse-time meaning (`-n means
+      literal(-n) where n: number`), glued pieces as lexical
+      sequencing, builtin leaf productions authored in the document
+      (they live in Impls like lexicons and views), and
       example-driven associativity overrides.
    3. **Derived printer.** *Done at string level:* `printWith`
       (`foundation/means/Print.scala`) reads construct-meaning rules as
@@ -244,7 +260,8 @@ Each item is described in the cited `DESIGN.md` section.
       builtin terms and their name operands declare nothing, so
       `use`/`reparse` never become terms. `exprDef`'s construct
       terms derive this way. Remaining: leaf terms still list by hand
-      (the atom's token productions aren't rules yet, item 2), and def
+      (the `where`-bound operand rules exist — item 2 — but nothing
+      collects their bound terms into vocabulary entries yet), and def
       *documents* keep their own explicit vocabulary section — derivation
       of a doc's vocabulary is what retires the hand-written list there.
 

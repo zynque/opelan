@@ -15,10 +15,12 @@ class DesugarSuite extends munit.FunSuite {
   private val percent = readRuleOrHole("a % means a / 100")
 
   private def desugared(set: RuleSet): RuleSet =
-    desugarRuleSet(set, ruleAtom, exprTag, "expr", exprLexicon)
+    desugarRuleSet(set, ruleAtom, exprTag, "expr", exprLexicon,
+      exprLexicals)
 
   private def grammarFor(set: RuleSet): Parser =
-    phrase(compileRules(set, ruleAtom, exprTag, "expr"), Set.empty)
+    phrase(compileRules(set, ruleAtom, exprTag, "expr",
+      exprLexicals), Set.empty)
 
   private def parse(g: Parser, input: String): PTree =
     g(In(input, exprLexicon), 0).tree

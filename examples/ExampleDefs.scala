@@ -32,14 +32,13 @@ private val addSub = Map("+" -> Expr.AddTag, "-" -> Expr.SubTag)
 // precedence level (not the phrase wrapper).
 private val exprGrammarDef: GrammarDef = exprGrammarWith(List(mulDiv, addSub))
 
-// The operand atom the means rules compile over — leaf tokens, the
-// signum, and the recovering junk fallback; the productions rules don't
-// yet express until `where`-terms bind placeholders to a lexical rule
-// vocabulary. The same choice ExprParse writes, minus `parens`:
-// `(a) means a` supplies them.
+// The operand fallback the means rules compile over — just the
+// signum and the recovering junk run now that leaf tokens come
+// from `where`-bound rules (`n means n where n: number`), bound
+// through exprImpls' leaf productions. The same choice ExprParse's
+// atom writes, minus `parens` and the leaf toks.
 private val exprAtom: GrammarDef = Choice(List(
-  Tok("int", IntLit), Tok("float", FloatLit), Tok("ref", RefLit("ref:")),
-  Tok("hole", HoleLeaf), Signum,
+  Signum,
   Junk(Set("op", "junk"), Set("int", "float", "ref", "junk", "hole"))))
 
 private def exprGrammarWith(levels: List[Map[String, String]]): GrammarDef =
@@ -63,8 +62,10 @@ val exprDef = LanguageDef(
   title = "lang: expression",
   name = "Expressions",
   description = "the arithmetic-expression language",
-  // Leaf terms name the atom's token productions; the construct terms
-  // derive from the rules' construct meanings (DeriveVocabulary.scala).
+  // The leaf terms are the operand vocabulary — each binds to a
+  // leaf production exprImpls names; `where` narrows to any named
+  // leaf. The construct terms derive from the rules' construct
+  // meanings (DeriveVocabulary.scala).
   vocabulary = List(
     NodeTerm("literal", Leaf),
     NodeTerm("ref", Leaf),
@@ -124,6 +125,22 @@ val sheetDef = LanguageDef(
 
 val exprImpls = Impls(
   lexicons = Map("expr" -> exprLexicon),
+  // The leaf productions `where` terms bind to — the named leaf
+  // vocabulary: the def's leaf terms (literal, ref, gap) are
+  // operands; the rest are narrowing names (`where a, b: int`).
+  // Each names which token kinds it accepts and their leaf data;
+  // alternatives try in order (`number` accepts float then int).
+  leaves = {
+    val numbers = LeafDef(List("float" -> FloatLit, "int" -> IntLit))
+    Map(
+      "literal"      -> numbers,
+      "number"       -> numbers,
+      "whole number" -> LeafDef(List("int" -> IntLit)),
+      "int"          -> LeafDef(List("int" -> IntLit)),
+      "float"        -> LeafDef(List("float" -> FloatLit)),
+      "ref"          -> LeafDef(List("ref" -> RefLit("ref:"))),
+      "gap"          -> LeafDef(List("hole" -> HoleLeaf)))
+  },
   views = Map(
     "expr-print" -> ((doc, id, _) => printTree(readLocExpr(doc, id))),
     "expr-eval"  -> ((doc, id, _) => evalTree(doc, readLocExpr(doc, id)))))

@@ -96,6 +96,6 @@ enum LeafKind {
   case IntLit                   // IntData(text.toInt)
   case FloatLit                 // FloatData(text.toDouble)
   case RefLit(prefix: String)   // InternalNodeRef(text.drop(prefix).toInt)
-  case HoleLeaf                 // GapData("")
+  case HoleLeaf                 // GapData(text) — the hole keeps its source
   case Text                     // StringData(text)
 }

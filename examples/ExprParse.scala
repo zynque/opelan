@@ -54,7 +54,7 @@ private def atom: Parser = choice(
     .getOrElse(NodeData.GapData(t.text))),
   tok("ref")(t => t.text.drop(4).toIntOption
     .map(NodeData.InternalNodeRef(_)).getOrElse(NodeData.GapData(t.text))),
-  tok("hole")(_ => NodeData.GapData("")),
+  tok("hole")(t => NodeData.GapData(t.text)),
   parens(exprCore),
   signum,
   junk(

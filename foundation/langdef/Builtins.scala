@@ -17,6 +17,7 @@ type BuiltinInputParser = String => DetachedNode[NodeData]
 
 case class Impls(
     lexicons: Map[String, Lexicon] = Map.empty,
+    leaves: Map[String, LeafDef] = Map.empty,
     views: Map[String, BuiltinView] = Map.empty,
     inputParsers: Map[String, BuiltinInputParser] = Map.empty)
 

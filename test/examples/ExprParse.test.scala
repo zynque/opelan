@@ -55,7 +55,7 @@ class ExprParseSuite extends munit.FunSuite {
 
   test("missing operand produces an empty hole") {
     assertEquals(parse("1 +"), Add(Lit(1), Hole("")))
-    assertEquals(parse("?"), Hole(""))
+    assertEquals(parse("?"), Hole("?"))
   }
 
   test("junk text produces a hole holding the verbatim text") {
