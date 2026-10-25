@@ -4,7 +4,7 @@ Point-in-time state of the Opelan workbench: what works, what doesn't yet,
 and what comes next. For architecture and rationale see `DESIGN.md`; for
 the demo being worked toward see `DEMO.md`.
 
-Last updated: 2026-10-20
+Last updated: 2026-10-24
 
 The project is in Phase 1 (foundation & vocabulary system). **Next major
 series:** replacing combinator-based language definitions with
@@ -190,208 +190,67 @@ Each item is described in the cited `DESIGN.md` section.
 
 ## Next steps
 
-1. **`means` rules — the next major series.** Replace authoring of the
-   combinator-based model (`GrammarDef`, a hand-written vocabulary list,
-   hand-written printers, builtin views) with `pattern means meaning`
-   rules plus a tightest-first binding list, compiled onto the existing
-   recovering combinators (DESIGN §4, *Defining languages by `means`
-   rules*). The current model keeps working alongside until parity is
-   proven; each step lands with tests. The rule model, scannerless
-   combinators, the incremental engine, and id-preserving reconcile are
-   done (*Working*).
+1. **`means` rules — the next major series.** `pattern means meaning`
+   rules compiled onto the recovering combinators (DESIGN §4, *Defining
+   languages by `means` rules*). Phases A–C are largely landed (*Working*
+   above); what remains:
 
-   *Phase A — the rule engine (pure, `foundation/`):*
-
-   1. **Finish incremental parsing** (DESIGN §4, *Incremental parsing*):
-      - *Wiring:* the text surface (`TextSession`) and projected input
-        commits (`InputSessions`) are done. Still a whole reparse:
-        synced remote text, once sync carries language text rather
-        than the outline.
-      - *Memo in the document:* parse results live in document nodes,
-        with only failed attempts in a side table.
-      - *Rule identity by reference:* rules are identified by name until
-        they live in `lang:` documents (step 6), then by node id, so a
-        rename invalidates nothing.
-   2. **Operator combinator + rule compiler** — *done:*
-      `operatorTable` (`foundation/grammar/Operators.scala`) climbs
-      the binding list with prefix, postfix, and left/right/
-      non-associative infix; `compileRules`
-      (`foundation/means/Compile.scala`) puts operator-shaped rules in
-      the table and compiles the rest to sequences serving as its
-      operands — closed rules recover like `parens`, untiered
-      operators compile loosest, and `reparse` meanings reparse with
-      the language's own rules. `where` now binds placeholders to
-      named leaf productions (`Impls.leaves` — the old atom's
-      Tok/LeafKind pairings, named): the vocabulary's leaf terms are
-      the operand leaf vocabulary (a `term(literal, leaf)` entry is
-      an operand production bound through impls), a `where`-bound
-      placeholder inside a sequence reads its production's token
-      rather than a full expression — the mechanism `ref:c,r` needs
-      once glued matching lands — a bound operator operand is
-      checked after binding (`a + b means add(a,b) where a, b: int`
-      surfaces the whole application as a hole on violation), and a
-      lone-placeholder rule bound that way
-      (`n means number(n) where n: digits`) compiles as an operand
-      production — the lexical-rule shape for authored rules. The
-      leaf tokens left `exprAtom`, which now carries only `Signum`
-      and `Junk`. Still open from this item: `Signum`'s fused
-      negative literals as a parse-time meaning (`-n means
-      literal(-n) where n: number`), glued pieces as lexical
-      sequencing, builtin leaf productions authored in the document
-      (they live in Impls like lexicons and views), and
-      example-driven associativity overrides.
-   3. **Derived printer.** *Done at string level:* `printWith`
-      (`foundation/means/Print.scala`) reads construct-meaning rules as
-      templates
-      and the binding list for minimal parens — left-assoc infix keeps
-      its left operand at its level and asks one tighter of the right,
-      postfix applies to the whole level, prefix asks one tighter
-      (except a same-tier prefix). `ExprRulesSuite` proves it emits
-      exactly `Expr.print`'s output on the full parser battery, and
-      `PrintSuite` covers prefix/postfix/closed/unbound cases.
-      Remaining: a provenance-tagged variant (the "print" view emits
-      `src:` spans for click-through, which needs printing over
-      document nodes with ids, not detached trees) and the round-trip
-      property `parse(print(t)) == t` over generated trees.
-   4. **Derived vocabulary.** *Landed for code-written defs:* `vocabularyFrom`
-      (`foundation/langdef/DeriveVocabulary.scala`) collects every
-      construct meaning — nested ones included — into `NodeTerm`s
-      (name, arity, the meaning's `reference` when it has one);
-      builtin terms and their name operands declare nothing, so
-      `use`/`reparse` never become terms. `exprDef`'s construct
-      terms derive this way. Remaining: leaf terms still list by hand
-      (the `where`-bound operand rules exist — item 2 — but nothing
-      collects their bound terms into vocabulary entries yet), and def
-      *documents* keep their own explicit vocabulary section — derivation
-      of a doc's vocabulary is what retires the hand-written list there.
-
-   *Phase B — the expression language on rules:*
-
-   5. **`exprRules` at parity.** *Done as the live language:* `exprDef`
-      carries `exprRules`, and `ExprLanguage`/`SheetLanguage` are
-      `DefLanguage` over their defs — the means rules drive every
-      parse, session, and view in the workbench, with `ExprParse`'s
-      combinator grammar kept only as the test oracle. `printWith`
-      matches `Expr.print` on the battery. Remaining: eval as meanings
-      (Phase D) and the print view emitting provenance spans (item 3).
-
-   *Phase C — rules as documents:*
-
-   6. **Rule encoding.** *Structured form landed:* `lang:` documents
-      hold each rule as `rule(pattern, meaning, where)` nodes —
-      pieces as `placeholder`/`literal` (a `glued` marker preserves
-      spacing), meanings as term subtrees, constructs by internal
-      ref to the def's vocabulary entries so a renamed term entry
-      renames its meaning uses — and the decoder reads that form
-      plus the older text form (a `rule` whose first child is a
-      string goes through `readRuleOrHole`), so malformed lines and
-      mid-migration docs still land as hole rules, never errors.
-      Rule-line commits produce the same structure
-      (`commitMetaInput`), constructs bound to the doc's own terms.
-      The meaning model is the target form: one term node
-      (`tag`/`arguments`/`reference`/`phrase`/`quoted`) over
-      `use`/`source`/`reparse`/`builtin`/`quote` builtins, so a
-      meaning node encodes as a plain subtree. The decided desugar
-      is live (DESIGN §4, *Phrases desugar at entry*):
-      `desugarRuleSet`/`desugarPhrase`
-      (`foundation/means/Desugar.scala`) parse a `reparse` template
-      through the whole set — placeholders lexing as atoms — and
-      translate the tree to `use`/construct/`quote` terms, so bound
-      placeholders splice at tree level keeping node identity;
-      `DefLanguage` and `exprRuleGrammar` interpret the desugared
-      set. `use` operands link by ref: `linkRuleUses`
-      (`foundation/langdef/RuleLink.scala`) points each meaning-use
-      name at its `placeholder` piece node — `InternalNodeRef` after
-      doc encode, resolvable through the same-node relation — so a
-      renamed placeholder heals its uses. Phrase meanings desugar at
-      entry: a `reparse` committed through `commitMetaInput` parses
-      through the doc's own rules (the committed rule swapped into the
-      set, `impls` supplying the lexicon) and stores terms — a phrase
-      the set can't yet read keeps its `reparse` form and the
-      interpretation-time desugar retries it as rules arrive, the
-      healing proven end-to-end (`a % means a / 100` committed before
-      `/` exists parses as `div(5, 100)` once `/` is added). The def
-      view projects a quote-bearing meaning back through `printWith`,
-      so the line reads as authored rather than `div(a, 100)`.
-      Remaining: the meaning field as its own per-keystroke input
-      rather than the rule line's whole-text commit; then
-      `reparse`/`phrase` leave the model.
-   7. **`means` text surface.** The `def` view and text surface for `lang:`
-      documents read and write the `means` notation (the existing
-      printer and `RuleGrammar` reader), so editing a language reads like
-      the DESIGN.md examples rather than an outline of combinators.
-      *Editing landed:* the `def` view projects each `rule` line as an
-      `input` bound to the `rule` node (committed as structured nodes
-      via `commitMetaInput`) and each `tier` pattern and `example`
-      field bound to its text leaf — commits re-decode, so a rule
-      edited in the view heals dependent documents through the same
-      session carry. Remaining: the printer's role spans (`means`
-      emphasized, placeholders styled), a detail-level toggle switching
-      `means` to `=>` and hiding `where`, and the `lang:` text surface
-      itself reading/writing rules rather than leaf strings.
-   8. **Worked examples as live checks.** *Landed:* the `def` view
-      interprets the decoded def through `ctx.interpretDef` and
-      compares each `example`'s input and expected trees; a mismatch
-      trails a hole chip saying what the input actually read as (the
-      derived printer), and an example that can't be checked — no
-      interpretation context — stays unmarked rather than marked
-      wrong. The doc's stored URL flows `Pane` → `TypedDocModel` →
-      `renderWith` → `ViewContext.docUrl`, since a def doc's URL is
-      the language it defines — interpretation needs it to bind
-      implementations. `exprRules` carries
-      `1 + 2 * 3 means 1 + (2 * 3)` as the exercised example.
+   *Phase A — rule engine loose ends:*
+   - *Memo in the document:* parse results live in document nodes, with
+     only failed attempts in a side table.
+   - *Rule identity by reference:* rules are still identified by name;
+     moving to node ids means a rename invalidates nothing.
+   - `Signum`'s fused negative literals as a parse-time meaning
+     (`-n means literal(-n) where n: number`); glued pieces as lexical
+     sequencing; builtin leaf productions authored in the document
+     (they live in Impls like lexicons and views); example-driven
+     associativity overrides.
+   - *Derived printer:* a provenance-tagged variant emitting `src:`
+     spans for click-through (printing over document nodes with ids,
+     not detached trees), and the round-trip property
+     `parse(print(t)) == t` over generated trees.
+   - *Derived vocabulary:* collect `where`-bound leaf terms into
+     vocabulary entries, and derive a def document's vocabulary section
+     to retire the hand-written list there.
+   - *Rule encoding:* the meaning field as its own per-keystroke input
+     rather than the rule line's whole-text commit; then
+     `reparse`/`phrase` leave the model.
+   - *`means` surface polish:* the printer's role spans (`means`
+     emphasized, placeholders styled), a detail-level toggle switching
+     `means` to `=>` and hiding `where`, and the `lang:` text surface
+     itself reading/writing rules rather than leaf strings.
 
    *Phase D — meaning layers; demote the old model:*
-
-   9. **Semantics as rules.** `add(a, b) means builtin num-add`: eval is
-      derived from meaning rules bottoming out in builtins, replacing the
-      hand-coded `Expr.eval` behind `expr-eval`. The rule dependency DAG
-      and derived layers are computed; a cycle renders as a hole at the
-      closing edge. Parse-time and eval-time meanings are one term form
-      (DESIGN.md, *A meaning is a term, evaluated*) — `builtin` joins
-      `use`/`source`/`reparse` as a meaning-language construct.
-   10. **Migrate stored definitions.** Users' IndexedDB stores hold
-       `lang:` docs in the combinator format, and seeding never
-       overwrites. Convert legacy grammar subtrees to rules on read (or
-       first load): the first real *Evolvable* migration, revertible
-       because every version is kept.
-   11. **Demote `GrammarDef` to the implementation layer.** *Begun:*
-       the example languages no longer hand-write combinator grammars
-       — `ExprLanguage`/`SheetLanguage` interpret `exprDef`/`sheetDef`
-       — so `GrammarDef` only remains as the atom operand rules
-       compile over, the `interpret` target, and the
-       `exprCombinatorDef` fixture covering that path. Remaining:
-       definitions authored and stored as rules only; `GrammarDef`
-       shown only under show implementation as the escape hatch;
-       remove the combinators rules made redundant in authored
-       definitions (`Junk`, `Phrase`, `Signum`, stop sets). Update
-       DESIGN.md and the demo.
+   - **Semantics as rules.** `add(a, b) means builtin num-add`: eval
+     derived from meaning rules bottoming out in builtins, replacing
+     the hand-coded `Expr.eval` behind `expr-eval`. The rule dependency
+     DAG and derived layers are computed; a cycle renders as a hole at
+     the closing edge.
+   - **Migrate stored definitions.** Users' IndexedDB stores hold
+     `lang:` docs in the combinator format, and seeding never
+     overwrites. Convert legacy grammar subtrees to rules on read (or
+     first load): the first real *Evolvable* migration, revertible
+     because every version is kept.
+   - **Demote `GrammarDef` to the implementation layer.** Definitions
+     authored and stored as rules only; `GrammarDef` shown only under
+     show implementation as the escape hatch; remove the combinators
+     rules made redundant in authored definitions (`Junk`, `Phrase`,
+     `Signum`, stop sets). Update DESIGN.md and the demo.
 
    *Phase E — beyond parity:*
-
-   12. **Sheet on rules.** Positional refs (`ref:c,r`, then `C4`) as
-       parse-time meanings resolving to stable `InternalNodeRef`s and
-       printing back as current positions; ranges (`a .. b`).
-   13. **`where` and adjustable verbosity.** `where` clauses with
-       constraints inferred from the layer below; a terse/verbose toggle
-       in the `def` view, separate from show/hide implementation;
-       violated constraints surface as holes at every zoom level.
-   14. **Cycle prevention in the editor.** Completion on a meaning offers
-       only rules below it in the DAG.
-   15. **Self-description.** The language-definition language's own
-       syntax is written as `means` rules, closing the bootstrap loop.
+   - **Sheet on rules.** Positional refs (`ref:c,r`, then `C4`) as
+     parse-time meanings resolving to stable `InternalNodeRef`s and
+     printing back as current positions; ranges (`a .. b`).
+   - **`where` and adjustable verbosity.** `where` clauses with
+     constraints inferred from the layer below; a terse/verbose toggle
+     in the `def` view, separate from show/hide implementation;
+     violated constraints surface as holes at every zoom level.
+   - **Cycle prevention in the editor.** Completion on a meaning offers
+     only rules below it in the DAG.
+   - **Self-description.** The language-definition language's own
+     syntax written as `means` rules, closing the bootstrap loop.
 2. **Pins, pending updates, auto-update** (DESIGN §4, *Pins select
-   behavior*). Built: pin-faithful resolution, `pendingUpdates` /
-   `acceptUpdates`, the toolbar Update button, the
-   `setting(auto-update, true)` flag with in-pane auto-accept, the
-   save-time cascade (synced docs skipped), broken imports surfaced in
-   the toolbar (`broken: N`), and version bumps carried through
-   `changedSince` as a term-tag migration — only affected holes
-   reparse. The demo beat: adding `/` to `lang: expression` pends
-   `lang: sheet`; accepting publishes sheet v1, which pends the budget
-   — the hole heals on the budget's accept.
-
-   Still open:
+   behavior*). Still open:
 
    - *Remote heads.* The Update scan and the cascade run against this
      tab's store, which changes only on local saves and boot hydration
@@ -433,7 +292,10 @@ Each item is described in the cited `DESIGN.md` section.
    text-surface edits; branch merge-back; durable history beyond a tab's
    lifetime (the op log already persists in `automerge_docs`) and for
    unsynced documents; curated checkpoints; the synced meta-log for
-   pruning and compaction; then a tree-native CRDT.
+   pruning and compaction; then a tree-native CRDT — which would also
+   retire the whole-text reparse remote changes go through today
+   (sync carries the `Serial` outline, parsed by the outline codec;
+   making that incremental is scaffolding the CRDT likely supersedes).
 4. **Schemas and typing.** Check documents against their node terms and
    fold the gap/typing machinery into the document model.
 5. **Further roadmap:**
