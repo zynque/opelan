@@ -35,46 +35,73 @@ def changedRules(before: GrammarDef, after: GrammarDef): Set[String] = {
 
 // The memo names a syntax change touches — what a carried-over session
 // must drop. Combinator defs diff by named rule, as before. With a rule
-// set, the top name (the lexicon's — every placeholder recurses through
-// it) covers operator changes and operand structure, and each sequence
-// rule whose own definition changed adds its `means:` name — those are
-// the only entries that could survive the top name's fall. A form
-// switch, or a change to the atom grammar, marks everything the new
-// parser can name.
+// set: nothing to drop when the sets compile identically (sameCompiled —
+// a placeholder rename is no change); otherwise the top name (the
+// lexicon's — every placeholder recurses through it) covers operator
+// changes and operand structure, each changed or unpaired sequence rule
+// adds its memo name — those are the only entries that could survive
+// the top name's fall. A form switch, or a change to the atom grammar,
+// marks everything the new parser can name.
 def syntaxChanges(before: SyntaxDef, after: SyntaxDef): Set[String] =
   if (before == after) Set.empty
   else (before.rules, after.rules) match {
     case (None, None) => changedRules(before.grammar, after.grammar)
     case (Some(b), Some(a)) if before.grammar == after.grammar =>
-      if (b.tiers == a.tiers && rulesSame(b.rules, a.rules)) Set.empty
+      if (namesSame(b, a) && sameCompiled(b, a, sameRule)) Set.empty
       else Set(after.lexicon) ++ changedSequenceNames(b, a)
     case _ =>
       Set(after.lexicon) ++ namedRules(after.grammar).keySet ++
         sequenceRuleNames(before.rules) ++ sequenceRuleNames(after.rules)
   }
 
-// Sequence rules whose definitions differ between sets — their
-// `means:` names are what the compiled grammar memoizes under.
+// The memo-name space a set occupies. Entries keyed under a name the
+// change drops are dead weight — and callers the diff can't name would
+// keep stale results — so identical compilation alone isn't enough to
+// carry a session: a rule re-created as a new node with identical
+// content reports its new name rather than carrying nothing.
+private def namesSame(b: RuleSet, a: RuleSet): Boolean =
+  sequenceRuleNames(Some(b)) == sequenceRuleNames(Some(a))
+
+// Sequence rules whose definitions differ between sets — their memo
+// names are what the compiled grammar memoizes under. Rules pair by
+// identity: node id once they live in a `lang:` document (a rename
+// keeps the pairing), pattern key for code-written rules. An unpaired
+// rule names itself — entries it was called from must drop.
 private def changedSequenceNames(b: RuleSet, a: RuleSet): Set[String] = {
-  def byKey(s: RuleSet) = s.rules.filter(r => isSequencePattern(r.pattern))
-    .map(r => r.pattern.key -> r).toMap
-  val (bm, am) = (byKey(b), byKey(a))
-  (bm.keySet ++ am.keySet).filter(k =>
-    (bm.get(k), am.get(k)) match {
-      case (Some(x), Some(y)) => !sameRule(x, y)
-      case (x, y)             => x != y
-    }).map(k => s"means:${k.mkString(" ")}")
+  def seqs(s: RuleSet) = s.rules.filter(r => isSequencePattern(r.pattern))
+  val (bs, as) = (seqs(b), seqs(a).zipWithIndex)
+  val claimed = scala.collection.mutable.Set.empty[Int]
+  val names = Set.newBuilder[String]
+  bs.foreach { br =>
+    as.find { case (ar, i) => !claimed(i) && sameIdentity(br, ar) } match {
+      case Some((ar, i)) =>
+        claimed += i
+        if (!sameRule(br, ar)) names += sequenceRuleName(br)
+      case None => names += sequenceRuleName(br)
+    }
+  }
+  as.foreach { case (ar, i) =>
+    if (!claimed(i)) names += sequenceRuleName(ar) }
+  names.result()
 }
 
-// Rule comparison by identity, not by pin: a version bump re-pins a
-// meaning's references to a newer reading of the same nodes — the
-// rules it compiles to are unchanged, so sessions carry over.
-private def rulesSame(a: List[Rule], b: List[Rule]): Boolean =
-  a.length == b.length && a.zip(b).forall(sameRule.tupled)
+private def sameIdentity(a: Rule, b: Rule): Boolean =
+  (a.id, b.id) match {
+    case (Some(x), Some(y)) => x == y
+    case (None, None)       => a.pattern.key == b.pattern.key
+    case _                  => false
+  }
 
-private def sameRule(a: Rule, b: Rule): Boolean =
-  a.pattern == b.pattern && a.where == b.where &&
-    sameMeaning(a.meaning, b.meaning)
+// Rule comparison by compiled meaning, not by pin or spelling:
+// placeholders compare by position (canonicalRule — a rename compiles
+// identically), and a version bump re-pins a meaning's references to a
+// newer reading of the same nodes — the rules it compiles to are
+// unchanged, so sessions carry over.
+private def sameRule(a: Rule, b: Rule): Boolean = {
+  val (x, y) = (canonicalRule(a), canonicalRule(b))
+  x.pattern == y.pattern && x.where == y.where &&
+    sameMeaning(x.meaning, y.meaning)
+}
 
 private def sameMeaning(a: Meaning, b: Meaning): Boolean =
   a.tag == b.tag && a.phrase == b.phrase && sameRef(a.reference, b.reference) &&
@@ -112,7 +139,7 @@ private def sameData(a: NodeData, b: NodeData): Boolean = (a, b) match {
 // when a change can't be described finer than "the rules differ".
 private def sequenceRuleNames(set: Option[RuleSet]): Set[String] =
   set.toList.flatMap(_.rules).filter(r => isSequencePattern(r.pattern))
-    .map(r => sequenceRuleName(r.pattern)).toSet
+    .map(sequenceRuleName).toSet
 
 // The content migration between two term-tag tables (term name → the
 // data a parse emits): a tag that changed — a construct ref re-pinning

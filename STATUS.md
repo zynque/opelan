@@ -80,6 +80,11 @@ Each item is described in the cited `DESIGN.md` section.
   encoding and mid-edit states still decode. Language-change
   diffing names the top rule plus changed `means:` sequence names,
   so adding a rule heals holes through the same session carry.
+  Sequence rules decoded from `lang:` docs memoize under their rule
+  node id (`means:#N`), compared canonically (placeholders
+  normalized by position) — a placeholder rename is a no-op for the
+  session, while a meaning change or a re-created node still
+  invalidates. Code-authored rules fall back to pattern-key names.
   Schema and checks derive too: `vocabularyFrom` turns construct
   meanings into the def's terms, and worked examples in the `def`
   view are checked live against the interpreted definition — a
@@ -198,8 +203,6 @@ Each item is described in the cited `DESIGN.md` section.
    *Phase A — rule engine loose ends:*
    - *Memo in the document:* parse results live in document nodes, with
      only failed attempts in a side table.
-   - *Rule identity by reference:* rules are still identified by name;
-     moving to node ids means a rename invalidates nothing.
    - `Signum`'s fused negative literals as a parse-time meaning
      (`-n means literal(-n) where n: number`); glued pieces as lexical
      sequencing; builtin leaf productions authored in the document

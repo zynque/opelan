@@ -14,7 +14,7 @@ private[langdef] def ruleFromDoc(
     doc: Document[NodeData], url: String,
     version: Int, id: Int): Rule =
   doc.childrenOf(id).headOption.flatMap(i => strOf(doc, i))
-    .map(readRuleOrHole).getOrElse(Rule(
+    .map(t => readRuleOrHole(t).copy(id = Some(id))).getOrElse(Rule(
       entriesOf(doc, id, "pattern").headOption
         .map(p => Pattern(doc.childrenOf(p).map(pieceFrom(doc, _))))
         .getOrElse(Pattern(Nil)),
@@ -24,7 +24,8 @@ private[langdef] def ruleFromDoc(
         .getOrElse(Meaning.reparse(Nil)),
       entriesOf(doc, id, "where").headOption.toList.flatMap(w =>
         entriesOf(doc, w, "constraint")
-          .flatMap(constraintFrom(doc, _)))))
+          .flatMap(constraintFrom(doc, _))),
+      Some(id)))
 
 private def pieceFrom(doc: Document[NodeData], id: Int): Piece = {
   val text = doc.childrenOf(id).headOption.flatMap(strOf(doc, _))

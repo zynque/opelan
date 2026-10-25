@@ -110,10 +110,16 @@ object Meaning {
 // The term is free text until a type vocabulary exists.
 case class Constraint(placeholders: List[String], term: String)
 
+// `id` is the rule's stable identity — its `rule` node's id in the
+// `lang:` document it was decoded from (DESIGN §4, *Incremental
+// parsing*: the memo key survives renames and only real changes
+// invalidate). Rules written in code or read from text have none and
+// are named by pattern key.
 case class Rule(
     pattern: Pattern,
     meaning: Meaning,
-    where: List[Constraint] = Nil) {
+    where: List[Constraint] = Nil,
+    id: Option[Int] = None) {
   def shape: Shape = shapeOf(pattern)
 }
 

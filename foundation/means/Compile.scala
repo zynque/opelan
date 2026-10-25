@@ -133,8 +133,3 @@ private[means] def orderedOperatorRules(set: RuleSet): List[List[Rule]] = {
   val untiered = operators.filterNot(r => placed.contains(r.pattern.key))
   if (untiered.isEmpty) tiered else tiered :+ untiered
 }
-
-// The memo name a sequence rule compiles under — how a language
-// change names it for invalidation until rules carry references.
-def sequenceRuleName(pattern: Pattern): String =
-  s"means:${pattern.key.mkString(" ")}"

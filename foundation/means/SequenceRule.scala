@@ -19,8 +19,9 @@ import opelan.foundation.grammar._
 // non-closed rule (`if c then a else b`) stays all-or-nothing for
 // now — partial keyword recovery is a later refinement.
 //
-// Rules are memoized by pattern key — the rule's name for
-// incremental invalidation until rules carry references.
+// Rules are memoized by identity (`sequenceRuleName`) — the rule
+// node's id in a `lang:` document, its pattern key in code — the
+// name a language change reports to invalidate.
 //
 // `bound` holds this rule's `where`-constrained placeholders as
 // leaf terms (compileRules' boundLexicals): a bound placeholder
@@ -36,7 +37,7 @@ def sequenceRule(
     case Piece.Literal(text, _) => Some(text)
     case _                      => None
   }
-  rule(sequenceRuleName(theRule.pattern)) { (in, pos) =>
+  rule(sequenceRuleName(theRule)) { (in, pos) =>
     var seen = pos
     val first = scanAt(in, pos)
     seen = seen.max(first.examined)

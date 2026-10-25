@@ -2,7 +2,7 @@ package opelan.examples
 
 import opelan.foundation.document._
 import opelan.foundation.langdef._
-import opelan.foundation.language.InputSessions
+import opelan.foundation.language.{InputSessions, TextSession}
 import opelan.foundation.means.{Meaning, printRule}
 import opelan.foundation.document.Detached._
 import munit.FunSuite
@@ -95,6 +95,38 @@ class LangDefDocSuite extends FunSuite {
       .syntax.get.rules.get.rules.find(_.meaning.tag == "div").get
       .meaning.arguments.head
     assertEquals(useA.arguments.flatMap(Meaning.nameOf), List("x"))
+  }
+
+  test("decoded rules carry their node ids") {
+    val doc = langDefDoc(exprDef)
+    val rules = langDefFromDocument(exprDef.typeRef.documentUrl, doc)
+      .syntax.get.rules.get.rules
+    assert(rules.forall(_.id.isDefined))
+  }
+
+  test("a placeholder rename keeps the session — node ids survive renames") {
+    val url = exprDef.typeRef.documentUrl
+    val doc = langDefDoc(exprDef)
+    val d0 = langDefFromDocument(url, doc)
+    // The `(a)` rule's `use` operand points at its placeholder piece —
+    // rename the piece's name leaf, as the use-rename test does.
+    val parens = d0.syntax.get.rules.get.rules
+      .find(_.meaning.tag == "use").get
+    val pieceId = parens.meaning.arguments.head.reference.get.nodeId
+    val renamed = updateNodeData(
+      doc.childrenOf(pieceId).head, s("x"), doc).toOption.get
+    val d1 = langDefFromDocument(url, renamed)
+    // Same node id, consistently renamed content — the compiled
+    // parser is identical, so nothing invalidates.
+    assertEquals(syntaxChanges(d0.syntax.get, d1.syntax.get),
+      Set.empty[String])
+    val text = "(7 + 2)"
+    val s0 = TextSession.start(languageFromDef(d0).textSyntax.get, text)
+    val s1 = s0.retext(languageFromDef(d1).textSyntax.get, text)
+    val fresh = TextSession.start(languageFromDef(d1).textSyntax.get, text)
+    assert(s1.evaluations < fresh.evaluations,
+      s"${s1.evaluations} vs ${fresh.evaluations}")
+    assertEquals(Some(s1.content), languageFromDef(d1).parse(text))
   }
 
   test("the def view projects rule lines as inputs bound to the rule nodes") {

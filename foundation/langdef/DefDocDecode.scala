@@ -88,8 +88,10 @@ def withTermRefs(d: LanguageDef): LanguageDef = {
     vocabulary = vocabulary,
     syntax = d.syntax.map(s => s.copy(rules = s.rules.map(set =>
       set.copy(rules = set.rules.zipWithIndex.map { case (r, i) =>
-        r.copy(meaning = refify(ruleIds.lift(i)
-          .map(pieceIdsFor(doc, _)).getOrElse(Map.empty))(r.meaning))
+        r.copy(
+          id = ruleIds.lift(i),
+          meaning = refify(ruleIds.lift(i)
+            .map(pieceIdsFor(doc, _)).getOrElse(Map.empty))(r.meaning))
       })))))
 }
 
