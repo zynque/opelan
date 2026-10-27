@@ -15,7 +15,10 @@ class IncrementalParseSuite extends FunSuite {
   private val grammar = interpret(grammarDef, language.termTag)
 
   private def normal(r: POut) = (r.pos, r.ok, r.examined, r.tree)
-  private def full(g: Parser, text: String) = normal(g(In(text, exprLexicon), 0))
+  // A marking table so the oracle's trees carry the same ParseMarks a
+  // session's do — marks are deterministic bookkeeping, not content.
+  private def full(g: Parser, text: String) =
+    normal(g(In(text, exprLexicon, MemoTable(marking = true)), 0))
 
   private def editsMatchFull(grammar: Parser): Unit = {
     val random = new Random(3)

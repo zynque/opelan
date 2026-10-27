@@ -39,7 +39,10 @@ class ParseSessionSuite extends FunSuite {
   private val g2 = grammar(chainLeft(Map("+" -> tag("and")))(word))
 
   private def normal(r: POut) = (r.pos, r.ok, r.examined, r.tree)
-  private def full(g: Parser, text: String) = normal(g(In(text, lexicon), 0))
+  // A marking table so the oracle's trees carry the same ParseMarks a
+  // session's do — marks are deterministic bookkeeping, not content.
+  private def full(g: Parser, text: String) =
+    normal(g(In(text, lexicon, MemoTable(marking = true)), 0))
 
   // Two statement nodes hold the same subtree: their kid lists are the
   // same object (memoized results share their graphs when reused).
@@ -92,6 +95,22 @@ class ParseSessionSuite extends FunSuite {
     assert(sameSubtree(after(7), before(7)))
     assertNotEquals(
       spansOf(s1.tree)(List(7)), spansOf(s0.tree)(List(7)))
+  }
+
+  test("the memo lives on the tree: marks claim what the side table can't") {
+    val s = ParseSession.start(g1, lexicon, "1 + 2; ab cd; (3 * 4)")
+    // Result-tree nodes carry marks naming the rules that produced them.
+    val marked = liveMarks(s.tree)
+    assertEquals(marked.map(_._3.rule).toSet,
+      Set("sum", "term", "words", "statement"))
+    // What the marks claim, the side table doesn't repeat — it holds
+    // only results the tree can't represent (rejected alternatives).
+    val claimed = marked.map((pos, _, m) => (m.rule, pos)).toSet
+    s.side.zipWithIndex.foreach { case (column, i) =>
+      column.keys.foreach(name => assert(!claimed((name, i)))) }
+    // `consulted` still sees every applied rule — including `words`,
+    // which failed at column 0 and so lives only in the side table.
+    assert(s.consulted == Set("sum", "term", "words", "statement"))
   }
 
   test("a rule change drops only results that depend on the changed rule") {

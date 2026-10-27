@@ -582,9 +582,9 @@ rules it called. That one mechanism answers three different needs:
   holes whose failed parse called a changed rule — the demo's healing
   moment, done incrementally.
 
-The memo table largely *is* the document. A parsed node already records
-the rule that produced it (its construct ref) and its children; what it
-adds is bookkeeping: its text length and its examined length, stored as
+The memo rides the parse tree, not the document. A result node already
+records the rule that produced it and its children; what the memo adds
+is bookkeeping: its text length and its examined length, stored as
 *lengths relative to the node* rather than absolute offsets, so an edit
 never shifts the positions of untouched nodes (absolute positions are
 sums along the path, as in Tree-sitter and Lezer), plus the rules it
@@ -593,6 +593,13 @@ alternatives tried and rejected — live in a small side table keyed by
 `(rule, position)`; failures must be remembered too, or an edit could
 make a previously failed alternative succeed without being retried.
 
+The committed document carries none of it. A document node is content
+only — its `NodeData`, children, and id — because under continuous
+canonical formatting the text is *derived* from content, and anything
+derivable needn't be stored (and can't then go stale). The parse's
+bookkeeping serves the session that owns it; when the session ends,
+the document keeps the result, not the scaffolding.
+
 Two constraints follow for the combinators: rule applications must
 be *named* (they carry the identity the memo key needs), and every
 result — including holes and junk runs — must report an honest examined
@@ -600,10 +607,11 @@ range, or invalidation will miss cases. The guard is a property test:
 for any edit, an incremental reparse equals a full parse of the edited
 text.
 
-*What is built* (`foundation/grammar`: `Memo`, `ParseSession`). The
-engine runs as a separate memo table beside the document, as a first
-stage toward the memo-is-the-document form above — but already in the
-relative form that form needs:
+*What is built* (`foundation/grammar`: `Memo`, `ParseSession`;
+`foundation/document`: `Reconcile`). The memo lives where a parse
+lives — on the parse tree — and never crosses into the document:
+committed nodes carry only their `NodeData`, so the document model
+stays simple and generic, and no provenance can go stale.
 
 - Parse trees are relative: a node's `from` is an offset from its
   parent's start and its `length` is its span; absolute positions are
@@ -612,24 +620,39 @@ relative form that form needs:
   parse — a subtree's offsets are fixed when a parent adopts it, and
   never move again.
 - `rule(name)` memoizes by `(name, position)` in the parse's
-  `MemoTable`: one column per position, each entry's positions stored
-  relative to its column, recording the rules it called — failures
-  included. A reused result is the *same* subtree object.
-- `ParseSession` holds text, grammar, and the columns. `edit` splices
-  them: entries before the edit that read only text before it stay;
-  columns inside the replaced range are dropped; later columns move
-  wholesale — nothing inside an entry or a subtree is touched, so an
-  edit shifts no positions. `changeRules(grammar, names)` drops results
-  of the named rules and of every rule that called one. `changedRules`
-  diffs two `GrammarDef`s to supply the names. A version bump is a
-  special change: the rules may be identical, but term tags pin the
-  def's version — `changedSince` reports the rule diff plus a
-  migration, and kept results re-pin their tags rather than reparse.
+  `MemoTable`, and a fresh result also stamps its tree's root with a
+  `ParseMark` — the same entry as node-relative data (rule, applied
+  offset, consumed and examined lengths, calls). A reused result is
+  the *same* subtree object.
+- `ParseSession` holds text, grammar, the result tree, and a `side`
+  table — one column per position holding only what the tree can't
+  represent (rejected alternatives, results re-spanned since stamping);
+  every other result is claimed by a mark on the tree itself. `edit`
+  and `changeRules(grammar, names)` re-derive their seeds by walking
+  the kept marks — an entry's positions are relative to its node, so
+  nothing inside an entry or a subtree is touched — plus the side
+  columns' own splice. `changedRules` diffs two `GrammarDef`s to
+  supply the names. A version bump is a special change: the rules may
+  be identical, but term tags pin the def's version — `changedSince`
+  reports the rule diff plus a migration, and kept results re-pin
+  their tags rather than reparse.
 - Document identity is handled a layer down: `commitContent`
   (`foundation/document/Reconcile`) commits a parse's detached output
   into a node, keeping the ids of every subtree whose content didn't
   change — at any depth. Both commit paths — projected inputs and
-  whole-text edits — use it.
+  whole-text edits — use it, and commit nothing but content: the
+  parse's bookkeeping dies with its session.
+- Whitespace and layout are formatting, not content. A committed
+  node records *what* was said; the derived printer decides where
+  the spaces go — continuous auto-format on every commit, in the
+  streaming spirit, rather than preserving whatever the surface
+  happened to hold. If a language ever needs genuinely meaningful
+  layout (a verbatim block, a comment, a chosen block format), the
+  answer is an explicit construct in its `NodeData` — content, not
+  inferred trivia — the same way `GapData` already carries a hole's
+  raw text. This makes provenance a function of content and format,
+  computable on demand, instead of stored data that can disagree
+  with the text it describes.
 - Verified by property tests over a multi-rule grammar and the
   interpreted expression language: after hundreds of random edits, with
   rule changes interleaved, a session equals a full parse (trees, spans,

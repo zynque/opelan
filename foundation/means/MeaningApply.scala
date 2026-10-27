@@ -101,11 +101,13 @@ private[means] def gapNode(in: In, from: Int, to: Int): PTree = {
 
 // A tree grown to cover `from`..`to`: start moves back (or forward),
 // so its kids' relative offsets shift by the same amount — the same
-// re-span `parens` performs.
+// re-span `parens` performs. The root's marks go stale: the grown
+// node no longer spans what the marked rule recorded, so the rule's
+// memo entry stays in the side table.
 private[means] def grown(t: PTree, in: In, from: Int, to: Int): PTree = {
   val shift = t.from - from
   t.copy(text = in.input.substring(from, to), from = from,
-    length = to - from,
+    length = to - from, marks = Nil,
     kids = t.kids.map(k => k.copy(from = k.from + shift)))
 }
 

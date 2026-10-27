@@ -55,11 +55,18 @@ Each item is described in the cited `DESIGN.md` section.
 - **`means` rule groundwork** (`foundation/means`, `foundation/grammar`,
   §4): rule model, checker, reader, and role-tagged printer;
   scannerless combinators; the incremental packrat engine (`Memo`,
-  `ParseSession`), driving the text surface through `TextSession`,
+  `ParseSession`) — memoized results stamp their tree nodes with
+  `ParseMark`s (rule, relative lengths, calls) and the session's side
+  table keeps only what the tree can't represent — driving the text
+  surface through `TextSession`,
   projected input commits through per-input `InputSessions`, and
   stored-hole retries through `HoleRetry` — a hole reparses only when
   a language change touched a rule its last attempt consulted;
   id-preserving reconcile (`commitContent`) on both commit paths.
+  The memo stays parser-local: committed document nodes carry only
+  their `NodeData` — whitespace and layout are formatting derived
+  from content, not stored provenance — so the document model stays
+  simple and no bookkeeping can go stale.
   The compiler is in: `operatorTable` covers prefix, postfix, and
   left/right/non-associative infix driven by the binding list, and
   `compileRules` turns a `RuleSet` into a parser — `exprRules`
@@ -201,8 +208,6 @@ Each item is described in the cited `DESIGN.md` section.
    above); what remains:
 
    *Phase A — rule engine loose ends:*
-   - *Memo in the document:* parse results live in document nodes, with
-     only failed attempts in a side table.
    - `Signum`'s fused negative literals as a parse-time meaning
      (`-n means literal(-n) where n: number`); glued pieces as lexical
      sequencing; builtin leaf productions authored in the document
@@ -211,7 +216,12 @@ Each item is described in the cited `DESIGN.md` section.
    - *Derived printer:* a provenance-tagged variant emitting `src:`
      spans for click-through (printing over document nodes with ids,
      not detached trees), and the round-trip property
-     `parse(print(t)) == t` over generated trees.
+     `parse(print(t)) == t` over generated trees. The printer is also
+     the canonical formatter: committed text is re-rendered from
+     content on every commit (continuous auto-format rather than
+     preserving surface whitespace — layout is derivable, so nothing
+     stores it; meaningful layout would be an explicit `NodeData`
+     construct).
    - *Derived vocabulary:* collect `where`-bound leaf terms into
      vocabulary entries, and derive a def document's vocabulary section
      to retire the hand-written list there.

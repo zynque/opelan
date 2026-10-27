@@ -123,6 +123,6 @@ class GrammarChangesSuite extends FunSuite {
     val s = ParseSession.start(
       compileRules(set, holeHere, NodeData.StringData(_), "e"),
       lexicon, "(5)")
-    assert(s.memo.exists(_.contains("means:#3")), s.memo.toString)
+    assert(s.consulted.contains("means:#3"), s.consulted.toString)
   }
 }

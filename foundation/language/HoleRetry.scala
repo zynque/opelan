@@ -37,7 +37,7 @@ case class HoleRetry(attempts: Map[String, HoleAttempt] = Map.empty) {
       syntax: TextSyntax,
       text: String): (DetachedNode[NodeData], HoleRetry) = {
     val s = TextSession.start(syntax, text)
-    val calls = s.session.memo.iterator.flatMap(_.keySet).toSet
+    val calls = s.session.consulted
     (s.content, HoleRetry(attempts.updated(
       text, HoleAttempt(syntax, calls, s.content))))
   }

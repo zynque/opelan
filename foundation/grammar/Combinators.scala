@@ -31,7 +31,10 @@ case class PTree(
     text: String,
     from: Int,
     length: Int,
-    kids: List[PTree] = Nil) {
+    kids: List[PTree] = Nil,
+    // Parse bookkeeping stamped by the memoized rule applications that
+    // produced this node — the memo entry, living on the tree (Memo.scala).
+    marks: List[ParseMark] = Nil) {
   // The end offset, in the same coordinate as `from`.
   def to: Int = from + length
 }
