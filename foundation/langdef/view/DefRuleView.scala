@@ -3,8 +3,9 @@ package opelan.foundation.langdef.view
 import opelan.foundation.document._
 import opelan.foundation.langdef._
 import opelan.foundation.langdef.doc._
-import opelan.foundation.means.{
-  meaningTree, printPattern, printRule, printWith, Meaning, Rule, RuleSet}
+import opelan.foundation.means.{Meaning, Rule, RuleSet}
+import opelan.foundation.means.engine.{meaningTree, printWith}
+import opelan.foundation.means.text.{printPattern, printRule}
 import opelan.foundation.view.ViewTree._
 
 // The rules section of the "def" view, rendered as projected inputs:

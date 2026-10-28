@@ -3,6 +3,7 @@ package opelan.foundation.langdef.syntax
 import munit.FunSuite
 import opelan.foundation.langdef._
 import opelan.foundation.means._
+import opelan.foundation.means.text._
 
 class DeriveVocabularySuite extends FunSuite {
 

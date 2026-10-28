@@ -1,6 +1,7 @@
-package opelan.foundation.means
+package opelan.foundation.means.text
 
 import opelan.foundation.grammar.{In, scanAt}
+import opelan.foundation.means._
 import opelan.foundation.view.Verbosity
 
 // Rule text as role-tagged spans — one source for plain printing and for

@@ -1,8 +1,9 @@
-package opelan.foundation.means
+package opelan.foundation.means.text
 
 import munit.FunSuite
-import Piece._
-import Meaning._
+import opelan.foundation.means._
+import opelan.foundation.means.Piece._
+import opelan.foundation.means.Meaning._
 
 class RuleReadSuite extends FunSuite {
 

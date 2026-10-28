@@ -1,6 +1,7 @@
-package opelan.foundation.means
+package opelan.foundation.means.text
 
 import opelan.foundation.document.NodeData
+import opelan.foundation.means._
 import opelan.foundation.grammar._
 
 // Read one rule from text:

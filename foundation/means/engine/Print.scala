@@ -1,7 +1,9 @@
-package opelan.foundation.means
+package opelan.foundation.means.engine
 
 import opelan.foundation.document._
 import opelan.foundation.grammar.toDetached
+import opelan.foundation.means._
+import opelan.foundation.means.text._
 
 // A rule set read backwards — printing trees as text the rules read
 // back (DESIGN.md §4, *The meaning side*): every construct-meaning

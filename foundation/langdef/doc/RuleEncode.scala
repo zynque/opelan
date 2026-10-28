@@ -4,6 +4,7 @@ import opelan.foundation.document._
 import opelan.foundation.document.Detached._
 import opelan.foundation.grammar.PTree
 import opelan.foundation.means._
+import opelan.foundation.means.text._
 
 // A rule set as document nodes (DESIGN §4, *Everything by reference*):
 // each `rule` holds `pattern` + `meaning` (+ `where`) sections; pattern

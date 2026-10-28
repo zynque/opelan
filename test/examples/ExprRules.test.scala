@@ -2,7 +2,7 @@ package opelan.examples
 
 import opelan.foundation.document._
 import opelan.foundation.grammar._
-import opelan.foundation.means.printWith
+import opelan.foundation.means.engine.printWith
 
 // The `means`-compiled expression grammar (examples/ExprRules) must
 // produce exactly the hand-written grammar's parse — trees and spans
@@ -33,7 +33,7 @@ class ExprRulesSuite extends munit.FunSuite {
   }
 
   test("the expression rule set is well formed") {
-    import opelan.foundation.means.ruleSetIssues
+    import opelan.foundation.means.text.ruleSetIssues
     assertEquals(ruleSetIssues(exprRules), Nil)
   }
 

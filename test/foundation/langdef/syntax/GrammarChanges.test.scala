@@ -5,6 +5,8 @@ import opelan.foundation.document.NodeData
 import opelan.foundation.grammar._
 import opelan.foundation.langdef._
 import opelan.foundation.means._
+import opelan.foundation.means.engine._
+import opelan.foundation.means.text._
 
 // Language-change diffing over rule sets: memo names are rule
 // identities — the `rule` node's id once rules live in `lang:`

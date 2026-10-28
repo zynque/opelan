@@ -1,7 +1,8 @@
-package opelan.foundation.means
+package opelan.foundation.means.engine
 
 import opelan.foundation.document._
 import opelan.foundation.grammar._
+import opelan.foundation.means._
 
 // What a matched rule builds: its meaning, evaluated against the trees
 // its placeholders bound (DESIGN.md §4, *A meaning is a term,

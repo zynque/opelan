@@ -4,6 +4,8 @@ import opelan.foundation.document._
 import opelan.foundation.grammar._
 import opelan.foundation.langdef.syntax.{leafTermNames, lexicalTerms}
 import opelan.foundation.means._
+import opelan.foundation.means.engine._
+import opelan.foundation.means.text._
 
 // The expression language as `means` rules — the same grammar
 // ExprParse writes as combinators and ExampleDefs writes as

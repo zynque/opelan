@@ -4,8 +4,9 @@ import opelan.foundation.document._
 import opelan.foundation.grammar.PTree
 import opelan.foundation.langdef.doc._
 import opelan.foundation.langdef.syntax._
-import opelan.foundation.means.{
-  desugarPhrase, readRuleOrHole, Meaning, Pattern, Rule}
+import opelan.foundation.means.{Meaning, Pattern, Rule}
+import opelan.foundation.means.engine.desugarPhrase
+import opelan.foundation.means.text.readRuleOrHole
 
 // Text committed against a meta construct produces the structured
 // subtree its decode reads back, never a bare string: a `rule` line

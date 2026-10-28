@@ -1,7 +1,8 @@
-package opelan.foundation.means
+package opelan.foundation.means.engine
 
 import opelan.foundation.document._
 import opelan.foundation.grammar._
+import opelan.foundation.means._
 
 // The decided meaning desugar (DESIGN.md §4, *Phrases desugar at
 // entry*): a `reparse` term's template parses through the language's

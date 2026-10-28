@@ -5,6 +5,7 @@ import opelan.foundation.document.store._
 import opelan.foundation.document.typed._
 import opelan.foundation.langdef._
 import opelan.foundation.means._
+import opelan.foundation.means.text._
 
 // Tolerant readers over a `lang:` document — every lookup optional,
 // every leaf read string-or-nothing. `root` is the definition's root:

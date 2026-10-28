@@ -8,7 +8,8 @@ import opelan.foundation.langdef.doc._
 import opelan.foundation.langdef.syntax._
 import opelan.foundation.langdef.view._
 import opelan.foundation.language.{InputSessions, TextSession}
-import opelan.foundation.means.{Meaning, printRule}
+import opelan.foundation.means.Meaning
+import opelan.foundation.means.text.printRule
 import opelan.foundation.document.Detached._
 import munit.FunSuite
 

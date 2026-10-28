@@ -17,6 +17,7 @@ import NodeShape._
 import LeafKind._
 
 import opelan.foundation.means._
+import opelan.foundation.means.text._
 
 // The languages' identity refs — the URLs their `lang:` documents live
 // at. Constants, not `ExprLanguage.typeRef`: the objects interpreting

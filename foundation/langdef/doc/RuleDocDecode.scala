@@ -5,6 +5,7 @@ import opelan.foundation.document.store._
 import opelan.foundation.document.typed._
 import opelan.foundation.grammar.PTree
 import opelan.foundation.means._
+import opelan.foundation.means.text._
 
 // A `rule` node read back to a `Rule` — the inverse of RuleEncode. A
 // string first child is the text form (read tolerantly through

@@ -1,4 +1,4 @@
-package opelan.foundation.means
+package opelan.foundation.means.text
 
 import opelan.foundation.document.NodeData
 import opelan.foundation.grammar._

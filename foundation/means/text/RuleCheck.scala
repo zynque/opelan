@@ -1,4 +1,6 @@
-package opelan.foundation.means
+package opelan.foundation.means.text
+
+import opelan.foundation.means._
 
 // Well-formedness issues, as readable messages — reported, never thrown;
 // a rule set with issues still compiles as far as it can (*Never broken*).

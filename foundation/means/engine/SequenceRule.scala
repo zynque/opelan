@@ -1,7 +1,8 @@
-package opelan.foundation.means
+package opelan.foundation.means.engine
 
 import opelan.foundation.document._
 import opelan.foundation.grammar._
+import opelan.foundation.means._
 
 // Compiling a non-operator rule (`(a)`, `|a|`, `pi`, `if c then a
 // else b`) to a sequence over its pieces: literals match the next

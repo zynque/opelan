@@ -5,7 +5,8 @@ import opelan.foundation.document.typed._
 import opelan.foundation.grammar._
 import opelan.foundation.langdef.doc._
 import opelan.foundation.langdef.syntax._
-import opelan.foundation.means.{compileRules, desugarRuleSet, RuleSet}
+import opelan.foundation.means.RuleSet
+import opelan.foundation.means.engine.{compileRules, desugarRuleSet}
 import opelan.foundation.language.{
   HoleRetry, InputSessions, Language, SyntaxChange, TextSyntax}
 

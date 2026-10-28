@@ -1,8 +1,10 @@
-package opelan.foundation.means
+package opelan.foundation.means.engine
 
 import munit.FunSuite
 import opelan.foundation.document._
 import opelan.foundation.grammar._
+import opelan.foundation.means._
+import opelan.foundation.means.text._
 
 class CompileSuite extends FunSuite {
 

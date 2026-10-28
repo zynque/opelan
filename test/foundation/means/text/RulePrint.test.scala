@@ -1,6 +1,7 @@
-package opelan.foundation.means
+package opelan.foundation.means.text
 
 import munit.FunSuite
+import opelan.foundation.means._
 import opelan.foundation.view.Verbosity
 
 class RulePrintSuite extends FunSuite {

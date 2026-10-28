@@ -3,7 +3,7 @@ package opelan.foundation.langdef.view
 import opelan.foundation.document._
 import opelan.foundation.langdef._
 import opelan.foundation.langdef.doc._
-import opelan.foundation.means.printWith
+import opelan.foundation.means.engine.printWith
 
 // A worked example's check: `input means expected` — both texts read
 // with the definition's own rules must produce the same tree. The

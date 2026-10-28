@@ -3,7 +3,7 @@ package opelan.foundation.langdef.syntax
 import opelan.foundation.document._
 import opelan.foundation.grammar._
 import opelan.foundation.langdef._
-import opelan.foundation.means.LexicalTerm
+import opelan.foundation.means.engine.LexicalTerm
 
 // A named leaf production a `where` term binds to — which token
 // kinds it accepts and how their text becomes leaf node data, as

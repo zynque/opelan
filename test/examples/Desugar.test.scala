@@ -3,6 +3,8 @@ package opelan.examples
 import opelan.foundation.document._
 import opelan.foundation.grammar._
 import opelan.foundation.means._
+import opelan.foundation.means.engine._
+import opelan.foundation.means.text._
 import Detached._
 
 // The phrase desugar (foundation/means/Desugar.scala, DESIGN §4
