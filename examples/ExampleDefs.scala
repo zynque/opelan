@@ -17,6 +17,7 @@ import NodeShape._
 import LeafKind._
 
 import opelan.foundation.means._
+import opelan.foundation.means.engine.printViewWith
 import opelan.foundation.means.text._
 
 // The languages' identity refs — the URLs their `lang:` documents live
@@ -144,7 +145,8 @@ val exprImpls = Impls(
       "gap"          -> LeafDef(List("hole" -> HoleLeaf)))
   },
   views = Map(
-    "expr-print" -> ((doc, id, _) => printTree(readLocExpr(doc, id))),
+    "expr-print" -> ((doc, id, _) =>
+      printViewWith(exprRules, exprTag, exprViewLeaf)(doc, id)),
     "expr-eval"  -> ((doc, id, _) => evalTree(doc, readLocExpr(doc, id)))))
 
 val sheetImpls = Impls(

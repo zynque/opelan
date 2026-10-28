@@ -220,14 +220,13 @@ Each item is described in the cited `DESIGN.md` section.
    - Builtin leaf productions authored in the document (they live in
      Impls like lexicons and views); example-driven associativity
      overrides.
-   - *Derived printer:* a provenance-tagged variant emitting `src:`
-     spans for click-through (printing over document nodes with ids,
-     not detached trees), and the round-trip property
-     `parse(print(t)) == t` over generated trees. The printer is also
-     the canonical formatter: committed text is re-rendered from
-     content on every commit (continuous auto-format rather than
-     preserving surface whitespace — layout is derivable, so nothing
-     stores it; meaningful layout would be an explicit `NodeData`
+   - *Derived printer — landed:* `printViewWith` emits `src:` spans
+     over document nodes for click-through (it backs the expression
+     language's `print` view), and `parse(print(t)) == t` is
+     round-trip tested over generated trees. It is the canonical
+     formatter in effect: the text surface re-renders from content
+     through the print view rather than preserving surface
+     whitespace (meaningful layout would be an explicit `NodeData`
      construct).
    - *Derived vocabulary:* collect `where`-bound leaf terms into
      vocabulary entries, and derive a def document's vocabulary section

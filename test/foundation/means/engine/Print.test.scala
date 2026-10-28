@@ -2,6 +2,7 @@ package opelan.foundation.means.engine
 
 import munit.FunSuite
 import opelan.foundation.document._
+import opelan.foundation.grammar._
 import opelan.foundation.means._
 import opelan.foundation.means.text._
 
@@ -45,6 +46,8 @@ class PrintSuite extends FunSuite {
   private def neg(x: DetachedNode[NodeData]) = node("neg", x)
   private def pct(x: DetachedNode[NodeData]) = node("pct", x)
   private def group(x: DetachedNode[NodeData]) = node("group", x)
+  private def choose(c: DetachedNode[NodeData], a: DetachedNode[NodeData],
+      b: DetachedNode[NodeData]) = node("choose", c, a, b)
 
   test("infix prints without redundant parens") {
     assertEquals(print(add(lit(1), mul(lit(2), lit(3)))), "1 + 2 * 3")
@@ -111,5 +114,70 @@ class PrintSuite extends FunSuite {
     assertEquals(print(node("wat", lit(1))), "?")
     assertEquals(print(DetachedNode.leaf(NodeData.GapData("x"))), "x")
     assertEquals(print(DetachedNode.leaf(NodeData.GapData(""))), "?")
+  }
+
+  // The round-trip set: like `set` but the parens rule means `a` —
+  // grouping is surface-only and leaves no node, so minimal parens
+  // the printer adds are absorbed on reparse. The prefix is spelled
+  // `- a` (unglued) because the lexicon's sym tokens are runs —
+  // glued output like `--1` would lex as one token (a tokenization
+  // constraint, not a precedence one). A keyword-led construct
+  // joins for sequence-rule coverage.
+  private val rtSet = RuleSet(
+    rules = List(
+      "(a) means a",
+      "- a means neg(a)",
+      "a % means pct(a)",
+      "a * b means mul(a, b)",
+      "a / b means div(a, b)",
+      "a + b means add(a, b)",
+      "a - b means sub(a, b)",
+      "if c then a else b means choose(c, a, b)").map(aRule),
+    tiers = List(
+      Tier(List(readPattern("-a"), readPattern("a %"))),
+      Tier(List(readPattern("a * b"), readPattern("a / b"))),
+      Tier(List(readPattern("a + b"), readPattern("a - b")))))
+
+  private val lex = Lexicon(List(
+    "int"  -> runOf(1)(_.isDigit),
+    "word" -> runOf(1)(_.isLetter),
+    "lpar" -> exactly("("),
+    "rpar" -> exactly(")"),
+    "sym"  -> runOf(1)(c => "+-*/%!".contains(c))))
+
+  private val atom: Parser = choice(
+    tok("int")(t => NodeData.IntData(t.text.toInt)),
+    unrecognized(Set("sym", "word"), Set("int", "word", "sym")))
+
+  // Every tree to height 2 over the atoms and constructors — height
+  // 2 is where the precedence/parens interplay bites (a compound
+  // operand inside a compound) — plus a keyword-led case.
+  private val generated: List[DetachedNode[NodeData]] = {
+    def grow(ts: List[DetachedNode[NodeData]])
+        : List[DetachedNode[NodeData]] =
+      ts ++ ts.flatMap(a => List(neg(a), pct(a))) ++
+        (for {
+          f <- List(add, sub, mul, div)
+          a <- ts; b <- ts
+        } yield f(a, b))
+    grow(grow(List(lit(1), lit(2)))) ++ List(
+      choose(lit(0), lit(1), lit(2)),
+      choose(add(lit(1), lit(2)), mul(lit(1), lit(2)), neg(lit(1))))
+  }
+
+  // `parse(print(t)) == t`: the printer writes only what the compiled
+  // rules read back — minimal parens included.
+  test("printed text reparses to the same tree") {
+    val grammar = phrase(
+      compileRules(rtSet, atom, NodeData.StringData(_), "e"), Set.empty)
+    val printer = printWith(rtSet, NodeData.StringData(_), {
+      case NodeData.IntData(v) => v.toString
+      case _                   => "?"
+    })
+    generated.foreach { t =>
+      assertEquals(
+        toDetached(grammar(In(printer(t), lex), 0).tree), t,
+        s"round trip of '${printer(t)}'")
+    }
   }
 }

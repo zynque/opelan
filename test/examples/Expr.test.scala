@@ -117,6 +117,24 @@ class ExprSuite extends munit.FunSuite {
       Right(ViewTree.from(gapId, ViewTree.hole("abc"))))
   }
 
+  test("the derived print view matches the hand-written print tree") {
+    // printTree over readLocExpr is the oracle printViewWith replaces:
+    // the derived printer must emit the identical provenance-tagged
+    // tree — pieces, parens, holes, and src: ids alike.
+    val inputs = List(
+      "1 + 2 - 3", "(1 + 2) * 3", "1.5 * 2", "ref:3 + 1", "-4 + 5",
+      "1 - 2 - 3", "1 + (2 - 3)", "1 + abc", "1 +", "(1 2)", "abc",
+      "8 / 4 / 2")
+    inputs.foreach { t =>
+      val doc =
+        applyDocText(ExprLanguage.sampleDoc, registryForDoc, t).toOption.get
+      val cid = contentId(doc).get
+      assertEquals(
+        ExprLanguage.render("print", doc),
+        Right(printTree(readLocExpr(doc, cid))), s"print: $t")
+    }
+  }
+
   private def gaps(t: DetachedNode[NodeData]): List[String] =
     (t.data match {
       case NodeData.GapData(text) => List(text)

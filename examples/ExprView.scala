@@ -13,6 +13,18 @@ import opelan.foundation.view.ViewTree._
 // The "print" view: infix text as a provenance-tagged flow.
 def printTree(e: LocExpr): DetachedNode[NodeData] = child(e, 0)
 
+// A leaf's printed form for the derived print view — the same leaves
+// the LocExpr cases produce, so printViewWith emits an identical
+// tree: ints/floats as data leaves, refs as `ref:` text, gaps as hole
+// chips, anything else as a hole showing its data.
+def exprViewLeaf(data: NodeData): DetachedNode[NodeData] = data match {
+  case NodeData.IntData(v)         => il(v)
+  case NodeData.FloatData(f)       => fl(f)
+  case NodeData.InternalNodeRef(t) => txt(s"ref:$t")
+  case NodeData.GapData(t)         => hole(t)
+  case other                       => hole(holeText(other))
+}
+
 private def prec(e: LocExpr): Int = e match {
   case LocExpr.LocAdd(_, _, _) | LocExpr.LocSub(_, _, _) => 1
   case LocExpr.LocMul(_, _, _) | LocExpr.LocDiv(_, _, _) => 2

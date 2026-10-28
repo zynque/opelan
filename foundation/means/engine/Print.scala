@@ -29,21 +29,8 @@ def printWith(
     set: RuleSet,
     termTag: String => NodeData,
     leaf: NodeData => String): DetachedNode[NodeData] => String = {
-  val tiers = orderedOperatorRules(set)
-  val count = tiers.length
-  // Pattern key → print level: higher binds tighter. Tier 0 is the
-  // tightest, so level = count - index; a construct that isn't an
-  // operator (sequence rule, leaf rule) prints at atom level — its
-  // own literals delimit it.
-  val levels: Map[List[String], Int] =
-    tiers.zipWithIndex.flatMap { case (rs, i) =>
-      rs.map(r => r.pattern.key -> (count - i)) }.toMap
-  val builders: Map[NodeData, Rule] = set.rules.reverse.flatMap { r =>
-    if (Meaning.isConstruct(r.meaning))
-      List(r.meaning.reference.map(NodeData.ExternalNodeRef(_))
-        .getOrElse(termTag(r.meaning.tag)) -> r)
-    else Nil
-  }.toMap
+  val index = PrintIndex(set, termTag)
+  import index._
 
   // `ctx` is the print level a node must meet to stand bare.
   def render(node: DetachedNode[NodeData], ctx: Int): String = {
@@ -62,61 +49,25 @@ def printWith(
          Int.MaxValue)
     }
 
-  // The ctx a pattern placeholder's tree prints under. Edge
-  // placeholders get the precedence context their position implies;
-  // inner ones (sequence rules only — operators have literal cores)
-  // take none.
-  def operandCtx(
-      rule: Rule, pieceIndex: Int, child: DetachedNode[NodeData]): Int = {
-    val pl = levels.getOrElse(rule.pattern.key, 0)
-    rule.shape match {
-      case Shape.Infix => if (pieceIndex == 0) pl else pl + 1
-      case Shape.Postfix => pl
-      case Shape.Prefix => if (isTierPrefix(child, pl)) pl else pl + 1
-      case _ => 0
-    }
-  }
-
-  // A same-tier prefix operand nests without parens — the operand slot
-  // a prefix operator parses is the level's operand, which accepts
-  // tier-i prefixes.
-  def isTierPrefix(
-      node: DetachedNode[NodeData], pl: Int): Boolean =
-    builders.get(node.data).exists(r =>
-      isOperatorPattern(r.pattern) && r.shape == Shape.Prefix &&
-        levels.get(r.pattern.key).contains(pl))
-
   // Walk a construct rule's pattern: placeholders render their argument
   // tree, literals verbatim; `glued` suppresses the space before a
   // piece, as in the rule's own text.
   def walk(
       node: DetachedNode[NodeData], rule: Rule,
-      ctxOf: (Int, DetachedNode[NodeData]) => Int): String = {
+      ctxOf: (Int, NodeData) => Int): String = {
     val args = argumentIndex(rule)
     rule.pattern.pieces.zipWithIndex.map { case (piece, i) =>
       val text = piece match {
         case Piece.Literal(text, _) => text
         case Piece.Placeholder(name, _) =>
           args.get(name).flatMap(node.children.lift) match {
-            case Some(child) => render(child, ctxOf(i, child))
+            case Some(child) => render(child, ctxOf(i, child.data))
             case None        => "?"
           }
       }
       if (i == 0 || piece.glued) text else " " + text
     }.mkString
   }
-
-  // Placeholder name → the argument position it fills, so its child is
-  // the tree it prints. A name repeated (`add(a, a)`) binds the first;
-  // a pattern placeholder the meaning never names prints as a hole.
-  def argumentIndex(rule: Rule): Map[String, Int] =
-    if (Meaning.isConstruct(rule.meaning))
-      rule.meaning.arguments.zipWithIndex.flatMap { case (a, i) =>
-        if (a.tag == "use")
-          a.arguments.headOption.flatMap(Meaning.nameOf).map(_ -> i)
-        else None
-      }.reverse.toMap
-    else Map.empty
 
   (tree => render(tree, 0))
 }
