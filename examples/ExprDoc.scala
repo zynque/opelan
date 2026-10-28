@@ -33,8 +33,8 @@ private def binOf(tag: String): (Expr, Expr) => Expr = tag match {
 }
 
 // Interpret the subtree rooted at nodeId as an expression. The read is
-// recovering: nodes that are not valid expression syntax (junk data,
-// foreign constructs, wrong arity, literals with children) read as
+// recovering: nodes that are not valid expression syntax (unrecognized
+// data, foreign constructs, wrong arity, literals with children) read as
 // holes, so malformed subtrees surface as gaps rather than errors — the
 // same totality the text parser gives typed input.
 def exprFromDocument(doc: Document[NodeData], nodeId: Int): Either[String, Expr] =
@@ -69,7 +69,7 @@ private def leafExpr(data: NodeData, isLeaf: Boolean): Expr = data match {
 }
 
 // What a malformed node contributes to a hole: its surface text —
-// strings unquoted, so hole text reparses as the same junk.
+// strings unquoted, so hole text reparses as the same unrecognized run.
 private[examples] def holeText(data: NodeData): String = data match {
   case NodeData.StringData(s) => s
   case other                  => NodeDataText.show(other)

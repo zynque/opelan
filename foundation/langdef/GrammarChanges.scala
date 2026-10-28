@@ -17,7 +17,7 @@ def namedRules(top: GrammarDef): Map[String, GrammarDef] = {
     case GrammarDef.Phrase(inner, _)    => collect(inner)
     case GrammarDef.Tok(_, _)           => Nil
     case GrammarDef.Signum              => Nil
-    case GrammarDef.Junk(_, _)          => Nil
+    case GrammarDef.Unrecognized(_, _)  => Nil
     case GrammarDef.Ref(_)              => Nil
     case GrammarDef.Hole                => Nil
   }

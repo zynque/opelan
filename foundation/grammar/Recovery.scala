@@ -5,12 +5,12 @@ import opelan.foundation.document._
 // The recovering productions: where text fits no production it becomes a
 // hole holding the verbatim text, so input is never lost (*Never broken*).
 
-// The fallback hole: applies only when the token at `pos` can start junk
-// (its kind is in `start` — a boundary like ")" never begins a hole),
-// then covers the maximal run of following tokens whose kinds are in
-// `run`. At the end of input it produces the empty hole — "operand
-// expected" — and still applies.
-def junk(start: Set[String], run: Set[String]): Parser =
+// The fallback hole: applies only when the token at `pos` can start an
+// unrecognized run (its kind is in `start` — a boundary like ")" never
+// begins a hole), then covers the maximal run of following tokens whose
+// kinds are in `run`. At the end of input it produces the empty hole —
+// "operand expected" — and still applies.
+def unrecognized(start: Set[String], run: Set[String]): Parser =
   (in, pos) => {
     val first = scanAt(in, pos)
     first.token match {

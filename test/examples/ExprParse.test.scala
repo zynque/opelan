@@ -28,7 +28,7 @@ class ExprParseSuite extends munit.FunSuite {
     assertEquals(parse("1.5"), FLit(1.5))
     assertEquals(parse("0.25"), FLit(0.25))
     assertEquals(parse("ref:7"), Ref(7))
-    assertEquals(parse("12."), Hole("12."))  // a dangling dot is junk
+    assertEquals(parse("12."), Hole("12."))  // a dangling dot is unrecognized
   }
 
   test("* and / bind tighter than + and -") {
@@ -58,7 +58,7 @@ class ExprParseSuite extends munit.FunSuite {
     assertEquals(parse("?"), Hole("?"))
   }
 
-  test("junk text produces a hole holding the verbatim text") {
+  test("unrecognized text produces a hole holding the verbatim text") {
     assertEquals(parse("1 + abc"), Add(Lit(1), Hole("abc")))
     assertEquals(parse("hello"), Hole("hello"))
   }

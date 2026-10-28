@@ -33,11 +33,13 @@ private val addSub = Map("+" -> Expr.AddTag, "-" -> Expr.SubTag)
 private val exprGrammarDef: GrammarDef = exprGrammarWith(List(mulDiv, addSub))
 
 // The operand fallback the means rules compile over — just the
-// recovering junk run now that leaf tokens come from `where`-bound
-// rules (`n means n where n: number`) and signed numbers are the
-// `+n`/`-n` rules, all bound through exprImpls' leaf productions.
+// recovering unrecognized run now that leaf tokens come from
+// `where`-bound rules (`n means n where n: number`) and signed
+// numbers are the `+n`/`-n` rules, all bound through exprImpls' leaf
+// productions.
 private val exprAtom: GrammarDef =
-  Junk(Set("op", "junk"), Set("int", "float", "ref", "junk", "hole"))
+  Unrecognized(Set("op", "unrecognized"),
+    Set("int", "float", "ref", "unrecognized", "hole"))
 
 private def exprGrammarWith(levels: List[Map[String, String]]): GrammarDef =
   Phrase(
@@ -49,9 +51,9 @@ private def exprGrammarWith(levels: List[Map[String, String]]): GrammarDef =
         Tok("hole", HoleLeaf),
         Parens(Ref("expr")),
         Signum,
-        Junk(
-          Set("op", "junk"),
-          Set("int", "float", "ref", "junk", "hole")))),
+        Unrecognized(
+          Set("op", "unrecognized"),
+          Set("int", "float", "ref", "unrecognized", "hole")))),
       levels = levels)),
     stops = Set.empty)
 

@@ -12,7 +12,7 @@ import Expr._
 // than fail.
 //
 //   expr   := phrase(precedenceTable(atom, levels))
-//   atom   := int | float | ref:N | '?' | ( expr ) | signum | junk
+//   atom   := int | float | ref:N | '?' | ( expr ) | signum | unrecognized
 //   levels := ["*"->mul, "/"->div] then ["+"->add, "-"->sub]  (construct refs)
 //             (tightest first — the last level binds loosest)
 //
@@ -57,6 +57,6 @@ private def atom: Parser = choice(
   tok("hole")(t => NodeData.GapData(t.text)),
   parens(exprCore),
   signum,
-  junk(
-    Set("op", "junk"),
-    Set("int", "float", "ref", "junk", "hole")))
+  unrecognized(
+    Set("op", "unrecognized"),
+    Set("int", "float", "ref", "unrecognized", "hole")))

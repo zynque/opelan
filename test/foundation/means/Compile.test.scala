@@ -15,7 +15,7 @@ class CompileSuite extends FunSuite {
 
   private val atom: Parser = choice(
     tok("int")(t => NodeData.IntData(t.text.toInt)),
-    junk(Set("sym", "word"), Set("int", "word", "sym")))
+    unrecognized(Set("sym", "word"), Set("int", "word", "sym")))
 
   private def aRule(text: String): Rule =
     readRule(text).fold(e => fail(e), identity)
@@ -135,7 +135,7 @@ class CompileSuite extends FunSuite {
     assertEquals(parse(set, "5 + 6", lexicals),
       node("add", lit(5), lit(6)))
     // A token the production doesn't accept isn't an operand —
-    // the junk fallback recovers it.
+    // the unrecognized fallback recovers it.
     assertEquals(parse(set, "x", lexicals), gap("x"))
   }
 
@@ -150,7 +150,7 @@ class CompileSuite extends FunSuite {
       aRule("pick n and m means pair(n, m) where n: number")))
     assertEquals(parse(set, "pick 5 and x", lexicals),
       node("pair", lit(5), gap("x")))
-    // `x` isn't a number: the rule fails and junk keeps the text.
+    // `x` isn't a number: the rule fails and the fallback keeps the text.
     assertEquals(parse(set, "pick x and 5", lexicals),
       gap("pick x and 5"))
   }

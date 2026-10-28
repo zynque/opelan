@@ -76,8 +76,8 @@ private def grammarLines(g: GrammarDef, indent: String = ""): List[String] =
     case GrammarDef.Parens(inner) =>
       s"${indent}parens" :: grammarLines(inner, indent + "  ")
     case GrammarDef.Signum => List(s"${indent}signum")
-    case GrammarDef.Junk(start, run) =>
-      List(s"${indent}junk starts {${start.mkString(" ")}} runs {${run.mkString(" ")}}")
+    case GrammarDef.Unrecognized(start, run) =>
+      List(s"${indent}unrecognized starts {${start.mkString(" ")}} runs {${run.mkString(" ")}}")
     case GrammarDef.ChainLeft(ops, atom) =>
       s"${indent}chain ${opsText(ops)}" :: grammarLines(atom, indent + "  ")
     case GrammarDef.Precedence(atom, levels) =>

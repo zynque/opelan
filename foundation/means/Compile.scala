@@ -22,7 +22,7 @@ case class LexicalTerm(
     check: NodeData => Boolean)
 
 // `atom` supplies the operand fallback rules don't yet describe —
-// the signum and the recovering junk run — while leaf tokens and
+// the recovering `unrecognized` run — while leaf tokens and
 // anything narrower comes from the rules themselves: `where`
 // constraints bind placeholders to named leaf productions in
 // `lexicals` (DefLanguage's impls), the language's leaf terms are

@@ -17,8 +17,8 @@ private[langdef] def grammarNode(
     case GrammarDef.Choice(alts)    => n(pending("choice"), alts.map(go)*)
     case GrammarDef.Parens(inner)   => n(pending("parens"), go(inner))
     case GrammarDef.Signum          => DetachedNode.leaf(pending("signum"))
-    case GrammarDef.Junk(start, run) =>
-      n(pending("junk"), sl(words(start)), sl(words(run)))
+    case GrammarDef.Unrecognized(start, run) =>
+      n(pending("unrecognized"), sl(words(start)), sl(words(run)))
     case GrammarDef.ChainLeft(ops, atom) =>
       n(pending("chain"), go(atom), n(pending("ops"), opPairs(ops)*))
     case GrammarDef.Precedence(atom, levels) =>

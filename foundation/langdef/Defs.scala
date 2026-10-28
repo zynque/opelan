@@ -42,7 +42,7 @@ private[langdef] val metaTerms: List[NodeTerm] = List(
   NodeTerm("choice", Any),
   NodeTerm("parens", Fixed(1)),
   NodeTerm("signum", Fixed(0)),
-  NodeTerm("junk", Fixed(2)),
+  NodeTerm("unrecognized", Fixed(2)),
   NodeTerm("chain", Fixed(2)),
   NodeTerm("ops", Any),
   NodeTerm("op", Fixed(2)),        // symbol + ref to the term it builds

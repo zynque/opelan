@@ -30,12 +30,14 @@ val exprRules = RuleSet(
   examples = List(Example("1 + 2 * 3", "1 + (2 * 3)")))
 
 // The operand fallback the rules don't describe — just the
-// recovering junk run; the leaf tokens come from the vocabulary's
-// leaf terms bound through exprImpls' leaf productions, and signed
-// numbers are the `+n`/`-n` rules. The same fallback ExprParse's
-// atom writes, minus `parens`, the leaf toks, and `signum`.
+// recovering unrecognized run; the leaf tokens come from the
+// vocabulary's leaf terms bound through exprImpls' leaf productions,
+// and signed numbers are the `+n`/`-n` rules. The same fallback
+// ExprParse's atom writes, minus `parens`, the leaf toks, and
+// `signum`.
 lazy val ruleAtom: Parser =
-  junk(Set("op", "junk"), Set("int", "float", "ref", "junk", "hole"))
+  unrecognized(Set("op", "unrecognized"),
+    Set("int", "float", "ref", "unrecognized", "hole"))
 
 // The named leaf vocabulary `where` terms bind through — the
 // vocabulary's leaf terms flag which are operands.

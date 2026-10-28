@@ -55,7 +55,8 @@ private class DefDocReader(
       case Some("choice") => GrammarDef.Choice(kids(id).map(grammarFrom(_, seen)))
       case Some("parens") => GrammarDef.Parens(sub(0))
       case Some("signum") => GrammarDef.Signum
-      case Some("junk")   => GrammarDef.Junk(setFrom(childStr(id, 0)), setFrom(childStr(id, 1)))
+      case Some("unrecognized") =>
+        GrammarDef.Unrecognized(setFrom(childStr(id, 0)), setFrom(childStr(id, 1)))
       case Some("chain")  => GrammarDef.ChainLeft(opsFrom(kids(id).lift(1)), sub(0))
       case Some("precedence") =>
         GrammarDef.Precedence(sub(0), kids(id).lift(1).toList.flatMap(kids).map(l => opsFrom(Some(l))))

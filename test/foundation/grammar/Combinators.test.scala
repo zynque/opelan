@@ -13,7 +13,7 @@ class CombinatorSuite extends FunSuite {
     "op"   -> oneOf("+-*"),
     "lpar" -> exactly("("),
     "rpar" -> exactly(")"),
-    "junk" -> runOf(1)(c => c.isLetter)))
+    "unrecognized" -> runOf(1)(c => c.isLetter)))
 
   private def in(text: String) = In(text, lexicon)
 
@@ -82,7 +82,7 @@ class CombinatorSuite extends FunSuite {
     // At the end of input, the end itself was observed.
     assertEquals(int(in("12"), 0).examined, 3)
     // chainLeft looked past the last operand for another operator: it
-    // scanned "x" (junk runs to the end, so the end was observed too) —
+    // scanned "x" (unrecognized runs to the end, so the end was observed too) —
     // appending to the text could change this result.
     val p = chainLeft(Map("+" -> tag("add")))(int)
     assertEquals(p(in("1+2 x"), 0).examined, 6)

@@ -323,7 +323,7 @@ Today a language's meaning is scattered: the grammar maps `"*"` to the tag
 `"mul"` inside a combinator tree, the vocabulary separately declares `mul` as
 `Fixed(2)`, `Expr.pp` re-encodes precedence for printing, and eval matches
 `Mul` in Scala — four artifacts held together by a string. Authoring one
-requires knowing parser combinators (`Signum`, `Junk`, `Phrase`, stop
+requires knowing parser combinators (`Signum`, `Unrecognized`, `Phrase`, stop
 sets), much of which is recovery machinery leaking into the definition.
 
 The target is the way mathematics is *taught*: a notation is introduced by
@@ -526,7 +526,7 @@ Caveats this design accepts:
   sequence is decided by its shape, not by the author.
 
 Recovery stays in the combinators (a missing operand folds to a hole, as
-`chainLeft` does today), keeping `Junk`/`Phrase` out of authored
+`chainLeft` does today), keeping `Unrecognized`/`Phrase` out of authored
 definitions.
 
 **Scannerless: no separate lexers** (built). The combinators parse
@@ -560,8 +560,8 @@ grammar (`RuleGrammar`) over a rule lexicon. Why this direction:
 - *The rule notation is an ordinary grammar*, ahead of full
   self-description.
 
-Recovery keeps its token-level vocabulary: `junk` gathers a run of
-lexicon matches of given kinds into a hole, and `phrase` stops at given
+Recovery keeps its token-level vocabulary: `unrecognized` gathers a
+run of lexicon matches of given kinds into a hole, and `phrase` stops at given
 kinds, so behavior is identical to the token-stream version. A character
 no lexical rule accepts still forms a one-character token, so no text is
 lost. Once grammars are compiled from rules, the same recovery can be
@@ -614,7 +614,7 @@ the document keeps the result, not the scaffolding.
 
 Two constraints follow for the combinators: rule applications must
 be *named* (they carry the identity the memo key needs), and every
-result — including holes and junk runs — must report an honest examined
+result — including holes and unrecognized runs — must report an honest examined
 range, or invalidation will miss cases. The guard is a property test:
 for any edit, an incremental reparse equals a full parse of the edited
 text.

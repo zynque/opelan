@@ -49,12 +49,12 @@ class ResolveSuite extends FunSuite {
     assertEquals(
       languageForRef(ExprLanguage.typeRef, Store.empty),
       Some(ExprLanguage))
-    val junk = Store.empty.put(
+    val bogus = Store.empty.put(
       "opelan:languages/int-expression",
       buildDocument[NodeData](
-        DetachedNode.leaf(NodeData.StringData("junk"))))._1
+        DetachedNode.leaf(NodeData.StringData("bogus"))))._1
     assertEquals(
-      languageForRef(ExprLanguage.typeRef, junk), Some(ExprLanguage))
+      languageForRef(ExprLanguage.typeRef, bogus), Some(ExprLanguage))
   }
 
   test("DocLanguage resolves the meta ref even unseeded") {

@@ -7,7 +7,7 @@ import munit.FunSuite
 
 // The interpreted expression language under incremental parsing: random
 // edits, and a language change to its grammar, always agree with a full
-// parse — recovery (holes, junk runs) included.
+// parse — recovery (holes, unrecognized runs) included.
 class IncrementalParseSuite extends FunSuite {
 
   private val language = new DefLanguage(exprCombinatorDef, implsFor(exprCombinatorDef))

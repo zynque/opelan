@@ -73,7 +73,8 @@ Each item is described in the cited `DESIGN.md` section.
   (`examples/ExprRules.scala`) matches the hand-written expression
   grammar on every input in the battery, spans included. Rules are
   now live in the definition path: `exprDef` carries `exprRules`
-  over a combinator operand fallback of just junk — signed
+  over a combinator operand fallback of just the `unrecognized`
+  recovery run — signed
   literals are the `+n`/`-n` rules, and
   the leaf tokens come from the vocabulary's leaf terms bound
   through `Impls.leaves` (`SyntaxDef.rules`), `DefLanguage`
@@ -253,7 +254,7 @@ Each item is described in the cited `DESIGN.md` section.
    - **Demote `GrammarDef` to the implementation layer.** Definitions
      authored and stored as rules only; `GrammarDef` shown only under
      show implementation as the escape hatch; remove the combinators
-     rules made redundant in authored definitions (`Junk`, `Phrase`,
+     rules made redundant in authored definitions (`Unrecognized`, `Phrase`,
      `Signum`, stop sets). Update DESIGN.md and the demo.
 
    *Phase E — beyond parity:*

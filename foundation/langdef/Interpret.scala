@@ -40,8 +40,8 @@ def interpret(top: GrammarDef, tag: String => NodeData): Parser = {
       parens(go(inner))
     case GrammarDef.Signum =>
       signum
-    case GrammarDef.Junk(start, run) =>
-      junk(start, run)
+    case GrammarDef.Unrecognized(start, run) =>
+      unrecognized(start, run)
     case GrammarDef.ChainLeft(ops, atom) =>
       chainLeft(ops.view.mapValues(tag).toMap)(go(atom))
     case GrammarDef.Precedence(atom, levels) =>

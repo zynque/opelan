@@ -42,8 +42,8 @@ enum NodeShape {
 // of two forms. With `rules` unset, `grammar` is the whole combinator
 // composition. With `rules` set, the means rules compile over `grammar`
 // as the operand atom — the productions rules don't yet express (leaf
-// tokens, the signum, the junk fallback) until `where`-terms bind
-// placeholders to a lexical rule vocabulary.
+// tokens, the signum, the unrecognized fallback) until `where`-terms
+// bind placeholders to a lexical rule vocabulary.
 case class SyntaxDef(
     lexicon: String,
     grammar: GrammarDef,
@@ -81,7 +81,7 @@ enum GrammarDef {
   case Choice(alts: List[GrammarDef])
   case Parens(inner: GrammarDef)
   case Signum
-  case Junk(start: Set[String], run: Set[String])
+  case Unrecognized(start: Set[String], run: Set[String])
   case ChainLeft(ops: Map[String, String], atom: GrammarDef)
   case Precedence(atom: GrammarDef, levels: List[Map[String, String]])
   case Phrase(inner: GrammarDef, stops: Set[String])

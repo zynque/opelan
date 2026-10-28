@@ -4,7 +4,7 @@ package opelan.foundation.grammar
 // set of named, character-level lexical rules, tried at a position only
 // when a combinator asks what starts there — the first rule that matches
 // wins (PEG ordered choice), so order expresses priority (`float` before
-// `int`, `ref` before `junk`). A grammar's token kinds ("int", "rpar")
+// `int`, `ref` before `unrecognized`). A grammar's token kinds ("int", "rpar")
 // are the names of these rules.
 
 // A lexical match at a position: the rule that matched and its range.
