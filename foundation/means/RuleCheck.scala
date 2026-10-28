@@ -35,8 +35,19 @@ def ruleSetIssues(ruleSet: RuleSet): List[String] = {
       s"'${show(ps.head)}' is on the binding list more than once"
   }.toList
   val tieredKeys = tiered.map(_.key).toSet
+  // An operator-shaped rule that is literal-led and binds every
+  // placeholder through `where` declares operand intent — compileRules
+  // emits it as an operand sequence when the terms resolve to leaf
+  // productions, so it needs no binding. (`where` naming a term that
+  // isn't a leaf production is a separate issue class the check
+  // doesn't yet cover — it has no lexicals to resolve against.)
+  def operandBound(r: Rule): Boolean =
+    r.pattern.pieces.headOption.exists(_.isInstanceOf[Piece.Literal]) &&
+      r.pattern.placeholders.forall(
+        r.where.flatMap(_.placeholders).toSet.contains)
   val untiered = ruleSet.rules.filter(r =>
-    isOperatorPattern(r.pattern) && !tieredKeys.contains(r.pattern.key))
+    isOperatorPattern(r.pattern) && !tieredKeys.contains(r.pattern.key) &&
+      !operandBound(r))
     .map(r => s"'${show(r.pattern)}' is an operator with no binding")
   val definedTwice = byKey.collect {
     case (_, rules) if rules.length > 1 =>

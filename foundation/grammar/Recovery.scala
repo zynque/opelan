@@ -64,26 +64,38 @@ def phrase(p: Parser, stops: Set[String]): Parser =
     }
   }
 
-// A sign fused with a numeric literal: "+4" / "-4" / "- 4.5" — the
-// sign and the number need not be adjacent.
+// A sign fused with a numeric literal: "+4" / "-4" — sign and number
+// must be adjacent, one lexical piece. The `means` spelling of the
+// same production: `-n means literal(neg(n)) where n: number` (the
+// placeholder's glue is the adjacency — SequenceRule).
 def signum: Parser =
-  seq(
-    tokWhere("op")(t => t.text == "+" || t.text == "-")(
-      t => NodeData.StringData(t.text)),
-    choice(
-      tok("int")(t => t.text.toIntOption.map(NodeData.IntData(_))
-        .getOrElse(NodeData.GapData(t.text))),
-      tok("float")(t => t.text.toDoubleOption.map(NodeData.FloatData(_))
-        .getOrElse(NodeData.GapData(t.text)))))(
-    (op, num) => {
-      val negative = op.text == "-"
-      val data = num.data match {
-        case NodeData.IntData(v)   => NodeData.IntData(if (negative) -v else v)
-        case NodeData.FloatData(v) => NodeData.FloatData(if (negative) -v else v)
-        case d                     => d
+  (in, pos) => {
+    val first = scanAt(in, pos)
+    first.token
+      .filter(t => t.kind == "op" && (t.text == "+" || t.text == "-"))
+      .fold(emptyHole(in, pos, first.examined)) { op =>
+        val next = scanAt(in, op.to)
+        val seen = first.examined.max(next.examined)
+        next.token
+          .filter(t => t.from == op.to &&
+            (t.kind == "int" || t.kind == "float"))
+          .fold(emptyHole(in, pos, seen)) { num =>
+            val negative = op.text == "-"
+            val data = (if (num.kind == "int")
+                          num.text.toIntOption.map(NodeData.IntData(_))
+                        else num.text.toDoubleOption.map(NodeData.FloatData(_)))
+              .getOrElse(NodeData.GapData(num.text)) match {
+                case NodeData.IntData(v) =>
+                  NodeData.IntData(if (negative) -v else v)
+                case NodeData.FloatData(v) =>
+                  NodeData.FloatData(if (negative) -v else v)
+                case d => d
+              }
+            POut(num.to, PTree(data, in.input.substring(op.from, num.to),
+              op.from, num.to - op.from), ok = true, seen)
+          }
       }
-      PTree(data, op.text + num.text, op.from, num.to - op.from)
-    })
+  }
 
 private[grammar] def hole(
     in: In, from: Int, to: Int, pos: Int, ok: Boolean, examined: Int): POut = {

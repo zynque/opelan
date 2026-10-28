@@ -2,10 +2,12 @@ package opelan.foundation.langdef
 
 import opelan.foundation.document._
 
-// Point each meaning's `use`/`source`/`builtin` operand at the
-// placeholder piece node it names — the rules counterpart of
+// Point each meaning's `use`/`source`/`builtin`/`literal` operand at
+// the placeholder piece node it names — the rules counterpart of
 // linkUses for grammar nodes. The operand decodes through the piece's
-// projected name leaf, so a placeholder rename heals every use.
+// projected name leaf, so a placeholder rename heals every use. A
+// `literal` argument that isn't a name (a `neg` subtree) isn't a
+// string leaf, so the name check below skips it.
 // Works on pending markers (mid-build in encodeDef) and resolved refs
 // (after a committed edit) alike — hosts run it on the subtree a
 // rule-line commit rewrote.
@@ -19,8 +21,8 @@ def linkRuleUses(
         .filter(id => metaTag(doc, id).contains("meaning"))
         .flatMap(m => doc.subtreeIds(m))
         .filter(id => metaTag(doc, id)
-          .exists(Set("use", "source", "builtin")))
-        .flatMap(id => doc.childrenOf(id).headOption)
+          .exists(Set("use", "source", "builtin", "literal")))
+        .flatMap(id => doc.childrenOf(id))
         .foldLeft(d) { (d2, leafId) =>
           doc.getNode(leafId).map(_.data) match {
             case Some(NodeData.StringData(name)) =>

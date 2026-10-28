@@ -383,10 +383,14 @@ set prints the view — *Polysyntactic* as data.
 **A meaning is a term, evaluated.** The meaning spellings are surface
 forms of one shape: a meaning is a tree over a small vocabulary —
 `add(a, b)` constructs a node, a bare `a` is `use(a)`, a bound-value
-reference, and `source`/`builtin` are further meaning builtins. The
-meaning tree is the program; the produced tree is the value — `use(a)`
-evaluates to the bound tree and never materializes a `use` node in the
-output. Two consequences: placeholders splice at tree level, so `5 %`
+reference, and `source`/`builtin`/`literal` are further meaning
+builtins. The meaning tree is the program; the produced tree is the
+value — `use(a)` evaluates to the bound tree and never materializes a
+`use` node in the output. `literal` is the first *computing* builtin:
+its operand is a value term — `literal(neg(n))` negates the bound
+leaf's data — evaluation arriving in miniature at parse time, so a
+signum is a rule (`-n means literal(neg(n)) where n: number`) rather
+than a combinator. Two consequences: placeholders splice at tree level, so `5 %`
 producing `div(5, 100)` keeps the `5` node's identity; and meaning
 builtins belong to `lang:`'s vocabulary, not the defined language's, so
 vocabulary derivation must not turn them into constructs.
@@ -496,7 +500,12 @@ prefix, postfix, right- and non-associative infix, driven by the binding
 list. This is where Pratt's idea lives — as one combinator, not as the
 engine. Every other rule — bracketed or keyword-led (`(a)`, `|a|`,
 `if c then a else b`) or a plain sequence — compiles to sequence and
-choice, and serves as an atom of the operator combinator. Authors write
+choice, and serves as an atom of the operator combinator. A
+literal-led rule whose placeholders are *all* `where`-bound to leaf
+productions is lexical, not an operator: `-n means literal(neg(n))
+where n: number` reads a token, never a sub-expression, so it
+compiles as an operand sequence — the production the hand-written
+`signum` fused by hand. Authors write
 `means` rules either way; they write combinators only when zooming into
 implementation, which stays available as the escape hatch for what rules
 can't express.
@@ -545,6 +554,9 @@ grammar (`RuleGrammar`) over a rule lexicon. Why this direction:
   lexical rules (no whitespace allowed), a glued piece means "no
   whitespace here": `ref:c,r` matches `ref:3,4` but not `ref : 3 , 4`.
   Unglued pieces skip whitespace implicitly, so rules never mention it.
+  Landed between *lexical* pieces — a literal, or a placeholder bound
+  to a leaf production — so `-n` fuses sign and number (`- 4` is a
+  hole) while `( 1 )` still parses through the non-lexical `a`.
 - *The rule notation is an ordinary grammar*, ahead of full
   self-description.
 

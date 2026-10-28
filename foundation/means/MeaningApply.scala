@@ -21,6 +21,9 @@ import opelan.foundation.grammar._
 //            loses the bound node's identity, goes away with it.
 //   quote    a desugared phrase's concrete subtree — the stored tree,
 //            re-spanned onto the match
+//   literal  the operand term evaluated to leaf data — `literal(neg(n))`
+//            turns a bound `number` into its negation; the leaf covers
+//            the whole match like `source` does
 //   builtin  not yet — evaluation-time meanings are Phase D; an
 //            unknown builtin is a hole, Never Broken
 //   other    a construct: the meaning's `reference` when it carries
@@ -63,6 +66,12 @@ def applyMeaning(
           from = from, length = to - from)
       case None    => gapNode(in, from, to)
     }
+  case "literal" =>
+    meaning.arguments.headOption.flatMap(valueTerm(_, bindings)) match {
+      case Some(data) =>
+        PTree(data, in.input.substring(from, to), from, to - from)
+      case None       => gapNode(in, from, to)
+    }
   case "builtin" => gapNode(in, from, to)
   case construct if Meaning.isConstruct(meaning) =>
     PTree(
@@ -79,6 +88,25 @@ def applyMeaning(
 private def bound(
     meaning: Meaning, bindings: Map[String, PTree]): Option[PTree] =
   meaning.arguments.headOption.flatMap(Meaning.nameOf).flatMap(bindings.get)
+
+// A `literal` operand evaluated to leaf data: a bound placeholder's
+// name is its node's data, `neg(t)` negates a numeric value. Value
+// terms spell like constructs but never materialize a node — the first
+// step of meanings evaluating (DESIGN §4, *A meaning is a term,
+// evaluated*), scoped to leaves at parse time.
+private def valueTerm(
+    m: Meaning, bindings: Map[String, PTree]): Option[NodeData] =
+  Meaning.nameOf(m).flatMap(bindings.get).map(_.data).orElse(m.tag match {
+    case "neg" =>
+      m.arguments.headOption.flatMap(valueTerm(_, bindings)).flatMap {
+        case NodeData.IntData(v)   => Some(NodeData.IntData(-v))
+        case NodeData.FloatData(v) => Some(NodeData.FloatData(-v))
+        case _                     => None
+      }
+    case "use"    => bound(m, bindings).map(_.data)
+    case "source" => bound(m, bindings).map(t => NodeData.StringData(t.text))
+    case _        => None
+  })
 
 // A nested meaning (`literal(neg(n))`) has no source of its own: it
 // gets a zero-width span at the match's end. A bound placeholder keeps

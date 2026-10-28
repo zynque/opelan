@@ -21,20 +21,21 @@ val exprRules = RuleSet(
     "a * b means mul(a, b)",
     "a / b means div(a, b)",
     "a + b means add(a, b)",
-    "a - b means sub(a, b)").map(readRuleOrHole),
+    "a - b means sub(a, b)",
+    "+n means literal(n) where n: number",
+    "-n means literal(neg(n)) where n: number").map(readRuleOrHole),
   tiers = List(
     Tier(List(readPattern("a * b"), readPattern("a / b"))),
     Tier(List(readPattern("a + b"), readPattern("a - b")))),
   examples = List(Example("1 + 2 * 3", "1 + (2 * 3)")))
 
-// The operand fallback the rules don't yet describe — the signum
-// and the recovering junk run; the leaf tokens come from the
-// vocabulary's leaf terms bound through exprImpls' leaf
-// productions. The same fallback ExprParse's atom writes, minus
-// `parens` and the leaf toks.
-lazy val ruleAtom: Parser = choice(
-  signum,
-  junk(Set("op", "junk"), Set("int", "float", "ref", "junk", "hole")))
+// The operand fallback the rules don't describe — just the
+// recovering junk run; the leaf tokens come from the vocabulary's
+// leaf terms bound through exprImpls' leaf productions, and signed
+// numbers are the `+n`/`-n` rules. The same fallback ExprParse's
+// atom writes, minus `parens`, the leaf toks, and `signum`.
+lazy val ruleAtom: Parser =
+  junk(Set("op", "junk"), Set("int", "float", "ref", "junk", "hole"))
 
 // The named leaf vocabulary `where` terms bind through — the
 // vocabulary's leaf terms flag which are operands.

@@ -61,9 +61,10 @@ def compileRules(
     choice(sequences.map(sequenceParser) ++ leafOperands ++
       lexicals.values.collect { case t if t.operand => t.parser } :+ atom*)
   lazy val operatorTiers: List[List[Operator]] =
-    orderedOperatorRules(set).map(_.map(toOperator))
+    orderedOperatorRules(set).map(_.filterNot(operandBound))
+      .filter(_.nonEmpty).map(_.map(toOperator))
   lazy val sequences: List[Rule] =
-    set.rules.filter(r => isSequencePattern(r.pattern))
+    set.rules.filter(r => isSequencePattern(r.pattern) || operandBound(r))
   lazy val leafOperands: List[Parser] =
     set.rules.flatMap(leafOperand)
 
@@ -73,6 +74,17 @@ def compileRules(
   def boundLexicals(theRule: Rule): Map[String, LexicalTerm] =
     theRule.where.flatMap(c => lexicals.get(c.term).toList.flatMap(t =>
       c.placeholders.map(_ -> t))).toMap
+
+  // A literal-led rule whose placeholders are all `where`-bound to
+  // leaf productions is lexical, not an operator — `-n means
+  // literal(neg(n)) where n: number` is an operand production like
+  // the hand-written signum: its placeholders read tokens, never
+  // sub-expressions, so no precedence applies to them. Operator-
+  // shaped by its edges, it compiles to a sequence instead.
+  def operandBound(theRule: Rule): Boolean =
+    isOperatorPattern(theRule.pattern) &&
+      theRule.pattern.pieces.head.isInstanceOf[Piece.Literal] &&
+      theRule.pattern.placeholders.forall(boundLexicals(theRule).contains)
 
   // A lone-placeholder rule bound to a leaf production is an
   // operand: the production's token applies, then the meaning —

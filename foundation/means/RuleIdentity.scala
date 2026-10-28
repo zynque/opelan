@@ -21,7 +21,7 @@ def canonicalRule(r: Rule): Rule = {
     case _                       => p
   }
   def meaning(m: Meaning): Meaning = m.tag match {
-    case "use" | "source" =>
+    case "use" | "source" | "literal" =>
       m.copy(arguments = m.arguments.map(a =>
         if (Meaning.nameOf(a).isDefined) a.copy(tag = ph(a.tag))
         else meaning(a)))

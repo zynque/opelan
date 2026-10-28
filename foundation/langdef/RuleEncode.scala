@@ -74,6 +74,15 @@ private def meaningTermNode(
       pieceIds.get(name)
         .map(t => DetachedNode.leaf(NodeData.InternalNodeRef(t)))
         .getOrElse(sl(name)))*)
+  // A literal's operands are value terms: a bare name binds a pattern
+  // piece like a `use` operand does, anything else is a term subtree.
+  case "literal" =>
+    n(meta("literal"), m.arguments.map(a => Meaning.nameOf(a) match {
+      case Some(name) => pieceIds.get(name)
+          .map(t => DetachedNode.leaf(NodeData.InternalNodeRef(t)))
+          .getOrElse(sl(name))
+      case None => meaningTermNode(a, termIds, pieceIds, meta)
+    })*)
   case "reparse" =>
     n(meta("reparse"),
       m.phrase.toList.flatMap(_.pieces.map(pieceNode(_, meta)))*)

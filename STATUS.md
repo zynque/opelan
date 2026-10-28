@@ -73,7 +73,8 @@ Each item is described in the cited `DESIGN.md` section.
   (`examples/ExprRules.scala`) matches the hand-written expression
   grammar on every input in the battery, spans included. Rules are
   now live in the definition path: `exprDef` carries `exprRules`
-  over a combinator operand fallback of just signum and junk —
+  over a combinator operand fallback of just junk — signed
+  literals are the `+n`/`-n` rules, and
   the leaf tokens come from the vocabulary's leaf terms bound
   through `Impls.leaves` (`SyntaxDef.rules`), `DefLanguage`
   compiles them, `lang:` docs store rules as `means(pattern,
@@ -99,10 +100,17 @@ Each item is described in the cited `DESIGN.md` section.
   The meaning model itself is the unified term of DESIGN §4 (*A
   meaning is a term, evaluated*): one `tag`/`arguments`/`reference`/
   `phrase`/`quoted` node, with `use`/`source`/`reparse`/`builtin`/
-  `quote` as meaning-language builtins rather than separate cases —
-  `applyMeaning` evaluates by tag, `readRule` spells a bare `a` as
+  `quote`/`literal` as meaning-language builtins rather than separate
+  cases — `applyMeaning` evaluates by tag, `readRule` spells a bare `a` as
   `use(a)` and a phrase as `reparse`, and an unknown builtin is a
-  hole rather than a node. Phrases desugar at interpretation:
+  hole rather than a node. `literal` is the first meaning that
+  computes: its operand is a value term (`literal(neg(n))` negates the
+  bound leaf's data), so a signum is a rule — `-n means
+  literal(neg(n)) where n: number` — rather than a combinator. Its
+  `where` bound to a leaf production also makes the rule an operand
+  sequence rather than an operator, and the placeholder's `glued`
+  marker enforces the adjacency (`- 4` is not a fused literal).
+  Phrases desugar at interpretation:
   `desugarRuleSet` parses a template through the whole rule set
   (placeholders as atoms) into `use`/construct/`quote` terms, so a
   bound operand's node lands in the output rather than a reparsed
@@ -208,11 +216,9 @@ Each item is described in the cited `DESIGN.md` section.
    above); what remains:
 
    *Phase A — rule engine loose ends:*
-   - `Signum`'s fused negative literals as a parse-time meaning
-     (`-n means literal(-n) where n: number`); glued pieces as lexical
-     sequencing; builtin leaf productions authored in the document
-     (they live in Impls like lexicons and views); example-driven
-     associativity overrides.
+   - Builtin leaf productions authored in the document (they live in
+     Impls like lexicons and views); example-driven associativity
+     overrides.
    - *Derived printer:* a provenance-tagged variant emitting `src:`
      spans for click-through (printing over document nodes with ids,
      not detached trees), and the round-trip property

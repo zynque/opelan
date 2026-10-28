@@ -61,9 +61,10 @@ object Meaning {
   // the defined language's terms (so a `use` must never reach
   // vocabularyFrom). `builtin` is reserved for evaluation-time meanings
   // (`add(a, b) means builtin num-add`, Phase D); `quote` carries a
-  // desugared phrase's concrete subtree.
+  // desugared phrase's concrete subtree; `literal` evaluates a value
+  // term to leaf data (`-n means literal(neg(n))`, parse-time values).
   val builtins: Set[String] =
-    Set("use", "source", "reparse", "builtin", "quote")
+    Set("use", "source", "reparse", "builtin", "quote", "literal")
 
   def isBuiltin(tag: String): Boolean = builtins(tag)
   def isConstruct(m: Meaning): Boolean = !builtins(m.tag)

@@ -27,6 +27,13 @@ import opelan.foundation.grammar._
 // leaf terms (compileRules' boundLexicals): a bound placeholder
 // reads its leaf production's token rather than a full expression,
 // so `ref:c,r where c, r: whole number` can't pick up a phrase.
+//
+// Glue is lexical adjacency: a glued piece must start exactly where
+// the previous piece ended — when *both* pieces are lexical (a
+// literal, or a bound placeholder reading one token). `-n` fuses the
+// sign to the number's token, so `- 4` isn't this rule. Glue beside
+// an expression-level placeholder isn't a lexical constraint — `a`
+// in `(a)` can be a whole sub-expression, so `( 1 )` still parses.
 def sequenceRule(
     theRule: Rule,
     expression: Parser,
@@ -37,6 +44,12 @@ def sequenceRule(
     case Piece.Literal(text, _) => Some(text)
     case _                      => None
   }
+  def lexical(piece: Piece): Boolean = piece match {
+    case Piece.Literal(_, _)        => true
+    case Piece.Placeholder(name, _) => bound.contains(name)
+  }
+  def tight(i: Int): Boolean =
+    pieces(i).glued && lexical(pieces(i - 1)) && lexical(pieces(i))
   rule(sequenceRuleName(theRule)) { (in, pos) =>
     var seen = pos
     val first = scanAt(in, pos)
@@ -55,7 +68,8 @@ def sequenceRule(
             case Piece.Literal(text, _) =>
               val s = scanAt(in, cur)
               seen = seen.max(s.examined)
-              s.token.filter(_.text == text) match {
+              s.token.filter(t => t.text == text &&
+                (!tight(i) || t.from == cur)) match {
                 case Some(t) => cur = t.to
                 case None    => failedAt = Some(i)
               }
@@ -63,9 +77,13 @@ def sequenceRule(
               val r = bound.get(name).map(_.parser)
                 .getOrElse(expression)(in, cur)
               seen = seen.max(r.examined)
-              bindings += name -> r.tree
-              cur = r.pos
-              if (!r.ok) failedAt = Some(i)
+              if (tight(i) && r.ok && r.tree.from != cur)
+                failedAt = Some(i)
+              else {
+                bindings += name -> r.tree
+                cur = r.pos
+                if (!r.ok) failedAt = Some(i)
+              }
           }
           i += 1
         }

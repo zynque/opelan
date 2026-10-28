@@ -72,12 +72,13 @@ def withTermRefs(d: LanguageDef): LanguageDef = {
       .flatMap(rs => doc.childrenOf(rs)
         .filter(metaConsOf(doc, _).contains("rule"))))
   def refify(pieces: Map[String, Int])(m: Meaning): Meaning =
-    if (Set("use", "source", "builtin")(m.tag))
+    if (Set("use", "source", "builtin", "literal")(m.tag))
       m.copy(arguments = m.arguments.map(a =>
         Meaning.nameOf(a).flatMap(pieces.get) match {
           case Some(t) =>
             a.copy(reference = Some(ExternalNodeReference(url, 0, t)))
-          case None    => a
+          case None    =>
+            if (Meaning.nameOf(a).isDefined) a else refify(pieces)(a)
         }))
     else if (!Meaning.isConstruct(m)) m
     else m.copy(

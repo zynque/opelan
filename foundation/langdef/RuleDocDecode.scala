@@ -46,6 +46,11 @@ private def meaningFromDoc(
     version: Int, id: Int): Meaning = metaConsOf(doc, id) match {
   case Some(tag @ ("use" | "source" | "builtin")) =>
     Meaning(tag, doc.childrenOf(id).map(operandFrom(doc, url, version, _)))
+  // A literal's operands are value terms — name leaves (a linked one
+  // carries the piece ref) and construct subtrees alike.
+  case Some("literal") =>
+    Meaning("literal",
+      doc.childrenOf(id).map(meaningFromDoc(doc, url, version, _)))
   case Some("reparse") =>
     Meaning.reparse(doc.childrenOf(id).map(pieceFrom(doc, _)))
   case Some("quote") =>
