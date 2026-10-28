@@ -1,6 +1,7 @@
 package opelan.foundation.langdef
 
 import opelan.foundation.document._
+import opelan.foundation.document.typed._
 import opelan.foundation.document.Detached._
 
 // A LanguageDef as a document: a typed document (type = the

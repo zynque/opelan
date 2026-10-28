@@ -2,6 +2,8 @@ package opelan.ui.typeddoc
 
 import opelan.examples.{ExprLanguage, SheetLanguage, languageForDoc}
 import opelan.foundation.document._
+import opelan.foundation.document.store._
+import opelan.foundation.document.typed._
 import opelan.foundation.langdef.{autoUpdateEnabled, setAutoUpdate}
 import opelan.foundation.language.{
   HoleRetry, TextSession, applyDocContent, applyDocText, docText, holeCount}

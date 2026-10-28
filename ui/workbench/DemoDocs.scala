@@ -1,6 +1,7 @@
 package opelan.ui.workbench
 
 import opelan.foundation.document._
+import opelan.foundation.document.store._
 import opelan.foundation.langdef.langDefDoc
 import opelan.examples.{allLanguages, demoExprDef, ExprLanguage, SheetLanguage}
 

@@ -3,6 +3,8 @@ package opelan.ui.typeddoc
 import opelan.examples.{Expr, ExprLanguage, SheetLanguage,
   exprFromDocument, sheetDef}
 import opelan.foundation.document._
+import opelan.foundation.document.store._
+import opelan.foundation.document.typed._
 import opelan.foundation.document.Detached._
 import opelan.foundation.langdef.langDefDoc
 import opelan.ui.editor.{

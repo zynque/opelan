@@ -1,4 +1,7 @@
-package opelan.foundation.document
+package opelan.foundation.document.store
+
+import opelan.foundation.document._
+import opelan.foundation.document.typed._
 
 // Names are projections: a document stores which node it refers to, and
 // the name shown for a reference is read from the referenced definition

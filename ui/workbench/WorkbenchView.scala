@@ -1,6 +1,6 @@
 package opelan.ui.workbench
 
-import opelan.foundation.document.Store
+import opelan.foundation.document.store.Store
 import opelan.ui.fp._
 import opelan.ui.fp.Dsl._
 import WorkbenchInput._

@@ -1,4 +1,7 @@
-package opelan.foundation.document
+package opelan.foundation.document.store
+
+import opelan.foundation.document._
+import opelan.foundation.document.typed._
 
 // A versioned store of documents addressed by URL — the resolution side of
 // ExternalNodeReference's `url@version#node` addressing scheme. Append-only:

@@ -1,6 +1,7 @@
 package opelan.examples
 
 import opelan.foundation.document._
+import opelan.foundation.document.typed._
 
 // Holes heal when the language catches up. A hole cell keeps the text
 // its grammar couldn't read; each render asks the current cell grammar

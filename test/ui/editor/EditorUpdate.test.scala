@@ -1,6 +1,7 @@
 package opelan.ui.editor
 
 import opelan.foundation.document._
+import opelan.foundation.document.store._
 
 class EditorUpdateSuite extends munit.FunSuite {
 

@@ -4,6 +4,9 @@
 
 - **Small files**: aim for ~100 lines maximum per file. If a file grows past
   that, split it by responsibility rather than letting it sprawl.
+- **Small packages**: aim for ~10 files maximum per package. If a folder
+  grows past that, consider splitting it into smaller sub-packages by
+  responsibility.
 - **Encapsulation**: each file should own one concern. Prefer small values,
   functions, or classes with a focused responsibility over large classes that
   do everything. Example: `ui/editor/DocumentEditor.scala` is a thin

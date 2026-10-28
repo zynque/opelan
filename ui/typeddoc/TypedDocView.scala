@@ -2,6 +2,8 @@ package opelan.ui.typeddoc
 
 import org.scalajs.dom
 import opelan.foundation.document._
+import opelan.foundation.document.store._
+import opelan.foundation.document.typed._
 import opelan.foundation.langdef.autoUpdateEnabled
 import opelan.examples.languageForDoc
 import opelan.ui.fp._

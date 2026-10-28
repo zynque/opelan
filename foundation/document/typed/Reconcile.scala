@@ -1,4 +1,6 @@
-package opelan.foundation.document
+package opelan.foundation.document.typed
+
+import opelan.foundation.document._
 
 // Committing new content into an existing node — the identity-
 // preserving version of replaceNodeContent: the node keeps its id

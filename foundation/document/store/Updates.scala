@@ -1,4 +1,6 @@
-package opelan.foundation.document
+package opelan.foundation.document.store
+
+import opelan.foundation.document._
 
 // A document's external refs that pin behind a head — (node holding
 // the ref, the ref, the head version, whether the node still resolves

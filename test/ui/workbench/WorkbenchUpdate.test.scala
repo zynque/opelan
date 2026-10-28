@@ -2,6 +2,8 @@ package opelan.ui.workbench
 
 import opelan.collaboration.automerge.ChangeInfo
 import opelan.foundation.document._
+import opelan.foundation.document.store._
+import opelan.foundation.document.typed._
 import opelan.examples.{ExprLanguage, SheetLanguage}
 import opelan.ui.fx._
 import opelan.ui.typeddoc.{TypedDocInput, TypedDocOutput}

@@ -1,6 +1,7 @@
 package opelan.examples
 
 import opelan.foundation.document._
+import opelan.foundation.document.typed._
 import opelan.foundation.view.ViewTree
 
 class SheetSuite extends munit.FunSuite {

@@ -1,6 +1,8 @@
-package opelan.foundation.document
+package opelan.foundation.document.typed
 
-import Detached._
+import opelan.foundation.document._
+import opelan.foundation.document.store._
+import opelan.foundation.document.Detached._
 
 class TypedSuite extends munit.FunSuite {
 

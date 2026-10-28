@@ -1,4 +1,6 @@
-package opelan.foundation.document
+package opelan.foundation.document.typed
+
+import opelan.foundation.document._
 
 // The imports section of a standard document (see Typed). An external
 // node is imported once — an ExternalNodeRef leaf under the imports node

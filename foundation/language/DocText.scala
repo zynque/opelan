@@ -1,6 +1,7 @@
 package opelan.foundation.language
 
 import opelan.foundation.document._
+import opelan.foundation.document.typed._
 import opelan.foundation.view.ViewTree
 
 // The text surface of a document: typed documents use their language's

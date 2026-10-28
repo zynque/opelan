@@ -1,6 +1,7 @@
 package opelan.examples
 
 import opelan.foundation.document._
+import opelan.foundation.document.typed._
 import opelan.foundation.langdef.termRefs
 
 // Construct identities of the example languages. Code names a term

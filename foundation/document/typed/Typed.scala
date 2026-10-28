@@ -1,4 +1,6 @@
-package opelan.foundation.document
+package opelan.foundation.document.typed
+
+import opelan.foundation.document._
 
 // A "raw" document has no constraints on its shape. A typed document
 // carries its type in the root node's *data* — an ExternalNodeRef to

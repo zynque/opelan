@@ -1,6 +1,7 @@
 package opelan.ui.editor
 
 import opelan.foundation.document._
+import opelan.foundation.document.store._
 import opelan.foundation.version._
 
 // Where a pending (not yet committed) insert will land. The phantom node

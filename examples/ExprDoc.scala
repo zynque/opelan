@@ -1,6 +1,7 @@
 package opelan.examples
 
 import opelan.foundation.document._
+import opelan.foundation.document.typed._
 import Expr._
 
 // The document<->AST codec for expressions: the subtree conventions of

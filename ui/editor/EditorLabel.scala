@@ -1,6 +1,7 @@
 package opelan.ui.editor
 
 import opelan.foundation.document._
+import opelan.foundation.document.store._
 import opelan.ui.fp._
 import opelan.ui.fp.Dsl._
 

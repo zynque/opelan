@@ -4,6 +4,7 @@ import scala.scalajs.js
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 import opelan.foundation.document._
+import opelan.foundation.document.store._
 
 // Persistence for the document store: each version is one record in the
 // `documents` object store, keyed "url@version", holding the document's

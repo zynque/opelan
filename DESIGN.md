@@ -78,14 +78,14 @@ The substrate everything is built on — a direct port of olw-p4, extended:
   construct uses, cell refs) and other documents' `url@v#n` refs all
   name ids. Unreachable ids stay reserved, duplicate ids from a text
   merge get fresh ones, and id-less text falls back to `Outline`.
-- **Imports** (`Imports.scala`) — every external node a typed document
+- **Imports** (`typed/Imports.scala`) — every external node a typed document
   uses is imported once, as an `ExternalNodeRef` leaf in its imports
   section, and used through `InternalNodeRef`s to that entry (§4).
   `internalizeRefs` moves inline external refs, as builders, parsers,
   and clipboards write them, into the imports on insert, and
   `extractExternalized` reverses that. `externalRefOf` dereferences one
   hop.
-- **Names** (`Names.scala`) — a name is a projection. `refName` resolves
+- **Names** (`store/Names.scala`) — a name is a projection. `refName` resolves
   a reference node to its definition through the store, reading the
   head so a rename shows at once, and returns the definition's name: its
   first string child, or a document root's label.
@@ -130,7 +130,7 @@ History is designed as two layers (per `RELATED_WORK.md`):
 
 ## 4. Typed documents, languages, and holes
 
-**Typed documents** (`foundation/document/Typed.scala`): a document's *type*
+**Typed documents** (`foundation/document/typed/Typed.scala`): a document's *type*
 is an `ExternalNodeRef` in the root node's *data* — the header, naming the
 document that defines the language the rest of the tree is written in.
 A simple document can be just that: a root ref with data children. Most
@@ -649,7 +649,7 @@ stays simple and generic, and no provenance can go stale.
   reports the rule diff plus a migration, and kept results re-pin
   their tags rather than reparse.
 - Document identity is handled a layer down: `commitContent`
-  (`foundation/document/Reconcile`) commits a parse's detached output
+  (`foundation/document/typed/Reconcile`) commits a parse's detached output
   into a node, keeping the ids of every subtree whose content didn't
   change — at any depth. Both commit paths — projected inputs and
   whole-text edits — use it, and commit nothing but content: the

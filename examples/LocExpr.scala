@@ -1,6 +1,7 @@
 package opelan.examples
 
 import opelan.foundation.document._
+import opelan.foundation.document.typed._
 
 // An expression read out of a document with the source node id on every
 // node — the located form the view renderers walk so each emitted piece

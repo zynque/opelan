@@ -1,6 +1,7 @@
 package opelan.ui.typeddoc
 
 import opelan.foundation.document._
+import opelan.foundation.document.store._
 import opelan.foundation.language.{HoleRetry, InputSessions, TextSession}
 import opelan.ui.editor.{DocPush, EditorOutput, SelectTarget, SyncedHistory}
 

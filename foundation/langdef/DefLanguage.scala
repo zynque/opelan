@@ -1,6 +1,7 @@
 package opelan.foundation.langdef
 
 import opelan.foundation.document._
+import opelan.foundation.document.typed._
 import opelan.foundation.grammar._
 import opelan.foundation.means.{compileRules, desugarRuleSet, RuleSet}
 import opelan.foundation.language.{

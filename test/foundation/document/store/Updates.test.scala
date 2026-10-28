@@ -1,5 +1,6 @@
-package opelan.foundation.document
+package opelan.foundation.document.store
 
+import opelan.foundation.document._
 import munit.FunSuite
 
 // Pending updates: a document's external refs that pin behind a head,

@@ -4,6 +4,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Success, Failure, Try}
 import opelan.data.storage.{IndexedDBStore, loadAll, persist}
 import opelan.foundation.document._
+import opelan.foundation.document.store._
 import opelan.ui.fp._
 
 // Seam component: IndexedDB persistence for the document store. Requests

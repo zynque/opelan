@@ -1,6 +1,7 @@
 package opelan.ui.workbench
 
 import opelan.foundation.document._
+import opelan.foundation.document.store._
 
 // The workbench's document workspace — a pure value so the open/save/
 // follow-ref decisions are unit-testable. `store` is the versioned

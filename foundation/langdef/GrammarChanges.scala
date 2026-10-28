@@ -1,7 +1,8 @@
 package opelan.foundation.langdef
 
 import opelan.foundation.document.{
-  ExternalNodeReference, NodeData, sameNode}
+  ExternalNodeReference, NodeData}
+import opelan.foundation.document.typed.sameNode
 import opelan.foundation.grammar.PTree
 import opelan.foundation.means._
 
