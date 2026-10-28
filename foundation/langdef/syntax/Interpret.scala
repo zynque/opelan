@@ -1,8 +1,9 @@
-package opelan.foundation.langdef
+package opelan.foundation.langdef.syntax
 
 import scala.collection.mutable
 import opelan.foundation.document._
 import opelan.foundation.grammar._
+import opelan.foundation.langdef._
 
 // Interpret a GrammarDef into a total, recovering Parser — each case is
 // the data twin of a combinator in foundation/grammar. Named grammars

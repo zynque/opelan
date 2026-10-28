@@ -4,6 +4,9 @@ import opelan.foundation.document._
 import opelan.foundation.document.store._
 import opelan.foundation.document.typed._
 import opelan.foundation.langdef._
+import opelan.foundation.langdef.doc._
+import opelan.foundation.langdef.syntax._
+import opelan.foundation.langdef.view._
 import opelan.foundation.language.{InputSessions, TextSession}
 import opelan.foundation.means.{Meaning, printRule}
 import opelan.foundation.document.Detached._

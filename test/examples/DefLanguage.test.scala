@@ -3,6 +3,7 @@ package opelan.examples
 import opelan.foundation.document._
 import opelan.foundation.document.typed._
 import opelan.foundation.langdef._
+import opelan.foundation.langdef.doc._
 import munit.FunSuite
 
 // The regression anchor for the bootstrap: a language described as data

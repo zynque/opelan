@@ -2,6 +2,7 @@ package opelan.examples
 
 import opelan.foundation.document._
 import opelan.foundation.langdef._
+import opelan.foundation.langdef.syntax._
 import opelan.foundation.language.Language
 
 // The example language definitions as data — what their `lang:`

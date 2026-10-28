@@ -1,6 +1,8 @@
-package opelan.foundation.langdef
+package opelan.foundation.langdef.view
 
 import opelan.foundation.document._
+import opelan.foundation.langdef._
+import opelan.foundation.langdef.doc._
 import opelan.foundation.means.printWith
 
 // A worked example's check: `input means expected` — both texts read

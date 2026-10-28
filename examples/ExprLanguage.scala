@@ -5,6 +5,7 @@ import opelan.foundation.document.store._
 import opelan.foundation.document.typed._
 import opelan.foundation.document.Detached._
 import opelan.foundation.langdef._
+import opelan.foundation.langdef.doc._
 
 // The arithmetic-expression language — `exprDef` interpreted live. The
 // object adds only what a definition can't express: the sample

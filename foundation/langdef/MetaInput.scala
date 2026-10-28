@@ -2,6 +2,8 @@ package opelan.foundation.langdef
 
 import opelan.foundation.document._
 import opelan.foundation.grammar.PTree
+import opelan.foundation.langdef.doc._
+import opelan.foundation.langdef.syntax._
 import opelan.foundation.means.{
   desugarPhrase, readRuleOrHole, Meaning, Pattern, Rule}
 

@@ -6,7 +6,7 @@ import opelan.foundation.document._
 import opelan.foundation.document.store._
 import opelan.foundation.document.typed._
 import opelan.foundation.document.Detached._
-import opelan.foundation.langdef.langDefDoc
+import opelan.foundation.langdef.doc.langDefDoc
 import opelan.ui.editor.{
   DocPush, EditorInput, EditorOutput, SelectTarget, SyncedEntry, SyncedHistory}
 

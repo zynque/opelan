@@ -1,8 +1,9 @@
-package opelan.foundation.langdef
+package opelan.foundation.langdef.doc
 
 import opelan.foundation.document._
 import opelan.foundation.document.typed._
 import opelan.foundation.document.Detached._
+import opelan.foundation.langdef._
 
 // A LanguageDef as a document: a typed document (type = the
 // language-definition language, langDefTypeRef) whose content carries

@@ -5,6 +5,7 @@ import opelan.foundation.document.store._
 import opelan.foundation.document.typed._
 import opelan.foundation.document.Detached._
 import opelan.foundation.langdef._
+import opelan.foundation.langdef.doc._
 
 // The spreadsheet language — `sheetDef` interpreted live. The object
 // adds only the seeded sample document; rendering, the cell input

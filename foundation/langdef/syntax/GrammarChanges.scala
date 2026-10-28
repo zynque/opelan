@@ -1,9 +1,10 @@
-package opelan.foundation.langdef
+package opelan.foundation.langdef.syntax
 
 import opelan.foundation.document.{
   ExternalNodeReference, NodeData}
 import opelan.foundation.document.typed.sameNode
 import opelan.foundation.grammar.PTree
+import opelan.foundation.langdef._
 import opelan.foundation.means._
 
 // The named rules of a grammar, by name. When a name is defined twice

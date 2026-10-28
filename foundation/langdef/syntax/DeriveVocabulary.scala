@@ -1,5 +1,6 @@
-package opelan.foundation.langdef
+package opelan.foundation.langdef.syntax
 
+import opelan.foundation.langdef._
 import opelan.foundation.means._
 
 // A def's vocabulary derived from its rules' construct meanings:

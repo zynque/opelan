@@ -61,7 +61,7 @@ class WorkbenchUpdateSuite extends munit.FunSuite {
     // lang: expression staged without `/` for the demo
     assertEquals(
       st.resolve(ExprLanguage.typeRef).map(_._1),
-      Some(opelan.foundation.langdef.langDefDoc(opelan.examples.demoExprDef)))
+      Some(opelan.foundation.langdef.doc.langDefDoc(opelan.examples.demoExprDef)))
     assertEquals(
       st.resolve(SheetLanguage.typeRef).map(_._1), Some(SheetLanguage.langDoc))
     // every seed is queued for persistence at version 0

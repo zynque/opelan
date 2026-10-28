@@ -2,7 +2,7 @@ package opelan.examples
 
 import opelan.foundation.document._
 import opelan.foundation.grammar._
-import opelan.foundation.langdef.{leafTermNames, lexicalTerms}
+import opelan.foundation.langdef.syntax.{leafTermNames, lexicalTerms}
 import opelan.foundation.means._
 
 // The expression language as `means` rules — the same grammar

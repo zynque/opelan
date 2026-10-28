@@ -1,7 +1,8 @@
-package opelan.foundation.langdef
+package opelan.foundation.langdef.doc
 
 import opelan.foundation.document._
 import opelan.foundation.document.typed._
+import opelan.foundation.langdef._
 
 // Meta-construct identity. A def document uses `term`, `vocabulary`,
 // `op` … by importing the vocabulary entries of lang: language, so code

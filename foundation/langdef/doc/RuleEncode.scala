@@ -1,4 +1,4 @@
-package opelan.foundation.langdef
+package opelan.foundation.langdef.doc
 
 import opelan.foundation.document._
 import opelan.foundation.document.Detached._

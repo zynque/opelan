@@ -2,6 +2,7 @@ package opelan.foundation.langdef
 
 import opelan.foundation.document._
 import opelan.foundation.document.typed._
+import opelan.foundation.langdef.doc._
 
 // The per-document auto-update flag: a `setting(auto-update, true)`
 // node among the root's children — ordinary versioned, synced data the

@@ -1,8 +1,9 @@
-package opelan.foundation.langdef
+package opelan.foundation.langdef.syntax
 
 import munit.FunSuite
 import opelan.foundation.document.NodeData
 import opelan.foundation.grammar._
+import opelan.foundation.langdef._
 import opelan.foundation.means._
 
 // Language-change diffing over rule sets: memo names are rule

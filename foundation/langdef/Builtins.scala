@@ -3,6 +3,8 @@ package opelan.foundation.langdef
 import opelan.foundation.document._
 import opelan.foundation.document.Detached._
 import opelan.foundation.grammar.Lexicon
+import opelan.foundation.langdef.syntax._
+import opelan.foundation.langdef.view._
 
 // The code-side semantics a language definition names. A LanguageDef
 // references lexicons, views, and input parsers by name — behavior lives

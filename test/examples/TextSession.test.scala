@@ -66,7 +66,7 @@ class TextSessionSuite extends FunSuite {
   }
 
   test("a def version bump carries the session — kept results re-pin") {
-    import opelan.foundation.langdef.{langDefDoc, langDefFromDocument}
+    import opelan.foundation.langdef.doc.{langDefDoc, langDefFromDocument}
     val doc = langDefDoc(exprDef)
     val url = exprDef.typeRef.documentUrl
     val at = (v: Int) =>

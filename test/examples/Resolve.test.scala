@@ -3,8 +3,9 @@ package opelan.examples
 import opelan.foundation.document._
 import opelan.foundation.document.store._
 import opelan.foundation.langdef.{
-  DocLanguage, docLanguageDef, langDefDoc, langDefFromDocument,
-  langDefTypeRef, withTermRefs}
+  DocLanguage, docLanguageDef, langDefTypeRef}
+import opelan.foundation.langdef.doc.{
+  langDefDoc, langDefFromDocument, withTermRefs}
 import munit.FunSuite
 
 // Store-first language resolution: a type ref names a def doc, and the

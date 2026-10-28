@@ -3,6 +3,8 @@ package opelan.foundation.langdef
 import opelan.foundation.document._
 import opelan.foundation.document.typed._
 import opelan.foundation.grammar._
+import opelan.foundation.langdef.doc._
+import opelan.foundation.langdef.syntax._
 import opelan.foundation.means.{compileRules, desugarRuleSet, RuleSet}
 import opelan.foundation.language.{
   HoleRetry, InputSessions, Language, SyntaxChange, TextSyntax}

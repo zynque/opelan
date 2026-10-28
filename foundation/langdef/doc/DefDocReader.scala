@@ -1,8 +1,9 @@
-package opelan.foundation.langdef
+package opelan.foundation.langdef.doc
 
 import opelan.foundation.document._
 import opelan.foundation.document.store._
 import opelan.foundation.document.typed._
+import opelan.foundation.langdef._
 import opelan.foundation.means._
 
 // Tolerant readers over a `lang:` document — every lookup optional,

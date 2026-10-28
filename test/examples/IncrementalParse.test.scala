@@ -3,6 +3,7 @@ package opelan.examples
 import scala.util.Random
 import opelan.foundation.grammar._
 import opelan.foundation.langdef._
+import opelan.foundation.langdef.syntax._
 import munit.FunSuite
 
 // The interpreted expression language under incremental parsing: random

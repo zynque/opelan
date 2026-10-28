@@ -4,6 +4,7 @@ import opelan.foundation.document._
 import opelan.foundation.document.store._
 import opelan.foundation.document.typed._
 import opelan.foundation.langdef._
+import opelan.foundation.langdef.doc._
 import opelan.foundation.language.Language
 
 // The assembled world: the concrete languages the demo knows about.

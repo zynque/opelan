@@ -58,7 +58,7 @@ class HoleRetrySuite extends FunSuite {
   }
 
   test("a def version bump re-pins term tags without touching rules") {
-    import opelan.foundation.langdef.{langDefDoc, langDefFromDocument}
+    import opelan.foundation.langdef.doc.{langDefDoc, langDefFromDocument}
     val doc = langDefDoc(exprDef)
     val url = exprDef.typeRef.documentUrl
     val s0 = languageFromDef(langDefFromDocument(url, doc, 0)).textSyntax.get

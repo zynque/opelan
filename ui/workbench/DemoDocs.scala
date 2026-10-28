@@ -2,7 +2,7 @@ package opelan.ui.workbench
 
 import opelan.foundation.document._
 import opelan.foundation.document.store._
-import opelan.foundation.langdef.langDefDoc
+import opelan.foundation.langdef.doc.langDefDoc
 import opelan.examples.{allLanguages, demoExprDef, ExprLanguage, SheetLanguage}
 
 // The demo's opening lineup, seeded into a store that doesn't already

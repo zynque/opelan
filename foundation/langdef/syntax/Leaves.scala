@@ -1,7 +1,8 @@
-package opelan.foundation.langdef
+package opelan.foundation.langdef.syntax
 
 import opelan.foundation.document._
 import opelan.foundation.grammar._
+import opelan.foundation.langdef._
 import opelan.foundation.means.LexicalTerm
 
 // A named leaf production a `where` term binds to — which token

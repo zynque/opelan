@@ -1,6 +1,8 @@
-package opelan.foundation.langdef
+package opelan.foundation.langdef.view
 
 import opelan.foundation.document._
+import opelan.foundation.langdef._
+import opelan.foundation.langdef.doc._
 import opelan.foundation.means.{
   meaningTree, printPattern, printRule, printWith, Meaning, Rule, RuleSet}
 import opelan.foundation.view.ViewTree._

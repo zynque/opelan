@@ -3,8 +3,9 @@ package opelan.ui.typeddoc
 import opelan.examples.{implsFor, languageForDoc}
 import opelan.foundation.document._
 import opelan.foundation.document.typed._
-import opelan.foundation.langdef.{
-  commitMetaInput, langDefFromDocument, linkRuleUses, metaConsOf, Impls}
+import opelan.foundation.langdef.{commitMetaInput, Impls}
+import opelan.foundation.langdef.doc.{
+  langDefFromDocument, linkRuleUses, metaConsOf}
 import opelan.foundation.language.docText
 import opelan.ui.editor.DocPush
 import opelan.ui.fp.Update
