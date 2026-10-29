@@ -53,7 +53,14 @@ Each item is described in the cited `DESIGN.md` section.
   `lang:` docs typed by `lang: language`, resolved store-first, so a
   saved definition edit is live on the next render.
 - **`means` rule groundwork** (`foundation/means`, `foundation/grammar`,
-  §4): rule model, checker, reader, and role-tagged printer;
+  §4): rule model, checker, reader, and the derived printer —
+  `printViewWith` emits `src:` spans over document nodes for
+  click-through (it backs the expression language's `print` view),
+  `parse(print(t)) == t` is round-trip tested over generated trees, and
+  it is the canonical formatter in effect: the text surface re-renders
+  from content through the print view rather than preserving surface
+  whitespace (meaningful layout would be an explicit `NodeData`
+  construct);
   scannerless combinators; the incremental packrat engine (`Memo`,
   `ParseSession`) — memoized results stamp their tree nodes with
   `ParseMark`s (rule, relative lengths, calls) and the session's side
@@ -95,7 +102,15 @@ Each item is described in the cited `DESIGN.md` section.
   session, while a meaning change or a re-created node still
   invalidates. Code-authored rules fall back to pattern-key names.
   Schema and checks derive too: `vocabularyFrom` turns construct
-  meanings plus the lexical vocabulary into the def's terms, and
+  meanings plus the lexical vocabulary into the def's terms —
+  `deriveTermIds`/`linkTerms` give each term a declaration node (the
+  first meaning-position node that builds it) that every later
+  occurrence plus grammar `op` leaves stores an internal ref to, so a
+  rename heals every use; the `vocabulary` section is gone from
+  rules-bearing `lang:` documents, while defs without rules
+  (`lang: language`, the sheet) still write it as authored content and
+  impls' leaf productions supply operand marking code-side
+  (`lexicalTerms`) — and
   worked examples in the `def`
   view are checked live against the interpreted definition — a
   failing one shows as a hole chip saying what the input read as.
@@ -214,70 +229,63 @@ Each item is described in the cited `DESIGN.md` section.
 
 1. **`means` rules — the next major series.** `pattern means meaning`
    rules compiled onto the recovering combinators (DESIGN §4, *Defining
-   languages by `means` rules*). Phases A–C are largely landed (*Working*
-   above); what remains:
+   languages by `means` rules*). The engine groundwork — including the
+   derived printer and derived vocabulary — has landed (*Working*
+   above). Remaining steps, in order:
 
-   *Phase A — rule engine loose ends:*
-   - Builtin leaf productions authored in the document (they live in
-     Impls like lexicons and views); example-driven associativity
-     overrides.
-   - *Derived printer — landed:* `printViewWith` emits `src:` spans
-     over document nodes for click-through (it backs the expression
-     language's `print` view), and `parse(print(t)) == t` is
-     round-trip tested over generated trees. It is the canonical
-     formatter in effect: the text surface re-renders from content
-     through the print view rather than preserving surface
-     whitespace (meaningful layout would be an explicit `NodeData`
-     construct).
-   - *Derived vocabulary* (landed): `vocabularyFrom` derives a def's
-     vocabulary from its rules — `where`-bound names as leaf terms,
-     constructs from meanings — and the `vocabulary` section is gone
-     from rules-bearing `lang:` documents: a term's declaration is the
-     first meaning-position node that builds it, and every later
-     occurrence plus grammar `op` leaves stores an internal ref to
-     that declaration (`deriveTermIds`/`linkTerms` — a rename heals
-     every use). Defs without rules (`lang: language`, the sheet)
-     still write their section — it is authored declaration content.
-     Impls' leaf productions supply operand marking code-side
-     (`lexicalTerms`) — `where`-bound names are narrowing, not
-     standalone operands.
-   - *Rule encoding:* the meaning field as its own per-keystroke input
-     rather than the rule line's whole-text commit; then
-     `reparse`/`phrase` leave the model.
-   - *`means` surface polish:* the printer's role spans (`means`
-     emphasized, placeholders styled), a detail-level toggle switching
-     `means` to `=>` and hiding `where`, and the `lang:` text surface
-     itself reading/writing rules rather than leaf strings.
-
-   *Phase D — meaning layers; demote the old model:*
-   - **Semantics as rules.** `add(a, b) means builtin num-add`: eval
-     derived from meaning rules bottoming out in builtins, replacing
-     the hand-coded `Expr.eval` behind `expr-eval`. The rule dependency
-     DAG and derived layers are computed; a cycle renders as a hole at
-     the closing edge.
-   - **Migrate stored definitions.** Users' IndexedDB stores hold
-     `lang:` docs in the combinator format, and seeding never
-     overwrites. Convert legacy grammar subtrees to rules on read (or
-     first load): the first real *Evolvable* migration, revertible
-     because every version is kept.
-   - **Demote `GrammarDef` to the implementation layer.** Definitions
-     authored and stored as rules only; `GrammarDef` shown only under
-     show implementation as the escape hatch; remove the combinators
-     rules made redundant in authored definitions (`Unrecognized`, `Phrase`,
-     `Signum`, stop sets). Update DESIGN.md and the demo.
-
-   *Phase E — beyond parity:*
-   - **Sheet on rules.** Positional refs (`ref:c,r`, then `C4`) as
-     parse-time meanings resolving to stable `InternalNodeRef`s and
-     printing back as current positions; ranges (`a .. b`).
-   - **`where` and adjustable verbosity.** `where` clauses with
-     constraints inferred from the layer below; a terse/verbose toggle
-     in the `def` view, separate from show/hide implementation;
-     violated constraints surface as holes at every zoom level.
-   - **Cycle prevention in the editor.** Completion on a meaning offers
-     only rules below it in the DAG.
-   - **Self-description.** The language-definition language's own
-     syntax written as `means` rules, closing the bootstrap loop.
+   - *Rule engine loose ends:*
+     - **Operand leaf rules.** Leaf productions become operand rules
+       (`n means number(n) where n: digits`) — the last impls-side
+       vocabulary joins the document; example-driven associativity
+       overrides.
+     - **Rule encoding.** The meaning field as its own per-keystroke
+       input rather than the rule line's whole-text commit; then
+       `reparse`/`phrase` leave the model.
+     - **`means` surface polish.** The printer's role spans (`means`
+       emphasized, placeholders styled), a detail-level toggle
+       switching `means` to `=>` and hiding `where`, and the `lang:`
+       text surface itself reading/writing rules rather than leaf
+       strings.
+   - *Meaning layers; demote the old model:*
+     - **Semantics as rules.** `add(a, b) means builtin num-add`: eval
+       derived from meaning rules bottoming out in builtins, replacing
+       the hand-coded `Expr.eval` behind `expr-eval`. The rule
+       dependency DAG and derived layers are computed; a cycle renders
+       as a hole at the closing edge.
+     - **Migrate stored definitions.** Users' IndexedDB stores hold
+       `lang:` docs in the combinator format, and seeding never
+       overwrites. Convert legacy grammar subtrees to rules on read
+       (or first load): the first real *Evolvable* migration,
+       revertible because every version is kept.
+     - **Demote `GrammarDef` to the implementation layer.** Definitions
+       authored and stored as rules only; `GrammarDef` shown only
+       under show implementation as the escape hatch; remove the
+       combinators rules made redundant in authored definitions
+       (`Unrecognized`, `Phrase`, `Signum`, stop sets). Update
+       DESIGN.md and the demo.
+   - *Beyond parity:*
+     - **Structural rules.** The general rule form of which textual
+       `means` is the token-spine projection: a tree pattern — the
+       canonical schema and editor (form: text boxes, dropdowns) for
+       the construct it declares — matching subtrees instead of
+       tokens. `lang: language`'s `metaTerms` and `sheet`'s
+       `sheet`/`row`/`cell` become schema rules, and
+       `vocabulary`/`declared` leaves `LanguageDef` entirely.
+       Ambiguous surfaces store a deferred-choice hole (the projection
+       renders candidates as a dropdown) rather than silently
+       first-wins.
+     - **Sheet on rules.** Positional refs (`ref:c,r`, then `C4`) as
+       parse-time meanings resolving to stable `InternalNodeRef`s and
+       printing back as current positions; ranges (`a .. b`).
+     - **`where` and adjustable verbosity.** `where` clauses with
+       constraints inferred from the layer below; a terse/verbose
+       toggle in the `def` view, separate from show/hide
+       implementation; violated constraints surface as holes at every
+       zoom level.
+     - **Cycle prevention in the editor.** Completion on a meaning
+       offers only rules below it in the DAG.
+     - **Self-description.** The language-definition language's own
+       syntax written as `means` rules, closing the bootstrap loop.
 2. **Pins, pending updates, auto-update** (DESIGN §4, *Pins select
    behavior*). Still open:
 
@@ -325,8 +333,10 @@ Each item is described in the cited `DESIGN.md` section.
    retire the whole-text reparse remote changes go through today
    (sync carries the `Serial` outline, parsed by the outline codec;
    making that incremental is scaffolding the CRDT likely supersedes).
-4. **Schemas and typing.** Check documents against their node terms and
-   fold the gap/typing machinery into the document model.
+4. **Schemas and typing.** Folded into the generalized rules model
+   (item 1, *Structural rules*): a structural pattern *is* a construct's schema
+   — checking is matching — so typing rides the same tree-pattern
+   engine rather than a separate registry.
 5. **Further roadmap:**
    - A visual vocabulary editor and interactive diagram editing as document
      views.

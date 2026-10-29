@@ -792,10 +792,9 @@ surface but not solve (open).
 ambiguous: every construct use is a ref to a fully specified
 declaration. Two imported languages may define overlapping surface
 syntax (two `a + b` rules); rather than silently taking the first, the
-surface can store a deferred-choice node — a hole holding the
+document can store a deferred-choice node — a hole holding the
 candidates that the projection renders as a dropdown — so the user can
-type on and disambiguate whenever they choose. The answer lives in the
-projection layer, never in the document.
+type on and disambiguate whenever they choose. Once chosen, the node will hold a reference id, so there is no structural ambiguity, though notation may still be ambiguous.
 
 ## 5. UI architecture
 
