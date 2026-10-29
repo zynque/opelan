@@ -380,7 +380,25 @@ prefix, postfix, infix) is derived from its pattern's edges, and
 binding-list mistakes. Names are labels for now; a constructor carries an
 optional term ref, filled in once rules are read from a document.
 
-**One rule, every concern.** Read left to right, a rule is a production;
+**One rule, every concern.** At the general level a rule is tree to
+tree: the pattern is an abstract syntax tree — a shape of slots and
+constructs — and the meaning is a term tree. The textual form (`a + b
+means add(a, b)`) is the special case where the pattern is a token
+spine, the flat piece list today's `Pattern` type encodes; the tree
+pattern-matcher is the general engine of which packrat parsing is the
+textual piece. Other projections of the same rule follow from the
+pattern's shape: a structural LHS like `term name, shape` renders as a
+form — text boxes, dropdowns, buttons — the canonical editor for the
+construct the rule declares. The user-authored document is always the
+input AST, preserved as-is; the meaning side says how the input is
+interpreted — rendered as text, a chart, a 3d scene — it never rewrites
+its input. Compilation is the same relation cached in a lower layer
+(kernel or host) — a future optimization; interpretation is the model.
+As in Scheme, the machinery is a pattern and a template over trees;
+identity-by-node-id replaces hygienic renaming, and one rule yields
+both matcher and renderer.
+
+Read left to right, a rule is a production;
 its meaning names a node term and its arity (the vocabulary); read right to
 left, a constructor meaning is the printer — minimal-parenthesis printing
 follows from the binding list, replacing hand-written `Expr.pp`. Several
@@ -718,8 +736,9 @@ stays simple and generic, and no provenance can go stale.
 `rule(pattern, meaning, where)` node — pieces as `placeholder`/`literal`
 nodes (`glued` marking unspaced adjacency), the meaning as its term
 subtree. Like every construct use, a meaning names its constructor by
-reference: `add(a, b)` is a node whose data refers to the `add` term
-entry, and `a` spells `use(a)` — an operand ref to the pattern's
+reference: `add(a, b)` is a node whose data refers to `add`'s
+declaration — the first meaning node to build it — and `a` spells `use(a)`
+— an operand ref to the pattern's
 placeholder node — so a rule survives renames on either side. Rules
 compile to `GrammarDef`, which remains the implementation layer the
 interpreter runs. The `means` notation is the text surface of the
@@ -770,11 +789,13 @@ from community support — a social-contract problem the platform can
 surface but not solve (open).
 
 **Ambiguity lives only at the input surface.** Storage is never
-ambiguous: every construct use is a ref to a fully specified import.
-Two imported languages may define overlapping surface syntax (two
-`a + b` rules); resolving such input ambiguity — inline prompting, or a
-preference stored at the composition level — is an open question, but
-the answer lives in the projection layer, never in the document.
+ambiguous: every construct use is a ref to a fully specified
+declaration. Two imported languages may define overlapping surface
+syntax (two `a + b` rules); rather than silently taking the first, the
+surface can store a deferred-choice node — a hole holding the
+candidates that the projection renders as a dropdown — so the user can
+type on and disambiguate whenever they choose. The answer lives in the
+projection layer, never in the document.
 
 ## 5. UI architecture
 
@@ -1165,7 +1186,7 @@ current design supersedes each piece:
 |---|---|
 | `TypedGap`/`TypedGapManager` | `GapData` holes in `foundation/document`, recovering parsers in `foundation/grammar` |
 | `Expression`/`DSLParser` | `Expr`/`ExprParse` in `examples/`, `Language` and `foundation/langdef` |
-| `Schema`/`SchemaRegistry` | Schemas as documents — `LanguageDef` node kinds today (descriptive; not yet checked) |
+| `Schema`/`SchemaRegistry` | Rules as schemas — a structural pattern declares a construct's shape; vocabulary derives |
 | `Project`/`Definition`/`Workspace` | The document `Store`, the pure `Workspace` value, and the documents sidebar |
 | `CollaborationManager` stub | `DocSession` over real Automerge |
 | `DiagramRenderer` | Document-driven visualization as derived views — future work |
