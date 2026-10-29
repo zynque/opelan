@@ -14,34 +14,33 @@ import opelan.foundation.means._
 // placeholder to one by name — a sequence placeholder then parses
 // the production's token, and an operator operand bound to it is
 // checked after binding (a violation surfaces the whole application
-// as a hole). `operand` marks the language's leaf vocabulary —
-// terms that stand alone as operands, as the def's vocabulary
-// declares them.
+// as a hole). Which leaves stand alone as operands is authored, not
+// a leaf property: a lone-placeholder rule bound through `where`
+// (`n means n where n: number`) is the operand declaration.
 case class LexicalTerm(
     parser: Parser,
-    operand: Boolean,
     check: NodeData => Boolean)
 
-// `atom` supplies the operand fallback rules don't yet describe —
+// `atom` supplies the operand fallback rules don't describe —
 // the recovering `unrecognized` run — while leaf tokens and
-// anything narrower comes from the rules themselves: `where`
+// anything narrower come from the rules themselves: `where`
 // constraints bind placeholders to named leaf productions in
-// `lexicals` (DefLanguage's impls), the language's leaf terms are
-// operands, and a lone-placeholder rule bound that way
-// (`n means number(n) where n: digits`) is an operand production of
-// its own. `tag` turns a constructor name into node
-// data (DefLanguage.termTag), so built nodes name their construct
-// by reference. `name` is the rule the parser memoizes under:
-// every unbound placeholder recurses through it, so a language
-// change can invalidate by name like the combinator grammar's
-// `named`/`use` pair. Callers wrap the result in `phrase` for
-// to-EOF recovery, like any grammar.
+// `lexicals` (the def's builtin leaf vocabulary), and a lone-
+// placeholder rule bound that way (`n means n where n: number`) is
+// an operand production of its own. `tag` turns a constructor name
+// into node data (DefLanguage.termTag), so built nodes name their
+// construct by reference. `name` is the rule the parser memoizes
+// under: every unbound placeholder recurses through it, so a
+// language change can invalidate by name like the combinator
+// grammar's `named`/`use` pair. Callers wrap the result in `phrase`
+// for to-EOF recovery, like any grammar.
 //
 // Compiles as far as it can (Never Broken): rules the binding list
 // forgot join loosest, a pattern a sequence can't compile (leading
 // placeholder — `a , b , c` would left-recurse) is skipped, and a
 // malformed meaning degrades to a hole at apply time. Associativity
-// defaults to left until worked examples override it. A `where`
+// reads from worked examples — left by default, `a ^ b ^ c means
+// a ^ (b ^ c)` selects right (Associativity.scala). A `where`
 // term `lexicals` doesn't name leaves the placeholder unconstrained,
 // and `where` on an operator's operands is carried but not yet
 // enforced — operands there parse through the whole grammar.
@@ -59,8 +58,7 @@ def compileRules(
   lazy val self: Parser = rule(name)((in, pos) => compiled(in, pos))
   lazy val compiled: Parser = operatorTable(operand, operatorTiers)
   lazy val operand: Parser =
-    choice(sequences.map(sequenceParser) ++ leafOperands ++
-      lexicals.values.collect { case t if t.operand => t.parser } :+ atom*)
+    choice(sequences.map(sequenceParser) ++ leafOperands :+ atom*)
   lazy val operatorTiers: List[List[Operator]] =
     orderedOperatorRules(set).map(_.filterNot(operandBound))
       .filter(_.nonEmpty).map(_.map(toOperator))
@@ -118,6 +116,7 @@ def compileRules(
       },
       literals = theRule.pattern.pieces.collect {
         case Piece.Literal(text, _) => text },
+      assoc = operatorAssoc(set, theRule),
       build = (operands, in, from, to) =>
         // An operand bound against a `where` term is checked after
         // binding: a violation makes the whole application the hole.

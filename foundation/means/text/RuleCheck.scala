@@ -5,7 +5,10 @@ import opelan.foundation.means._
 // Well-formedness issues, as readable messages — reported, never thrown;
 // a rule set with issues still compiles as far as it can (*Never broken*).
 
-def ruleIssues(rule: Rule): List[String] = {
+// `leaves` is the leaf vocabulary `where` terms resolve against —
+// the def's builtin leaf productions (`lexicalTerms`); empty flags
+// every `where` term as unknown.
+def ruleIssues(rule: Rule, leaves: Set[String] = Set.empty): List[String] = {
   val bound = rule.pattern.placeholders
   val shown = printRule(rule)
   val duplicates = bound.diff(bound.distinct).distinct
@@ -16,14 +19,18 @@ def ruleIssues(rule: Rule): List[String] = {
   val stray = rule.where.flatMap(_.placeholders).distinct
     .filterNot(bound.contains)
     .map(name => s"where names '$name', which is not in the pattern of: $shown")
+  val unknown = rule.where.map(_.term).distinct.filterNot(leaves)
+    .map(t => s"where names '$t', which is not a leaf production")
   val empty =
     if (rule.pattern.pieces.isEmpty) List(s"empty pattern: $shown") else Nil
-  empty ++ duplicates ++ unbound ++ stray
+  empty ++ duplicates ++ unbound ++ stray ++ unknown
 }
 
 // Set-level issues: the binding list must name operator-shaped rules,
 // each at most once, and every operator-shaped rule needs a tier.
-def ruleSetIssues(ruleSet: RuleSet): List[String] = {
+// `leaves` is the leaf vocabulary `where` terms check against.
+def ruleSetIssues(
+    ruleSet: RuleSet, leaves: Set[String] = Set.empty): List[String] = {
   val byKey = ruleSet.rules.groupBy(_.pattern.key)
   val tiered = ruleSet.tiers.flatMap(_.patterns)
   def show(pattern: Pattern) = printPattern(pattern)
@@ -40,9 +47,8 @@ def ruleSetIssues(ruleSet: RuleSet): List[String] = {
   // An operator-shaped rule that is literal-led and binds every
   // placeholder through `where` declares operand intent — compileRules
   // emits it as an operand sequence when the terms resolve to leaf
-  // productions, so it needs no binding. (`where` naming a term that
-  // isn't a leaf production is a separate issue class the check
-  // doesn't yet cover — it has no lexicals to resolve against.)
+  // productions, so it needs no binding. A `where` naming a term the
+  // leaf vocabulary doesn't know is reported by `ruleIssues` instead.
   def operandBound(r: Rule): Boolean =
     r.pattern.pieces.headOption.exists(_.isInstanceOf[Piece.Literal]) &&
       r.pattern.placeholders.forall(
@@ -55,6 +61,6 @@ def ruleSetIssues(ruleSet: RuleSet): List[String] = {
     case (_, rules) if rules.length > 1 =>
       s"'${show(rules.head.pattern)}' is defined more than once"
   }.toList
-  ruleSet.rules.flatMap(ruleIssues) ++ definedTwice ++ unknown ++
-    notOperators ++ listedTwice ++ untiered
+  ruleSet.rules.flatMap(r => ruleIssues(r, leaves)) ++ definedTwice ++
+    unknown ++ notOperators ++ listedTwice ++ untiered
 }

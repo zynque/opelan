@@ -47,7 +47,7 @@ private def desugarCommitted(
     val meaning = desugarPhrase(ph, ph.placeholders.toSet,
       set.copy(rules = set.rules.updated(index, read)),
       interpret(syn.grammar, tag), tag, syn.lexicon, lex,
-      lexicalTerms(impls, set))
+      lexicalTerms(impls))
     if (hasGap(meaning)) read else read.copy(meaning = meaning)
   }).getOrElse(read)
 }

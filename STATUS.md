@@ -75,7 +75,9 @@ Each item is described in the cited `DESIGN.md` section.
   from content, not stored provenance — so the document model stays
   simple and no bookkeeping can go stale.
   The compiler is in: `operatorTable` covers prefix, postfix, and
-  left/right/non-associative infix driven by the binding list, and
+  left/right/non-associative infix driven by the binding list —
+  associativity derived from worked examples (`a ^ b ^ c means
+  a ^ (b ^ c)` selects right over the left default) — and
   `compileRules` turns a `RuleSet` into a parser — `exprRules`
   (`examples/ExprRules.scala`) matches the hand-written expression
   grammar on every input in the battery, spans included. Rules are
@@ -83,8 +85,8 @@ Each item is described in the cited `DESIGN.md` section.
   over a combinator operand fallback of just the `unrecognized`
   recovery run — signed
   literals are the `+n`/`-n` rules, and
-  the leaf tokens come from the vocabulary's leaf terms bound
-  through `Impls.leaves` (`SyntaxDef.rules`), `DefLanguage`
+  the leaf tokens are operands through the `n`/`r`/`g` operand
+  rules bound through `Impls.leaves` (`SyntaxDef.rules`), `DefLanguage`
   compiles them, `lang:` docs store rules as `means(pattern,
   meaning)` nodes — `placeholder`/`literal` pieces (`glued` markers
   preserve spacing), meaning terms as subtrees, constructs by
@@ -108,9 +110,10 @@ Each item is described in the cited `DESIGN.md` section.
   occurrence plus grammar `op` leaves stores an internal ref to, so a
   rename heals every use; the `vocabulary` section is gone from
   rules-bearing `lang:` documents, while defs without rules
-  (`lang: language`, the sheet) still write it as authored content and
-  impls' leaf productions supply operand marking code-side
-  (`lexicalTerms`) — and
+  (`lang: language`, the sheet) still write it as authored content,
+  impls' leaf productions stay kernel builtins (`lexicalTerms`) so
+  `where` terms check against a closed vocabulary (`ruleSetIssues`
+  reports a term that isn't a leaf production) — and
   worked examples in the `def`
   view are checked live against the interpreted definition — a
   failing one shows as a hole chip saying what the input read as.
@@ -234,17 +237,6 @@ Each item is described in the cited `DESIGN.md` section.
    above). Remaining steps, in order:
 
    - *Rule engine loose ends:*
-     - **Operand leaf rules.** Operand marking becomes an authored
-       rule — `n means n where n: number` declares `number` tokens as
-       operands (the `operand ::= number` production; the meaning is
-       `use`, identity by design) — replacing `lexicalTerms`' unbound-
-       leaf heuristic. The leaf productions themselves stay kernel
-       builtins beside the lexicons (a small fixed set — `number`,
-       `int`, `float`, `ref`, `gap`, `text`), so `where` terms resolve
-       against a closed vocabulary and "where names a term that isn't
-       a leaf production" becomes a reportable issue. Example-driven
-       associativity overrides (`a ^ b ^ c means a ^ (b ^ c)` selects
-       Right over the left default).
      - **Rule encoding.** The meaning field as its own per-keystroke
        input rather than the rule line's whole-text commit; then
        `reparse`/`phrase` leave the model.

@@ -124,7 +124,6 @@ class CompileSuite extends FunSuite {
   private val lexicals = Map(
     "number" -> LexicalTerm(
       parser = tok("int")(t => NodeData.IntData(t.text.toInt)),
-      operand = true,
       check = _.isInstanceOf[NodeData.IntData]))
 
   test("a lone-placeholder rule bound to a leaf is an operand") {

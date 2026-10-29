@@ -22,13 +22,21 @@ class RuleCheckSuite extends FunSuite {
   }
 
   test("a well-formed rule has no issues") {
-    assertEquals(ruleIssues(read("a + b means add(a, b) where a, b: number")), Nil)
+    assertEquals(ruleIssues(
+      read("a + b means add(a, b) where a, b: number"), Set("number")), Nil)
   }
 
   test("unbound, duplicated, and stray placeholders are reported") {
     assertEquals(ruleIssues(read("a + b means add(a, c)")).length, 1)
     assertEquals(ruleIssues(read("a + a means double(a)")).length, 1)
-    assertEquals(ruleIssues(read("a + b means add(a, b) where z: number")).length, 1)
+    assertEquals(ruleIssues(
+      read("a + b means add(a, b) where z: number"), Set("number")).length, 1)
+  }
+
+  test("a where term the leaf vocabulary doesn't name is reported") {
+    val r = read("a + b means add(a, b) where a, b: numbre")
+    assertEquals(ruleIssues(r, Set("number")),
+      List("where names 'numbre', which is not a leaf production"))
   }
 
   private val arithmetic = RuleSet(

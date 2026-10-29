@@ -1,6 +1,7 @@
 package opelan.foundation.langdef.syntax
 
 import munit.FunSuite
+import opelan.foundation.document.NodeData
 import opelan.foundation.langdef._
 import opelan.foundation.langdef.LeafKind._
 import opelan.foundation.means._
@@ -75,24 +76,18 @@ class DeriveVocabularySuite extends FunSuite {
       "cell"         -> NodeShape.Fixed(2)))
   }
 
-  test("operand marking excludes what where binds for narrowing") {
-    // `number` narrows inside the signum and `whole number` is bound
-    // by a lone-placeholder operand production — neither stands
-    // alone via the operand choice, so operand is false for both.
-    val set = rules(
-      "-n means literal(neg(n)) where n: number",
-      "n means n where n: whole number")
+  test("every impls leaf names a lexical term, bound or not") {
+    // Operand status is no longer derived here — which leaves stand
+    // alone is authored by lone-placeholder operand rules — so the
+    // whole leaf vocabulary is available for `where` to bind.
     val impls = Impls(leaves = Map(
-      "literal"      -> LeafDef(List("int" -> IntLit)),
-      "number"       -> LeafDef(List("int" -> IntLit)),
-      "whole number" -> LeafDef(List("int" -> IntLit)),
-      "ref"          -> LeafDef(List("ref" -> RefLit("ref:")))))
-    val operands = lexicalTerms(impls, set)
-      .map { case (name, t) => name -> t.operand }
-    assertEquals(operands, Map(
-      "literal"      -> true,
-      "number"       -> false,
-      "whole number" -> false,
-      "ref"          -> true))
+      "number" -> LeafDef(List("float" -> FloatLit, "int" -> IntLit)),
+      "ref"    -> LeafDef(List("ref" -> RefLit("ref:")))))
+    val terms = lexicalTerms(impls)
+    assertEquals(terms.keySet, Set("number", "ref"))
+    assert(terms("number").check(NodeData.IntData(3)))
+    assert(terms("number").check(NodeData.FloatData(1.5)))
+    assert(!terms("number").check(NodeData.InternalNodeRef(1)))
+    assert(terms("ref").check(NodeData.InternalNodeRef(1)))
   }
 }

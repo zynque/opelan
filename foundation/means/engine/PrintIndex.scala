@@ -1,6 +1,7 @@
 package opelan.foundation.means.engine
 
 import opelan.foundation.document._
+import opelan.foundation.grammar.Assoc
 import opelan.foundation.means._
 
 // The rule-derived lookup both printers share (`printWith` over
@@ -30,6 +31,12 @@ private[means] case class PrintIndex(
     else Nil
   }.toMap
 
+  // Each infix rule's associativity as the worked examples derive
+  // it — the operand the chain continues prints at the rule's own
+  // level, the regrouping one tighter.
+  private val assocs: Map[List[String], Assoc] =
+    set.rules.map(r => r.pattern.key -> operatorAssoc(set, r)).toMap
+
   // The ctx a pattern placeholder's tree prints under. Edge
   // placeholders get the precedence context their position implies;
   // inner ones (sequence rules only — operators have literal cores)
@@ -37,7 +44,12 @@ private[means] case class PrintIndex(
   def operandCtx(rule: Rule, pieceIndex: Int, child: NodeData): Int = {
     val pl = levels.getOrElse(rule.pattern.key, 0)
     rule.shape match {
-      case Shape.Infix   => if (pieceIndex == 0) pl else pl + 1
+      case Shape.Infix =>
+        assocs.getOrElse(rule.pattern.key, Assoc.Left) match {
+          case Assoc.Left  => if (pieceIndex == 0) pl else pl + 1
+          case Assoc.Right => if (pieceIndex == 0) pl + 1 else pl
+          case Assoc.Non   => pl + 1
+        }
       case Shape.Postfix => pl
       case Shape.Prefix  => if (isTierPrefix(child, pl)) pl else pl + 1
       case _             => 0

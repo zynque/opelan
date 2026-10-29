@@ -11,7 +11,8 @@ import opelan.foundation.means._
 // deterministic. Construct order is first appearance, outermost
 // first; a repeated name keeps its first declaration (the same
 // first-wins the compile and print sides use). Impls' leaf
-// productions and operand marking live code-side (lexicalTerms).
+// productions live code-side (lexicalTerms); which are operands
+// is authored by lone-placeholder operand rules.
 def vocabularyFrom(set: RuleSet): List[NodeTerm] =
   whereLeafNames(set).toList.sorted.map(
     NodeTerm(_, NodeShape.Leaf)) ++

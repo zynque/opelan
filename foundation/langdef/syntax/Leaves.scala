@@ -3,7 +3,6 @@ package opelan.foundation.langdef.syntax
 import opelan.foundation.document._
 import opelan.foundation.grammar._
 import opelan.foundation.langdef._
-import opelan.foundation.means.RuleSet
 import opelan.foundation.means.engine.LexicalTerm
 
 // A named leaf production a `where` term binds to — which token
@@ -12,9 +11,11 @@ import opelan.foundation.means.engine.LexicalTerm
 // Tok pairing of the old operand atom, named so rules can name
 // it: `n means n where n: number` makes number tokens operands,
 // and `pick n ... where n: whole number` narrows a sequence
-// placeholder to the production's tokens. Code-side in Impls,
-// like lexicons and views, until leaf productions are authored
-// in the definition document (STATUS Phase A, item 2).
+// placeholder to the production's tokens. Kernel builtins in
+// Impls, beside the lexicons — a small fixed set. Which leaves
+// stand alone as operands is authored by operand rules, not
+// derived here; user-defined leaf productions are deferred past
+// the means series (STATUS, *Authored leaf productions*).
 case class LeafDef(productions: List[(String, LeafKind)])
 
 // One leaf production as a token-level parser — its alternatives
@@ -43,19 +44,13 @@ private def dataMatches(leaf: LeafKind, data: NodeData): Boolean =
   }
 
 // Every leaf an Impls names as a LexicalTerm — the `where` table
-// compileRules binds constraint terms through. `operand` marks the
-// names that stand alone as operand productions: every named leaf
-// `where` doesn't bind — a bound term is narrowing inside a compound
-// (`where n: number`), while a lone-placeholder rule bound to it
-// (`n means n where n: t`) still makes `t` an operand through its own
-// bound production.
-def lexicalTerms(
-    impls: Impls, set: RuleSet): Map[String, LexicalTerm] = {
-  val narrowing = whereLeafNames(set)
+// compileRules binds constraint terms through. Operand status is
+// not a leaf property: a lone-placeholder rule bound to the
+// production (`n means n where n: number`) is what makes tokens
+// operands.
+def lexicalTerms(impls: Impls): Map[String, LexicalTerm] =
   impls.leaves.map { case (name, theLeaf) =>
-    name -> LexicalTerm(leafParser(theLeaf), !narrowing(name),
-      leafAccepts(theLeaf)) }
-}
+    name -> LexicalTerm(leafParser(theLeaf), leafAccepts(theLeaf)) }
 
 // How a token's text becomes leaf node data — the shared mapping
 // GrammarDef.Tok alternatives and leaf productions both use.

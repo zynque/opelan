@@ -34,7 +34,7 @@ class ExprRulesSuite extends munit.FunSuite {
 
   test("the expression rule set is well formed") {
     import opelan.foundation.means.text.ruleSetIssues
-    assertEquals(ruleSetIssues(exprRules), Nil)
+    assertEquals(ruleSetIssues(exprRules, exprImpls.leaves.keySet), Nil)
   }
 
   // The leaf half of the derived printer — what the atom's tokens

@@ -25,26 +25,32 @@ val exprRules = RuleSet(
     "a + b means add(a, b)",
     "a - b means sub(a, b)",
     "+n means literal(n) where n: number",
-    "-n means literal(neg(n)) where n: number").map(readRuleOrHole),
+    "-n means literal(neg(n)) where n: number",
+    // The operand declarations — which builtin leaves stand alone.
+    // `n means n` is the `operand ::= number` production: the `where`
+    // binds the token and `use` passes the leaf through.
+    "n means n where n: number",
+    "r means r where r: ref",
+    "g means g where g: gap").map(readRuleOrHole),
   tiers = List(
     Tier(List(readPattern("a * b"), readPattern("a / b"))),
     Tier(List(readPattern("a + b"), readPattern("a - b")))),
   examples = List(Example("1 + 2 * 3", "1 + (2 * 3)")))
 
 // The operand fallback the rules don't describe — just the
-// recovering unrecognized run; the leaf tokens come from the
-// vocabulary's leaf terms bound through exprImpls' leaf productions,
-// and signed numbers are the `+n`/`-n` rules. The same fallback
-// ExprParse's atom writes, minus `parens`, the leaf toks, and
-// `signum`.
+// recovering unrecognized run; the leaf tokens are operands through
+// the `n`/`r`/`g` operand rules bound to exprImpls' leaf
+// productions, and signed numbers are the `+n`/`-n` rules. The same
+// fallback ExprParse's atom writes, minus `parens`, the leaf toks,
+// and `signum`.
 lazy val ruleAtom: Parser =
   unrecognized(Set("op", "unrecognized"),
     Set("int", "float", "ref", "unrecognized", "hole"))
 
-// The named leaf vocabulary `where` terms bind through — the
-// vocabulary's leaf terms flag which are operands.
+// The named leaf vocabulary `where` terms bind through — operand
+// status comes from the rules' own operand declarations.
 lazy val exprLexicals: Map[String, LexicalTerm] =
-  lexicalTerms(exprImpls, exprRules)
+  lexicalTerms(exprImpls)
 
 // The same wrapper ExprParse gives the hand-written grammar — the
 // grammar inside a to-EOF phrase. The `expr` name is the rule the
