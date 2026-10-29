@@ -234,10 +234,17 @@ Each item is described in the cited `DESIGN.md` section.
    above). Remaining steps, in order:
 
    - *Rule engine loose ends:*
-     - **Operand leaf rules.** Leaf productions become operand rules
-       (`n means number(n) where n: digits`) — the last impls-side
-       vocabulary joins the document; example-driven associativity
-       overrides.
+     - **Operand leaf rules.** Operand marking becomes an authored
+       rule — `n means n where n: number` declares `number` tokens as
+       operands (the `operand ::= number` production; the meaning is
+       `use`, identity by design) — replacing `lexicalTerms`' unbound-
+       leaf heuristic. The leaf productions themselves stay kernel
+       builtins beside the lexicons (a small fixed set — `number`,
+       `int`, `float`, `ref`, `gap`, `text`), so `where` terms resolve
+       against a closed vocabulary and "where names a term that isn't
+       a leaf production" becomes a reportable issue. Example-driven
+       associativity overrides (`a ^ b ^ c means a ^ (b ^ c)` selects
+       Right over the left default).
      - **Rule encoding.** The meaning field as its own per-keystroke
        input rather than the rule line's whole-text commit; then
        `reparse`/`phrase` leave the model.
@@ -286,6 +293,11 @@ Each item is described in the cited `DESIGN.md` section.
        offers only rules below it in the DAG.
      - **Self-description.** The language-definition language's own
        syntax written as `means` rules, closing the bootstrap loop.
+     - **Authored leaf productions.** User-defined leaf kinds —
+       dates, currency literals, unit suffixes — as document rules
+       (`n means number(n) where n: digits`), once `where` narrowing
+       grows past builtin token kinds (the opaque-type question).
+       Deferred past the means series, like the lexicons they name.
 2. **Pins, pending updates, auto-update** (DESIGN §4, *Pins select
    behavior*). Still open:
 
