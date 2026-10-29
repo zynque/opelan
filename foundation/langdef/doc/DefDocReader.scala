@@ -18,6 +18,10 @@ private class DefDocReader(
     doc: Document[NodeData], root: Int,
     url: String = "", version: Int = 0) {
 
+  // Term name → its declaration node's id: the first meaning-position
+  // node carrying that name (the def's derived vocabulary anchors).
+  lazy val termIds: Map[String, Int] = deriveTermIds(doc, root)
+
   def data(id: Int): Option[NodeData] = doc.getNode(id).map(_.data)
   def kids(id: Int): List[Int] = doc.childrenOf(id)
   def str(id: Int): Option[String] =
@@ -91,7 +95,7 @@ private class DefDocReader(
   // (RuleDocDecode — a malformed rule becomes a hole rule), `binding`
   // tiers as pattern texts, `example` pairs.
   def ruleSetFrom(id: Int): RuleSet = RuleSet(
-    rules = entries(id, "rule").map(ruleFromDoc(doc, url, version, _)),
+    rules = entries(id, "rule").map(ruleFromDoc(doc, url, version, termIds, _)),
     tiers = entries(id, "binding").flatMap(b =>
       entries(b, "tier").map(t =>
         Tier(kids(t).flatMap(str).map(readPattern)))),

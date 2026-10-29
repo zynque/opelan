@@ -2,7 +2,7 @@ package opelan.examples
 
 import opelan.foundation.document._
 import opelan.foundation.grammar._
-import opelan.foundation.langdef.syntax.{leafTermNames, lexicalTerms}
+import opelan.foundation.langdef.syntax.lexicalTerms
 import opelan.foundation.means._
 import opelan.foundation.means.engine._
 import opelan.foundation.means.text._
@@ -44,7 +44,7 @@ lazy val ruleAtom: Parser =
 // The named leaf vocabulary `where` terms bind through — the
 // vocabulary's leaf terms flag which are operands.
 lazy val exprLexicals: Map[String, LexicalTerm] =
-  lexicalTerms(exprImpls, leafTermNames(exprDef))
+  lexicalTerms(exprImpls, exprRules)
 
 // The same wrapper ExprParse gives the hand-written grammar — the
 // grammar inside a to-EOF phrase. The `expr` name is the rule the

@@ -45,7 +45,8 @@ private def ruleLine(
               _.data.isInstanceOf[NodeData.StringData]) =>
           input(id, txt(leafText(doc, t)))
         case Some(_) =>
-          input(id, txt(committedRuleText(d, ruleFromDoc(doc, "", 0, id))))
+          input(id, txt(committedRuleText(d,
+            ruleFromDoc(doc, "", 0, deriveTermIds(doc, doc.rootId), id))))
         case None    => hole("rule")
       })
     case Some("binding") =>

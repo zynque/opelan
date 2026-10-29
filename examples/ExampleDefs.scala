@@ -65,14 +65,11 @@ val exprDef = LanguageDef(
   title = "lang: expression",
   name = "Expressions",
   description = "the arithmetic-expression language",
-  // The leaf terms are the operand vocabulary — each binds to a
-  // leaf production exprImpls names; `where` narrows to any named
-  // leaf. The construct terms derive from the rules' construct
-  // meanings (DeriveVocabulary.scala).
-  vocabulary = List(
-    NodeTerm("literal", Leaf),
-    NodeTerm("ref", Leaf),
-    NodeTerm("gap", Leaf)) ++ vocabularyFrom(exprRules),
+  // Fully derived: where-bound leaf terms plus the construct terms
+  // of construct meanings (DeriveVocabulary.scala). The encoded def
+  // carries no vocabulary section — each construct's first meaning
+  // occurrence is its declaration.
+  vocabulary = vocabularyFrom(exprRules),
   syntax = Some(SyntaxDef("expr", exprAtom, Some(exprRules))),
   views = List(
     ViewBinding("print", "expr-print"),
@@ -125,12 +122,11 @@ val sheetDef = LanguageDef(
 
 // The code-side semantics each example language's def names — kept
 // beside the defs that reference them.
-
 val exprImpls = Impls(
   lexicons = Map("expr" -> exprLexicon),
   // The leaf productions `where` terms bind to — the named leaf
-  // vocabulary: the def's leaf terms (literal, ref, gap) are
-  // operands; the rest are narrowing names (`where a, b: int`).
+  // vocabulary. Every leaf `where` doesn't bind is an operand
+  // production; bound ones are narrowing names (`where a, b: int`).
   // Each names which token kinds it accepts and their leaf data;
   // alternatives try in order (`number` accepts float then int).
   leaves = {

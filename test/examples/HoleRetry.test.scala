@@ -65,7 +65,7 @@ class HoleRetrySuite extends FunSuite {
     val s1 = languageFromDef(langDefFromDocument(url, doc, 1)).textSyntax.get
     val ch = s1.changedSince(s0).get
     assertEquals(ch.rules, Set.empty[String])
-    // Content parsed under v0 re-pins its construct refs to v1 on reuse.
+    // Content parsed under v0 re-pins its construct refs on reuse.
     val (c0, r0) = HoleRetry().parse(s0, "1 + 2")
     val (c1, _) = r0.parse(s1, "1 + 2")
     assertNotEquals(c1, c0)

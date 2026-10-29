@@ -4,6 +4,7 @@ import opelan.foundation.document._
 import opelan.foundation.document.store._
 import opelan.foundation.document.typed._
 import opelan.foundation.langdef._
+import opelan.foundation.langdef.syntax.vocabularyFrom
 import opelan.foundation.means.Meaning
 
 // The recovering read of a `lang:` document — the inverse of
@@ -31,12 +32,20 @@ def langDefFromDocument(
     title = title,
     name = r.section("name").flatMap(r.childStr(_, 0)).getOrElse(title),
     description = r.section("description").flatMap(r.childStr(_, 0)).getOrElse(""),
-    vocabulary = r.section("vocabulary").toList.flatMap { sid =>
+    // A stored `vocabulary` section is read as written (bootstrap
+    // defs declare terms there); without one the vocabulary derives
+    // from the rules — construct terms from first meaning
+    // occurrences (each meaning's `reference` already names its
+    // declaration node), leaf terms from `where`-bound names.
+    vocabulary = r.section("vocabulary").map { sid =>
       r.entries(sid, "term").map(k => NodeTerm(
         r.childStr(k, 0).getOrElse(""),
         r.shapeFrom(r.kids(k).lift(1)),
         Some(ExternalNodeReference(url, version, k))))
-    },
+    }.getOrElse(
+      r.section("syntax").toList
+        .flatMap(sid => r.entries(sid, "rules"))
+        .headOption.toList.flatMap(rs => vocabularyFrom(r.ruleSetFrom(rs)))),
     syntax = r.section("syntax").map { sid =>
       SyntaxDef(
         r.childStr(sid, 0).getOrElse(""),
@@ -63,7 +72,8 @@ def withTermRefs(d: LanguageDef): LanguageDef = {
   val url = d.typeRef.documentUrl
   val doc = langDefDoc(d)
   val vocabulary =
-    if (d.vocabulary.forall(_.ref.isDefined)) d.vocabulary
+    if (d.vocabulary.forall(t =>
+        t.shape == NodeShape.Leaf || t.ref.isDefined)) d.vocabulary
     else langDefFromDocument(url, doc).vocabulary
   val ids = vocabulary.flatMap(t => t.ref.map(t.name -> _.nodeId)).toMap
   // The encoding's piece ids, per rule — the `use` operands' link

@@ -95,7 +95,8 @@ Each item is described in the cited `DESIGN.md` section.
   session, while a meaning change or a re-created node still
   invalidates. Code-authored rules fall back to pattern-key names.
   Schema and checks derive too: `vocabularyFrom` turns construct
-  meanings into the def's terms, and worked examples in the `def`
+  meanings plus the lexical vocabulary into the def's terms, and
+  worked examples in the `def`
   view are checked live against the interpreted definition — a
   failing one shows as a hole chip saying what the input read as.
   The meaning model itself is the unified term of DESIGN §4 (*A
@@ -228,9 +229,18 @@ Each item is described in the cited `DESIGN.md` section.
      through the print view rather than preserving surface
      whitespace (meaningful layout would be an explicit `NodeData`
      construct).
-   - *Derived vocabulary:* collect `where`-bound leaf terms into
-     vocabulary entries, and derive a def document's vocabulary section
-     to retire the hand-written list there.
+   - *Derived vocabulary* (landed): `vocabularyFrom` derives a def's
+     vocabulary from its rules — `where`-bound names as leaf terms,
+     constructs from meanings — and the `vocabulary` section is gone
+     from rules-bearing `lang:` documents: a term's declaration is the
+     first meaning-position node that builds it, and every later
+     occurrence plus grammar `op` leaves stores an internal ref to
+     that declaration (`deriveTermIds`/`linkTerms` — a rename heals
+     every use). Defs without rules (`lang: language`, the sheet)
+     still write their section — it is authored declaration content.
+     Impls' leaf productions supply operand marking code-side
+     (`lexicalTerms`) — `where`-bound names are narrowing, not
+     standalone operands.
    - *Rule encoding:* the meaning field as its own per-keystroke input
      rather than the rule line's whole-text commit; then
      `reparse`/`phrase` leave the model.

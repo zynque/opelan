@@ -15,7 +15,7 @@ import opelan.foundation.means.text._
 // Every read is total: missing or malformed parts become holes.
 private[langdef] def ruleFromDoc(
     doc: Document[NodeData], url: String,
-    version: Int, id: Int): Rule =
+    version: Int, termIds: Map[String, Int], id: Int): Rule =
   doc.childrenOf(id).headOption.flatMap(i => strOf(doc, i))
     .map(t => readRuleOrHole(t).copy(id = Some(id))).getOrElse(Rule(
       entriesOf(doc, id, "pattern").headOption
@@ -23,7 +23,7 @@ private[langdef] def ruleFromDoc(
         .getOrElse(Pattern(Nil)),
       entriesOf(doc, id, "meaning").headOption
         .flatMap(m => doc.childrenOf(m).headOption)
-        .map(meaningFromDoc(doc, url, version, _))
+        .map(meaningFromDoc(doc, url, version, termIds, _))
         .getOrElse(Meaning.reparse(Nil)),
       entriesOf(doc, id, "where").headOption.toList.flatMap(w =>
         entriesOf(doc, w, "constraint")
@@ -46,23 +46,24 @@ private def pieceFrom(doc: Document[NodeData], id: Int): Piece = {
 // defined language, named and referenced through its term entry.
 private def meaningFromDoc(
     doc: Document[NodeData], url: String,
-    version: Int, id: Int): Meaning = metaConsOf(doc, id) match {
+    version: Int, termIds: Map[String, Int], id: Int): Meaning =
+  metaConsOf(doc, id) match {
   case Some(tag @ ("use" | "source" | "builtin")) =>
     Meaning(tag, doc.childrenOf(id).map(operandFrom(doc, url, version, _)))
   // A literal's operands are value terms — name leaves (a linked one
   // carries the piece ref) and construct subtrees alike.
   case Some("literal") =>
     Meaning("literal",
-      doc.childrenOf(id).map(meaningFromDoc(doc, url, version, _)))
+      doc.childrenOf(id).map(meaningFromDoc(doc, url, version, termIds, _)))
   case Some("reparse") =>
     Meaning.reparse(doc.childrenOf(id).map(pieceFrom(doc, _)))
   case Some("quote") =>
     Meaning("quote", quoted =
       doc.childrenOf(id).headOption.map(treeFrom(doc, _)))
   case _ =>
-    Meaning(kindName(doc, url, version, id),
-      doc.childrenOf(id).map(meaningFromDoc(doc, url, version, _)),
-      kindRef(doc, url, version, id))
+    Meaning(kindName(doc, url, version, termIds, id),
+      doc.childrenOf(id).map(meaningFromDoc(doc, url, version, termIds, _)),
+      kindRef(doc, url, version, termIds, id))
 }
 
 // A builtin's operand — a bound placeholder's name, plus the piece
@@ -83,16 +84,22 @@ private def operandFrom(
 
 private def kindRef(
     doc: Document[NodeData], url: String,
-    version: Int, id: Int): Option[ExternalNodeReference] =
-  externalRefOf(doc, id).orElse(doc.getNode(id).map(_.data).collect {
+    version: Int, termIds: Map[String, Int],
+    id: Int): Option[ExternalNodeReference] =
+  externalRefOf(doc, id).orElse(doc.getNode(id).map(_.data).flatMap {
     case NodeData.InternalNodeRef(t) =>
-      ExternalNodeReference(url, version, t)
+      Some(ExternalNodeReference(url, version, t))
+    // A named construct node's ref is its declaration: the first
+    // meaning-position node that carries the name.
+    case NodeData.StringData(s) =>
+      termIds.get(s).map(ExternalNodeReference(url, version, _))
+    case _ => None
   })
 
 private def kindName(
     doc: Document[NodeData], url: String,
-    version: Int, id: Int): String =
-  kindRef(doc, url, version, id) match {
+    version: Int, termIds: Map[String, Int], id: Int): String =
+  kindRef(doc, url, version, termIds, id) match {
     case Some(r) => definitionName(doc, r.nodeId).getOrElse("")
     case None    => strOf(doc, id).getOrElse("")
   }

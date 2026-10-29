@@ -149,15 +149,21 @@ Untyped documents are "raw".
 **Everything by reference.** Content never spells a language construct
 by name. A node applying `mul` (or `vocabulary`, `term`, `row`) has as its
 data an `InternalNodeRef` to an import entry. That entry is an
-`ExternalNodeRef` to the construct's vocabulary entry in its `lang:`
-document, e.g. `opelan:languages/int-expression@0#28`. A construct's
-identity is that address, and readers match on it (`termOf`,
-`DefDocReader.cons`), never on a string. Renaming a construct therefore
-edits one node, its definition, and every use, in every document, picks
-up the new name. The editor shows each use projectionally: the resolved
-name in bold, with the raw `&n` beside it. References *within* a
-definition are plain internal refs to the defining node, for example an
-operator to the term it builds or a `use` to a `named` grammar rule.
+`ExternalNodeRef` to the construct's declaration in its `lang:` document —
+the first meaning-position node that builds it in the rules
+(`a × b means mul(a, b)` declares `mul`; every later occurrence, and every
+document use, is a reference to that node). A construct's identity is that
+address, and readers match on it (`termOf`, `DefDocReader.cons`), never on
+a string. Renaming a construct therefore edits one node, its declaration,
+and every use, in every document, picks up the new name. The editor shows
+each use projectionally: the resolved name in bold, with the raw `&n`
+beside it. References *within* a definition are plain internal refs to the
+declaring node, for example a meaning's second `mul` to the first, an
+operator to the term it builds, or a `use` to a `named` grammar rule.
+Def documents carry no `vocabulary` section once rules can declare the
+terms — the section persists only for rules-less defs (`lang: language`
+itself, the sheet), where it is authored declaration content, not a
+redundant listing.
 Only a definition's own names, literal syntax (`"*"`), builtin names,
 and user data remain strings. The type and imports slots are positional;
 the imports node's `"imports"` label is a caption, not a key.
@@ -209,13 +215,15 @@ on it.
 
 **Language definitions as documents** (`foundation/langdef`) — the
 bootstrap path, and *Frictionless* in practice. A `LanguageDef` is a
-language as data: identity, a vocabulary of node terms, a compositional
+language as data: identity, a vocabulary of node terms (derived from
+the rules — each term's first meaning occurrence is its declaration),
+a compositional
 grammar (`GrammarDef`, the data twin of the `foundation/grammar`
 combinators), view bindings, and an input grammar. `langDefDoc` encodes a
 def as a typed `lang:` document; `langDefFromDocument` reads it back
 recoveringly; `interpret` turns grammar data into a total parser; and
 `DefLanguage` turns a def into a live `Language`. A def doc's sections,
-vocabulary entries, and grammar combinators are constructs of
+rule nodes, and grammar combinators are constructs of
 `lang: language` (`metaTerms`), imported like any other construct.
 `lang: language` imports them from its own vocabulary, which is the bootstrap
 fixpoint. Code knows meta constructs by node id (`metaTermIds`, taken
@@ -320,7 +328,7 @@ household budget.
 ### Defining languages by `means` rules (in progress)
 
 Today a language's meaning is scattered: the grammar maps `"*"` to the tag
-`"mul"` inside a combinator tree, the vocabulary separately declares `mul` as
+`"mul"` inside a combinator tree, the vocabulary separately declared `mul` as
 `Fixed(2)`, `Expr.pp` re-encodes precedence for printing, and eval matches
 `Mul` in Scala — four artifacts held together by a string. Authoring one
 requires knowing parser combinators (`Signum`, `Unrecognized`, `Phrase`, stop

@@ -57,7 +57,7 @@ class DefLanguage(
       // recovery the combinator form encodes explicitly.
       case Some(rules) =>
         val atom = interpret(s.grammar, termTag)
-        val lexicals = lexicalTerms(impls, leafTermNames(languageDef))
+        val lexicals = lexicalTerms(impls, rules)
         // Phrase meanings desugar to term trees at interpretation —
         // the document form of *Phrases desugar at entry* (DESIGN §4).
         val desugared =

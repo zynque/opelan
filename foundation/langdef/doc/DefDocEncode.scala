@@ -36,23 +36,37 @@ private[langdef] def encodeDef(
     NodeData.StringData(d.title),
     DetachedNode.leaf(pending("definition")))
   val cid = contentId(doc0).getOrElse(doc0.rootId)
-  val (doc1, vocabularyId) = add(doc0, cid,
-    n(pending("description"), sl(d.description)),
-    n(pending("name"), sl(d.name)),
-    n(pending("vocabulary"), d.vocabulary.map(termNode)*))
-  val termIds =
-    d.vocabulary.map(_.name).zip(doc1.childrenOf(vocabularyId)).toMap
+  // A def that carries rules declares its terms by their first
+  // occurrence in the rules' meanings — no vocabulary section.
+  // Defs without rules (lang: language itself, the sheet) still
+  // write theirs: it's authored declaration content, and its term
+  // entries anchor the refs stored docs point at.
+  val hasRules = d.syntax.flatMap(_.rules).isDefined
+  val (doc1, vocabularyId) =
+    if (hasRules) add(doc0, cid,
+      n(pending("description"), sl(d.description)),
+      n(pending("name"), sl(d.name)))
+    else add(doc0, cid,
+      n(pending("description"), sl(d.description)),
+      n(pending("name"), sl(d.name)),
+      n(pending("vocabulary"), d.vocabulary.map(termNode)*))
+  val sectionIds =
+    if (hasRules) Map.empty[String, Int]
+    else d.vocabulary.map(_.name).zip(doc1.childrenOf(vocabularyId)).toMap
   val doc2 = add(doc1, cid, List(
     d.syntax.map(s => n(pending("syntax"),
-      List(sl(s.lexicon), grammarNode(s.grammar, termIds)) ++
-        s.rules.toList.map(rulesNode(_, termIds, pending))*)),
+      List(sl(s.lexicon), grammarNode(s.grammar, sectionIds)) ++
+        s.rules.toList.map(rulesNode(_, d.typeRef.documentUrl, pending))*)),
     Some(n(pending("views"), d.views.map(viewNode)*)),
     d.inputParser.map(cp => n(pending("inputs"), inputsNode(cp)))).flatten*)._1
+  val linked = linkRuleUses(linkUses(doc2, cid), cid)
+  val termIds =
+    if (hasRules) deriveTermIds(linked, cid) else sectionIds
   val metaIds =
     if (d.typeRef.documentUrl == langDefTypeRef.documentUrl)
       termIds else metaTermIds
   val doc3 = resolvePending(
-    linkRuleUses(linkUses(doc2, cid), cid), name =>
+    linkTerms(linked, cid, termIds), name =>
     metaRefIn(metaIds, name).map(NodeData.ExternalNodeRef(_))
       .getOrElse(NodeData.GapData(name)))
   (internalizeStandard(doc3), termIds)

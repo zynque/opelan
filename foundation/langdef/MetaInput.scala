@@ -22,7 +22,7 @@ def commitMetaInput(
     case Some("rule") =>
       val read = readRuleOrHole(text)
       Some(ruleNode(desugarCommitted(doc, docUrl, id, read, impls),
-        vocabularyTermIds(doc, docUrl), pieceIdsFor(doc, id), externalMeta))
+        docUrl, pieceIdsFor(doc, id), externalMeta))
     case _ => None
   }
 
@@ -47,7 +47,7 @@ private def desugarCommitted(
     val meaning = desugarPhrase(ph, ph.placeholders.toSet,
       set.copy(rules = set.rules.updated(index, read)),
       interpret(syn.grammar, tag), tag, syn.lexicon, lex,
-      lexicalTerms(impls, leafTermNames(defined)))
+      lexicalTerms(impls, set))
     if (hasGap(meaning)) read else read.copy(meaning = meaning)
   }).getOrElse(read)
 }
@@ -76,10 +76,3 @@ private def hasGap(m: Meaning): Boolean =
 
 private def gapTree(t: PTree): Boolean =
   t.data.isInstanceOf[NodeData.GapData] || t.kids.exists(gapTree)
-
-// The doc's own vocabulary as the term name → entry-id map a structured
-// meaning encodes against — empty for a doc that isn't a def.
-private[langdef] def vocabularyTermIds(
-    doc: Document[NodeData], docUrl: String): Map[String, Int] =
-  langDefFromDocument(docUrl, doc).vocabulary
-    .flatMap(k => k.ref.map(k.name -> _.nodeId)).toMap

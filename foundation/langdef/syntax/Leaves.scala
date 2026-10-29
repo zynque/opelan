@@ -3,6 +3,7 @@ package opelan.foundation.langdef.syntax
 import opelan.foundation.document._
 import opelan.foundation.grammar._
 import opelan.foundation.langdef._
+import opelan.foundation.means.RuleSet
 import opelan.foundation.means.engine.LexicalTerm
 
 // A named leaf production a `where` term binds to — which token
@@ -41,21 +42,20 @@ private def dataMatches(leaf: LeafKind, data: NodeData): Boolean =
     case _                                                => false
   }
 
-// The def's leaf-term names — the vocabulary's `term(_, leaf)`
-// entries — marking which named leaves are operands.
-def leafTermNames(d: LanguageDef): Set[String] =
-  d.vocabulary.collect { case t if t.shape == NodeShape.Leaf =>
-    t.name }.toSet
-
 // Every leaf an Impls names as a LexicalTerm — the `where` table
-// compileRules binds constraint terms through. `operands` marks
-// the names that stand alone as operand productions — the
-// vocabulary's leaf terms (leafTermNames).
+// compileRules binds constraint terms through. `operand` marks the
+// names that stand alone as operand productions: every named leaf
+// `where` doesn't bind — a bound term is narrowing inside a compound
+// (`where n: number`), while a lone-placeholder rule bound to it
+// (`n means n where n: t`) still makes `t` an operand through its own
+// bound production.
 def lexicalTerms(
-    impls: Impls, operands: Set[String]): Map[String, LexicalTerm] =
+    impls: Impls, set: RuleSet): Map[String, LexicalTerm] = {
+  val narrowing = whereLeafNames(set)
   impls.leaves.map { case (name, theLeaf) =>
-    name -> LexicalTerm(leafParser(theLeaf), operands(name),
+    name -> LexicalTerm(leafParser(theLeaf), !narrowing(name),
       leafAccepts(theLeaf)) }
+}
 
 // How a token's text becomes leaf node data — the shared mapping
 // GrammarDef.Tok alternatives and leaf productions both use.

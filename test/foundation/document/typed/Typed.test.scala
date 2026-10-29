@@ -75,7 +75,8 @@ class TypedSuite extends munit.FunSuite {
   }
 
   test("refName resolves an import through the store, at the head") {
-    val lang0 = buildDocument(n(s("lang"), sl("x"), sl("y"), n(s("kind"), sl("plus"))))
+    val lang0 = buildDocument(n(s("lang"), sl("x"), sl("y"),
+      n(er(ExternalNodeReference("meta:kind", 0, 9)), sl("plus"))))
     val kindId = lang0.rootId - 1
     val lang1 = updateNodeData(lang0.childrenOf(kindId).head, s("add"), lang0).toOption.get
     val target = ExternalNodeReference("test:lang", 0, kindId)

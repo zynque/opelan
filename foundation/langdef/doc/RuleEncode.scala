@@ -13,8 +13,9 @@ import opelan.foundation.means.text._
 // `use`/`source`/`builtin` operands name their bound placeholder (by
 // name until a link pass points them at the piece node), `reparse`
 // keeps its template pieces, `quote` keeps its desugared subtree, and
-// a construct's data is its vocabulary term's ref — the same node a
-// document of the defined language would hold. The binding list stays
+// a construct's data is its name — the first occurrence in doc order
+// is the term's declaration, so a document of the defined language
+// references that node by id. The binding list stays
 // tiers of pattern texts and examples stay input/expected pairs.
 //
 // `meta` supplies meta-construct data: `pending` inside a def-doc
@@ -24,21 +25,21 @@ import opelan.foundation.means.text._
 // structured encoding and lines edited mid-migration still decode.
 private[langdef] def rulesNode(
     set: RuleSet,
-    termIds: Map[String, Int],
+    url: String,
     meta: String => NodeData): DetachedNode[NodeData] =
   n(meta("rules"),
-    (set.rules.map(ruleNode(_, termIds, Map.empty, meta)) ++
+    (set.rules.map(ruleNode(_, url, Map.empty, meta)) ++
       bindingNode(set.tiers, meta) ++
       set.examples.map(e =>
         n(meta("example"), sl(e.input), sl(e.expected))))*)
 
 private[langdef] def ruleNode(
-    r: Rule, termIds: Map[String, Int], pieceIds: Map[String, Int],
+    r: Rule, url: String, pieceIds: Map[String, Int],
     meta: String => NodeData): DetachedNode[NodeData] =
   n(meta("rule"),
     (List(
       patternNode(r.pattern, meta),
-      n(meta("meaning"), meaningTermNode(r.meaning, termIds, pieceIds, meta))) ++
+      n(meta("meaning"), meaningTermNode(r.meaning, url, pieceIds, meta))) ++
       (if (r.where.isEmpty) Nil else List(whereNode(r.where, meta))))*)
 
 private def bindingNode(
@@ -68,7 +69,7 @@ private def pieceNode(
 }
 
 private def meaningTermNode(
-    m: Meaning, termIds: Map[String, Int], pieceIds: Map[String, Int],
+    m: Meaning, url: String, pieceIds: Map[String, Int],
     meta: String => NodeData): DetachedNode[NodeData] = m.tag match {
   case "use" | "source" | "builtin" =>
     n(meta(m.tag), m.arguments.flatMap(Meaning.nameOf).map(name =>
@@ -82,7 +83,7 @@ private def meaningTermNode(
       case Some(name) => pieceIds.get(name)
           .map(t => DetachedNode.leaf(NodeData.InternalNodeRef(t)))
           .getOrElse(sl(name))
-      case None => meaningTermNode(a, termIds, pieceIds, meta)
+      case None => meaningTermNode(a, url, pieceIds, meta)
     })*)
   case "reparse" =>
     n(meta("reparse"),
@@ -90,22 +91,20 @@ private def meaningTermNode(
   case "quote" =>
     n(meta("quote"), m.quoted.toList.map(detachedOf)*)
   case tag =>
-    DetachedNode(constructData(m, tag, termIds),
-      m.arguments.map(meaningTermNode(_, termIds, pieceIds, meta)))
+    DetachedNode(constructData(m, tag, url),
+      m.arguments.map(meaningTermNode(_, url, pieceIds, meta)))
 }
 
-// A construct meaning's node data: an internal ref to the vocabulary
-// entry when the term is in this document, its external ref otherwise,
-// and the bare name when the vocabulary doesn't know it — the reader
-// degrades it like the grammar's `op` leaves do.
+// A construct meaning's node data: its external ref when the term
+// belongs to another document, its bare name otherwise — a local
+// construct carries its name in every occurrence, and the first
+// occurrence in doc order IS the term's declaration (there is no
+// vocabulary section; identity derives positionally at read).
 private def constructData(
-    m: Meaning, tag: String, termIds: Map[String, Int]): NodeData =
+    m: Meaning, tag: String, url: String): NodeData =
   m.reference match {
-    case Some(r) if termIds.values.toSet(r.nodeId) =>
-      NodeData.InternalNodeRef(r.nodeId)
-    case Some(r) => NodeData.ExternalNodeRef(r)
-    case None    => termIds.get(tag).map(NodeData.InternalNodeRef(_))
-      .getOrElse(NodeData.StringData(tag))
+    case Some(r) if r.documentUrl != url => NodeData.ExternalNodeRef(r)
+    case _                             => NodeData.StringData(tag)
   }
 
 private def detachedOf(t: PTree): DetachedNode[NodeData] =

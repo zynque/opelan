@@ -34,7 +34,7 @@ class LangDefDocSuite extends FunSuite {
     assert(!strings.contains("vocabulary") && !strings.contains("term"), strings)
     // Every meta construct use goes through the imports section.
     val imported = importEntries(doc).map(_._2)
-    assert(imported.contains(metaRef("term").get))
+    assert(imported.contains(metaRef("rule").get))
     assert(imported.forall(_.documentUrl == langDefTypeRef.documentUrl))
     // The combinator form's operators name the term they build by
     // internal ref to its vocabulary entry.
@@ -78,8 +78,7 @@ class LangDefDocSuite extends FunSuite {
     // decoded tag follows a rename (same healing as document uses).
     val doc = langDefDoc(exprDef)
     val divId = termRefs(withTermRefs(exprDef))("div").nodeId
-    val renamed = updateNodeData(
-      doc.childrenOf(divId).head, s("quotient"), doc).toOption.get
+    val renamed = updateNodeData(divId, s("quotient"), doc).toOption.get
     val d = langDefFromDocument(exprDef.typeRef.documentUrl, renamed)
     assert(d.syntax.get.rules.get.rules
       .exists(_.meaning.tag == "quotient"))
@@ -162,12 +161,12 @@ class LangDefDocSuite extends FunSuite {
     // And the edited language really parses with the new rule.
     val parsed = languageFromDef(d).parse("6 % 4").get
     assertEquals(parsed.data, NodeData.ExternalNodeRef(
-      termRefs(withTermRefs(exprDef))("add")))
-    // The construct committed by node ref to the vocabulary entry.
-    val addId = termRefs(withTermRefs(exprDef))("add").nodeId
+      termRefs(withTermRefs(d))("add")))
+    // The construct commits by name — the declaration lives at the
+    // first `add` occurrence, so a later use stores its name string.
     assert(updated.subtreeIds(ruleId).exists(k =>
       updated.getNode(k).exists(
-        _.data == NodeData.InternalNodeRef(addId))))
+        _.data == NodeData.StringData("add"))))
     // And `use` operands point at the pattern's piece nodes — the
     // `a` placeholder's node kept its id through the commit.
     val aLeaf = updated.subtreeIds(ruleId).find(k =>
@@ -316,17 +315,17 @@ class LangDefDocSuite extends FunSuite {
   }
 
   test("renaming a construct's definition renames its uses, decoding unaffected") {
-    // Rename the meta `term` entry in lang: language. Def docs use the
+    // Rename the meta `rule` entry in lang: language. Def docs use the
     // entry by id, so decoding ignores the rename and the projected
     // name of every use follows it.
-    val termEntry = metaRef("term").get.nodeId
+    val ruleEntry = metaRef("rule").get.nodeId
     val metaDoc = DocLanguage.langDoc
-    val nameLeaf = metaDoc.childrenOf(termEntry).head
+    val nameLeaf = metaDoc.childrenOf(ruleEntry).head
     val renamed = updateNodeData(nameLeaf, s("construct"), metaDoc).toOption.get
     val store = Store.empty.put(langDefTypeRef.documentUrl, renamed)._1
     val doc = langDefDoc(exprDef)
     val termUse = doc.nodes.indices.find(id =>
-      !isImportEntry(doc, id) && externalRefOf(doc, id).contains(metaRef("term").get)).get
+      !isImportEntry(doc, id) && externalRefOf(doc, id).contains(metaRef("rule").get)).get
     assertEquals(refName(store, doc, termUse), Some("construct"))
     assertEquals(
       langDefFromDocument(exprDef.typeRef.documentUrl, doc).vocabulary.map(_.name),
