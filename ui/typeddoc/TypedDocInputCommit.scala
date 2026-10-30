@@ -3,7 +3,8 @@ package opelan.ui.typeddoc
 import opelan.examples.{implsFor, languageForDoc}
 import opelan.foundation.document._
 import opelan.foundation.document.typed._
-import opelan.foundation.langdef.{commitMetaInput, Impls}
+import opelan.foundation.langdef.{
+  commitMetaInput, enclosingRuleId, Impls}
 import opelan.foundation.langdef.doc.{
   langDefFromDocument, linkRuleUses, metaConsOf}
 import opelan.foundation.language.docText
@@ -22,8 +23,8 @@ import TypedDocOutput._
 private[typeddoc] def commitInputText(
     m: TypedDocModel, id: Int,
     text: String): Update[TypedDocModel, TypedDocOutput, TypedDocInput] =
-  (commitMetaInput(m.doc, m.docUrl.getOrElse(""), id, text, metaImpls(m, id))
-      .map((_, m.inputSessions))
+  (commitMetaInput(m.doc, m.docUrl.getOrElse(""), id, text,
+      m.inputSessions, metaImpls(m, id))
     .orElse(languageForDoc(m.doc, m.store)
       .flatMap(_.commitInput(id, text, m.inputSessions)))) match {
     case Some((content, _)) if unchangedInput(m.doc, id, content) =>
@@ -31,7 +32,7 @@ private[typeddoc] def commitInputText(
     case Some((content, sessions)) =>
       commitContent(id, content, m.doc)
           .flatMap(internalizeRefs(_, id))
-          .map(linkRuleUses(_, id)) match {
+          .map(d => linkRuleUses(d, enclosingRuleId(d, id))) match {
         case Right(d) =>
           val msg = "Input updated"
           val live = reachableIds(d)
@@ -50,11 +51,11 @@ private[typeddoc] def commitInputText(
         Vector(Status("No input grammar")))
   }
 
-// The impls a `rule` commit needs to desugar phrase meanings through
-// the def's own syntax — the doc being edited is the def, so its
-// lexicon comes from the foundational bundle the def names.
+// The impls a `rule`/`meaning` commit needs to desugar phrase meanings
+// through the def's own syntax — the doc being edited is the def, so
+// its lexicon comes from the foundational bundle the def names.
 private def metaImpls(m: TypedDocModel, id: Int): Impls =
-  if (metaConsOf(m.doc, id).contains("rule"))
+  if (metaConsOf(m.doc, id).exists(Set("rule", "meaning")))
     m.docUrl.map(u => implsFor(langDefFromDocument(u, m.doc)))
       .getOrElse(Impls())
   else Impls()

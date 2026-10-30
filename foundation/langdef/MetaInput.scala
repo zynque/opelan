@@ -1,36 +1,60 @@
 package opelan.foundation.langdef
 
 import opelan.foundation.document._
+import opelan.foundation.document.Detached._
 import opelan.foundation.grammar.PTree
 import opelan.foundation.langdef.doc._
 import opelan.foundation.langdef.syntax._
+import opelan.foundation.language.InputSessions
 import opelan.foundation.means.{Meaning, Pattern, Rule}
-import opelan.foundation.means.engine.desugarPhrase
-import opelan.foundation.means.text.readRuleOrHole
+import opelan.foundation.means.engine.{hasGap, holeQuoteText, phraseMeaning}
+import opelan.foundation.means.text.{
+  readConstraintsText, readPattern, readRuleOrHole}
 
 // Text committed against a meta construct produces the structured
 // subtree its decode reads back, never a bare string: a `rule` line
 // becomes pattern + meaning nodes, its constructs bound to the doc's
-// own vocabulary entries. `None` for a node that isn't meta content —
-// an ordinary document input goes through the doc's own input grammar.
-// `impls` supplies the defined language's lexicon so a phrase meaning
-// desugars at entry (DESIGN §4, *Phrases desugar at entry*).
+// own vocabulary entries; `pattern`, `meaning`, and `where` fields
+// commit their own sections — the meaning through the defined
+// language's rules (DESIGN §4, *Phrases desugar at entry*). `None`
+// for a node that isn't meta content — an ordinary document input
+// goes through the doc's own input grammar. `inputs` carries the
+// meaning field's incremental session between commits.
 def commitMetaInput(
     doc: Document[NodeData], docUrl: String,
-    id: Int, text: String, impls: Impls = Impls()): Option[DetachedNode[NodeData]] =
+    id: Int, text: String,
+    inputs: InputSessions = InputSessions(),
+    impls: Impls = Impls())
+    : Option[(DetachedNode[NodeData], InputSessions)] =
   metaConsOf(doc, id) match {
     case Some("rule") =>
-      val read = readRuleOrHole(text)
-      Some(ruleNode(desugarCommitted(doc, docUrl, id, read, impls),
-        docUrl, pieceIdsFor(doc, id), externalMeta))
+      Some((ruleNode(desugarCommitted(doc, docUrl, id,
+          readRuleOrHole(text), impls),
+        docUrl, pieceIdsFor(doc, id), externalMeta), inputs))
+    case Some("pattern") =>
+      Some((patternNode(readPattern(text), externalMeta), inputs))
+    case Some("meaning") =>
+      Some(commitMeaningInput(doc, docUrl, id, text, inputs, impls))
+    case Some("where") =>
+      Some((whereNode(readConstraintsText(text), externalMeta), inputs))
     case _ => None
   }
 
-// A committed `reparse` meaning desugars at commit — through the doc's
-// own rules with the new rule swapped into the set — so the stored
-// meaning is terms. A phrase the set can't yet read keeps its
-// `reparse` form: the interpretation-time desugar retries it as rules
-// arrive — the meaning's hole-retry healing.
+// The `rule` node a meta commit belongs to — the node itself or its
+// parent — where `linkRuleUses` re-points `use`/`source` operands at
+// the pattern's piece nodes after the commit lands.
+def enclosingRuleId(
+    doc: Document[NodeData], id: Int): Int =
+  if (metaConsOf(doc, id).contains("rule")) id
+  else doc.getNode(id).flatMap(_.parentId)
+    .filter(metaConsOf(doc, _).contains("rule")).getOrElse(id)
+
+// A committed meaning that landed as one quoted hole re-reads through
+// the doc's own rules — with the new rule swapped into the set — the
+// whole-line commit's share of *Phrases desugar at entry*. A phrase
+// the set can't yet read keeps its quoted-hole form: the
+// interpretation-time retry (`rephraseRuleSet`) heals it as rules
+// arrive.
 private def desugarCommitted(
     doc: Document[NodeData], docUrl: String,
     id: Int, read: Rule, impls: Impls): Rule = {
@@ -40,11 +64,10 @@ private def desugarCommitted(
     set   <- syn.rules
     lex   <- impls.lexicons.get(syn.lexicon)
     index <- ruleIndex(doc, id)
-    if read.meaning.tag == "reparse"
-    ph    <- read.meaning.phrase
+    text  <- holeQuoteText(read.meaning)
   } yield {
     val tag = termTagOf(defined)
-    val meaning = desugarPhrase(ph, ph.placeholders.toSet,
+    val meaning = phraseMeaning(text, read.pattern.placeholders.toSet,
       set.copy(rules = set.rules.updated(index, read)),
       interpret(syn.grammar, tag), tag, syn.lexicon, lex,
       lexicalTerms(impls))
@@ -68,11 +91,3 @@ private[langdef] def termTagOf(d: LanguageDef): String => NodeData = {
   name => refs.get(name).map(NodeData.ExternalNodeRef(_))
     .getOrElse(NodeData.GapData(name))
 }
-
-// A desugared meaning that still holds a hole — the phrase didn't
-// fully read, so the authored `reparse` form keeps healing rights.
-private def hasGap(m: Meaning): Boolean =
-  m.arguments.exists(hasGap) || m.quoted.exists(gapTree)
-
-private def gapTree(t: PTree): Boolean =
-  t.data.isInstanceOf[NodeData.GapData] || t.kids.exists(gapTree)

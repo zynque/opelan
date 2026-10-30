@@ -1,5 +1,6 @@
 package opelan.foundation.means.text
 
+import opelan.foundation.document.{NodeData, NodeDataText}
 import opelan.foundation.grammar.{In, scanAt}
 import opelan.foundation.means._
 import opelan.foundation.view.Verbosity
@@ -33,6 +34,12 @@ def printRule(rule: Rule, verbosity: Verbosity = Verbosity.Verbose): String =
 def printPattern(pattern: Pattern): String =
   pieceSpans(pattern.pieces).map(_.text).mkString
 
+// A meaning's canonical spelling — the constructor form; a quoted
+// phrase prints as its stored text (the projection surfaces that
+// display phrase spellings go through `printWith` instead).
+def printMeaning(meaning: Meaning): String =
+  meaningSpans(meaning).map(_.text).mkString
+
 private val space = Styled(" ", Role.Space)
 private def punctuation(text: String) = Styled(text, Role.Punctuation)
 
@@ -58,17 +65,25 @@ private def meaningSpans(meaning: Meaning): List[Styled] =
   meaning.tag match {
   case "use" =>
     meaning.arguments.flatMap(operandSpans)
-  case "reparse" =>
-    meaning.phrase.toList.flatMap(p => pieceSpans(p.pieces))
   case "source" | "builtin" =>
     (Styled(meaning.tag, Role.Keyword) :: punctuation("(") ::
       joined(meaning.arguments.map(operandSpans), ",")) :+ punctuation(")")
   case "quote" =>
-    meaning.quoted.toList.map(q => Styled(q.text, Role.Literal))
+    meaning.quoted.toList.map(q => Styled(quoteText(q), Role.Literal))
   case tag =>
     (Styled(tag, Role.Tag) :: punctuation("(") ::
       joined(meaning.arguments.map(meaningSpans), ",")) :+ punctuation(")")
 }
+
+// A quoted subtree's text — decoded trees carry no source span, only
+// data. A quoted hole prints its bare text: the canonical spelling
+// re-reads to the same hole (views mark the `?` separately).
+private def quoteText(t: opelan.foundation.grammar.PTree): String =
+  t.data match {
+    case NodeData.GapData(text) => text
+    case d if t.kids.isEmpty    => NodeDataText.show(d)
+    case _                      => t.kids.map(quoteText).mkString
+  }
 
 // A builtin's operand — `source(a)`/`builtin(num-add)` bind a name, so
 // a name leaf prints as a placeholder, anything else as a term.

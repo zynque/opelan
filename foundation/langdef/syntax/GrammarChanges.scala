@@ -106,7 +106,7 @@ private def sameRule(a: Rule, b: Rule): Boolean = {
 }
 
 private def sameMeaning(a: Meaning, b: Meaning): Boolean =
-  a.tag == b.tag && a.phrase == b.phrase && sameRef(a.reference, b.reference) &&
+  a.tag == b.tag && sameRef(a.reference, b.reference) &&
     a.arguments.length == b.arguments.length &&
     a.arguments.zip(b.arguments).forall(sameMeaning.tupled) &&
     sameTree(a.quoted, b.quoted)

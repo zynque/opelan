@@ -6,7 +6,7 @@ import opelan.foundation.grammar._
 import opelan.foundation.langdef.doc._
 import opelan.foundation.langdef.syntax._
 import opelan.foundation.means.RuleSet
-import opelan.foundation.means.engine.{compileRules, desugarRuleSet}
+import opelan.foundation.means.engine.{compileRules, rephraseRuleSet}
 import opelan.foundation.language.{
   HoleRetry, InputSessions, Language, SyntaxChange, TextSyntax}
 
@@ -58,11 +58,11 @@ class DefLanguage(
       case Some(rules) =>
         val atom = interpret(s.grammar, termTag)
         val lexicals = lexicalTerms(impls)
-        // Phrase meanings desugar to term trees at interpretation —
-        // the document form of *Phrases desugar at entry* (DESIGN §4).
-        val desugared =
-          desugarRuleSet(rules, atom, termTag, s.lexicon, lexicon, lexicals)
-        (lexicon, phrase(compileRules(desugared, atom, termTag, s.lexicon,
+        // Quoted-hole meanings — phrases the set couldn't yet read —
+        // retry at interpretation and heal as their rules arrive.
+        val rephrased =
+          rephraseRuleSet(rules, atom, termTag, s.lexicon, lexicon, lexicals)
+        (lexicon, phrase(compileRules(rephrased, atom, termTag, s.lexicon,
           lexicals), Set.empty))
       case None => (lexicon, interpret(s.grammar, termTag))
     }

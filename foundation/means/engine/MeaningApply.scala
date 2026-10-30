@@ -12,14 +12,6 @@ import opelan.foundation.means._
 //            `(a)` keeps the operand's node, parens included in its
 //            span, exactly as the `parens` combinator does
 //   source   the bound source text, as a leaf
-//   reparse  a phrase re-read with the language's own rules:
-//            placeholder names splice in their bound source text and
-//            the result is reparsed — `a % means a / 100` on `5 %`
-//            builds div(5, 100). Transitional (DESIGN §4, *Phrases
-//            desugar at entry*): a phrase entered through a
-//            language-aware input lands as term nodes — `div(use(a),
-//            quoted 100)` — and this apply-time text splice, which
-//            loses the bound node's identity, goes away with it.
 //   quote    a desugared phrase's concrete subtree — the stored tree,
 //            re-spanned onto the match
 //   literal  the operand term evaluated to leaf data — `literal(neg(n))`
@@ -37,7 +29,6 @@ def applyMeaning(
     meaning: Meaning,
     bindings: Map[String, PTree],
     in: In, from: Int, to: Int,
-    expression: Parser,
     tag: String => NodeData): PTree = meaning.tag match {
   case "use" => bound(meaning, bindings) match {
       // A bound tree that degenerated to a hole lets the hole grow
@@ -53,15 +44,6 @@ def applyMeaning(
           in.input.substring(from, to), from, to - from)
       case None    => gapNode(in, from, to)
     }
-  case "reparse" =>
-    val text = meaning.phrase.toList.flatMap(_.pieces).map {
-      case Piece.Placeholder(name, _) =>
-        bindings.get(name).map(_.text).getOrElse(name)
-      case Piece.Literal(literal, _) => literal
-    }.mkString(" ")
-    val r = expression(In(text, in.lexicon), 0)
-    r.tree.copy(text = in.input.substring(from, to),
-      from = from, length = to - from)
   case "quote" => meaning.quoted match {
       case Some(q) => q.copy(text = in.input.substring(from, to),
           from = from, length = to - from)
@@ -78,7 +60,7 @@ def applyMeaning(
     PTree(
       meaning.reference.map(NodeData.ExternalNodeRef(_)).getOrElse(tag(construct)),
       in.input.substring(from, to), from, to - from,
-      meaning.arguments.map(a => argumentTree(a, bindings, in, to, expression, tag))
+      meaning.arguments.map(a => argumentTree(a, bindings, in, to, tag))
         .map(rebased(_, from)))
   // Any other builtin tag — the meaning language grows a word this
   // build doesn't know — is a hole, not a node named after it.
@@ -116,10 +98,9 @@ private def argumentTree(
     meaning: Meaning,
     bindings: Map[String, PTree],
     in: In, at: Int,
-    expression: Parser,
     tag: String => NodeData): PTree = meaning.tag match {
   case "use" => bound(meaning, bindings).getOrElse(gapNode(in, at, at))
-  case _     => applyMeaning(meaning, bindings, in, at, at, expression, tag)
+  case _     => applyMeaning(meaning, bindings, in, at, at, tag)
 }
 
 // The tree that covers `from`..`to` — a verbatim hole.

@@ -75,18 +75,14 @@ def printWith(
 // A meaning term as the detached tree `printWith` renders — the
 // projection of a stored meaning back toward phrase spelling (DESIGN
 // §4, *Phrases desugar at entry*): `use`/`source`/`builtin` operands
-// are name leaves, `quote` its stored subtree, `reparse` its template
-// text, and a construct the data a parse would emit over the argument
-// trees.
+// are name leaves, `quote` its stored subtree, and a construct the
+// data a parse would emit over the argument trees.
 def meaningTree(
     m: Meaning, tag: String => NodeData): DetachedNode[NodeData] =
   m.tag match {
     case "use" | "source" | "builtin" =>
       DetachedNode(NodeData.StringData(
         m.arguments.headOption.flatMap(Meaning.nameOf).getOrElse("")), Nil)
-    case "reparse" =>
-      DetachedNode(NodeData.StringData(
-        m.phrase.map(printPattern).getOrElse("")), Nil)
     case "quote" =>
       m.quoted.map(toDetached).getOrElse(
         DetachedNode(NodeData.GapData(""), Nil))

@@ -74,3 +74,11 @@ val ruleGrammar: Parser = sequence(tag("rule"))(
   optional(meansKeyword),
   optional(meaning(topEnd)),
   optional(constraints))
+
+// A meaning field's text on its own — the same productions, ended by
+// the end of input rather than `where` (the clause is its own field).
+private[text] val meaningText: Parser = meaning(endOfInput)
+
+// A `where` field's text as a `where` tree — feed it the keyword plus
+// the clause (`readWhere` reads the result).
+private[text] val constraintsText: Parser = constraints

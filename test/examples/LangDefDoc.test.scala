@@ -9,7 +9,7 @@ import opelan.foundation.langdef.syntax._
 import opelan.foundation.langdef.view._
 import opelan.foundation.language.{InputSessions, TextSession}
 import opelan.foundation.means.Meaning
-import opelan.foundation.means.text.printRule
+import opelan.foundation.means.text.{printPattern, printRule}
 import opelan.foundation.document.Detached._
 import munit.FunSuite
 
@@ -134,14 +134,15 @@ class LangDefDocSuite extends FunSuite {
     assertEquals(Some(s1.content), languageFromDef(d1).parse(text))
   }
 
-  test("the def view projects rule lines as inputs bound to the rule nodes") {
+  test("the def view projects rule fields as inputs bound to their nodes") {
     val doc = langDefDoc(exprDef)
     val bound = inputSourceIds(defView(doc, contentId(doc).get)).toSet
-    // A rule's input binds to the rule node itself — a commit
-    // rewrites it as pattern + meaning nodes; binding patterns and
+    // A structured rule binds pattern and meaning inputs to their own
+    // nodes — each field commits separately; binding patterns and
     // example fields still bind to their text leaves.
-    ruleNodeIds(doc).foreach(id =>
-      assert(bound.contains(id), s"no input bound to rule node $id"))
+    ruleNodeIds(doc).foreach(id => doc.childrenOf(id).foreach(k =>
+      assert(metaConsOf(doc, k).forall(c => !Set("pattern", "meaning")(c) ||
+        bound.contains(k)), s"no input bound to rule section $k")))
     Set("a * b", "1 + 2 * 3", "1 + (2 * 3)")
       .foreach(text => assert(
         bound.contains(stringLeafId(doc, text)),
@@ -153,7 +154,7 @@ class LangDefDocSuite extends FunSuite {
     val doc = langDefDoc(exprDef)
     val ruleId = ruleNodeIds(doc)(2) // a / b means div(a, b)
     val content = commitMetaInput(doc, url, ruleId,
-      "a % b means add(a, b)").get
+      "a % b means add(a, b)").get._1
     val updated = commitContent(ruleId, content, doc).toOption.get
     val d = langDefFromDocument(url, updated)
     assert(d.syntax.get.rules.get.rules.map(r => printRule(r))
@@ -178,12 +179,65 @@ class LangDefDocSuite extends FunSuite {
         _.data == NodeData.InternalNodeRef(aPieceId))))
   }
 
+  test("a meaning field commits as terms through the language's own rules") {
+    val url = exprDef.typeRef.documentUrl
+    val doc = langDefDoc(exprDef)
+    val ruleId = ruleNodeIds(doc)(4) // a - b means sub(a, b)
+    val meaningId = doc.childrenOf(ruleId)
+      .find(metaConsOf(doc, _).contains("meaning")).get
+    val patternId = doc.childrenOf(ruleId)
+      .find(metaConsOf(doc, _).contains("pattern")).get
+    val content = commitMetaInput(doc, url, meaningId,
+      "a / 100", impls = implsFor(exprDef)).get._1
+    val updated = commitContent(meaningId, content, doc).toOption.get
+    val rule = langDefFromDocument(url, updated)
+      .syntax.get.rules.get.rules(4)
+    // The phrase parsed at entry: construct term by ref, `a` as use,
+    // the literal `100` quoted — and the rule's pattern is untouched.
+    assertEquals(rule.meaning.tag, "div")
+    assertEquals(rule.meaning.arguments.map(_.tag), List("use", "quote"))
+    assertEquals(printPattern(rule.pattern), "a - b")
+    // The `use` operand links to the pattern's `a` piece node.
+    val aPiece = doc.childrenOf(patternId)
+      .find(id => metaConsOf(doc, id).contains("placeholder") &&
+        doc.childrenOf(id).exists(k =>
+          doc.getNode(k).exists(_.data == NodeData.StringData("a")))).get
+    assertEquals(rule.meaning.arguments(0).arguments.head.reference,
+      Some(ExternalNodeReference(url, 0, aPiece)))
+    // And the language really parses with the stored meaning —
+    // the pattern is still `a - b`, so `5 - 3` now builds a div.
+    val parsed = languageFromDef(
+      langDefFromDocument(url, updated)).parse("5 - 3").get
+    assertEquals(parsed.data,
+      NodeData.ExternalNodeRef(termRefs(exprDef)("div")))
+  }
+
+  test("a meaning field re-edit reparses through its input session") {
+    val url = exprDef.typeRef.documentUrl
+    val doc = langDefDoc(exprDef)
+    val meaningId = doc.childrenOf(ruleNodeIds(doc)(4))
+      .find(metaConsOf(doc, _).contains("meaning")).get
+    val (c0, s0) = commitMetaInput(doc, url, meaningId,
+      "a / 100", impls = implsFor(exprDef)).get
+    assert(s0.sessions.contains(meaningId))
+    // A second commit carries the session — re-edit reparses in
+    // proportion to the keystroke.
+    val (c1, s1) = commitMetaInput(doc, url, meaningId,
+      "a / 200", s0, implsFor(exprDef)).get
+    assert(s1.sessions.contains(meaningId))
+    val updated = commitContent(meaningId, c1, doc).toOption.get
+    val rule = langDefFromDocument(url, updated)
+      .syntax.get.rules.get.rules(4)
+    assertEquals(rule.meaning.arguments(1).quoted.map(_.data),
+      Some(NodeData.IntData(200)))
+  }
+
   test("a malformed rule line commit lands as a hole rule") {
     val url = exprDef.typeRef.documentUrl
     val doc = langDefDoc(exprDef)
     val ruleId = ruleNodeIds(doc).last // any rule slot serves the commit
     val content =
-      commitMetaInput(doc, url, ruleId, "means only").get
+      commitMetaInput(doc, url, ruleId, "means only").get._1
     val updated = commitContent(ruleId, content, doc).toOption.get
     val d = langDefFromDocument(url, updated)
     assert(d.syntax.get.rules.get.rules.exists(_.pattern.pieces.isEmpty))
@@ -195,7 +249,7 @@ class LangDefDocSuite extends FunSuite {
     val doc = langDefDoc(exprDef)
     val ruleId = ruleNodeIds(doc)(4) // a - b means sub(a, b)
     val content = commitMetaInput(doc, url, ruleId,
-      "a % means a / 100", implsFor(exprDef)).get
+      "a % means a / 100", impls = implsFor(exprDef)).get._1
     val updated = commitContent(ruleId, content, doc).toOption.get
     val rule = langDefFromDocument(url, updated)
       .syntax.get.rules.get.rules(4)
@@ -210,26 +264,26 @@ class LangDefDocSuite extends FunSuite {
     assert(text.contains("a % means a / 100"), text)
   }
 
-  test("a phrase the set can't read stays reparse and heals on arrival") {
+  test("a phrase the set can't read stays a quoted hole and heals on arrival") {
     val url = demoExprDef.typeRef.documentUrl
     val doc = langDefDoc(demoExprDef) // no `/` rule yet
     val pctId = ruleNodeIds(doc)(1)   // a * b means mul(a, b)
     val pct = commitMetaInput(doc, url, pctId,
-      "a % means a / 100", implsFor(demoExprDef)).get
+      "a % means a / 100", impls = implsFor(demoExprDef)).get._1
     val withPct = commitContent(pctId, pct, doc).toOption.get
-    // The unparseable phrase keeps its reparse form — the transitional
-    // storage that still heals — and reads back as authored.
+    // The unparseable phrase stores as a quoted hole — `a / 100`
+    // keeps its text and prints back marked as a hole.
     val pctRule = langDefFromDocument(url, withPct)
       .syntax.get.rules.get.rules(1)
-    assertEquals(pctRule.meaning.tag, "reparse")
+    assertEquals(pctRule.meaning.tag, "quote")
     assertEquals(printRule(pctRule), "a % means a / 100")
     // Committing `/` into another slot gives the phrase its rule; the
-    // interpretation-time desugar retries — the stored reparse
-    // produces real terms and `5 %` parses as div(5, 100).
+    // interpretation-time rephrase retries — the stored hole produces
+    // real terms and `5 %` parses as div(5, 100).
     val subId = ruleNodeIds(withPct)(3) // a - b means sub(a, b)
     val withDiv = commitContent(subId,
       commitMetaInput(withPct, url, subId,
-        "a / b means div(a, b)", implsFor(demoExprDef)).get,
+        "a / b means div(a, b)", impls = implsFor(demoExprDef)).get._1,
       withPct).toOption.get
     val d2 = langDefFromDocument(url, withDiv)
     val parsed = languageFromDef(d2).parse("5 %").get

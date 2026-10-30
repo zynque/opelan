@@ -36,8 +36,8 @@ class RuleReadSuite extends FunSuite {
   }
 
   test("a phrase meaning in the same language") {
-    assertEquals(read("a % means a / 100").meaning,
-      reparse(List(Placeholder("a"), Literal("/"), Literal("100"))))
+    // No language context: the phrase keeps its text as a quoted hole.
+    assertEquals(read("a % means a / 100").meaning, hole("a / 100"))
   }
 
   test("nested constructor arguments") {
@@ -79,13 +79,11 @@ class RuleReadSuite extends FunSuite {
   test("a malformed line reads as a hole rule that never applies") {
     val r = readRuleOrHole("a + b") // missing 'means'
     assertEquals(r.pattern.pieces, Nil)
-    assertEquals(r.meaning, reparse(Nil))
+    assertEquals(r.meaning, hole(""))
     assert(ruleIssues(r).nonEmpty) // still reported as malformed
   }
 
   test("a call that doesn't span the whole meaning is a phrase") {
-    assertEquals(read("a means abs(a) + 1").meaning,
-      reparse(List(Literal("abs"), Literal("(", true), Placeholder("a", true),
-        Literal(")", true), Literal("+"), Literal("1"))))
+    assertEquals(read("a means abs(a) + 1").meaning, hole("abs(a) + 1"))
   }
 }

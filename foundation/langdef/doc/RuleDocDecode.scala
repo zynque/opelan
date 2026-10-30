@@ -24,7 +24,7 @@ private[langdef] def ruleFromDoc(
       entriesOf(doc, id, "meaning").headOption
         .flatMap(m => doc.childrenOf(m).headOption)
         .map(meaningFromDoc(doc, url, version, termIds, _))
-        .getOrElse(Meaning.reparse(Nil)),
+        .getOrElse(Meaning.hole("")),
       entriesOf(doc, id, "where").headOption.toList.flatMap(w =>
         entriesOf(doc, w, "constraint")
           .flatMap(constraintFrom(doc, _))),
@@ -41,8 +41,8 @@ private def pieceFrom(doc: Document[NodeData], id: Int): Piece = {
 
 // A meaning subtree as a term: meta builtins read positionally —
 // `use`/`source`/`builtin` operands are name terms (a linked one
-// carries the piece node's ref), `reparse` its template pieces,
-// `quote` its stored subtree; anything else is a construct of the
+// carries the piece node's ref), `quote` its stored subtree; anything
+// else is a construct of the
 // defined language, named and referenced through its term entry.
 private def meaningFromDoc(
     doc: Document[NodeData], url: String,
@@ -55,8 +55,6 @@ private def meaningFromDoc(
   case Some("literal") =>
     Meaning("literal",
       doc.childrenOf(id).map(meaningFromDoc(doc, url, version, termIds, _)))
-  case Some("reparse") =>
-    Meaning.reparse(doc.childrenOf(id).map(pieceFrom(doc, _)))
   case Some("quote") =>
     Meaning("quote", quoted =
       doc.childrenOf(id).headOption.map(treeFrom(doc, _)))

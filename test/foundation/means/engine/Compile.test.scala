@@ -81,11 +81,14 @@ class CompileSuite extends FunSuite {
       node("add", gap("(1 2)"), lit(3)))
   }
 
-  test("a phrase meaning reparses with the language's own rules") {
-    val percent = arithmetic.copy(
+  test("a phrase meaning desugars with the language's own rules") {
+    // The context-free read stores a quoted hole; the interpretation's
+    // rephrase reads it into terms.
+    val percent = rephraseRuleSet(arithmetic.copy(
       rules = arithmetic.rules :+ aRule("a % means a / 100"),
       tiers = arithmetic.tiers.updated(0,
-        Tier(readPattern("-a") :: readPattern("a %") :: Nil)))
+        Tier(readPattern("-a") :: readPattern("a %") :: Nil))),
+      atom, NodeData.StringData(_), "e", lex)
     assertEquals(parse(percent, "5 %"), node("div", lit(5), lit(100)))
     assertEquals(parse(percent, "5 % + 1"),
       node("add", node("div", lit(5), lit(100)), lit(1)))

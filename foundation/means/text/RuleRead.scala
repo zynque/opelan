@@ -13,7 +13,15 @@ import opelan.foundation.grammar._
 // tree into a Rule, or says what's missing. Callers decide how to keep
 // malformed text (a document decoder will hold it as a hole rule, per
 // *Never broken*).
-def readRule(text: String): Either[String, Rule] = {
+//
+// `phrase` reads a meaning that isn't a `build`/`use` spelling — the
+// spellings only a language-aware reader can interpret. It gets the
+// pattern's bound placeholder names and the phrase's text; the default
+// keeps the text as a quoted hole, the context-free reading.
+def readRule(
+    text: String,
+    phrase: (Set[String], String) => Meaning = noLanguage)
+    : Either[String, Rule] = {
   val parts = ruleGrammar(In(text, ruleLexicon), 0).tree.kids
   val (pattern, keyword, meaning, where) = (parts(0), parts(1), parts(2), parts(3))
   if (!isToken(keyword)) Left("missing 'means'")
@@ -21,8 +29,17 @@ def readRule(text: String): Either[String, Rule] = {
   else if (!isTagged(meaning)) Left("empty meaning")
   else for {
     constraints <- if (isTagged(where)) readWhere(where) else Right(Nil)
-  } yield Rule(Pattern(pieces(tokensIn(pattern))), readMeaning(meaning), constraints)
+  } yield {
+    val p = Pattern(pieces(tokensIn(pattern)))
+    Rule(p, readMeaning(meaning, s => phrase(p.placeholders.toSet, s)),
+      constraints)
+  }
 }
+
+// The context-free phrase reading: a meaning the language can't be
+// asked to read stays a quoted hole that prints back as written.
+val noLanguage: (Set[String], String) => Meaning =
+  (_, text) => Meaning.hole(text)
 
 // A malformed rule becomes a rule that never applies — the Never
 // Broken counterpart of `readRule`'s error report (DESIGN.md,
@@ -30,11 +47,36 @@ def readRule(text: String): Either[String, Rule] = {
 // it compiles — an empty pattern is neither operator- nor
 // sequence-shaped — but `ruleIssues` still reports it, so the
 // mistake shows up in checking rather than disappearing.
+def readRuleOrHole(
+    text: String,
+    phrase: (Set[String], String) => Meaning): Rule =
+  readRule(text, phrase).getOrElse(holeRule)
+
+// The context-free read — phrases land as quoted holes.
 def readRuleOrHole(text: String): Rule =
-  readRule(text).getOrElse(holeRule)
+  readRuleOrHole(text, noLanguage)
 
 // The hole rule itself, for decoders keeping a slot they can't read.
-val holeRule: Rule = Rule(Pattern(Nil), Meaning.reparse(Nil))
+val holeRule: Rule = Rule(Pattern(Nil), Meaning.hole(""))
+
+// A meaning field's own text: the `build`/`use` spellings read as
+// terms — the rest is phrase text for the caller's language-aware
+// reader (None here). Nested arguments that are themselves phrases go
+// through the same `phrase`.
+def readMeaningText(text: String, phrase: String => Meaning): Option[Meaning] =
+  meaningText(In(text, ruleLexicon), 0).tree match {
+    case t if Set("build", "use")(tagOf(t)) => Some(readMeaning(t, phrase))
+    case _ => None
+  }
+
+// A `where` field's text: `a, b: term; c: term` — no `where` keyword
+// needed (the field is already the clause). Malformed text reads as
+// far as it can — the constraint list may come back short or empty.
+def readConstraintsText(text: String): List[Constraint] = {
+  val stripped = text.trim.stripPrefix("where").trim
+  readWhere(constraintsText(In("where " + stripped, ruleLexicon), 0).tree)
+    .getOrElse(Nil)
+}
 
 // A bare pattern — how the binding list names a rule (`a * b`).
 def readPattern(text: String): Pattern = {
@@ -80,26 +122,28 @@ private def pieces(tokens: List[(Int, PTree)]): List[Piece] =
     }
   }
 
-private def readMeaning(t: PTree): Meaning = tagOf(t) match {
-  case "build" =>
-    val arguments = t.kids(2)
-    val list =
-      if (tagOf(arguments) != "arguments") Nil
-      else arguments.kids(0) :: arguments.kids(1).kids.map(_.kids(1))
-    val tag = t.kids(0).text
-    // A meaning-language builtin spelled like a construct — `source(a)`
-    // — takes name-leaf operands; a construct takes meaning terms.
-    if (Meaning.builtins(tag)) Meaning(tag, list.map(nameTermOf))
-    else Meaning(tag, list.map(readMeaning))
-  case "use" => Meaning.use(t.kids(0).text)
-  case _     => Meaning.reparse(pieces(tokensIn(t)))
-}
+private def readMeaning(t: PTree, phrase: String => Meaning): Meaning =
+  tagOf(t) match {
+    case "build" =>
+      val arguments = t.kids(2)
+      val list =
+        if (tagOf(arguments) != "arguments") Nil
+        else arguments.kids(0) :: arguments.kids(1).kids.map(_.kids(1))
+      val tag = t.kids(0).text
+      // A meaning-language builtin spelled like a construct — `source(a)`
+      // — takes name-leaf operands; a construct takes meaning terms.
+      if (Meaning.builtins(tag))
+        Meaning(tag, list.map(a => nameTermOf(a, phrase)))
+      else Meaning(tag, list.map(a => readMeaning(a, phrase)))
+    case "use" => Meaning.use(t.kids(0).text)
+    case _     => phrase(t.text)
+  }
 
 // A builtin's operand as a name term — `source(a)` binds `a`'s name,
 // not its meaning.
-private def nameTermOf(t: PTree): Meaning =
+private def nameTermOf(t: PTree, phrase: String => Meaning): Meaning =
   if (tagOf(t) == "use") Meaning.nameTerm(t.kids(0).text)
-  else readMeaning(t)
+  else readMeaning(t, phrase)
 
 // `a, b: number; c: whole number` — one constraint per group.
 private def readWhere(t: PTree): Either[String, List[Constraint]] = {

@@ -58,6 +58,6 @@ lazy val exprLexicals: Map[String, LexicalTerm] =
 // what a language change names to invalidate the syntax's results.
 lazy val exprRuleGrammar: Parser =
   phrase(compileRules(
-    desugarRuleSet(exprRules, ruleAtom, exprTag, "expr", exprLexicon,
+    rephraseRuleSet(exprRules, ruleAtom, exprTag, "expr", exprLexicon,
       exprLexicals),
     ruleAtom, exprTag, "expr", exprLexicals), Set.empty)

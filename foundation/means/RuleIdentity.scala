@@ -9,9 +9,9 @@ package opelan.foundation.means
 // by position.
 
 // `a + b` → `p0 + p1` through pattern, where, and meaning —
-// `use`/`source` operands and `reparse`/`phrase` placeholders rename
-// with the pattern; `builtin` operands name builtins rather than
-// placeholders, and `quote` subtrees hold concrete content.
+// `use`/`source` operands' placeholder names rename with the pattern;
+// `builtin` operands name builtins rather than placeholders, and
+// `quote` subtrees hold concrete content.
 def canonicalRule(r: Rule): Rule = {
   val rename = r.pattern.placeholders.distinct.zipWithIndex.map {
     case (n, i) => n -> s"p$i" }.toMap
@@ -26,9 +26,7 @@ def canonicalRule(r: Rule): Rule = {
         if (Meaning.nameOf(a).isDefined) a.copy(tag = ph(a.tag))
         else meaning(a)))
     case "builtin" => m
-    case _ => m.copy(
-      arguments = m.arguments.map(meaning),
-      phrase = m.phrase.map(p => Pattern(p.pieces.map(piece))))
+    case _ => m.copy(arguments = m.arguments.map(meaning))
   }
   r.copy(
     pattern = Pattern(r.pattern.pieces.map(piece)),

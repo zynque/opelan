@@ -91,7 +91,7 @@ def sequenceRule(
         failedAt match {
           case None =>
             POut(cur, applyMeaning(theRule.meaning, bindings, in, from,
-              cur, expression, tag), ok = true, seen)
+              cur, tag), ok = true, seen)
           case Some(at) => closer match {
             case None => failedHole(in, pos, seen)
             case Some(text) =>
@@ -106,7 +106,7 @@ def sequenceRule(
                     if middleIntact &&
                        skipSpace(in.input, cur) >= in.input.length =>
                   POut(cur, applyMeaning(theRule.meaning, bindings, in,
-                    from, in.input.length, expression, tag), ok = true, seen)
+                    from, in.input.length, tag), ok = true, seen)
                 case None =>
                   POut(in.input.length,
                     gapNode(in, from, in.input.length), ok = true, seen)

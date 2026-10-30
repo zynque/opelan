@@ -4,7 +4,7 @@ Point-in-time state of the Opelan workbench: what works, what doesn't yet,
 and what comes next. For architecture and rationale see `DESIGN.md`; for
 the demo being worked toward see `DEMO.md`.
 
-Last updated: 2026-10-24
+Last updated: 2026-10-29
 
 The project is in Phase 1 (foundation & vocabulary system). **Next major
 series:** replacing combinator-based language definitions with
@@ -66,7 +66,8 @@ Each item is described in the cited `DESIGN.md` section.
   `ParseMark`s (rule, relative lengths, calls) and the session's side
   table keeps only what the tree can't represent — driving the text
   surface through `TextSession`,
-  projected input commits through per-input `InputSessions`, and
+  projected input commits through per-input `InputSessions` — the
+  meaning field included — and
   stored-hole retries through `HoleRetry` — a hole reparses only when
   a language change touched a rule its last attempt consulted;
   id-preserving reconcile (`commitContent`) on both commit paths.
@@ -91,11 +92,15 @@ Each item is described in the cited `DESIGN.md` section.
   meaning)` nodes — `placeholder`/`literal` pieces (`glued` markers
   preserve spacing), meaning terms as subtrees, constructs by
   internal ref to the def's vocabulary entries — and the def view
-  projects each rule line as an `input` bound to the `rule` node,
-  so a commit rewrites it as structured nodes (`commitMetaInput`),
-  constructs bound to the doc's own terms. The decoder also reads
-  the older text form, so docs written before the structured
-  encoding and mid-edit states still decode. Language-change
+  projects each rule line as its fields: `pattern`, `meaning`, and
+  `where` inputs bound to their own nodes, committing through
+  `commitMetaInput`; the meaning field's grammar is the language
+  being defined (placeholders of the rule's own pattern as operand
+  atoms) parsed through the pane's per-input `InputSessions`, so a
+  phrase like `a / 100` desugars at entry to `div(use(a), ‹100›)`
+  and a re-edit reparses in proportion to the keystroke.
+  A text-form `rule` (a string first child) still shows one
+  whole-line input and decodes tolerantly. Language-change
   diffing names the top rule plus changed `means:` sequence names,
   so adding a rule heals holes through the same session carry.
   Sequence rules decoded from `lang:` docs memoize under their rule
@@ -119,22 +124,24 @@ Each item is described in the cited `DESIGN.md` section.
   failing one shows as a hole chip saying what the input read as.
   The meaning model itself is the unified term of DESIGN §4 (*A
   meaning is a term, evaluated*): one `tag`/`arguments`/`reference`/
-  `phrase`/`quoted` node, with `use`/`source`/`reparse`/`builtin`/
-  `quote`/`literal` as meaning-language builtins rather than separate
-  cases — `applyMeaning` evaluates by tag, `readRule` spells a bare `a` as
-  `use(a)` and a phrase as `reparse`, and an unknown builtin is a
-  hole rather than a node. `literal` is the first meaning that
-  computes: its operand is a value term (`literal(neg(n))` negates the
-  bound leaf's data), so a signum is a rule — `-n means
-  literal(neg(n)) where n: number` — rather than a combinator. Its
-  `where` bound to a leaf production also makes the rule an operand
-  sequence rather than an operator, and the placeholder's `glued`
-  marker enforces the adjacency (`- 4` is not a fused literal).
-  Phrases desugar at interpretation:
-  `desugarRuleSet` parses a template through the whole rule set
-  (placeholders as atoms) into `use`/construct/`quote` terms, so a
-  bound operand's node lands in the output rather than a reparsed
-  copy.
+  `quoted` node, with `use`/`source`/`builtin`/`quote`/`literal` as
+  meaning-language builtins — `applyMeaning` evaluates by tag and an
+  unknown builtin is a hole rather than a node. `literal` is the
+  first meaning that computes: its operand is a value term
+  (`literal(neg(n))` negates the bound leaf's data), so a signum is a
+  rule — `-n means literal(neg(n)) where n: number` — rather than a
+  combinator; its `where` bound to a leaf production also makes the
+  rule an operand sequence rather than an operator, and the
+  placeholder's `glued` marker enforces the adjacency (`- 4` is not a
+  fused literal).
+  `reparse`/`phrase` have left the model: a phrase desugars to terms
+  at entry (`phraseMeaning` parses the text through the whole rule
+  set, placeholders as atoms, into `use`/construct/`quote` terms, so
+  a bound operand's node lands in the output rather than a reparsed
+  copy), and a phrase the set can't yet read stores as a `quote`d
+  hole that `rephraseRuleSet` retries at interpretation — healable
+  because it kept its text — while context-free readers keep the
+  same quoted hole.
 - **UI** (`ui/`, §5): fp runtime, `DocumentEditor`, `TypedDoc` with the
   app surface and its Raw / Definition (F12) exits, `Workbench` with
   seeded demo documents and ref following.
@@ -143,7 +150,7 @@ Each item is described in the cited `DESIGN.md` section.
   version DAG; per-actor undo; local navigation; checkout + edit forks a
   branch draft that peers can rejoin.
 - **Build/test** (§9): `build.bat`/`build.sh`, `test.bat`/`test.sh`;
-  409 munit tests over the pure core, UI update functions, and
+  411 munit tests over the pure core, UI update functions, and
   DocSession convergence under real Automerge in Node. A fresh clone
   needs a `webpack.config.js` (see `README.md`).
 
@@ -237,9 +244,6 @@ Each item is described in the cited `DESIGN.md` section.
    above). Remaining steps, in order:
 
    - *Rule engine loose ends:*
-     - **Rule encoding.** The meaning field as its own per-keystroke
-       input rather than the rule line's whole-text commit; then
-       `reparse`/`phrase` leave the model.
      - **`means` surface polish.** The printer's role spans (`means`
        emphasized, placeholders styled), a detail-level toggle
        switching `means` to `=>` and hiding `where`, and the `lang:`

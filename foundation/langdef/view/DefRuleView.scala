@@ -5,14 +5,17 @@ import opelan.foundation.langdef._
 import opelan.foundation.langdef.doc._
 import opelan.foundation.means.{Meaning, Rule, RuleSet}
 import opelan.foundation.means.engine.{meaningTree, printWith}
-import opelan.foundation.means.text.{printPattern, printRule}
+import opelan.foundation.means.text.{printMeaning, printPattern, printRule}
 import opelan.foundation.view.ViewTree._
 
 // The rules section of the "def" view, rendered as projected inputs:
-// rule lines bind to their `rule` node — a commit rewrites it as
-// pattern + meaning nodes through commitMetaInput — while binding
-// patterns and example fields bind to their text leaves. A malformed
-// line reads as a hole rule, never an error.
+// a structured rule line is its fields — `pattern`, `meaning`, and
+// `where` inputs bound to their own nodes, so the meaning field
+// commits through the defined language's rules (commitMetaInput) —
+// while binding patterns and example fields bind to their text
+// leaves. A text-form `rule` (a string first child — the transitional
+// encoding) keeps a single whole-line input; a malformed line reads
+// as a hole rule, never an error.
 // Falls back to None when the document has no `rules` node (a def
 // decoded but never written as one), so callers can print instead.
 // `check` runs a worked example — input text, expected text — and
@@ -26,10 +29,11 @@ private[langdef] def docRuleLines(
     rs  <- doc.childrenOf(syn).find(docCons(doc, _).contains("rules"))
   } yield doc.childrenOf(rs).flatMap(ruleLine(doc, _, d, check))
 
-// One `rules` entry as a line: a `rule` edits its text — a text-form
-// rule shows its leaf, a structured one its canonical spelling — and
-// the input binds to the rule node itself, so a commit rewrites it as
-// pattern + meaning nodes (commitMetaInput). A `binding` shows its
+// One `rules` entry as a line: a text-form `rule` edits its leaf in
+// one input bound to the rule node (a commit structures it); a
+// structured rule projects `pattern`/`meaning`/`where` as inputs
+// bound to their own nodes — the meaning field parses through the
+// defined language per keystroke. A `binding` shows its
 // tiers as comma-separated pattern inputs; an `example` is input and
 // expected side by side, checked live — a mismatch trails a hole
 // saying what the input read as.
@@ -45,8 +49,22 @@ private def ruleLine(
               _.data.isInstanceOf[NodeData.StringData]) =>
           input(id, txt(leafText(doc, t)))
         case Some(_) =>
-          input(id, txt(committedRuleText(d,
-            ruleFromDoc(doc, "", 0, deriveTermIds(doc, doc.rootId), id))))
+          val kids = doc.childrenOf(id)
+          def section(name: String) =
+            kids.find(docCons(doc, _).contains(name))
+          (section("pattern"), section("meaning")) match {
+            case (Some(p), Some(m)) =>
+              val r = ruleFromDoc(doc, "", 0,
+                deriveTermIds(doc, doc.rootId), id)
+              val fields = List(
+                input(p, txt(printPattern(r.pattern))),
+                txt(" means "),
+                input(m, txt(meaningFieldText(d, r)))) ++
+                section("where").toList.flatMap(w =>
+                  List(txt(" where "), input(w, txt(whereFieldText(r)))))
+              flow(fields*)
+            case _ => hole("rule")
+          }
         case None    => hole("rule")
       })
     case Some("binding") =>
@@ -67,17 +85,17 @@ private def ruleLine(
     case _ => Nil
   }
 
-// A stored rule's line text: `printRule`'s canonical spelling, except
-// a meaning carrying `quote` terms — concrete content only a phrase
-// desugars to — which projects back through the language's own
-// printer, so `a % means a / 100` reads as authored, not `div(a, 100)`.
-private def committedRuleText(d: LanguageDef, r: Rule): String =
+// A stored meaning's field text: `printMeaning`'s canonical spelling,
+// except a meaning carrying `quote` terms — concrete content only a
+// phrase desugars to — which projects back through the language's own
+// printer, so `a / 100` reads as authored, not `div(a, 100)`. A
+// quoted hole shows its `?` mark — the input wears the hole styling.
+private def meaningFieldText(d: LanguageDef, r: Rule): String =
   (for {
     set <- d.syntax.flatMap(_.rules) if hasQuote(r.meaning)
-  } yield printPattern(r.pattern) + " means " +
-    printWith(set, termTagOf(d), meaningLeaf)(
-      meaningTree(r.meaning, termTagOf(d))) +
-    whereText(r)).getOrElse(printRule(r))
+  } yield printWith(set, termTagOf(d), meaningLeaf)(
+    meaningTree(r.meaning, termTagOf(d))))
+    .getOrElse(printMeaning(r.meaning))
 
 private def hasQuote(m: Meaning): Boolean =
   m.tag == "quote" || m.arguments.exists(hasQuote)
@@ -87,9 +105,11 @@ private def meaningLeaf(data: NodeData): String = data match {
   case other                  => NodeDataText.show(other)
 }
 
-private def whereText(r: Rule): String =
+// The `where` field's text — the constraints without the keyword,
+// which the line's own `where` label supplies.
+private def whereFieldText(r: Rule): String =
   r.where.map(c => c.placeholders.mkString(", ") + ": " + c.term)
-    .mkString(" where ", "; ", "")
+    .mkString("; ")
 
 private def commaInputs(
     doc: Document[NodeData], tierId: Int): List[DetachedNode[NodeData]] =

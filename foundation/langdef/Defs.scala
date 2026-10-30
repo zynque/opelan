@@ -73,7 +73,6 @@ private[langdef] val metaTerms: List[NodeTerm] = List(
   NodeTerm("literal", Any),       // pattern piece: text leaf (+ glued)
   NodeTerm("glued", Fixed(0)),    // a piece glued to its predecessor
   NodeTerm("quote", Any),         // meaning builtin: a desugared subtree
-  NodeTerm("reparse", Any),       // meaning builtin: an undesugared phrase
   NodeTerm("source", Fixed(1)))   // meaning builtin: bound source text
 
 val docLanguageDef = LanguageDef(

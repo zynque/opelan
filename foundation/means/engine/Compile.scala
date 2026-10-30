@@ -98,7 +98,7 @@ def compileRules(
             if (!applied.ok) applied
             else applied.copy(tree = applyMeaning(theRule.meaning,
               Map(name -> applied.tree), in, applied.tree.from,
-              applied.tree.to, self, tag))
+              applied.tree.to, tag))
           }
         }
       case _ => None
@@ -124,7 +124,7 @@ def compileRules(
               bound.get(n).exists(lt => !lt.check(t.data)) })
           gapNode(in, from, to)
         else applyMeaning(theRule.meaning, names.zip(operands).toMap,
-          in, from, to, self, tag))
+          in, from, to, tag))
   }
 
   def sequenceParser(theRule: Rule): Parser =

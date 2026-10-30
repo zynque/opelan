@@ -11,8 +11,9 @@ import opelan.foundation.means.text._
 // pieces are `placeholder`/`literal` nodes with a `glued` marker when
 // the source wrote them unspaced; the meaning is the term subtree —
 // `use`/`source`/`builtin` operands name their bound placeholder (by
-// name until a link pass points them at the piece node), `reparse`
-// keeps its template pieces, `quote` keeps its desugared subtree, and
+// name until a link pass points them at the piece node), `quote`
+// keeps its desugared subtree (a quoted hole is a phrase the set
+// couldn't yet read), and
 // a construct's data is its name — the first occurrence in doc order
 // is the term's declaration, so a document of the defined language
 // references that node by id. The binding list stays
@@ -49,12 +50,12 @@ private def bindingNode(
     tiers.map(t => n(meta("tier"),
       t.patterns.map(p => sl(printPattern(p)))*))*))
 
-private def whereNode(
+private[langdef] def whereNode(
     cs: List[Constraint], meta: String => NodeData): DetachedNode[NodeData] =
   n(meta("where"), cs.map(c =>
     n(meta("constraint"), (c.placeholders.map(sl) :+ sl(c.term))*))*)
 
-private def patternNode(
+private[langdef] def patternNode(
     p: Pattern, meta: String => NodeData): DetachedNode[NodeData] =
   n(meta("pattern"), p.pieces.map(pieceNode(_, meta))*)
 
@@ -68,7 +69,7 @@ private def pieceNode(
     (if (p.glued) List(DetachedNode.leaf(meta("glued"))) else Nil))*)
 }
 
-private def meaningTermNode(
+private[langdef] def meaningTermNode(
     m: Meaning, url: String, pieceIds: Map[String, Int],
     meta: String => NodeData): DetachedNode[NodeData] = m.tag match {
   case "use" | "source" | "builtin" =>
@@ -85,9 +86,6 @@ private def meaningTermNode(
           .getOrElse(sl(name))
       case None => meaningTermNode(a, url, pieceIds, meta)
     })*)
-  case "reparse" =>
-    n(meta("reparse"),
-      m.phrase.toList.flatMap(_.pieces.map(pieceNode(_, meta)))*)
   case "quote" =>
     n(meta("quote"), m.quoted.toList.map(detachedOf)*)
   case tag =>
