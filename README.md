@@ -1,12 +1,12 @@
 # Opelan Language Workbench
 
-I dream of a world where anyone can "look under the hood" of any program at the click of a button — then edit, tinker, and share their modifications, all without leaving the browser. A world where code takes the shape best suited to its domain — visual, textual, or a mix of both. A world where code is worth reading not just by machines or professional developers, but by anyone and everyone seeking to understand and improve the digital systems that shape our world. This is the next generation of open source software development.
+I dream of a world where anyone can "look under the hood" of any program at the click of a button — then edit, tinker, and share their modifications, all without leaving the browser. A world where code takes the shape best suited to its domain — visual, textual, or a mix of both. A world where code is worth reading not just by machines or professional developers, but by anyone and everyone seeking to understand and improve the digital systems that shape our world. The next generation of software development is not only open, but also tangible, maleable, and approachable by anyone with curiosity.
 
 This project is a step toward that vision — an experimental prototype exploring language workbench concepts (structured editing, polysyntactic views, typed holes, and local-first documents) built with Scala.js and CodeMirror. It draws inspiration from prior language workbench and projectional editing systems — MPS, OMeta, and many others — as well as ideas I've gathered over more than 30 years of tinkering and pondering.
 
 **This is a research prototype, not production software.** It exists to explore ideas from the [MANIFESTO](MANIFESTO.md); expect rough edges, incomplete features, and evolving design. See [STATUS.md](STATUS.md) for an honest accounting of what works and what doesn't.
 
-**A note on AI use**: LLM agents are used generously in this project to accelerate development of the prototype. The design is heavily inspired by my earlier hand-written prototypes ([olw-p1](https://github.com/zynque/olw-p1) … [olw-p4](https://github.com/zynque/olw-p4)), and the agents are carefully steered to reflect my technical style and preferences. The eventual goal, though, is a fully bootstrapped implementation in which every bit of code has been carefully tended and scrutinized by human hands.
+**A note on AI use**: LLM agents are used generously in this project to accelerate development of the prototype. The design is heavily inspired by my earlier hand-written prototypes ([olw-p1](https://github.com/zynque/olw-p1) … [olw-p4](https://github.com/zynque/olw-p4)), and the agents are carefully steered to reflect my technical style and preferences. The eventual goal, though, is a fully bootstrapped implementation in which every bit of code has been carefully tended and scrutinized by human hands. We believe code worth running is code worth reading.
 
 ## Features
 

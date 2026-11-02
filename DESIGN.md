@@ -3,7 +3,7 @@
 Opelan (**Op**en **L**anguage **A**pplicatio**n**) is a browser-based language
 workbench: a tool for building software in which programs, documents, and the
 tooling itself are all versioned, structured trees that can be viewed,
-edited, and interpreted through multiple surfaces. It is written in
+edited, and interpreted in multiple ways. It is written in
 Scala.js, bundled with webpack, and runs local-first in the browser
 (IndexedDB persistence, no server required).
 
@@ -17,8 +17,7 @@ drive the workbench), `STATUS.md` (current state and next steps), and
 
 ## 1. Lineage: the olw-p* prototypes
 
-The repo keeps four earlier prototypes under `old-olws/` (also published as
-`zynque/olw-p1` … `olw-p4`). Each explored a piece of the design:
+Four earlier prototypes `github.com/zynque/olw-p1` ... `olw-p4` each explored a piece of the design:
 
 | Prototype | Tech | What it explored | What survived |
 |-----------|------|------------------|---------------|
@@ -34,9 +33,6 @@ Lessons carried forward:
   The manifesto itself ships as a sample document (`EditorSample`).
 - *Views are derived, not stored.* p1's per-context interpretations became
   `Language.views` — renderings computed from the canonical tree.
-- *Keep the UI layer formally simple.* After p3 collapsed under UI
-  complexity, the current UI is a small Elm-style runtime, not a stack of
-  frameworks.
 
 ## 2. Core data model (`foundation/document`)
 
@@ -64,10 +60,7 @@ The substrate everything is built on — a direct port of olw-p4, extended:
   transclusion-style cross-document reference whose
   `ExternalNodeReference(documentUrl, documentVersionId, nodeId)` reads
   as `url@version#node` — **`GapData(text)`** (a hole, §4), and
-  **`SourceRef(nodeId)`**, a provenance back-pointer meaningful only in
-  derived trees (§4): the node in the *source* document this node was
-  produced from. Unlike `InternalNodeRef` it is never remapped by
-  `compact` — the source document is a different address space.
+  **`SourceRef(nodeId)`**, a pointer to the definition, which, when interpreted, produced this node
 - **`Outline`** — a text codec for raw documents: one line per node,
   indentation for nesting, and surface syntax for each `NodeData` variant
   (`"abc"`, `42`, `1.5`, `ref:5`, `ref:url@v#n`, `?text`). It is the human
@@ -77,7 +70,7 @@ The substrate everything is built on — a direct port of olw-p4, extended:
   reload, and sync, which documents depend on. Internal refs (imports,
   construct uses, cell refs) and other documents' `url@v#n` refs all
   name ids. Unreachable ids stay reserved, duplicate ids from a text
-  merge get fresh ones, and id-less text falls back to `Outline`.
+  merge get fresh ones, and id-less text falls back to `Outline`. This is an interim solution - the long term plan is to use a proper CRDT reflecting the document structure.
 - **Imports** (`typed/Imports.scala`) — every external node a typed document
   uses is imported once, as an `ExternalNodeRef` leaf in its imports
   section, and used through `InternalNodeRef`s to that entry (§4).
@@ -108,7 +101,7 @@ which each node has 0, 1, or 2 parents (the second via merge).
   Fischer & Huson, *Information Processing Letters* 110.8-9. `getLsca`
   walks two root paths in O(h).
 
-**Where it is used.** The editor's history is this DAG. For an unsynced
+**Where it is used** The editor's history is this DAG. For an unsynced
 document, `EditorModel` holds a session-local
 `Document[Version[EditorSnapshot]]` plus a `versionId` cursor: every edit
 records a version, undo branches rather than truncates (`EditorHistory`),
@@ -127,6 +120,8 @@ History is designed as two layers (per `RELATED_WORK.md`):
   (Upwelling/Patchwork-style, with git's objects/refs/working-tree split
   as the structural template), realized today as the `Store`'s
   append-only `url@v` versions.
+
+**Diffing** Since the whole system is based on syntax trees and deeply aware of semantics, diffs will be able to be shown as semantic changes rather than just text changes.
 
 ## 4. Typed documents, languages, and holes
 

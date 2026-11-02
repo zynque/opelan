@@ -33,6 +33,7 @@ models give curated, branched, truncatable history. We want both, at different l
 - **[TerminusDB](https://github.com/terminusdb/terminusdb)** — Document database with git-style revision history and collaboration.
 - **[Jujutsu](https://github.com/jj-vcs/jj)** ([docs](https://jj-vcs.dev)) — Git-compatible VCS where the working copy is an automatically-saved commit, history rewriting is first-class, and the op log is inspectable/undoable. Interesting model for how "live state" relates to commits.
 - **[Pijul](https://pijul.org)** / **[Darcs](https://darcs.net)** — Patch-based VCSs; merges are defined algebraically over patches rather than snapshots. Relevant theory for semantic merge.
+- **[SemanticDiff](https://semanticdiff.com)** — Language-aware diff (VS Code/GitHub) that hides style-only changes, detects moved code, and groups refactorings. A shipping approximation of the semantic diffs our syntax-tree documents should make the default rather than a text-level add-on.
 - **[Git internals](https://git-scm.com/book/en/v2/Git-Internals-Plumbing-and-Porcelain)** — The object/refs/working-tree split our architecture mirrors (snapshot store / history DAG / live doc).
 - **[IPFS](https://ipfs.tech)** — Content-addressed Merkle DAGs; the standard model for immutable referenced data, relevant to `ExternalNodeRef` and archived history layers.
 - **[Datomic](https://www.datomic.com)** — Immutable database where "the database as a value" and first-class history are core. Queries-as-data philosophy is adjacent to documents-as-data.
