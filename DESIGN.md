@@ -1165,31 +1165,7 @@ itself be a shared, versioned operation that peers honor. Ephemeral
 navigation never enters this log; it is the audit trail that makes
 cleanup safe under sync.
 
-## 8. The retired scaffold
-
-The first commits landed a scaffold layer — `foundation/project`
-(`Project`/`Definition`/`Workspace`), `foundation/structure`
-(`Schema`/`SchemaRegistry`), `foundation/typing`
-(`TypedGap`/`TypedGapManager`), `foundation/dsl` (`Expression`/`DSLParser`),
-plus `DiagramRenderer` and a `CollaborationManager` stub — written in a
-`js.Dynamic`-heavy, mutable-global style that never interoperated with
-`Document[NodeData]`. It was deleted rather than integrated, since the
-current design supersedes each piece:
-
-| Retired scaffold | Superseded by |
-|---|---|
-| `TypedGap`/`TypedGapManager` | `GapData` holes in `foundation/document`, recovering parsers in `foundation/grammar` |
-| `Expression`/`DSLParser` | `Expr`/`ExprParse` in `examples/`, `Language` and `foundation/langdef` |
-| `Schema`/`SchemaRegistry` | Rules as schemas — a structural pattern declares a construct's shape; vocabulary derives |
-| `Project`/`Definition`/`Workspace` | The document `Store`, the pure `Workspace` value, and the documents sidebar |
-| `CollaborationManager` stub | `DocSession` over real Automerge |
-| `DiagramRenderer` | Document-driven visualization as derived views — future work |
-
-When reading early history, treat anything `js.Dynamic`-heavy with mutable
-global singletons and "basic implementation — can be extended"
-placeholders as belonging to this removed generation.
-
-## 9. Build and test
+## 8. Build and test
 
 - Scala 3.9 + Scala.js via Scala CLI (`project.scala`) and scalajs-dom; ES
   module output → `app.js` → webpack → `bundle.js`, loaded by

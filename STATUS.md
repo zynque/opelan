@@ -149,7 +149,7 @@ Each item is described in the cited `DESIGN.md` section.
   BroadcastChannel; one author-tagged history projected into the
   version DAG; per-actor undo; local navigation; checkout + edit forks a
   branch draft that peers can rejoin.
-- **Build/test** (§9): `build.bat`/`build.sh`, `test.bat`/`test.sh`;
+- **Build/test** (§8): `build.bat`/`build.sh`, `test.bat`/`test.sh`;
   411 munit tests over the pure core, UI update functions, and
   DocSession convergence under real Automerge in Node. A fresh clone
   needs a `webpack.config.js` (see `README.md`).
