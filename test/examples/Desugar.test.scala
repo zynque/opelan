@@ -7,8 +7,9 @@ import opelan.foundation.means.engine._
 import opelan.foundation.means.text._
 import Detached._
 
-// The phrase desugar (foundation/means/Desugar.scala, DESIGN §4
-// *Phrases desugar at entry*): a phrase meaning parses through the
+// The phrase desugar (foundation/means/engine/Desugar.scala,
+// foundation/means/DESIGN.md, *Phrases desugar at entry*): a phrase
+// meaning parses through the
 // language's own rules when it is read, becoming term trees —
 // `use` placeholders, construct terms by ref, `quote`d concrete
 // content — and evaluation only ever sees terms. A phrase the set

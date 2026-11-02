@@ -11,7 +11,8 @@ import opelan.foundation.means.text._
 // string first child is the text form (read tolerantly through
 // readRuleOrHole, as docs written before the structured encoding did);
 // otherwise the structured form — `pattern` pieces, the `meaning` term
-// subtree, `where` constraints (DESIGN §4, *Everything by reference*).
+// subtree, `where` constraints (foundation/document/typed/DESIGN.md,
+// *Everything by reference*).
 // Every read is total: missing or malformed parts become holes.
 private[langdef] def ruleFromDoc(
     doc: Document[NodeData], url: String,

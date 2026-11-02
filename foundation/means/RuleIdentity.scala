@@ -1,7 +1,8 @@
 package opelan.foundation.means
 
-// Rule identity for language-change diffing (DESIGN §4, *Incremental
-// parsing*): rules have stable identities — their node ids in the
+// Rule identity for language-change diffing
+// (foundation/grammar/DESIGN.md, *Incremental parsing*): rules have
+// stable identities — their node ids in the
 // `lang:` document — so the memo key survives renames and only real
 // changes invalidate. A placeholder rename isn't a real change:
 // `x + y means add(x, y)` and `a + b means add(a, b)` compile to the

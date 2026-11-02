@@ -4,7 +4,7 @@ import opelan.foundation.document._
 import opelan.foundation.grammar._
 import opelan.foundation.means._
 
-// Compile a rule set to a parser (DESIGN.md §4, *Engine*): operator-
+// Compile a rule set to a parser (DESIGN.md): operator-
 // shaped rules join the operator table in binding-list order; every
 // other rule compiles to a sequence and serves as an operand.
 //

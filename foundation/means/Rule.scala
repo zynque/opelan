@@ -4,7 +4,7 @@ import opelan.foundation.document.{ExternalNodeReference, NodeData}
 import opelan.foundation.grammar.PTree
 
 // The model behind `pattern means meaning` language definitions
-// (DESIGN.md §4, *Defining languages by `means` rules*):
+// (DESIGN.md):
 //
 //   a + b  means  add(a, b)  where a, b: number
 //
@@ -29,8 +29,9 @@ case class Pattern(pieces: List[Piece]) {
     pieces.collect { case Piece.Placeholder(name, _) => name }
 }
 
-// What a pattern stands for — a term, evaluated (DESIGN.md §4, *A
-// meaning is a term, evaluated*): `add(a, b)` applies a construct of
+// What a pattern stands for — a term, evaluated
+// (foundation/means/engine/DESIGN.md, *A meaning is a term,
+// evaluated*): `add(a, b)` applies a construct of
 // the defined language; a bare `a` reads as `use(a)`, the bound tree
 // itself; a phrase like `a / 100` desugars at entry — read with the
 // language's own rules into term trees (`use`, constructs, `quote`),
@@ -42,7 +43,8 @@ case class Pattern(pieces: List[Piece]) {
 // Names here are labels, as in NodeTerm and GrammarDef: in a `lang:`
 // document a constructor is a ref to its term's vocabulary entry and a
 // placeholder use an internal ref to the pattern's placeholder node
-// (DESIGN.md §4, *Everything by reference*). `reference` carries that
+// (foundation/document/typed/DESIGN.md, *Everything by reference*).
+// `reference` carries that
 // identity once a rule is read from a document — a construct's
 // vocabulary entry, a placeholder's pattern piece; rules written in code or text
 // have none until encoded, and a placeholder resolves by name within
@@ -112,8 +114,8 @@ object Meaning {
 case class Constraint(placeholders: List[String], term: String)
 
 // `id` is the rule's stable identity — its `rule` node's id in the
-// `lang:` document it was decoded from (DESIGN §4, *Incremental
-// parsing*: the memo key survives renames and only real changes
+// `lang:` document it was decoded from (foundation/grammar/DESIGN.md,
+// *Incremental parsing*: the memo key survives renames and only real changes
 // invalidate). Rules written in code or read from text have none and
 // are named by pattern key.
 case class Rule(

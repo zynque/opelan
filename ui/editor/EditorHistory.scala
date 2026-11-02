@@ -36,7 +36,7 @@ def record(
     case Left(_)  => m.copy(doc = newDoc)
   }
 
-// Synced semantics (see DESIGN.md §7): at the shared head, undo/redo is
+// Synced semantics (see collaboration/DESIGN.md): at the shared head, undo/redo is
 // the session's business — the editor emits a request and the session
 // appends a revert change scoped to *this actor's* last change. While
 // browsing a checked-out version they remain what they've always been:

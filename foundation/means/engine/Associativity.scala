@@ -4,7 +4,8 @@ import opelan.foundation.grammar.Assoc
 import opelan.foundation.means._
 
 // An infix operator's associativity, read off the rule set's worked
-// examples (DESIGN.md §4, *Precedence is an ordered list*): left by
+// examples (foundation/means/DESIGN.md, *Precedence is an ordered
+// list*): left by
 // default — `a + b + c` reads `(a + b) + c` — until an example shows
 // a different grouping. A witness is an example whose input chains
 // the rule's literals at top level — `a ^ b ^ c` — and whose expected

@@ -4,8 +4,8 @@ import opelan.foundation.document._
 import opelan.foundation.grammar._
 import opelan.foundation.means._
 
-// The decided meaning desugar (DESIGN.md §4, *Phrases desugar at
-// entry*): a phrase spelling parses through the language's own rules
+// The decided meaning desugar (foundation/means/DESIGN.md, *Phrases
+// desugar at entry*): a phrase spelling parses through the language's own rules
 // *when it is read*, and the parsed tree becomes meaning terms —
 // placeholders as `use`, the language's constructs as construct terms
 // by reference, concrete content as `quote`. At apply a desugared

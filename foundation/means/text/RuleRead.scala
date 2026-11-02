@@ -42,7 +42,7 @@ val noLanguage: (Set[String], String) => Meaning =
   (_, text) => Meaning.hole(text)
 
 // A malformed rule becomes a rule that never applies — the Never
-// Broken counterpart of `readRule`'s error report (DESIGN.md,
+// Broken counterpart of `readRule`'s error report (foundation/DESIGN.md,
 // STATUS Phase C: "a malformed rule into a hole rule"). Nothing in
 // it compiles — an empty pattern is neither operator- nor
 // sequence-shaped — but `ruleIssues` still reports it, so the

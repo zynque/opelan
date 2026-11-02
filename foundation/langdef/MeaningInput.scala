@@ -11,8 +11,9 @@ import opelan.foundation.means.engine._
 import opelan.foundation.means.text._
 import opelan.foundation.grammar._
 
-// The meaning field's input grammar (DESIGN §4, *Phrases desugar at
-// entry*): the text parses through the defined language's own rules
+// The meaning field's input grammar (foundation/means/DESIGN.md,
+// *Phrases desugar at entry*): the text parses through the defined
+// language's own rules
 // with the rule's placeholders as operand atoms, so the committed
 // meaning is term nodes — `use` placeholders, constructs by ref,
 // `quote` concrete content — never a template to reparse. A

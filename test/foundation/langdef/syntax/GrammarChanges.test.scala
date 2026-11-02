@@ -11,7 +11,8 @@ import opelan.foundation.means.text._
 // Language-change diffing over rule sets: memo names are rule
 // identities — the `rule` node's id once rules live in `lang:`
 // documents — so a rename invalidates nothing and only real changes
-// drop parse results (DESIGN §4, *Incremental parsing*).
+// drop parse results (foundation/grammar/DESIGN.md, *Incremental
+// parsing*).
 class GrammarChangesSuite extends FunSuite {
 
   private def syntax(set: RuleSet): SyntaxDef =

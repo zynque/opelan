@@ -16,7 +16,8 @@ import opelan.foundation.means.text.{
 // becomes pattern + meaning nodes, its constructs bound to the doc's
 // own vocabulary entries; `pattern`, `meaning`, and `where` fields
 // commit their own sections — the meaning through the defined
-// language's rules (DESIGN §4, *Phrases desugar at entry*). `None`
+// language's rules (foundation/means/DESIGN.md, *Phrases desugar at
+// entry*). `None`
 // for a node that isn't meta content — an ordinary document input
 // goes through the doc's own input grammar. `inputs` carries the
 // meaning field's incremental session between commits.

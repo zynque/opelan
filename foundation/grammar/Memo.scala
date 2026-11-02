@@ -17,8 +17,8 @@ import scala.collection.mutable
 case class MemoEntry(result: POut, calls: Set[String])
 
 // A memo entry that lives on the parse-tree node its rule produced.
-// Marks plus the session's side table are the whole memo (DESIGN §4,
-// *Incremental*): the document never sees them — a mark dies with the
+// Marks plus the session's side table are the whole memo (DESIGN.md,
+// *Incremental parsing*): the document never sees them — a mark dies with the
 // parse that owns it. Everything is relative, so a mark survives
 // relocation, adoption, and copies without adjustment:
 //

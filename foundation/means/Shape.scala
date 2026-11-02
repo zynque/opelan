@@ -1,7 +1,7 @@
 package opelan.foundation.means
 
 // A rule's shape, read off its pattern's edges — which decides how the
-// rule compiles (DESIGN.md §4, *Engine*):
+// rule compiles (foundation/means/engine/DESIGN.md):
 //
 //   Leaf     a lone placeholder            n
 //   Closed   literal at both edges         (a)   |a|   pi
@@ -44,7 +44,8 @@ def shapeOf(pattern: Pattern): Shape = {
 //
 // A keyword-led form like `if c then a else b` is Prefix-*shaped* by
 // its edges but has placeholders inside, so it is not an operator: it
-// compiles to a sequence and needs no binding (DESIGN.md §4).
+// compiles to a sequence and needs no binding
+// (foundation/means/engine/DESIGN.md).
 def isOperatorPattern(pattern: Pattern): Boolean = {
   val pieces = pattern.pieces
   def placeholder(piece: Piece) = piece.isInstanceOf[Piece.Placeholder]

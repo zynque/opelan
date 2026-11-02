@@ -32,7 +32,7 @@ val ruleTokenKinds = Set("number", "word", "quoted", "single", "symbol")
 val ruleKeywords = Set("means", "=>", "where")
 
 // The provisional plain-text placeholder convention (an open question
-// in DESIGN.md §4): a lone lowercase letter, optionally numbered — `a`,
+// in foundation/means/DESIGN.md): a lone lowercase letter, optionally numbered — `a`,
 // `b`, `n`, `x2`. Every other word is literal; quote to force one.
 def isPlaceholderWord(word: String): Boolean =
   word.nonEmpty && word.head.isLower && word.head.isLetter &&

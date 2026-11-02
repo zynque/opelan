@@ -13,17 +13,17 @@ steps*, item 1).
 
 ## Working
 
-Each item is described in the cited `DESIGN.md` section.
+Each item is described in the cited folder's `DESIGN.md`.
 
-- **Document model** (`foundation/document`, §2): persistent tree with
+- **Document model** (`foundation/document`): persistent tree with
   pure structural edits, `compact`, and `validate`; `Outline` (human
   text) and `Serial` (id-preserving storage and sync) codecs; the
   pure, versioned `Store`.
-- **Typed documents and everything by reference** (§4): type ref on the
+- **Typed documents and everything by reference** (`foundation/document/typed`): type ref on the
   root; imports, title, content layout; every construct imported once and
   used by `InternalNodeRef`, so renaming a construct in its `lang:` doc
   renames every use (tested).
-- **Version pins select execution** (§4): language resolution reads the
+- **Version pins select execution** (`foundation/document/store`): language resolution reads the
   pinned `url@version`, not the head; `pendingUpdates` finds a
   document's refs pinning behind a head, the toolbar's **Update** button
   accepts them as one ordinary edit, and a `setting(auto-update, true)`
@@ -33,9 +33,9 @@ Each item is described in the cited `DESIGN.md` section.
   at head surface as `broken: N` (an accept can't bump them), and a
   bump itself is cheap: `changedSince` reports a version move as a
   term-tag migration, so kept parses re-pin rather than reparse.
-- **Version DAG** (`foundation/version`, §3): LSCA merge base; drives
+- **Version DAG** (`foundation/version`): LSCA merge base; drives
   editor history (branching undo, history column).
-- **Expression and sheet languages** (`examples/`, §4): both are
+- **Expression and sheet languages** (`examples/`): both are
   `DefLanguage` over `exprDef`/`sheetDef` — the means rules *are* the
   code-resident languages, with the registry objects kept only as the
   fallback for a store without the lang: doc (the hand-written
@@ -46,14 +46,14 @@ Each item is described in the cited `DESIGN.md` section.
   read them, and a `currency` view setting; the seeded "Household
   budget", staged for the demo with `/` missing from
   `lang: expression`.
-- **View trees** (`foundation/view`, `ui/view`, §4, §6): one recovering
+- **View trees** (`foundation/view`, `ui/view`): one recovering
   interpreter, provenance clicks that select the producing node, and
   `input` commits reconciled in place by `commitContent`.
-- **Language definitions as documents** (`foundation/langdef`, §4):
+- **Language definitions as documents** (`foundation/langdef`):
   `lang:` docs typed by `lang: language`, resolved store-first, so a
   saved definition edit is live on the next render.
-- **`means` rule groundwork** (`foundation/means`, `foundation/grammar`,
-  §4): rule model, checker, reader, and the derived printer —
+- **`means` rule groundwork** (`foundation/means`, `foundation/grammar`):
+  rule model, checker, reader, and the derived printer —
   `printViewWith` emits `src:` spans over document nodes for
   click-through (it backs the expression language's `print` view),
   `parse(print(t)) == t` is round-trip tested over generated trees, and
@@ -122,8 +122,9 @@ Each item is described in the cited `DESIGN.md` section.
   worked examples in the `def`
   view are checked live against the interpreted definition — a
   failing one shows as a hole chip saying what the input read as.
-  The meaning model itself is the unified term of DESIGN §4 (*A
-  meaning is a term, evaluated*): one `tag`/`arguments`/`reference`/
+  The meaning model itself is the unified term of
+  `foundation/means/engine/DESIGN.md` (*A meaning is a term,
+  evaluated*): one `tag`/`arguments`/`reference`/
   `quoted` node, with `use`/`source`/`builtin`/`quote`/`literal` as
   meaning-language builtins — `applyMeaning` evaluates by tag and an
   unknown builtin is a hole rather than a node. `literal` is the
@@ -142,14 +143,14 @@ Each item is described in the cited `DESIGN.md` section.
   hole that `rephraseRuleSet` retries at interpretation — healable
   because it kept its text — while context-free readers keep the
   same quoted hole.
-- **UI** (`ui/`, §5): fp runtime, `DocumentEditor`, `TypedDoc` with the
+- **UI** (`ui/`): fp runtime, `DocumentEditor`, `TypedDoc` with the
   app surface and its Raw / Definition (F12) exits, `Workbench` with
   seeded demo documents and ref following.
-- **Live sync** (`collaboration/`, §7): Automerge between tabs over
+- **Live sync** (`collaboration/`): Automerge between tabs over
   BroadcastChannel; one author-tagged history projected into the
   version DAG; per-actor undo; local navigation; checkout + edit forks a
   branch draft that peers can rejoin.
-- **Build/test** (§8): `build.bat`/`build.sh`, `test.bat`/`test.sh`;
+- **Build/test** (`DESIGN.md`): `build.bat`/`build.sh`, `test.bat`/`test.sh`;
   411 munit tests over the pure core, UI update functions, and
   DocSession convergence under real Automerge in Node. A fresh clone
   needs a `webpack.config.js` (see `README.md`).
@@ -199,7 +200,7 @@ Each item is described in the cited `DESIGN.md` section.
 
 ## Open design questions
 
-1. *Two-layer history* (DESIGN §7). The gesture split is settled and
+1. *Two-layer history* (`collaboration/DESIGN.md`). The gesture split is settled and
    built. Open: the op-log compaction boundary, the synced meta-log for
    history mutation, branch merge-back semantics, and the presence
    channel's shape.
@@ -222,15 +223,15 @@ Each item is described in the cited `DESIGN.md` section.
    auto-apply with notification or wait for opt-in review, is open.
 7. *Language composition & interop.* The fragmentation answer
    (`ADOPTION.md`) needs mechanisms that don't exist yet. The intent is
-   settled (DESIGN §4, *Towers*). Open: resolving input-surface
+   settled (`DESIGN.md`, *Towers*). Open: resolving input-surface
    ambiguity between imported languages (inline prompt or stored
    preference), a canonical base vocabulary of shared language
    fragments, and a shared value model so one DSL's artifacts mean
    something to another.
-8. *Tree-native sync* (DESIGN §7). Syncing `Serial` text is
+8. *Tree-native sync* (`collaboration/DESIGN.md`). Syncing `Serial` text is
    scaffolding; line-level merges renumber duplicate ids and can
    retarget refs. The destination is a tree-native CRDT.
-9. *`means` notation* (DESIGN §4): the plain-text placeholder
+9. *`means` notation* (`foundation/means/DESIGN.md`): the plain-text placeholder
    convention, how parse-time and evaluation-time meanings are marked,
    and whether alternative notations live in one language document or
    in layered notation documents.
@@ -238,8 +239,8 @@ Each item is described in the cited `DESIGN.md` section.
 ## Next steps
 
 1. **`means` rules — the next major series.** `pattern means meaning`
-   rules compiled onto the recovering combinators (DESIGN §4, *Defining
-   languages by `means` rules*). The engine groundwork — including the
+   rules compiled onto the recovering combinators
+   (`foundation/means/DESIGN.md`). The engine groundwork — including the
    derived printer and derived vocabulary — has landed (*Working*
    above). Remaining steps, in order:
 
@@ -294,8 +295,8 @@ Each item is described in the cited `DESIGN.md` section.
        (`n means number(n) where n: digits`), once `where` narrowing
        grows past builtin token kinds (the opaque-type question).
        Deferred past the means series, like the lexicons they name.
-2. **Pins, pending updates, auto-update** (DESIGN §4, *Pins select
-   behavior*). Still open:
+2. **Pins, pending updates, auto-update** (`foundation/document/store/DESIGN.md`,
+   *Pins select behavior*). Still open:
 
    - *Remote heads.* The Update scan and the cascade run against this
      tab's store, which changes only on local saves and boot hydration
@@ -331,7 +332,7 @@ Each item is described in the cited `DESIGN.md` section.
    on curated versions, with background changes (auto-update accepts,
    LLM edits) authored by non-user actors arriving through the merge
    path — and LLM edits possibly as *proposals* via the pending-update
-   UX (DESIGN §7, *Attribution*); debounce-coalesced edit bursts,
+   UX (`collaboration/DESIGN.md`, *Attribution*); debounce-coalesced edit bursts,
    including per-turn coalescing for streamed collaborator edits;
    undo stacks rebuilt on resume; branch interception for
    text-surface edits; branch merge-back; durable history beyond a tab's

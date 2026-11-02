@@ -5,7 +5,8 @@ import opelan.foundation.document.typed.externalRefOf
 import opelan.foundation.means._
 import opelan.foundation.view.ViewTree._
 
-// printWith's provenance sibling (DESIGN §4, derived views): the same
+// printWith's provenance sibling (foundation/view/DESIGN.md, view
+// trees): the same
 // rule-derived minimal-parens printing, walked over a document's
 // located nodes and emitted as a view tree — every emitted piece
 // carries a `src:` leaf naming the node it was derived from, so a

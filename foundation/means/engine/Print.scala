@@ -6,7 +6,7 @@ import opelan.foundation.means._
 import opelan.foundation.means.text._
 
 // A rule set read backwards — printing trees as text the rules read
-// back (DESIGN.md §4, *The meaning side*): every construct-meaning
+// back (foundation/means/DESIGN.md, *The meaning side*): every construct-meaning
 // rule is a template whose literals print verbatim and whose
 // placeholders print their argument trees, and the binding list
 // supplies the parentheses — the same minimal-parens dance Expr.print
@@ -73,8 +73,8 @@ def printWith(
 }
 
 // A meaning term as the detached tree `printWith` renders — the
-// projection of a stored meaning back toward phrase spelling (DESIGN
-// §4, *Phrases desugar at entry*): `use`/`source`/`builtin` operands
+// projection of a stored meaning back toward phrase spelling
+// (foundation/means/DESIGN.md, *Phrases desugar at entry*): `use`/`source`/`builtin` operands
 // are name leaves, `quote` its stored subtree, and a construct the
 // data a parse would emit over the argument trees.
 def meaningTree(

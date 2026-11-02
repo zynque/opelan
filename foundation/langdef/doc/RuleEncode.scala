@@ -6,7 +6,8 @@ import opelan.foundation.grammar.PTree
 import opelan.foundation.means._
 import opelan.foundation.means.text._
 
-// A rule set as document nodes (DESIGN §4, *Everything by reference*):
+// A rule set as document nodes (foundation/document/typed/DESIGN.md,
+// *Everything by reference*):
 // each `rule` holds `pattern` + `meaning` (+ `where`) sections; pattern
 // pieces are `placeholder`/`literal` nodes with a `glued` marker when
 // the source wrote them unspaced; the meaning is the term subtree —
