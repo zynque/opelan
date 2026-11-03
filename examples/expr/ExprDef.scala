@@ -1,31 +1,29 @@
-package opelan.examples
+package opelan.examples.expr
 
 import opelan.foundation.document._
+import opelan.foundation.document.typed._
 import opelan.foundation.langdef._
 import opelan.foundation.langdef.syntax._
-import opelan.foundation.language.Language
-
-// The example language definitions as data — what their `lang:`
-// documents encode. `exprDef`/`sheetDef` ARE the languages now:
-// ExprLanguage/SheetLanguage are DefLanguage over these defs, so a
-// stored lang: doc and the registry fallback run the same machinery.
-// `langDefDoc` must round-trip them through `langDefFromDocument`.
-// Each def is paired with the Impls bundle holding the code-side
-// semantics it names.
-import GrammarDef._
-import NodeShape._
-import LeafKind._
-
+import opelan.foundation.langdef.doc.termRefs
 import opelan.foundation.means._
 import opelan.foundation.means.engine.printViewWith
 import opelan.foundation.means.text._
 
-// The languages' identity refs — the URLs their `lang:` documents live
-// at. Constants, not `ExprLanguage.typeRef`: the objects interpreting
-// these defs would otherwise be read while the defs initialize.
+// The expression language's definition as data — what its `lang:`
+// document encodes. `exprDef` IS the language: ExprLanguage is
+// DefLanguage over it, so a stored lang: doc and the registry fallback
+// run the same machinery. `langDefDoc` must round-trip it through
+// `langDefFromDocument`. The def is paired with `exprImpls`, the Impls
+// bundle holding the code-side semantics it names.
+import GrammarDef._
+import NodeShape._
+import LeafKind._
+
+// The language's identity ref — the URL its `lang:` document lives at.
+// A constant, not `ExprLanguage.typeRef`: the object interpreting this
+// def would otherwise be read while the def initializes.
 val exprTypeRef =
   ExternalNodeReference("opelan:languages/int-expression", 0, 0)
-val sheetTypeRef = ExternalNodeReference("opelan:languages/sheet", 0, 0)
 
 private val mulDiv = Map("*" -> Expr.MulTag, "/" -> Expr.DivTag)
 private val addSub = Map("+" -> Expr.AddTag, "-" -> Expr.SubTag)
@@ -97,31 +95,7 @@ private def withoutPattern(set: RuleSet, text: String): RuleSet = {
     tiers = set.tiers.map(t => Tier(t.patterns.filterNot(_.key == key))))
 }
 
-val sheetDef = LanguageDef(
-  typeRef = sheetTypeRef,
-  title = "lang: sheet",
-  name = "Sheet",
-  description = "the spreadsheet language — a grid of cells",
-  vocabulary = List(
-    NodeTerm("sheet", Any),
-    NodeTerm("hrow", Any),
-    NodeTerm("row", Any),
-    NodeTerm("label", Leaf),
-    NodeTerm("literal", Leaf),
-    NodeTerm("ref", Leaf),
-    NodeTerm("formula", Any)),
-  syntax = None,
-  views = List(
-    ViewBinding("sheet", "sheet-grid", Map("currency" -> "$")),
-    ViewBinding("formulas", "sheet-formulas")),
-  // Cells parse with the expression language's grammar — by pinned
-  // ref, so a new lang: expression version heals sheet cells once the
-  // pin bumps to it.
-  inputParser = Some(
-    InputParserDef.Language(exprTypeRef, InputFallback.Label)))
-
-// The code-side semantics each example language's def names — kept
-// beside the defs that reference them.
+// The code-side semantics the def names — kept beside it.
 val exprImpls = Impls(
   lexicons = Map("expr" -> exprLexicon),
   // The leaf productions `where` terms bind to — the named leaf
@@ -145,23 +119,13 @@ val exprImpls = Impls(
       printViewWith(exprRules, exprTag, exprViewLeaf)(doc, id)),
     "expr-eval"  -> ((doc, id, _) => evalTree(doc, readLocExpr(doc, id)))))
 
-val sheetImpls = Impls(
-  views = Map(
-    "sheet-grid"     -> ((doc, id, ctx) => sheetView(doc, id, ctx)),
-    "sheet-formulas" -> ((doc, id, ctx) => formulasView(doc, id, ctx))),
-  inputParsers = Map("sheet-cell" -> parseCellText))
+// Construct identities of the language. Code names a term ("mul") only
+// to look up its vocabulary entry in the canonical encoding; documents
+// store the entry's ref, and readers match on it — so a construct
+// renamed in its lang: document keeps working (node ids are never
+// reused).
+lazy val exprTerms: Map[String, ExternalNodeReference] = termRefs(exprDef)
 
-// The foundational languages, each paired with the implementations its
-// def names. This list is the only built-in registry: a def decoded
-// from a document inherits the impls of the language whose type ref it
-// claims, so a stored lang: doc keeps working semantics.
-val foundation: List[(LanguageDef, Impls)] = List(
-  exprDef        -> exprImpls,
-  sheetDef       -> sheetImpls,
-  docLanguageDef -> docImpls)
-
-def implsFor(d: LanguageDef): Impls =
-  foundation.collectFirst {
-    case (fd, i) if fd.typeRef.documentUrl == d.typeRef.documentUrl &&
-                   fd.typeRef.nodeId == d.typeRef.nodeId => i
-  }.getOrElse(Impls())
+// Node data applying a construct, inline — a document imports it when
+// the tree is inserted (see makeTyped / internalizeRefs).
+def exprTag(term: String): NodeData = NodeData.ExternalNodeRef(exprTerms(term))

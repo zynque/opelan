@@ -1,4 +1,4 @@
-package opelan.examples
+package opelan.examples.expr
 
 import opelan.foundation.document._
 import opelan.foundation.grammar._
@@ -8,7 +8,7 @@ import opelan.foundation.means.engine._
 import opelan.foundation.means.text._
 
 // The expression language as `means` rules — the same grammar
-// ExprParse writes as combinators and ExampleDefs writes as
+// ExprParse writes as combinators and ExprDef writes as
 // GrammarDef data, compiled by compileRules (foundation/means).
 // Behavioral parity with both is the regression anchor for the
 // rule engine (STATUS.md, `means` Phase B); once parity is proven

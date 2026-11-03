@@ -1,5 +1,7 @@
-package opelan.examples
+package opelan.examples.sheet
 
+import opelan.examples.{registryForDoc, termOf}
+import opelan.examples.expr.{Expr, exprTag, exprTerms}
 import opelan.foundation.document._
 import opelan.foundation.document.typed._
 import opelan.foundation.view.ViewTree

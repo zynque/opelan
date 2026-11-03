@@ -16,7 +16,7 @@ that is where the regress stops). Malformed defs degrade to holes:
 missing refs, cyclic grammars, and cyclic documents are all guarded, and
 an old store with untyped `lang:` docs falls back to the registry.
 
-## Expression language
+## Expression language (`expr/`)
 
 `ExprLanguage`, `Expr`/`ExprDoc`, `ExprLexicon`, `ExprParse`, `ExprView`
 — the demonstration language. It has int and float literals (`Num`:
@@ -36,7 +36,7 @@ reparsing whole cells — superseded by per-node lengths under
 [incremental parsing](../foundation/grammar/DESIGN.md). `Expr.print`
 round-trips holes.
 
-`ExprRules`/`ExampleDefs`/`Terms` express the same language as `means`
+`ExprRules`/`ExprDef`/`Terms` express the same language as `means`
 rules and as a def, so `DefLanguage(exprDef)` can be held identical to
 `ExprLanguage` (parse, print, and eval) on a 28-input battery — the
 regression anchor for any change to the definition machinery (see
@@ -44,7 +44,7 @@ regression anchor for any change to the definition machinery (see
 constructs by the ids its canonical encoding assigns (`termRefs`,
 `exprTerms`, `sheetTerms`).
 
-## Sheet language
+## Sheet language (`sheet/`)
 
 `Sheet`, `SheetLanguage` — the demo app: a typed document whose content
 subtree is `sheet > row/hrow > cell`. Label cells (plain string leaves)

@@ -3,7 +3,9 @@ package opelan.ui.workbench
 import opelan.foundation.document._
 import opelan.foundation.document.store._
 import opelan.foundation.langdef.doc.langDefDoc
-import opelan.examples.{allLanguages, demoExprDef, ExprLanguage, SheetLanguage}
+import opelan.examples.allLanguages
+import opelan.examples.expr.{demoExprDef, ExprLanguage}
+import opelan.examples.sheet.SheetLanguage
 
 // The demo's opening lineup, seeded into a store that doesn't already
 // have it. Each registered language's descriptive document is seeded at

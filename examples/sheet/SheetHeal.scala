@@ -1,4 +1,4 @@
-package opelan.examples
+package opelan.examples.sheet
 
 import opelan.foundation.document._
 import opelan.foundation.document.typed._

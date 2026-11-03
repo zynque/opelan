@@ -1,7 +1,7 @@
 package opelan.ui.typeddoc
 
-import opelan.examples.{Expr, ExprLanguage, SheetLanguage,
-  exprFromDocument, sheetDef}
+import opelan.examples.expr.{Expr, ExprLanguage, exprFromDocument}
+import opelan.examples.sheet.{SheetLanguage, sheetDef}
 import opelan.foundation.document._
 import opelan.foundation.document.store._
 import opelan.foundation.document.typed._
@@ -332,7 +332,7 @@ class TypedDocSuite extends munit.FunSuite {
     Store.empty
       .put(ExprLanguage.typeRef.documentUrl, ExprLanguage.langDoc)._1
       .put(ExprLanguage.typeRef.documentUrl,
-        langDefDoc(opelan.examples.exprDef.copy(name = "v2")))._1
+        langDefDoc(opelan.examples.expr.exprDef.copy(name = "v2")))._1
 
   test("AcceptUpdates bumps the doc's pinned refs to their heads") {
     val m = init.copy(store = bumpedStore)

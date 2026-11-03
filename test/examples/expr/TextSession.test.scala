@@ -1,5 +1,6 @@
-package opelan.examples
+package opelan.examples.expr
 
+import opelan.examples.languageFromDef
 import scala.util.Random
 import opelan.foundation.document._
 import opelan.foundation.grammar.Edit

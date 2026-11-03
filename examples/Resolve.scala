@@ -1,5 +1,7 @@
 package opelan.examples
 
+import opelan.examples.expr._
+import opelan.examples.sheet._
 import opelan.foundation.document._
 import opelan.foundation.document.store._
 import opelan.foundation.document.typed._
@@ -11,6 +13,21 @@ import opelan.foundation.language.Language
 // DocLanguage is the bootstrap root — it resolves the meta type ref
 // that every `lang:` document carries.
 val allLanguages: List[Language] = List(ExprLanguage, SheetLanguage, DocLanguage)
+
+// The foundational languages, each paired with the implementations its
+// def names. This list is the only built-in registry: a def decoded
+// from a document inherits the impls of the language whose type ref it
+// claims, so a stored lang: doc keeps working semantics.
+val foundation: List[(LanguageDef, Impls)] = List(
+  exprDef        -> exprImpls,
+  sheetDef       -> sheetImpls,
+  docLanguageDef -> docImpls)
+
+def implsFor(d: LanguageDef): Impls =
+  foundation.collectFirst {
+    case (fd, i) if fd.typeRef.documentUrl == d.typeRef.documentUrl &&
+                   fd.typeRef.nodeId == d.typeRef.nodeId => i
+  }.getOrElse(Impls())
 
 // Registry resolution — no store: a language ref finds a code-defined
 // language by document URL and node id.

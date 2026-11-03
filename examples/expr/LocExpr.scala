@@ -1,5 +1,6 @@
-package opelan.examples
+package opelan.examples.expr
 
+import opelan.examples.termOf
 import opelan.foundation.document._
 import opelan.foundation.document.typed._
 

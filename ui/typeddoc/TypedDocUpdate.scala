@@ -1,6 +1,8 @@
 package opelan.ui.typeddoc
 
-import opelan.examples.{ExprLanguage, SheetLanguage, languageForDoc}
+import opelan.examples.languageForDoc
+import opelan.examples.expr.ExprLanguage
+import opelan.examples.sheet.SheetLanguage
 import opelan.foundation.document._
 import opelan.foundation.document.store._
 import opelan.foundation.document.typed._

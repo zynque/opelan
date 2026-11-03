@@ -2,20 +2,13 @@ package opelan.examples
 
 import opelan.foundation.document._
 import opelan.foundation.document.typed._
-import opelan.foundation.langdef.doc.termRefs
 
-// Construct identities of the example languages. Code names a term
-// ("mul", "hrow") only to look up its vocabulary entry in the language's
-// canonical encoding; documents store the entry's ref, and readers match
-// on it — so a construct renamed in its lang: document keeps working
-// (node ids are never reused).
-lazy val exprTerms: Map[String, ExternalNodeReference] = termRefs(exprDef)
-lazy val sheetTerms: Map[String, ExternalNodeReference] = termRefs(sheetDef)
-
-// Node data applying a construct, inline — a document imports it when
-// the tree is inserted (see makeTyped / internalizeRefs).
-def exprTag(term: String): NodeData = NodeData.ExternalNodeRef(exprTerms(term))
-def sheetTag(term: String): NodeData = NodeData.ExternalNodeRef(sheetTerms(term))
+// Term matching shared by the example languages: which of a language's
+// construct terms a ref names. Code names a term ("mul", "hrow") only
+// to look up its vocabulary entry in the language's canonical encoding;
+// documents store the entry's ref, and readers match on it — so a
+// construct renamed in its lang: document keeps working (node ids are
+// never reused).
 
 // Which of `terms` a construct ref names.
 def termIn(

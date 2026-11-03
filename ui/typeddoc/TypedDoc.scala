@@ -1,6 +1,7 @@
 package opelan.ui.typeddoc
 
-import opelan.examples.{ExprLanguage, registryForDoc}
+import opelan.examples.registryForDoc
+import opelan.examples.expr.ExprLanguage
 import opelan.foundation.language.docText
 import opelan.ui.editor.{DocumentEditor, EditorInput}
 import opelan.ui.fp._

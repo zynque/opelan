@@ -1,5 +1,7 @@
-package opelan.examples
+package opelan.examples.sheet
 
+import opelan.examples.termOf
+import opelan.examples.expr.{Expr, Num, docResolver, evalLoc, exprToDetached, parseExpr, printTree, readLocExpr}
 import opelan.foundation.document._
 import opelan.foundation.view.ViewTree
 import opelan.foundation.view.ViewTree._

@@ -4,7 +4,8 @@ import opelan.collaboration.automerge.ChangeInfo
 import opelan.foundation.document._
 import opelan.foundation.document.store._
 import opelan.foundation.document.typed._
-import opelan.examples.{ExprLanguage, SheetLanguage}
+import opelan.examples.expr.ExprLanguage
+import opelan.examples.sheet.SheetLanguage
 import opelan.ui.fx._
 import opelan.ui.typeddoc.{TypedDocInput, TypedDocOutput}
 import opelan.ui.workbench.WorkbenchInput._
@@ -61,7 +62,7 @@ class WorkbenchUpdateSuite extends munit.FunSuite {
     // lang: expression staged without `/` for the demo
     assertEquals(
       st.resolve(ExprLanguage.typeRef).map(_._1),
-      Some(opelan.foundation.langdef.doc.langDefDoc(opelan.examples.demoExprDef)))
+      Some(opelan.foundation.langdef.doc.langDefDoc(opelan.examples.expr.demoExprDef)))
     assertEquals(
       st.resolve(SheetLanguage.typeRef).map(_._1), Some(SheetLanguage.langDoc))
     // every seed is queued for persistence at version 0

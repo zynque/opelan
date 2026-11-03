@@ -1,5 +1,7 @@
-package opelan.examples
+package opelan.examples.sheet
 
+import opelan.examples.{languageForRef, languageFromDef}
+import opelan.examples.expr.exprTag
 import opelan.foundation.document._
 import opelan.foundation.document.store._
 import opelan.foundation.document.typed._

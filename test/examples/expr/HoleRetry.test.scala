@@ -1,5 +1,6 @@
-package opelan.examples
+package opelan.examples.expr
 
+import opelan.examples.languageFromDef
 import opelan.foundation.document._
 import opelan.foundation.language.{HoleRetry, SyntaxChange, TextSyntax}
 import opelan.foundation.langdef.rememberInputHoles

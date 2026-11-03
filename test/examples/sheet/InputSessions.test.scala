@@ -1,5 +1,7 @@
-package opelan.examples
+package opelan.examples.sheet
 
+import opelan.examples.languageFromDef
+import opelan.examples.expr.{ExprLanguage, demoExprDef, exprDef}
 import scala.util.Random
 import opelan.foundation.document._
 import opelan.foundation.langdef.InputParserDef

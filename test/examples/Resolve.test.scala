@@ -1,5 +1,7 @@
 package opelan.examples
 
+import opelan.examples.sheet.{SheetLanguage, sheetDef}
+import opelan.examples.expr.{ExprLanguage, demoExprDef, exprDef}
 import opelan.foundation.document._
 import opelan.foundation.document.store._
 import opelan.foundation.langdef.{
