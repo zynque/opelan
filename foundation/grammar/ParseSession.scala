@@ -142,7 +142,7 @@ private[grammar] def liveMarks(t: PTree): List[(Int, PTree, ParseMark)] = {
     val abs = base + node.from
     node.marks.foreach(m =>
       if (m.span == node.length) found += ((abs + m.applied, node, m)))
-    node.kids.foreach(k => go(k, abs))
+    node.children.foreach(k => go(k, abs))
   }
   go(t, 0)
   found.result()

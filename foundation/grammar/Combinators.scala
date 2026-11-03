@@ -24,14 +24,14 @@ case class In(input: String, lexicon: Lexicon, memo: MemoTable = MemoTable())
 // text before it does: `from` is an offset from the parent's start, and
 // `length` is the node's span. While a node stands alone during a parse
 // (not yet adopted into a parent), its `from` is absolute — that is
-// when combinators read it. `adopted` (Tree.scala) rebases a kid when a
+// when combinators read it. `adopted` (Tree.scala) rebases a child when a
 // parent claims it.
 case class PTree(
     data: NodeData,
     text: String,
     from: Int,
     length: Int,
-    kids: List[PTree] = Nil,
+    children: List[PTree] = Nil,
     // Parse bookkeeping stamped by the memoized rule applications that
     // produced this node — the memo entry, living on the tree (Memo.scala).
     marks: List[ParseMark] = Nil) {

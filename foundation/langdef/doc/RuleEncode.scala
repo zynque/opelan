@@ -107,7 +107,7 @@ private def constructData(
   }
 
 private def detachedOf(t: PTree): DetachedNode[NodeData] =
-  DetachedNode(t.data, t.kids.map(detachedOf))
+  DetachedNode(t.data, t.children.map(detachedOf))
 
 // Meta-construct data for detached rule content — a real import ref,
 // not a pending marker, so a subtree produced outside a def-doc build

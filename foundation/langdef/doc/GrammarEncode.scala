@@ -55,15 +55,15 @@ private def leafNode(l: LeafKind): DetachedNode[NodeData] = l match {
 private[langdef] def linkUses(
     doc: Document[NodeData], root: Int): Document[NodeData] = {
   val ids = doc.subtreeIds(root)
-  def firstKid(id: Int) = doc.childrenOf(id).headOption
+  def firstChild(id: Int) = doc.childrenOf(id).headOption
   def str(id: Int) = doc.getNode(id).map(_.data).collect {
     case NodeData.StringData(s) => s }
   def tagged(name: String) =
     ids.filter(id => doc.getNode(id).exists(_.data == pending(name)))
-  val named = tagged("named").flatMap(id => firstKid(id).flatMap(str).map(_ -> id)).toMap
-  tagged("use").flatMap(firstKid).foldLeft(doc) { (d, kid) =>
-    str(kid).flatMap(named.get)
-      .flatMap(t => updateNodeData(kid, NodeData.InternalNodeRef(t), d).toOption)
+  val named = tagged("named").flatMap(id => firstChild(id).flatMap(str).map(_ -> id)).toMap
+  tagged("use").flatMap(firstChild).foldLeft(doc) { (d, child) =>
+    str(child).flatMap(named.get)
+      .flatMap(t => updateNodeData(child, NodeData.InternalNodeRef(t), d).toOption)
       .getOrElse(d)
   }
 }

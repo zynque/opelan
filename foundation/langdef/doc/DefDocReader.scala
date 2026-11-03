@@ -23,17 +23,17 @@ private class DefDocReader(
   lazy val termIds: Map[String, Int] = deriveTermIds(doc, root)
 
   def data(id: Int): Option[NodeData] = doc.getNode(id).map(_.data)
-  def kids(id: Int): List[Int] = doc.childrenOf(id)
+  def children(id: Int): List[Int] = doc.childrenOf(id)
   def str(id: Int): Option[String] =
     data(id).collect { case NodeData.StringData(s) => s }
   def childStr(id: Int, i: Int): Option[String] =
-    kids(id).lift(i).flatMap(str)
+    children(id).lift(i).flatMap(str)
 
   def cons(id: Int): Option[String] = externalRefOf(doc, id).flatMap(metaNameOf)
 
-  def section(name: String): Option[Int] = kids(root).find(cons(_).contains(name))
+  def section(name: String): Option[Int] = children(root).find(cons(_).contains(name))
 
-  def entries(id: Int, name: String): List[Int] = kids(id).filter(cons(_).contains(name))
+  def entries(id: Int, name: String): List[Int] = children(id).filter(cons(_).contains(name))
 
   // A reference leaf read as the name of what it points at (an op's
   // term, a use's rule); a leftover string is taken as the name itself.
@@ -45,7 +45,7 @@ private class DefDocReader(
 
   def shapeFrom(id: Option[Int]): NodeShape = id.flatMap(cons) match {
     case Some("leaf")  => NodeShape.Leaf
-    case Some("fixed") => id.flatMap(i => kids(i).headOption).flatMap(data) match {
+    case Some("fixed") => id.flatMap(i => children(i).headOption).flatMap(data) match {
       case Some(NodeData.IntData(n)) => NodeShape.Fixed(n)
       case _                         => NodeShape.Any
     }
@@ -57,38 +57,38 @@ private class DefDocReader(
     else grammarNode(id, seen + id)
 
   private def grammarNode(id: Int, seen: Set[Int]): GrammarDef = {
-    def sub(i: Int) = kids(id).lift(i).map(grammarFrom(_, seen)).getOrElse(GrammarDef.Hole)
+    def sub(i: Int) = children(id).lift(i).map(grammarFrom(_, seen)).getOrElse(GrammarDef.Hole)
     cons(id) match {
-      case Some("tok")    => GrammarDef.Tok(childStr(id, 0).getOrElse(""), leafFrom(kids(id).lift(1)))
-      case Some("choice") => GrammarDef.Choice(kids(id).map(grammarFrom(_, seen)))
+      case Some("tok")    => GrammarDef.Tok(childStr(id, 0).getOrElse(""), leafFrom(children(id).lift(1)))
+      case Some("choice") => GrammarDef.Choice(children(id).map(grammarFrom(_, seen)))
       case Some("parens") => GrammarDef.Parens(sub(0))
       case Some("signum") => GrammarDef.Signum
       case Some("unrecognized") =>
         GrammarDef.Unrecognized(setFrom(childStr(id, 0)), setFrom(childStr(id, 1)))
-      case Some("chain")  => GrammarDef.ChainLeft(opsFrom(kids(id).lift(1)), sub(0))
+      case Some("chain")  => GrammarDef.ChainLeft(opsFrom(children(id).lift(1)), sub(0))
       case Some("precedence") =>
-        GrammarDef.Precedence(sub(0), kids(id).lift(1).toList.flatMap(kids).map(l => opsFrom(Some(l))))
+        GrammarDef.Precedence(sub(0), children(id).lift(1).toList.flatMap(children).map(l => opsFrom(Some(l))))
       case Some("phrase") => GrammarDef.Phrase(sub(0), setFrom(childStr(id, 1)))
       case Some("named")  => GrammarDef.Named(childStr(id, 0).getOrElse(""), sub(1))
-      case Some("use")    => GrammarDef.Ref(refName(kids(id).headOption))
+      case Some("use")    => GrammarDef.Ref(refName(children(id).headOption))
       case _              => GrammarDef.Hole
     }
   }
 
-  private def leafFrom(kid: Option[Int]): LeafKind = kid.flatMap(cons) match {
+  private def leafFrom(child: Option[Int]): LeafKind = child.flatMap(cons) match {
     case Some("int")   => LeafKind.IntLit
     case Some("float") => LeafKind.FloatLit
     case Some("gap")   => LeafKind.HoleLeaf
-    case Some("ref")   => LeafKind.RefLit(kid.flatMap(childStr(_, 0)).getOrElse(""))
+    case Some("ref")   => LeafKind.RefLit(child.flatMap(childStr(_, 0)).getOrElse(""))
     case _             => LeafKind.Text
   }
 
   private def setFrom(s: Option[String]): Set[String] =
     s.map(_.split(" ").filter(_.nonEmpty).toSet).getOrElse(Set.empty)
 
-  private def opsFrom(kid: Option[Int]): Map[String, String] =
-    kid.toList.flatMap(kids).filter(cons(_).contains("op")).flatMap { opId =>
-      childStr(opId, 0).map(_ -> refName(kids(opId).lift(1)))
+  private def opsFrom(child: Option[Int]): Map[String, String] =
+    child.toList.flatMap(children).filter(cons(_).contains("op")).flatMap { opId =>
+      childStr(opId, 0).map(_ -> refName(children(opId).lift(1)))
     }.toMap
 
   // A `rules` section: each `rule` node through the recovering reader
@@ -98,18 +98,18 @@ private class DefDocReader(
     rules = entries(id, "rule").map(ruleFromDoc(doc, url, version, termIds, _)),
     tiers = entries(id, "binding").flatMap(b =>
       entries(b, "tier").map(t =>
-        Tier(kids(t).flatMap(str).map(readPattern)))),
+        Tier(children(t).flatMap(str).map(readPattern)))),
     examples = entries(id, "example").flatMap(e =>
       childStr(e, 0).map(i => Example(i, childStr(e, 1).getOrElse("")))))
 
   def inputParserFrom(id: Int): Option[InputParserDef] =
-    kids(id).headOption.flatMap { c =>
+    children(id).headOption.flatMap { c =>
       cons(c) match {
         case Some("language") =>
           Some(InputParserDef.Language(
-            kids(c).headOption.flatMap(externalRefOf(doc, _))
+            children(c).headOption.flatMap(externalRefOf(doc, _))
               .getOrElse(ExternalNodeReference("", 0, 0)),
-            kids(c).lift(1).flatMap(cons) match {
+            children(c).lift(1).flatMap(cons) match {
               case Some("as-gap") => InputFallback.Hole
               case _              => InputFallback.Label
             }))

@@ -41,8 +41,8 @@ class CompileSuite extends FunSuite {
       compileRules(set, atom, NodeData.StringData(_), "e",
         lexicals)(In(text, lex), 0).tree)
 
-  private def node(name: String, kids: DetachedNode[NodeData]*) =
-    DetachedNode(NodeData.StringData(name), kids.toList)
+  private def node(name: String, children: DetachedNode[NodeData]*) =
+    DetachedNode(NodeData.StringData(name), children.toList)
   private def lit(v: Int): DetachedNode[NodeData] =
     DetachedNode(NodeData.IntData(v), Nil)
   private def gap(t: String): DetachedNode[NodeData] =

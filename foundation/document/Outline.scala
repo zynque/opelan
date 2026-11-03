@@ -77,6 +77,6 @@ private def block(entries: List[(Int, NodeData)]): List[DetachedNode[NodeData]] 
   entries match {
     case Nil => Nil
     case (indent, data) :: tail =>
-      val (kids, rest) = tail.span(_._1 > indent)
-      DetachedNode(data, block(kids)) :: block(rest)
+      val (children, rest) = tail.span(_._1 > indent)
+      DetachedNode(data, block(children)) :: block(rest)
   }

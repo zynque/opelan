@@ -272,11 +272,11 @@ class WorkbenchUpdateSuite extends munit.FunSuite {
   }
 
   test("children declares all seams and both panes") {
-    val kids = workbench.children(init)
-    assertEquals(kids.map(_.key).toSet,
+    val children = workbench.children(init)
+    assertEquals(children.map(_.key).toSet,
       Set("storage", "prompt", "random", "sync", "doc", "demo"))
-    assertEquals(kids.find(_.key == "doc").map(_.slot), Some("doc"))
-    assertEquals(kids.find(_.key == "demo").map(_.slot), Some("demo"))
+    assertEquals(children.find(_.key == "doc").map(_.slot), Some("doc"))
+    assertEquals(children.find(_.key == "demo").map(_.slot), Some("demo"))
   }
 
   test("saving a dependency cascades pin bumps through opted-in dependents") {

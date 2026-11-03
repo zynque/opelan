@@ -168,8 +168,8 @@ class SheetSuite extends munit.FunSuite {
 
   private def inputSrcs(t: DetachedNode[NodeData]): List[Int] =
     (t match {
-      case DetachedNode(NodeData.StringData("input"), kids) =>
-        kids.collect { case DetachedNode(NodeData.SourceRef(id), _) => id }
+      case DetachedNode(NodeData.StringData("input"), children) =>
+        children.collect { case DetachedNode(NodeData.SourceRef(id), _) => id }
       case _ => Nil
     }) ++ t.children.flatMap(inputSrcs)
 

@@ -49,9 +49,9 @@ private def ruleLine(
               _.data.isInstanceOf[NodeData.StringData]) =>
           input(id, txt(leafText(doc, t)))
         case Some(_) =>
-          val kids = doc.childrenOf(id)
+          val children = doc.childrenOf(id)
           def section(name: String) =
-            kids.find(docCons(doc, _).contains(name))
+            children.find(docCons(doc, _).contains(name))
           (section("pattern"), section("meaning")) match {
             case (Some(p), Some(m)) =>
               val r = ruleFromDoc(doc, "", 0,
@@ -116,7 +116,7 @@ private def commaInputs(
   doc.childrenOf(tierId).map(p => input(p, txt(leafText(doc, p))))
     .flatMap(List(_, txt(", "))).dropRight(1) match {
       case Nil  => List(txt(""))
-      case kids => kids
+      case children => children
     }
 
 // A rule set printed rather than edited — the fallback when the doc

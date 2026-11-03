@@ -35,8 +35,8 @@ class PrintSuite extends FunSuite {
     case _                     => "?"
   })
 
-  private def node(name: String, kids: DetachedNode[NodeData]*) =
-    DetachedNode(NodeData.StringData(name), kids.toList)
+  private def node(name: String, children: DetachedNode[NodeData]*) =
+    DetachedNode(NodeData.StringData(name), children.toList)
   private def lit(v: Int): DetachedNode[NodeData] =
     DetachedNode(NodeData.IntData(v), Nil)
   private def add(l: DetachedNode[NodeData], r: DetachedNode[NodeData]) = node("add", l, r)

@@ -22,10 +22,10 @@ def readRule(
     text: String,
     phrase: (Set[String], String) => Meaning = noLanguage)
     : Either[String, Rule] = {
-  val parts = ruleGrammar(In(text, ruleLexicon), 0).tree.kids
+  val parts = ruleGrammar(In(text, ruleLexicon), 0).tree.children
   val (pattern, keyword, meaning, where) = (parts(0), parts(1), parts(2), parts(3))
   if (!isToken(keyword)) Left("missing 'means'")
-  else if (pattern.kids.isEmpty) Left("empty pattern")
+  else if (pattern.children.isEmpty) Left("empty pattern")
   else if (!isTagged(meaning)) Left("empty meaning")
   else for {
     constraints <- if (isTagged(where)) readWhere(where) else Right(Nil)
@@ -85,7 +85,7 @@ def readPattern(text: String): Pattern = {
 }
 
 private def isToken(t: PTree): Boolean = t.data match {
-  case NodeData.StringData(kind) => t.kids.isEmpty && ruleTokenKinds(kind)
+  case NodeData.StringData(kind) => t.children.isEmpty && ruleTokenKinds(kind)
   case _                         => false
 }
 
@@ -97,12 +97,12 @@ private def tagOf(t: PTree): String = t.data match {
 }
 
 // The tokens under a node, in order, each with its absolute start —
-// a kid's `from` is relative to its parent, so the base accumulates
+// a child's `from` is relative to its parent, so the base accumulates
 // on the way down.
 private def tokensIn(t: PTree): List[(Int, PTree)] = {
   def go(t: PTree, base: Int): List[(Int, PTree)] =
     if (isToken(t)) List((base + t.from, t))
-    else t.kids.flatMap(k => go(k, base + t.from))
+    else t.children.flatMap(k => go(k, base + t.from))
   go(t, 0)
 }
 
@@ -125,33 +125,33 @@ private def pieces(tokens: List[(Int, PTree)]): List[Piece] =
 private def readMeaning(t: PTree, phrase: String => Meaning): Meaning =
   tagOf(t) match {
     case "build" =>
-      val arguments = t.kids(2)
+      val arguments = t.children(2)
       val list =
         if (tagOf(arguments) != "arguments") Nil
-        else arguments.kids(0) :: arguments.kids(1).kids.map(_.kids(1))
-      val tag = t.kids(0).text
+        else arguments.children(0) :: arguments.children(1).children.map(_.children(1))
+      val tag = t.children(0).text
       // A meaning-language builtin spelled like a construct — `source(a)`
       // — takes name-leaf operands; a construct takes meaning terms.
       if (Meaning.builtins(tag))
         Meaning(tag, list.map(a => nameTermOf(a, phrase)))
       else Meaning(tag, list.map(a => readMeaning(a, phrase)))
-    case "use" => Meaning.use(t.kids(0).text)
+    case "use" => Meaning.use(t.children(0).text)
     case _     => phrase(t.text)
   }
 
 // A builtin's operand as a name term — `source(a)` binds `a`'s name,
 // not its meaning.
 private def nameTermOf(t: PTree, phrase: String => Meaning): Meaning =
-  if (tagOf(t) == "use") Meaning.nameTerm(t.kids(0).text)
+  if (tagOf(t) == "use") Meaning.nameTerm(t.children(0).text)
   else readMeaning(t, phrase)
 
 // `a, b: number; c: whole number` — one constraint per group.
 private def readWhere(t: PTree): Either[String, List[Constraint]] = {
-  val groups = t.kids(1) :: t.kids(2).kids.map(_.kids(1))
+  val groups = t.children(1) :: t.children(2).children.map(_.children(1))
   groups.foldRight[Either[String, List[Constraint]]](Right(Nil)) { (g, acc) =>
-    val names = tokensIn(g.kids(0)).map(_._2.text).filterNot(_ == ",")
-    val typed = g.kids(1)
-    val term = if (tagOf(typed) == "typed") tokensIn(typed.kids(1)).map(_._2.text) else Nil
+    val names = tokensIn(g.children(0)).map(_._2.text).filterNot(_ == ",")
+    val typed = g.children(1)
+    val term = if (tagOf(typed) == "typed") tokensIn(typed.children(1)).map(_._2.text) else Nil
     if (tagOf(typed) != "typed") Left("where needs 'placeholders: term'")
     else if (names.isEmpty || term.isEmpty) Left("incomplete where clause")
     else acc.map(Constraint(names, term.mkString(" ")) :: _)

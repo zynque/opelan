@@ -81,8 +81,8 @@ private def meaningSpans(meaning: Meaning): List[Styled] =
 private def quoteText(t: opelan.foundation.grammar.PTree): String =
   t.data match {
     case NodeData.GapData(text) => text
-    case d if t.kids.isEmpty    => NodeDataText.show(d)
-    case _                      => t.kids.map(quoteText).mkString
+    case d if t.children.isEmpty    => NodeDataText.show(d)
+    case _                      => t.children.map(quoteText).mkString
   }
 
 // A builtin's operand — `source(a)`/`builtin(num-add)` bind a name, so

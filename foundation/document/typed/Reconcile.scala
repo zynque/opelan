@@ -47,21 +47,21 @@ def commitContent(
       // the same index is tried before the rest so unchanged positions
       // don't scan. A whole-subtree match leaves it untouched; a
       // data-only match keeps the node and rematches its children.
-      def keep(kid: DetachedNode[NodeData], index: Int): Option[(Int, Boolean)] = {
+      def keep(child: DetachedNode[NodeData], index: Int): Option[(Int, Boolean)] = {
         val ordered = oldIds.lift(index).toList ++ oldIds
         def pick(pred: Int => Boolean): Option[Int] =
           ordered.find(cid => !claimed(cid) && pred(cid))
-        pick(cid => extractExternalized(document, cid).contains(kid))
+        pick(cid => extractExternalized(document, cid).contains(child))
           .map(_ -> true)
           .orElse(
-            if (kid.children.isEmpty) None
-            else pick(cid => externalData(cid).contains(kid.data)).map(_ -> false))
+            if (child.children.isEmpty) None
+            else pick(cid => externalData(cid).contains(child.data)).map(_ -> false))
       }
 
-      val pairs = content.children.zipWithIndex.map { case (kid, i) =>
-        val k = keep(kid, i)
+      val pairs = content.children.zipWithIndex.map { case (child, i) =>
+        val k = keep(child, i)
         k.foreach(p => claimed += p._1)
-        kid -> k
+        child -> k
       }
 
       for {
@@ -76,10 +76,10 @@ def commitContent(
           acc.flatMap { case (d, ids) =>
             pair match {
               case (_, Some((cid, true))) => Right((d, ids :+ cid))
-              case (kid, Some((cid, false))) =>
-                commitContent(cid, kid, d).map(next => (next, ids :+ cid))
-              case (kid, None) =>
-                insertNode(kid, nodeId, d.childrenOf(nodeId).length, d)
+              case (child, Some((cid, false))) =>
+                commitContent(cid, child, d).map(next => (next, ids :+ cid))
+              case (child, None) =>
+                insertNode(child, nodeId, d.childrenOf(nodeId).length, d)
                   .map(next => (next, ids :+ (next.nodes.length - 1)))
             }
           }

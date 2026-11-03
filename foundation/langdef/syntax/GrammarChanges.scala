@@ -124,8 +124,8 @@ private def sameTree(a: Option[PTree], b: Option[PTree]): Boolean =
   (a, b) match {
     case (Some(x), Some(y)) =>
       x.text == y.text && x.from == y.from && x.length == y.length &&
-        sameData(x.data, y.data) && x.kids.length == y.kids.length &&
-        x.kids.zip(y.kids).forall { case (p, q) =>
+        sameData(x.data, y.data) && x.children.length == y.children.length &&
+        x.children.zip(y.children).forall { case (p, q) =>
           sameTree(Some(p), Some(q)) }
     case (None, None) => true
     case _            => false

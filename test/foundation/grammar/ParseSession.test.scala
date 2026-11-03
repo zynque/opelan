@@ -44,10 +44,10 @@ class ParseSessionSuite extends FunSuite {
   private def full(g: Parser, text: String) =
     normal(g(In(text, lexicon, MemoTable(marking = true)), 0))
 
-  // Two statement nodes hold the same subtree: their kid lists are the
+  // Two statement nodes hold the same subtree: their child lists are the
   // same object (memoized results share their graphs when reused).
   private def sameSubtree(a: PTree, b: PTree): Boolean =
-    a.kids.nonEmpty && (a.kids eq b.kids)
+    a.children.nonEmpty && (a.children eq b.children)
 
   test("a fresh session equals a plain parse") {
     val s = ParseSession.start(g1, lexicon, "1 + 2; ab cd; (3 * 4)")
@@ -75,7 +75,7 @@ class ParseSessionSuite extends FunSuite {
     assertEquals(normal(s1.result), full(g1, s1.text))
     assert(s1.evaluations * 4 < s0.evaluations,
       s"${s1.evaluations} evaluations after the edit vs ${s0.evaluations} initially")
-    val (before, after) = (s0.tree.kids, s1.tree.kids)
+    val (before, after) = (s0.tree.children, s1.tree.children)
     assert(sameSubtree(after(0), before(0)))     // before the edit: reused
     assert(sameSubtree(after(19), before(19)))   // after the edit: reused, unmoved
     assert(!sameSubtree(after(14), before(14)))  // the edited statement: new
@@ -91,7 +91,7 @@ class ParseSessionSuite extends FunSuite {
     assertEquals(normal(s1.result), full(g1, s1.text))
     // Statements after the edit sit at later absolute positions, but
     // their subtrees are the same objects — nothing was shifted.
-    val (before, after) = (s0.tree.kids, s1.tree.kids)
+    val (before, after) = (s0.tree.children, s1.tree.children)
     assert(sameSubtree(after(7), before(7)))
     assertNotEquals(
       spansOf(s1.tree)(List(7)), spansOf(s0.tree)(List(7)))
@@ -120,7 +120,7 @@ class ParseSessionSuite extends FunSuite {
     // The new `words` rule splits "ab cd" into two statements, so find
     // statements by their text: the numeric ones never called `words`.
     def statement(s: ParseSession, text: String) =
-      s.tree.kids.find(_.text == text).get
+      s.tree.children.find(_.text == text).get
     assert(sameSubtree(statement(s1, "1 + 2;"), statement(s0, "1 + 2;")))
     assert(sameSubtree(statement(s1, "3 * 4;"), statement(s0, "3 * 4;")))
     assert(!sameSubtree(statement(s1, "ef"), statement(s0, "ef")))

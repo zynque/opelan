@@ -71,21 +71,21 @@ object ViewTree {
   // reparses as gaps.
   def flatten(t: DetachedNode[NodeData]): String = t match {
     case DetachedNode(NodeData.SourceRef(_), _) => ""
-    case DetachedNode(NodeData.GapData(text), kids) =>
-      (if (text.isEmpty) "?" else text) + kids.map(flatten).mkString
-    case DetachedNode(NodeData.StringData(tag), kids) if tags(tag) =>
+    case DetachedNode(NodeData.GapData(text), children) =>
+      (if (text.isEmpty) "?" else text) + children.map(flatten).mkString
+    case DetachedNode(NodeData.StringData(tag), children) if tags(tag) =>
       val sep = tag match {
         case "block" | "grid" => "\n"
         case "row"            => "\t"
         case _                => ""
       }
-      kids.map(flatten).mkString(sep)
-    case DetachedNode(NodeData.StringData(tag), kids) if kids.nonEmpty =>
-      s"?$tag" + kids.map(flatten).mkString
+      children.map(flatten).mkString(sep)
+    case DetachedNode(NodeData.StringData(tag), children) if children.nonEmpty =>
+      s"?$tag" + children.map(flatten).mkString
     case DetachedNode(NodeData.StringData(s), _) => s
-    case DetachedNode(NodeData.IntData(i), kids) =>
-      i.toString + kids.map(flatten).mkString
-    case DetachedNode(data, kids) =>
-      NodeDataText.show(data) + kids.map(flatten).mkString
+    case DetachedNode(NodeData.IntData(i), children) =>
+      i.toString + children.map(flatten).mkString
+    case DetachedNode(data, children) =>
+      NodeDataText.show(data) + children.map(flatten).mkString
   }
 }

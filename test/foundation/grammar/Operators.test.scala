@@ -24,8 +24,8 @@ class OperatorsSuite extends FunSuite {
   private def parse(p: Parser, text: String): DetachedNode[NodeData] =
     toDetached(p(In(text, lex), 0).tree)
 
-  private def node(name: String, kids: DetachedNode[NodeData]*) =
-    DetachedNode(NodeData.StringData(name), kids.toList)
+  private def node(name: String, children: DetachedNode[NodeData]*) =
+    DetachedNode(NodeData.StringData(name), children.toList)
   private def lit(v: Int): DetachedNode[NodeData] =
     DetachedNode(NodeData.IntData(v), Nil)
 

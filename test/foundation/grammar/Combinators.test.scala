@@ -44,8 +44,8 @@ class CombinatorSuite extends FunSuite {
     val r = chainLeft(Map("-" -> tag("sub")))(int)(in("1 - 2 - 3"), 0)
     assertEquals(r.pos, 9)
     assertEquals(r.tree.data, tag("sub"))
-    assertEquals(r.tree.kids(0).data, tag("sub"))
-    assertEquals(r.tree.kids(1).data, NodeData.IntData(3))
+    assertEquals(r.tree.children(0).data, tag("sub"))
+    assertEquals(r.tree.children(1).data, NodeData.IntData(3))
   }
 
   test("precedenceTable binds the last level loosest") {
@@ -55,7 +55,7 @@ class CombinatorSuite extends FunSuite {
     val r = p(in("1+2*3"), 0)
     assertEquals(r.pos, 5)
     assertEquals(r.tree.data, tag("add"))
-    assertEquals(r.tree.kids(1).data, tag("mul"))
+    assertEquals(r.tree.children(1).data, tag("mul"))
   }
 
   test("parens stops at ')' and a missing close is tolerated") {

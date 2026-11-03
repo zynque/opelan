@@ -89,7 +89,7 @@ def hasGap(m: Meaning): Boolean =
   m.arguments.exists(hasGap) || m.quoted.exists(gapTree)
 
 private def gapTree(t: PTree): Boolean =
-  t.data.isInstanceOf[NodeData.GapData] || t.kids.exists(gapTree)
+  t.data.isInstanceOf[NodeData.GapData] || t.children.exists(gapTree)
 
 // The node data a placeholder atom emits — a mark the desugar's
 // translation turns into `use`. The mark survives `use`-meaning
@@ -120,7 +120,7 @@ def toTerm(t: PTree, names: Map[NodeData, String]): Meaning =
   if (t.data == PlaceholderMark) Meaning.use(t.text)
   else names.get(t.data) match {
     case Some(name) =>
-      Meaning(name, t.kids.map(k => toTerm(k, names)), refOf(t.data))
+      Meaning(name, t.children.map(k => toTerm(k, names)), refOf(t.data))
     case None => Meaning.quote(scrubbed(t))
   }
 
@@ -130,7 +130,7 @@ def toTerm(t: PTree, names: Map[NodeData, String]): Meaning =
 private def scrubbed(t: PTree): PTree =
   if (t.data == PlaceholderMark)
     t.copy(data = NodeData.GapData(t.text))
-  else t.copy(kids = t.kids.map(scrubbed))
+  else t.copy(children = t.children.map(scrubbed))
 
 private def refOf(d: NodeData): Option[ExternalNodeReference] = d match {
   case NodeData.ExternalNodeRef(r) => Some(r)

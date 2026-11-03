@@ -49,7 +49,7 @@ case class Pattern(pieces: List[Piece]) {
 // vocabulary entry, a placeholder's pattern piece; rules written in code or text
 // have none until encoded, and a placeholder resolves by name within
 // its rule. `quoted` holds a `quote` term's subtree — concrete content
-// a phrase desugared to, stored as a parse tree whose kids' offsets
+// a phrase desugared to, stored as a parse tree whose children's offsets
 // are relative, ready to re-span onto a match. A quoted hole is the
 // stored form of a phrase the set couldn't yet read (Never Broken).
 case class Meaning(

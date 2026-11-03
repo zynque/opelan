@@ -174,7 +174,7 @@ class TypedDocSuite extends munit.FunSuite {
     val total = cellId(m.doc, 1, 3) // Apples' line total = qty * price
     val refs = m.doc.childrenOf(total)
     val Seq(NodeData.InternalNodeRef(qty), NodeData.InternalNodeRef(price)) =
-      refs.map(id => m.doc.getNode(id).get.data)
+      refs.map(id => m.doc.getNode(id).get.data).runtimeChecked
     val u = typedDocUpdate(
       m, TypedDocInput.CommitInputText(total, s"ref:$qty + ref:$price"))
     // mul → add changed the node's data, but the ref nodes kept their
@@ -200,7 +200,7 @@ class TypedDocSuite extends munit.FunSuite {
       init.copy(store = seeded), TypedDocInput.LoadSheetSample).state
     val total = cellId(m.doc, 1, 3)
     val Seq(NodeData.InternalNodeRef(qty), _) =
-      m.doc.childrenOf(total).map(id => m.doc.getNode(id).get.data)
+      m.doc.childrenOf(total).map(id => m.doc.getNode(id).get.data).runtimeChecked
     // Parenthesized terms: each is its own memoized rule application.
     val long = (1 to 10).map(i => s"(ref:$qty * $i)").mkString(" + ")
     val u1 = typedDocUpdate(m, TypedDocInput.CommitInputText(total, long))

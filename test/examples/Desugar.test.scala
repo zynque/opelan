@@ -65,8 +65,8 @@ class DesugarSuite extends munit.FunSuite {
       n(exprTag("div"), il(5), il(100)))
     // The `5` is the bound node — its real source span, not a
     // reparsed copy's synthetic one.
-    assertEquals(tree.kids(0).text, "5")
-    assertEquals((tree.kids(0).from, tree.kids(0).length), (0, 1))
+    assertEquals(tree.children(0).text, "5")
+    assertEquals((tree.children(0).from, tree.children(0).length), (0, 1))
     val grown = parse(g, "(2 + 3) %")
     assertEquals(toDetached(grown),
       n(exprTag("div"), n(exprTag("add"), il(2), il(3)), il(100)))

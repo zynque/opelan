@@ -15,14 +15,14 @@ def sequence(data: NodeData)(parts: Parser*): Parser =
   (in, pos) => {
     var cur = pos
     var seen = pos
-    val kids = List.newBuilder[PTree]
+    val children = List.newBuilder[PTree]
     val ok = parts.forall { p =>
       val r = p(in, cur)
       seen = seen.max(r.examined)
-      if (r.ok) { kids += r.tree; cur = r.pos }
+      if (r.ok) { children += r.tree; cur = r.pos }
       r.ok
     }
-    if (ok) POut(cur, node(in, data, kids.result(), pos), ok = true, seen)
+    if (ok) POut(cur, node(in, data, children.result(), pos), ok = true, seen)
     else emptyHole(in, pos, seen)
   }
 
@@ -31,15 +31,15 @@ def many(data: NodeData)(p: Parser): Parser =
   (in, pos) => {
     var cur = pos
     var seen = pos
-    val kids = List.newBuilder[PTree]
+    val children = List.newBuilder[PTree]
     var more = true
     while (more) {
       val r = p(in, cur)
       seen = seen.max(r.examined)
-      if (r.ok && r.pos > cur) { kids += r.tree; cur = r.pos }
+      if (r.ok && r.pos > cur) { children += r.tree; cur = r.pos }
       else more = false
     }
-    POut(cur, node(in, data, kids.result(), pos), ok = true, seen)
+    POut(cur, node(in, data, children.result(), pos), ok = true, seen)
   }
 
 // `p`, or nothing.
@@ -76,13 +76,13 @@ def anyToken: Parser = (in, pos) => {
   }
 }
 
-// A node spanning its children (or the empty range at `pos`). The kids,
+// A node spanning its children (or the empty range at `pos`). The children,
 // which still carry absolute `from`s, are adopted: rebased to offsets
 // from this node's start.
 private def node(
-    in: In, data: NodeData, kids: List[PTree], pos: Int): PTree = {
-  val from = kids.headOption.map(_.from).getOrElse(pos)
-  val to = kids.lastOption.map(_.to).getOrElse(pos)
+    in: In, data: NodeData, children: List[PTree], pos: Int): PTree = {
+  val from = children.headOption.map(_.from).getOrElse(pos)
+  val to = children.lastOption.map(_.to).getOrElse(pos)
   PTree(data, in.input.substring(from, to), from, to - from,
-    kids.map(adopted(_, from)))
+    children.map(adopted(_, from)))
 }

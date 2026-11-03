@@ -295,9 +295,9 @@ class LangDefDocSuite extends FunSuite {
 
   // The SourceRef ids of every `input` element in a view tree.
   private def inputSourceIds(t: DetachedNode[NodeData]): List[Int] = t match {
-    case DetachedNode(NodeData.StringData("input"), kids) =>
-      kids.collect { case DetachedNode(NodeData.SourceRef(id), _) => id } ++
-        kids.flatMap(inputSourceIds)
+    case DetachedNode(NodeData.StringData("input"), children) =>
+      children.collect { case DetachedNode(NodeData.SourceRef(id), _) => id } ++
+        children.flatMap(inputSourceIds)
     case _ => t.children.flatMap(inputSourceIds)
   }
 

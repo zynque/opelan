@@ -13,9 +13,9 @@ class ViewTreeViewSuite extends munit.FunSuite {
 
   test("elements map to their tags; leaves render as text") {
     vt(cell(txt("x"))) match {
-      case View.Elem(tag, _, _, kids) =>
+      case View.Elem(tag, _, _, children) =>
         assertEquals(tag, "td")
-        assertEquals(kids, Vector(View.Text("x")))
+        assertEquals(children, Vector(View.Text("x")))
       case other => fail(s"expected cell element, got $other")
     }
     assertEquals(vt(txt("hi")), View.Text("hi"))
@@ -56,13 +56,13 @@ class ViewTreeViewSuite extends munit.FunSuite {
 
   test("an unknown tag degrades to a hole chip plus rendered children") {
     vt(n(s("mystery"), sl("inner"))) match {
-      case View.Elem("div", _, _, kids) =>
-        assertEquals(kids.length, 2)
-        assert(kids.head match {
+      case View.Elem("div", _, _, children) =>
+        assertEquals(children.length, 2)
+        assert(children.head match {
           case View.Elem("span", _, _, Vector(View.Text("?mystery"))) => true
           case _ => false
         })
-        assertEquals(kids(1), View.Text("inner"))
+        assertEquals(children(1), View.Text("inner"))
       case other => fail(s"expected block, got $other")
     }
   }

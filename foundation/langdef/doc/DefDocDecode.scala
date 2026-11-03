@@ -40,7 +40,7 @@ def langDefFromDocument(
     vocabulary = r.section("vocabulary").map { sid =>
       r.entries(sid, "term").map(k => NodeTerm(
         r.childStr(k, 0).getOrElse(""),
-        r.shapeFrom(r.kids(k).lift(1)),
+        r.shapeFrom(r.children(k).lift(1)),
         Some(ExternalNodeReference(url, version, k))))
     }.getOrElse(
       r.section("syntax").toList
@@ -49,7 +49,7 @@ def langDefFromDocument(
     syntax = r.section("syntax").map { sid =>
       SyntaxDef(
         r.childStr(sid, 0).getOrElse(""),
-        r.kids(sid).lift(1).map(k => r.grammarFrom(k))
+        r.children(sid).lift(1).map(k => r.grammarFrom(k))
           .getOrElse(GrammarDef.Hole),
         r.entries(sid, "rules").headOption.map(r.ruleSetFrom))
     },

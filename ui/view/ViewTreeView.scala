@@ -22,36 +22,36 @@ def viewTree[I](
     t: DetachedNode[NodeData],
     onSource: Int => I,
     onEdit: (Int, String) => I): View[I] = {
-  val (src, kids) = t.children match {
+  val (src, children) = t.children match {
     case DetachedNode(NodeData.SourceRef(id), Nil) :: rest => (Some(id), rest)
     case _ => (None, t.children)
   }
   if (t.data == NodeData.StringData("input"))
-    src.fold(holeView("?input"))(id => inputView(id, kids, onEdit))
+    src.fold(holeView("?input"))(id => inputView(id, children, onEdit))
   else {
-    val v = content(t.data, kids, onSource, onEdit)
+    val v = content(t.data, children, onSource, onEdit)
     src.fold(v)(id => annotated(v, id, onSource))
   }
 }
 
 private def content[I](
     data: NodeData,
-    kids: List[DetachedNode[NodeData]],
+    children: List[DetachedNode[NodeData]],
     onSource: Int => I,
     onEdit: (Int, String) => I): View[I] =
   data match {
     case NodeData.StringData(tag) if ViewTree.tags(tag) =>
-      element(tag, kids.map(k => viewTree(k, onSource, onEdit)))
-    case NodeData.StringData(tag) if kids.nonEmpty =>
+      element(tag, children.map(k => viewTree(k, onSource, onEdit)))
+    case NodeData.StringData(tag) if children.nonEmpty =>
       // An unrecognized element: surface the tag as a hole, children
       // still render.
       element("block",
-        holeView(s"?$tag") +: kids.map(k => viewTree(k, onSource, onEdit)))
+        holeView(s"?$tag") +: children.map(k => viewTree(k, onSource, onEdit)))
     case NodeData.StringData(s) => text(s)
     case NodeData.GapData(t) =>
       val chip = holeView(if (t.isEmpty) "?" else t)
-      if (kids.isEmpty) chip
-      else els("span")(chip +: kids.map(k => viewTree(k, onSource, onEdit)))
+      if (children.isEmpty) chip
+      else els("span")(chip +: children.map(k => viewTree(k, onSource, onEdit)))
     case other =>
       // Scalars render as text; refs and stray SourceRefs become holes.
       val lead = other match {
@@ -59,26 +59,26 @@ private def content[I](
         case NodeData.FloatData(f) => text(f.toString)
         case d                     => holeView(NodeDataText.show(d))
       }
-      if (kids.isEmpty) lead
+      if (children.isEmpty) lead
       else element("block",
-        lead +: kids.map(k => viewTree(k, onSource, onEdit)))
+        lead +: children.map(k => viewTree(k, onSource, onEdit)))
   }
 
-private def element[I](tag: String, kids: Iterable[View[I]]): View[I] =
+private def element[I](tag: String, children: Iterable[View[I]]): View[I] =
   tag match {
     case "block" =>
-      els("div", style("display: flex; flex-direction: column;"))(kids)
-    case "flow" => els("span")(kids)
+      els("div", style("display: flex; flex-direction: column;"))(children)
+    case "flow" => els("span")(children)
     case "heading" =>
-      els("div", style("font-weight: bold; margin-bottom: 4px;"))(kids)
+      els("div", style("font-weight: bold; margin-bottom: 4px;"))(children)
     case "grid" =>
       el("table", style("border-collapse: collapse;"))(
-        els("tbody")(kids.map(asRow)))
-    case "row" => els("tr")(kids.map(asCell))
-    case "cell" => els("td", style(cellCss))(kids)
+        els("tbody")(children.map(asRow)))
+    case "row" => els("tr")(children.map(asCell))
+    case "cell" => els("td", style(cellCss))(children)
     case "hcell" =>
       els("th",
-        style(cellCss + " text-align: left; background: #f5f5f5;"))(kids)
+        style(cellCss + " text-align: left; background: #f5f5f5;"))(children)
   }
 
 private val cellCss = "border: 1px solid #ddd; padding: 2px 8px;"
@@ -175,13 +175,13 @@ private def annotated[I](v: View[I], id: Int, onSource: Int => I): View[I] = {
     Some(onSource(id))
   }
   v match {
-    case View.Elem(tag, attrs, evs, kids) =>
+    case View.Elem(tag, attrs, evs, children) =>
       View.Elem(tag,
         attrs
           .updated("title", s"node #$id")
           .updated("style", attrs.getOrElse("style", "") + " cursor: pointer;"),
         evs + ("click" -> click),
-        kids)
+        children)
     case other =>
       el("span",
         Map("title" -> s"node #$id", "style" -> "cursor: pointer;"),
@@ -192,7 +192,7 @@ private def annotated[I](v: View[I], id: Int, onSource: Int => I): View[I] = {
 
 private def containsInput[I](v: View[I]): Boolean = v match {
   case View.Elem("input", _, _, _)  => true
-  case View.Elem(_, _, _, kids)     => kids.exists(containsInput)
+  case View.Elem(_, _, _, children)     => children.exists(containsInput)
   case _                            => false
 }
 

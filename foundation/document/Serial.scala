@@ -46,10 +46,10 @@ private def fromEntries(
     next += 1; next - 1
   })
   val parents = parentRows(rows.map(_._1))
-  val kids = parents.zipWithIndex.collect { case (Some(p), i) => p -> ids(i) }
+  val children = parents.zipWithIndex.collect { case (Some(p), i) => p -> ids(i) }
     .groupMap(_._1)(_._2)
   val byId = rows.indices.map { i =>
-    ids(i) -> Node(0, rows(i)._3, kids.getOrElse(i, Vector.empty).toList,
+    ids(i) -> Node(0, rows(i)._3, children.getOrElse(i, Vector.empty).toList,
       parents(i).map(ids))
   }.toMap
   Document(ids(0), Vector.tabulate(next)(id =>

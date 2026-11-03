@@ -75,11 +75,11 @@ def parens(inner: => Parser): Parser =
           case _ =>
             val text = in.input.substring(t.from, end)
             // The node grows to cover the parens: its start moves back
-            // to "(", so its kids' relative offsets grow by that much.
+            // to "(", so its children's relative offsets grow by that much.
             val shift = r.tree.from - t.from
             POut(endPos, r.tree.copy(text = text, from = t.from,
               length = end - t.from,
-              kids = r.tree.kids.map(k => k.copy(from = k.from + shift))),
+              children = r.tree.children.map(k => k.copy(from = k.from + shift))),
               ok = true, seen)
         }
       case _ => emptyHole(in, pos, open.examined)
