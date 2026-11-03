@@ -76,6 +76,11 @@ different needs:
   per
   [*Everything by reference*](../document/typed/DESIGN.md)),
   so the memo key survives renames and only real changes invalidate.
+  Rules decoded from a `lang:` document key by their rule node
+  (`means:#N`), compared canonically — placeholders normalized by
+  position — so a placeholder rename invalidates nothing while a
+  meaning change or a re-created node still does; code-authored rules
+  fall back to pattern-key names.
   Stored documents are trees and need no reparse at all: a language
   change re-renders views and retries the holes whose failed parse
   called a changed rule — the demo's healing moment, done
