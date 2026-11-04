@@ -126,8 +126,19 @@ class CompileSuite extends FunSuite {
   // on the def side; a plain term map here at the engine level.
   private val lexicals = Map(
     "number" -> LexicalTerm(
-      parser = tok("int")(t => NodeData.IntData(t.text.toInt)),
+      parser = Some(tok("int")(t => NodeData.IntData(t.text.toInt))),
       check = _.isInstanceOf[NodeData.IntData]))
+
+  // A token-reading term whose data is a ref, and `value` — a
+  // check-only term (no token production) accepting everything but a
+  // ref, the way the workbench's `value` excludes InternalNodeRef.
+  private val cellLexicals = Map(
+    "cell" -> LexicalTerm(
+      parser = Some(tok("word")(_ => NodeData.InternalNodeRef(1))),
+      check = _.isInstanceOf[NodeData.InternalNodeRef]),
+    "value" -> LexicalTerm(
+      parser = None,
+      check = !_.isInstanceOf[NodeData.InternalNodeRef]))
 
   test("a lone-placeholder rule bound to a leaf is an operand") {
     val set = RuleSet(
@@ -182,5 +193,54 @@ class CompileSuite extends FunSuite {
     // surfaces as the hole.
     assertEquals(parse(set, "(x) + 5", lexicals), gap("(x) + 5"))
     assertEquals(parse(set, "5 + (x)", lexicals), gap("5 + (x)"))
+  }
+
+  test("a check-only where term constrains operator operands") {
+    val set = RuleSet(
+      rules = List(
+        aRule("c means c where c: cell"),
+        aRule("(a) means a"),
+        aRule("a + b means add(a, b) where a, b: value")),
+      tiers = List(Tier(List(readPattern("a + b")))))
+    assertEquals(parse(set, "5 + 6", cellLexicals),
+      node("add", lit(5), lit(6)))
+    assertEquals(parse(set, "(5) + 6", cellLexicals),
+      node("add", lit(5), lit(6)))
+    // A bound ref violates — the whole application is the hole.
+    assertEquals(parse(set, "x + 5", cellLexicals), gap("x + 5"))
+    assertEquals(parse(set, "5 + x", cellLexicals), gap("5 + x"))
+    // A bound hole satisfies provisionally — unknown, not wrong.
+    assertEquals(parse(set, "5 + ", cellLexicals),
+      node("add", lit(5), gap("")))
+  }
+
+  test("a check-only where in a sequence reads an expression, then checks") {
+    // `value` has no token production: the placeholder parses a full
+    // expression and the check runs on the bound tree — a violation
+    // fails the piece and recovery holes the rule.
+    val set = RuleSet(
+      rules = List(
+        aRule("c means c where c: cell"),
+        aRule("a + b means add(a, b)"),
+        aRule("pick a done means got(a) where a: value")),
+      tiers = List(Tier(List(readPattern("a + b")))))
+    assertEquals(parse(set, "pick 5 + 6 done", cellLexicals),
+      node("got", node("add", lit(5), lit(6))))
+    assertEquals(parse(set, "pick x done", cellLexicals),
+      gap("pick x done"))
+  }
+
+  test("a check-only bound placeholder keeps operator precedence") {
+    // `-a where a: value` reads a sub-expression, so the rule is an
+    // operator, not a token-reading operand production like `-n`.
+    val set = RuleSet(
+      rules = List(
+        aRule("-a means neg(a) where a: value"),
+        aRule("a + b means add(a, b)")),
+      tiers = List(
+        Tier(List(readPattern("-a"))),
+        Tier(List(readPattern("a + b")))))
+    assertEquals(parse(set, "-1 + 2", cellLexicals),
+      node("add", node("neg", lit(1)), lit(2)))
   }
 }

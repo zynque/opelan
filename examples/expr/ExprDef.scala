@@ -111,8 +111,7 @@ val exprImpls = Impls(
       "whole number" -> LeafDef(List("int" -> IntLit)),
       "int"          -> LeafDef(List("int" -> IntLit)),
       "float"        -> LeafDef(List("float" -> FloatLit)),
-      "ref"          -> LeafDef(List("ref" -> RefLit("ref:"))),
-      "gap"          -> LeafDef(List("hole" -> HoleLeaf)))
+      "ref"          -> LeafDef(List("ref" -> RefLit("ref:"))))
   },
   views = Map(
     "expr-print" -> ((doc, id, _) =>

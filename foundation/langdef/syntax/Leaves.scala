@@ -43,14 +43,38 @@ private def dataMatches(leaf: LeafKind, data: NodeData): Boolean =
     case _                                                => false
   }
 
-// Every leaf an Impls names as a LexicalTerm — the `where` table
-// compileRules binds constraint terms through. Operand status is
-// not a leaf property: a lone-placeholder rule bound to the
-// production (`n means n where n: number`) is what makes tokens
-// operands.
+// Every leaf an Impls names as a LexicalTerm, plus the kernel's
+// standard `where` terms — the `where` table compileRules binds
+// constraint terms through. Operand status is not a leaf property:
+// a lone-placeholder rule bound to the production (`n means n where
+// n: number`) is what makes tokens operands, unless the term flags
+// itself an operand as the kernel's `gap` does. An Impls leaf
+// naming a standard term overrides it.
 def lexicalTerms(impls: Impls): Map[String, LexicalTerm] =
-  impls.leaves.map { case (name, theLeaf) =>
-    name -> LexicalTerm(leafParser(theLeaf), leafAccepts(theLeaf)) }
+  standardTerms ++ impls.leaves.map { case (name, theLeaf) =>
+    name -> LexicalTerm(Some(leafParser(theLeaf)), leafAccepts(theLeaf)) }
+
+// The workbench's hole leaf: the `hole` token reads as a gap.
+private val gapLeaf = LeafDef(List("hole" -> LeafKind.HoleLeaf))
+
+// The `where` terms every language gets, kernel-provided. `gap` is
+// the builtin operand: the workbench's hole token stands alone as a
+// gap operand in every language with no authored rule (holes are
+// kernel machinery, not language content — a language may opt out
+// later, for now none can). `value` is a check-only constraint on a
+// bound tree that reads no token of its own: "a real value of the
+// language" — a bound cell ref (InternalNodeRef) or provenance ref
+// (SourceRef) is a workbench leaf, not a value; a bound hole
+// satisfies provisionally — its value is unknown, not wrong (Never
+// Broken).
+val standardTerms: Map[String, LexicalTerm] =
+  Map(
+    "gap" -> LexicalTerm(
+      Some(leafParser(gapLeaf)), leafAccepts(gapLeaf), operand = true),
+    "value" -> LexicalTerm(None, {
+      case _: NodeData.InternalNodeRef | _: NodeData.SourceRef => false
+      case _                                                  => true
+    }))
 
 // How a token's text becomes leaf node data — the shared mapping
 // GrammarDef.Tok alternatives and leaf productions both use.

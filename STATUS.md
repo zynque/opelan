@@ -5,7 +5,7 @@ what comes next. What works is described per package in each folder's
 `DESIGN.md`; the root `DESIGN.md` covers architecture and rationale;
 `DEMO.md` is the demo being worked toward.
 
-Last updated: 2026-10-29
+Last updated: 2026-11-04
 
 The project is in Phase 1 (foundation & vocabulary system). **Next major
 series:** replacing combinator-based language definitions with
@@ -143,6 +143,32 @@ steps*, item 1).
        `where` behind a marker, in the `def` view, separate from
        show/hide implementation; violated constraints surface as
        holes at every zoom level.
+     - **Value-level `where` — types, not tokens.** Today's `where`
+       binds only leaf productions: `n: number` means an int/float
+       *token* fills `n`. `a, b: int` meaning "the bound subtree has
+       type int" is a different constraint, and needs:
+       - *A type vocabulary.* `Constraint.term` is free text
+         resolved only against `lexicals` (an unknown term is
+         silently dropped); types want their own namespace — a
+         small builtin set first, declared per-construct rather
+         than per-token.
+       - *Construct signatures.* The inference source: `add`/`mul`
+         declare argument and result types — on the builtin
+         registry *Semantics as rules* exposes — so
+         `a + b means add(a, b)` derives `a, b: number` unwritten
+         (`foundation/means/DESIGN.md`, *Placeholders and `where`*:
+         implied constraints show only on zoom-in).
+       - *`typeOf` over holey trees.* Enforcement stays a
+         post-binding check like `leafAccepts`, but on the bound
+         subtree's inferred type — the result type of the construct
+         that produced it, structural rather than evaluated. A gap
+         operand's type is unknown: it satisfies provisionally, not
+         violates (Never Broken). The thin end of *Immediately
+         typed* (open question 3) and the matching half of item 4.
+       - *Spelling.* Distinguish a leaf binding (`n: number`) from
+         a type binding (`a: int`) in `where` — separate namespaces
+         or a marker — before authored type constraints can coexist
+         with token ones.
      - **Cycle prevention in the editor.** Completion on a meaning
        offers only rules below it in the DAG.
      - **Self-description.** The language-definition language's own

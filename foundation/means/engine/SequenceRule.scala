@@ -25,9 +25,13 @@ import opelan.foundation.means._
 // name a language change reports to invalidate.
 //
 // `bound` holds this rule's `where`-constrained placeholders as
-// leaf terms (compileRules' boundLexicals): a bound placeholder
-// reads its leaf production's token rather than a full expression,
-// so `ref:c,r where c, r: whole number` can't pick up a phrase.
+// `where` terms (compileRules' boundLexicals): a placeholder bound
+// to a token-reading term reads its production's token rather than
+// a full expression, so `ref:c,r where c, r: whole number` can't
+// pick up a phrase. A placeholder bound to a check-only term
+// (`value`) still parses a full expression, then the term's `check`
+// runs on the bound tree — a violation fails the piece, so the
+// rule's recovery holes it like an unmatched literal.
 //
 // Glue is lexical adjacency: a glued piece must start exactly where
 // the previous piece ended — when *both* pieces are lexical (a
@@ -47,7 +51,8 @@ def sequenceRule(
   }
   def lexical(piece: Piece): Boolean = piece match {
     case Piece.Literal(_, _)        => true
-    case Piece.Placeholder(name, _) => bound.contains(name)
+    case Piece.Placeholder(name, _) =>
+      bound.get(name).exists(_.parser.isDefined)
   }
   def tight(i: Int): Boolean =
     pieces(i).glued && lexical(pieces(i - 1)) && lexical(pieces(i))
@@ -75,10 +80,16 @@ def sequenceRule(
                 case None    => failedAt = Some(i)
               }
             case Piece.Placeholder(name, _) =>
-              val r = bound.get(name).map(_.parser)
+              val term = bound.get(name)
+              val r = term.flatMap(_.parser)
                 .getOrElse(expression)(in, cur)
               seen = seen.max(r.examined)
-              if (tight(i) && r.ok && r.tree.from != cur)
+              // A check-only `where` term constrains the bound tree
+              // after the expression parse — a violation fails the
+              // piece like an unmatched literal.
+              val violated = r.ok && term.exists(t =>
+                t.parser.isEmpty && !t.check(r.tree.data))
+              if (violated || (tight(i) && r.ok && r.tree.from != cur))
                 failedAt = Some(i)
               else {
                 bindings += name -> r.tree

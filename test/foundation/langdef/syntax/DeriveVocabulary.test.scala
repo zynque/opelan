@@ -84,10 +84,22 @@ class DeriveVocabularySuite extends FunSuite {
       "number" -> LeafDef(List("float" -> FloatLit, "int" -> IntLit)),
       "ref"    -> LeafDef(List("ref" -> RefLit("ref:")))))
     val terms = lexicalTerms(impls)
-    assertEquals(terms.keySet, Set("number", "ref"))
+    assertEquals(terms.keySet, Set("gap", "number", "ref", "value"))
     assert(terms("number").check(NodeData.IntData(3)))
     assert(terms("number").check(NodeData.FloatData(1.5)))
     assert(!terms("number").check(NodeData.InternalNodeRef(1)))
     assert(terms("ref").check(NodeData.InternalNodeRef(1)))
+    // `gap` is the kernel's operand term: the hole token reads as a
+    // gap in every language, no authored rule required.
+    assert(terms("gap").operand)
+    assert(terms("gap").parser.isDefined)
+    assert(terms("gap").check(NodeData.GapData("x")))
+    assert(!terms("gap").check(NodeData.IntData(3)))
+    // `value` is the workbench's check-only term: no token production,
+    // refs excluded, holes provisionally satisfied.
+    assert(terms("value").parser.isEmpty)
+    assert(!terms("value").check(NodeData.InternalNodeRef(1)))
+    assert(terms("value").check(NodeData.GapData("x")))
+    assert(terms("value").check(NodeData.IntData(3)))
   }
 }

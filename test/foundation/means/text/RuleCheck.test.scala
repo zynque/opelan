@@ -36,7 +36,7 @@ class RuleCheckSuite extends FunSuite {
   test("a where term the leaf vocabulary doesn't name is reported") {
     val r = read("a + b means add(a, b) where a, b: numbre")
     assertEquals(ruleIssues(r, Set("number")),
-      List("where names 'numbre', which is not a leaf production"))
+      List("where names 'numbre', which is not a leaf production or check term"))
   }
 
   private val arithmetic = RuleSet(

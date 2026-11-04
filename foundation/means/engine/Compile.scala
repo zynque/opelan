@@ -10,16 +10,24 @@ import opelan.foundation.means._
 //
 //   compileRules(exprRules, leafAtom, termTag, "expr", lexicals)
 //
-// A named leaf production, as compileRules sees it: `where` binds a
-// placeholder to one by name — a sequence placeholder then parses
-// the production's token, and an operator operand bound to it is
-// checked after binding (a violation surfaces the whole application
-// as a hole). Which leaves stand alone as operands is authored, not
-// a leaf property: a lone-placeholder rule bound through `where`
-// (`n means n where n: number`) is the operand declaration.
+// A named `where` term, as compileRules sees it: `where` binds a
+// placeholder to one by name. `parser` is the term's token-level
+// production — a sequence placeholder bound to it reads the
+// production's token. A *check-only* term has none (`value`): it
+// reads no token, so a bound placeholder still parses an expression
+// and `check` constrains the bound tree after — in a sequence the
+// violation fails the piece for recovery, and an operator operand
+// bound to any term is checked after binding (a violation surfaces
+// the whole application as a hole). Which leaves stand alone as
+// operands is authored, not a leaf property: a lone-placeholder rule
+// bound through `where` (`n means n where n: number`) is the operand
+// declaration — except a term that flags itself `operand`, the
+// kernel's way of giving every language a builtin operand without an
+// authored rule (`gap`, the workbench's hole leaf).
 case class LexicalTerm(
-    parser: Parser,
-    check: NodeData => Boolean)
+    parser: Option[Parser],
+    check: NodeData => Boolean,
+    operand: Boolean = false)
 
 // `atom` supplies the operand fallback rules don't describe —
 // the recovering `unrecognized` run — while leaf tokens and
@@ -58,7 +66,8 @@ def compileRules(
   lazy val self: Parser = rule(name)((in, pos) => compiled(in, pos))
   lazy val compiled: Parser = operatorTable(operand, operatorTiers)
   lazy val operand: Parser =
-    choice(sequences.map(sequenceParser) ++ leafOperands :+ atom*)
+    choice(sequences.map(sequenceParser) ++ leafOperands ++
+      builtinOperands :+ atom*)
   lazy val operatorTiers: List[List[Operator]] =
     orderedOperatorRules(set).map(_.filterNot(operandBound))
       .filter(_.nonEmpty).map(_.map(toOperator))
@@ -66,6 +75,13 @@ def compileRules(
     set.rules.filter(r => isSequencePattern(r.pattern) || operandBound(r))
   lazy val leafOperands: List[Parser] =
     set.rules.flatMap(leafOperand)
+  // Terms flagged `operand` join the operand choice after the
+  // authored leaf rules — the kernel's `gap` term makes the
+  // workbench's hole token an operand in every language, no `g
+  // means g where g: gap` rule required (an authored rule still
+  // wins, being tried first).
+  lazy val builtinOperands: List[Parser] =
+    lexicals.values.toList.flatMap(t => t.parser.filter(_ => t.operand))
 
   // This rule's `where` constraints resolved to leaf terms — a
   // placeholder's bound production when the constraint names a term
@@ -75,15 +91,18 @@ def compileRules(
       c.placeholders.map(_ -> t))).toMap
 
   // A literal-led rule whose placeholders are all `where`-bound to
-  // leaf productions is lexical, not an operator — `-n means
+  // *token-reading* terms is lexical, not an operator — `-n means
   // literal(neg(n)) where n: number` is an operand production like
   // the hand-written signum: its placeholders read tokens, never
-  // sub-expressions, so no precedence applies to them. Operator-
-  // shaped by its edges, it compiles to a sequence instead.
+  // sub-expressions, so no precedence applies to them. A check-only
+  // binding (`a: value`) reads a sub-expression, so the rule keeps
+  // operator precedence. Operator-shaped by its edges, it compiles
+  // to a sequence instead.
   def operandBound(theRule: Rule): Boolean =
     isOperatorPattern(theRule.pattern) &&
       theRule.pattern.pieces.head.isInstanceOf[Piece.Literal] &&
-      theRule.pattern.placeholders.forall(boundLexicals(theRule).contains)
+      theRule.pattern.placeholders.forall(n =>
+        boundLexicals(theRule).get(n).exists(_.parser.isDefined))
 
   // A lone-placeholder rule bound to a leaf production is an
   // operand: the production's token applies, then the meaning —
@@ -92,9 +111,9 @@ def compileRules(
   def leafOperand(theRule: Rule): Option[Parser] =
     theRule.pattern.pieces match {
       case List(Piece.Placeholder(name, _)) =>
-        boundLexicals(theRule).get(name).map { bound =>
+        boundLexicals(theRule).get(name).flatMap(_.parser).map { bound =>
           (in: In, pos: Int) => {
-            val applied = bound.parser(in, pos)
+            val applied = bound(in, pos)
             if (!applied.ok) applied
             else applied.copy(tree = applyMeaning(theRule.meaning,
               Map(name -> applied.tree), in, applied.tree.from,

@@ -28,10 +28,10 @@ val exprRules = RuleSet(
     "-n means literal(neg(n)) where n: number",
     // The operand declarations — which builtin leaves stand alone.
     // `n means n` is the `operand ::= number` production: the `where`
-    // binds the token and `use` passes the leaf through.
+    // binds the token and `use` passes the leaf through. The hole
+    // token needs no rule: `gap` is a kernel operand term.
     "n means n where n: number",
-    "r means r where r: ref",
-    "g means g where g: gap").map(readRuleOrHole),
+    "r means r where r: ref").map(readRuleOrHole),
   tiers = List(
     Tier(List(readPattern("a * b"), readPattern("a / b"))),
     Tier(List(readPattern("a + b"), readPattern("a - b")))),
@@ -39,10 +39,10 @@ val exprRules = RuleSet(
 
 // The operand fallback the rules don't describe — just the
 // recovering unrecognized run; the leaf tokens are operands through
-// the `n`/`r`/`g` operand rules bound to exprImpls' leaf
-// productions, and signed numbers are the `+n`/`-n` rules. The same
-// fallback ExprParse's atom writes, minus `parens`, the leaf toks,
-// and `signum`.
+// the `n`/`r` operand rules bound to exprImpls' leaf productions
+// (the hole token through the kernel's `gap` operand), and signed
+// numbers are the `+n`/`-n` rules. The same fallback ExprParse's
+// atom writes, minus `parens`, the leaf toks, and `signum`.
 lazy val ruleAtom: Parser =
   unrecognized(Set("op", "unrecognized"),
     Set("int", "float", "ref", "unrecognized", "hole"))
