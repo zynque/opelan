@@ -31,7 +31,7 @@ steps*, item 1).
   - *`currency` formats computed cells only;* price inputs stay plain
     numbers.
 - **Synced remote text doesn't parse incrementally.** It is the
-  `Serial` outline, parsed by the outline codec rather than a language
+  `Serial` outline, parsed by the outline format rather than a language
   grammar. Input sessions are pane-local and start fresh after a reload
   or for an input's first commit; builtin input parsers (a def's
   `inputParser` naming an impls function) parse whole.
@@ -197,7 +197,7 @@ steps*, item 1).
    unsynced documents; curated checkpoints; the synced meta-log for
    pruning and compaction; then a tree-native CRDT — which would also
    retire the whole-text reparse remote changes go through today
-   (sync carries the `Serial` outline, parsed by the outline codec;
+   (sync carries the `Serial` outline, parsed by the outline format;
    making that incremental is scaffolding the CRDT likely supersedes).
 4. **Schemas and typing.** Folded into the generalized rules model
    (item 1, *Structural rules*): a structural pattern *is* a construct's schema

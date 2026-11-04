@@ -123,7 +123,7 @@ def cellText(doc: Document[NodeData], cellId: Int): String =
 
 // The sheet's input grammar (Language.parseInput): text committed in a
 // cell's box becomes the cell's new content. A leading '?' writes a hole
-// (matching the outline codec's `?text` gaps); otherwise a full
+// (matching the outline format's `?text` gaps); otherwise a full
 // expression parses to its subtree — numbers, refs, whole formulas;
 // text that doesn't parse but mentions a cell (`ref:N`) is a formula the
 // grammar can't read yet, kept as a hole; anything else is a label — in

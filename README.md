@@ -29,7 +29,7 @@ Planned / exploratory:
 
 ```
 foundation/           # Pure model layer
-├── document/         # Persistent document tree, store, codecs (ported from olw-p4)
+├── document/         # Persistent document tree, store, formats (ported from olw-p4)
 ├── version/          # Version DAG / merge-base machinery (ported from olw-p4)
 ├── language/         # The Language interface and text surfaces
 ├── grammar/          # Recovering, incremental parser combinators

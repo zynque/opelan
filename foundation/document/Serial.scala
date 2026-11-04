@@ -2,7 +2,7 @@ package opelan.foundation.document
 
 import scala.collection.mutable
 
-// The storage/sync codec: the outline format with each line prefixed by
+// The storage/sync format: the outline with each line prefixed by
 // its node id — `#17 "mul"`. Unlike Outline.render/parse (the human
 // text surface, which renumbers nodes on every parse), it preserves node
 // identity, which documents depend on: InternalNodeRefs (imports,
@@ -11,7 +11,7 @@ import scala.collection.mutable
 // every id. Unreachable nodes aren't written; their ids come back as
 // unreachable placeholders, so ids are never reassigned.
 //
-// Text without ids (persisted before this codec) falls back to the
+// Text without ids (persisted before this format) falls back to the
 // plain outline parse.
 
 def serialize(doc: Document[NodeData]): String =

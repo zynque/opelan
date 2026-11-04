@@ -6,7 +6,7 @@ import opelan.foundation.view.ViewTree
 
 // The text surface of a document: typed documents use their language's
 // syntax for the content; everything else falls back to the outline
-// codec (one line per node, indentation = nesting). Resolution is
+// format (one line per node, indentation = nesting). Resolution is
 // injected — the caller decides how a type ref finds a language (the
 // examples' store-aware resolver, for instance).
 

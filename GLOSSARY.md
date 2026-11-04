@@ -66,7 +66,7 @@ views (which shown alone is the "app" surface).
 
 **Text surface**:
 A document rendered as editable text — its language's print/parse
-round-trip, or the outline codec for raw documents. Edits reparse into
+round-trip, or the outline format for raw documents. Edits reparse into
 the content subtree, keeping the ids of what didn't change.
 _Avoid_: text cell
 
@@ -78,3 +78,11 @@ without an input grammar projects read-only views.
 _Avoid_: cell — "cell" is reserved for the worksheet's grid entries
 (the sheet example) and table cells in view-tree grids, not for
 projected text boxes.
+
+## Documents
+
+**Format**:
+A paired conversion between two representations of the same content —
+a document tree and its text (`Outline`, `Serial`), a def and its
+`lang:` document, an AST and its document subtree — defined so the two
+directions round-trip.

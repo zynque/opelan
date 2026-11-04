@@ -32,7 +32,7 @@ the document, it writes back.
 
 Typed documents use their language's `parse`/`print` for the content;
 everything else falls back to `Outline`. `lang:` documents' language
-has no `GrammarDef` — their text form is a codec in
+has no `GrammarDef` — their text form is a format in
 [`../langdef/doc/DefDocText.scala`](../langdef/doc/DefDocText.scala)
 (meta constructs by name, `rule` nodes as `means` lines), supplied by
 `DefLanguage` for any def interpreted as `lang: language`, and applied

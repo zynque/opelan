@@ -5,7 +5,7 @@ import opelan.foundation.language.Language
 
 // The meta-language definition: the type all `lang:` documents carry.
 // Its grammar isn't expressed as a GrammarDef — the def-doc format IS
-// the codec (DefDocEncode/Decode) — so DocLanguage is a code-resident
+// code (DefDocEncode/Decode) — so DocLanguage is a code-resident
 // Language whose "def" view decodes the doc and prints the definition.
 // Its own langDoc is a def doc describing that format: self-describing,
 // and the regress stops here — its vocabulary entries are the constructs

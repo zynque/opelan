@@ -1,6 +1,6 @@
 package opelan.foundation.document
 
-// Text codec for raw documents: one line per node, indentation encodes
+// Text format for raw documents: one line per node, indentation encodes
 // nesting (outliner-style). The first line is the root; a node owns every
 // following line indented deeper than itself.
 //

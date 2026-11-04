@@ -5,7 +5,7 @@ import opelan.foundation.document._
 import opelan.foundation.document.typed._
 import Expr._
 
-// The document<->AST codec for expressions: the subtree conventions of
+// The document<->AST format for expressions: the subtree conventions of
 // Expr's content encoding (see Expr object). Operations are constructs
 // used by reference — a node whose data names lang: expression's `add`
 // vocabulary entry, never the string "add".

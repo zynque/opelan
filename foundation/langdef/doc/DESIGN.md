@@ -1,7 +1,7 @@
 # `foundation/langdef/doc/` — design
 
-The codec between a `LanguageDef`/`GrammarDef`/rule set and the `lang:`
-document that stores it (see [`../DESIGN.md`](../DESIGN.md)).
+The `lang:` document format for a `LanguageDef`/`GrammarDef`/rule set
+(see [`../DESIGN.md`](../DESIGN.md)).
 
 - **`DefDocEncode` / `DefDocDecode` / `DefDocReader`** — encode a def as
   a typed `lang:` document and read it back recoveringly; sets and op
@@ -31,6 +31,6 @@ document that stores it (see [`../DESIGN.md`](../DESIGN.md)).
   constructs, taken from encoding `docLanguageDef`, so code can know a
   meta construct by identity.
 
-*Everything by reference* is the convention the codec implements —
+*Everything by reference* is the convention the format embodies —
 constructs are `InternalNodeRef`s to import entries, never names:
 [`../../document/typed/DESIGN.md`](../../document/typed/DESIGN.md).

@@ -105,7 +105,7 @@ class DefLanguage(
     }
 
   // Total like every recovering grammar: Some whenever a syntax exists —
-  // and always for the meta language, whose text form is the codec in
+  // and always for the meta language, whose text form is the format in
   // doc/DefDocText.scala rather than a GrammarDef.
   override def parse(text: String): Option[DetachedNode[NodeData]] =
     if (isDocLanguage) Some(defDocParse(text))
@@ -114,7 +114,7 @@ class DefLanguage(
 
   // lang: documents relink what text can't carry — placeholder uses and
   // term constructs pointed at their nodes — after a text-surface
-  // commit lands (the same links the doc codec writes).
+  // commit lands (the same links the doc format writes).
   override def linkCommitted(
       doc: Document[NodeData], rootId: Int): Document[NodeData] =
     if (isDocLanguage)

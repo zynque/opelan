@@ -22,13 +22,13 @@ drive the workbench), `STATUS.md` (current state and next steps), and
 | Folder | Design |
 |--------|--------|
 | [`foundation/`](foundation/DESIGN.md) | the pure core: documents, versions, grammars, languages, views — and the *Never broken* holes convention |
-| [`foundation/document/`](foundation/document/DESIGN.md) | the persistent document tree, `NodeData`, `Outline`/`Serial` codecs |
+| [`foundation/document/`](foundation/document/DESIGN.md) | the persistent document tree, `NodeData`, `Outline`/`Serial` formats |
 | [`foundation/document/typed/`](foundation/document/typed/DESIGN.md) | typed-document layout, imports, *everything by reference*, `commitContent` |
 | [`foundation/document/store/`](foundation/document/store/DESIGN.md) | the versioned `Store`, names as projections, pins and pending updates |
 | [`foundation/version/`](foundation/version/DESIGN.md) | the version DAG, LSCA merge base, the two-layer history model |
 | [`foundation/grammar/`](foundation/grammar/DESIGN.md) | scannerless recovering combinators, lexicons, incremental packrat parsing |
 | [`foundation/language/`](foundation/language/DESIGN.md) | the `Language` trait, text surface, `TextSession`/`InputSessions`/`HoleRetry` |
-| [`foundation/langdef/`](foundation/langdef/DESIGN.md) | language definitions as `lang:` documents; codec in `doc/`, interpretation in `syntax/`, def views in `view/` |
+| [`foundation/langdef/`](foundation/langdef/DESIGN.md) | language definitions as `lang:` documents; format in `doc/`, interpretation in `syntax/`, def views in `view/` |
 | [`foundation/means/`](foundation/means/DESIGN.md) | the `means` rule notation; evaluation and rule→combinator compilation in `engine/`, rule text in `text/` |
 | [`foundation/view/`](foundation/view/DESIGN.md) | the derived view-tree vocabulary, `SourceRef` provenance, verbosity |
 | [`examples/`](examples/DESIGN.md) | the expression and sheet languages, the store-first resolver/registry |

@@ -26,11 +26,11 @@ The substrate everything is built on — a direct port of olw-p4, extended:
   as `url@version#node` — **`GapData(text)`** (a hole, see
   [`../DESIGN.md`](../DESIGN.md)), and **`SourceRef(nodeId)`**, a pointer
   to the definition, which, when interpreted, produced this node.
-- **`Outline`** — a text codec for raw documents: one line per node,
+- **`Outline`** — a text format for raw documents: one line per node,
   indentation for nesting, and surface syntax for each `NodeData` variant
   (`"abc"`, `42`, `1.5`, `ref:5`, `ref:url@v#n`, `?text`). It is the human
   text surface; a parse renumbers nodes.
-- **`Serial`** — the storage and sync codec: the outline with each line
+- **`Serial`** — the storage and sync format: the outline with each line
   prefixed by its node id (`#17 "mul"`). Node identity survives save,
   reload, and sync, which documents depend on. Internal refs (imports,
   construct uses, cell refs) and other documents' `url@v#n` refs all

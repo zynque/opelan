@@ -4,7 +4,7 @@ The pure core is the tested core: munit suites mirror the source
 packages, and full recomputes serve as the oracles the incremental paths
 are checked against (`PRINCIPLES.md`).
 
-- `test/foundation/**` — document ops, the outline codec, typed
+- `test/foundation/**` — document ops, the outline format, typed
   documents, grammar combinators, incremental parsing sessions, version
   LSCA. The incremental parser's guard is a property test: for any edit,
   an incremental reparse equals a full parse of the edited text — over a

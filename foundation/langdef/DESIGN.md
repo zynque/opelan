@@ -28,7 +28,7 @@ scaffolding while behavior still lives in code. The input grammar
 (`InputParserDef.Language(ref, fallback)`, `InputGrammar.scala`) names
 another language by ref, which is how the sheet's cells parse with
 `lang: expression`. `DefDocEncode`/`DefDocDecode`/`DefDocReader` (in
-[`doc/`](doc/DESIGN.md)) are the codec, with sets and op tables sorted
+[`doc/`](doc/DESIGN.md)) implement the def↔document format, with sets and op tables sorted
 so encoding is deterministic. `DefLanguage(exprDef)` is held identical
 to `ExprLanguage` (parse, print, and eval) on a 28-input battery, the
 regression anchor for any change to the definition machinery (see
@@ -73,7 +73,7 @@ Other pieces:
 
 Sub-packages:
 
-- [`doc/`](doc/DESIGN.md) — the def↔document codec
+- [`doc/`](doc/DESIGN.md) — the def↔document format
 - [`syntax/`](syntax/DESIGN.md) — grammar interpretation, vocabulary
   derivation, grammar diffs
 - [`view/`](view/DESIGN.md) — the def document's derived views
