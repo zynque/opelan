@@ -99,13 +99,13 @@ steps*, item 1).
    rules compiled onto the recovering combinators
    (`foundation/means/DESIGN.md`). The engine groundwork — including the
    derived printer and derived vocabulary — has landed
-   (`foundation/means/engine/DESIGN.md`, `foundation/grammar/DESIGN.md`).
+   (`foundation/means/engine/DESIGN.md`, `foundation/grammar/DESIGN.md`),
+   and the printer's role spans now reach the def view as `styled:` styling
+   — `means` emphasized, placeholders italic — on read-only lines and
+   inside the editable fields' displays
+   (`foundation/means/text/DESIGN.md`, `foundation/view/DESIGN.md`).
    Remaining steps, in order:
 
-   - *Rule engine loose ends:*
-     - **`means` surface polish.** The printer's role spans (`means`
-       emphasized, placeholders styled) reaching the surfaces that
-       show rules.
    - *Meaning layers; demote the old model:*
      - **Semantics as rules.** `add(a, b) means builtin num-add`: eval
        derived from meaning rules bottoming out in builtins, replacing

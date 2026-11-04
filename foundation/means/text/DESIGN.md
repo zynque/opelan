@@ -19,6 +19,11 @@ notation is an ordinary grammar, ahead of full self-description.
   a highlighting surface and plain text come from one source. Span roles
   are how a surface italicizes placeholders the way math italicizes
   variables; `Verbosity` selects the spelling level.
+- **`RuleView`** — the spans' view projection: styled roles become
+  `styled:role` elements (whole lines via `ruleView`, field displays via
+  `patternView`/`meaningView`/`whereView`), so the surfaces that show
+  rules highlight and their editable fields stay in lockstep with the
+  printed text.
 - **`RuleCheck`** — well-formedness issues as readable messages
   (`ruleIssues`, `ruleSetIssues`): unbound or duplicate placeholders,
   `where` terms unknown to the leaf vocabulary, binding-list mistakes.

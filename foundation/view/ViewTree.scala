@@ -16,6 +16,9 @@ import opelan.foundation.document.Detached._
 //   "input"                     an editable text region: its SourceRef
 //                               first child names the node it edits;
 //                               remaining children are the display text
+//   "styled:role"               a text run carrying a presentation
+//                               role (keyword, placeholder, ...) a
+//                               surface may paint
 //   leaves    StringData/IntData/FloatData render as text runs;
 //             GapData renders as a hole chip
 //   src:n     a SourceRef LEAF as an element's first child is its
@@ -43,6 +46,12 @@ object ViewTree {
 
   // An inline text run.
   def txt(s: String): DetachedNode[NodeData] = sl(s)
+
+  // A run carrying a presentation role (`styled:keyword`); the
+  // interpreter owns the role → style mapping, unknown roles render
+  // plain.
+  def styled(role: String, children: DetachedNode[NodeData]*) =
+    tagged(s"styled:$role", children)
 
   // A hole: the view is waiting on this (verbatim source text; an empty
   // hole renders '?').
@@ -73,6 +82,9 @@ object ViewTree {
     case DetachedNode(NodeData.SourceRef(_), _) => ""
     case DetachedNode(NodeData.GapData(text), children) =>
       (if (text.isEmpty) "?" else text) + children.map(flatten).mkString
+    case DetachedNode(NodeData.StringData(tag), children)
+        if tag.startsWith("styled:") =>
+      children.map(flatten).mkString
     case DetachedNode(NodeData.StringData(tag), children) if tags(tag) =>
       val sep = tag match {
         case "block" | "grid" => "\n"

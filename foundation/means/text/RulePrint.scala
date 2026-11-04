@@ -43,7 +43,7 @@ def printMeaning(meaning: Meaning): String =
 private val space = Styled(" ", Role.Space)
 private def punctuation(text: String) = Styled(text, Role.Punctuation)
 
-private def pieceSpans(pieces: List[Piece]): List[Styled] =
+private[text] def pieceSpans(pieces: List[Piece]): List[Styled] =
   pieces.zipWithIndex.flatMap { case (piece, i) =>
     val gap = if (i == 0 || piece.glued) Nil else List(space)
     gap :+ (piece match {
@@ -61,7 +61,7 @@ private def quoteIfNeeded(text: String): String = {
   if (plain) text else s"'$text'"
 }
 
-private def meaningSpans(meaning: Meaning): List[Styled] =
+private[text] def meaningSpans(meaning: Meaning): List[Styled] =
   meaning.tag match {
   case "use" =>
     meaning.arguments.flatMap(operandSpans)
@@ -98,7 +98,7 @@ private def joined(items: List[List[Styled]], separator: String): List[Styled] =
   items.reduceOption((a, b) => a ++ List(punctuation(separator), space) ++ b)
     .getOrElse(Nil)
 
-private def whereSpans(constraints: List[Constraint]): List[Styled] =
+private[text] def whereSpans(constraints: List[Constraint]): List[Styled] =
   joined(constraints.map { c =>
     joined(c.placeholders.map(name => List(Styled(name, Role.Placeholder))), ",") ++
       List(punctuation(":"), space, Styled(c.term, Role.Term))

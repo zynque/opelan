@@ -27,7 +27,7 @@ def viewTree[I](
     case _ => (None, t.children)
   }
   if (t.data == NodeData.StringData("input"))
-    src.fold(holeView("?input"))(id => inputView(id, children, onEdit))
+    src.fold(holeView("?input"))(id => inputView(id, children, onSource, onEdit))
   else {
     val v = content(t.data, children, onSource, onEdit)
     src.fold(v)(id => annotated(v, id, onSource))
@@ -40,6 +40,9 @@ private def content[I](
     onSource: Int => I,
     onEdit: (Int, String) => I): View[I] =
   data match {
+    case NodeData.StringData(tag) if tag.startsWith("styled:") =>
+      els("span", style(roleCss(tag.stripPrefix("styled:"))))(
+        children.map(k => viewTree(k, onSource, onEdit)))
     case NodeData.StringData(tag) if ViewTree.tags(tag) =>
       element(tag, children.map(k => viewTree(k, onSource, onEdit)))
     case NodeData.StringData(tag) if children.nonEmpty =>
@@ -83,23 +86,103 @@ private def element[I](tag: String, children: Iterable[View[I]]): View[I] =
 
 private val cellCss = "border: 1px solid #ddd; padding: 2px 8px;"
 
+// The styles a `styled:` role paints with — the one place a presentation
+// role becomes pixels (a solarized accent each, as the hole chips use).
+private def roleCss(role: String): String = role match {
+  case "keyword"     => "color: #268bd2; font-weight: bold; "
+  case "placeholder" => "font-style: italic; color: #6c71c4; "
+  case "literal"     => "color: #2aa198; "
+  case "tag"         => "color: #859900; "
+  case "term"        => "color: #d33682; "
+  case "marker"      => "color: #93a1a1; "
+  case _             => ""
+}
+
+// Whether a display list carries `styled:` styling anywhere — the signal an
+// input shows its styled run rather than bare box text.
+private def hasStyled(t: DetachedNode[NodeData]): Boolean =
+  (t.data match {
+    case NodeData.StringData(tag) => tag.startsWith("styled:")
+    case _                        => false
+  }) || t.children.exists(hasStyled)
+
 // A projected text box over a document node: the box shows the node's
 // surface text; Enter or blur commits `onEdit(id, text)` and Escape
 // reverts — the same contract as the structural editor's inline edit.
+// A display carrying `styled:` styling shows the styled run instead — the
+// box can't hold styled text, so it swaps in on click and back on
+// commit or revert.
 private def inputView[I](
     id: Int,
     display: List[DetachedNode[NodeData]],
+    onSource: Int => I,
     onEdit: (Int, String) => I): View[I] = {
   val current = display.map(ViewTree.flatten).mkString
-  el("input",
-    Map(
-      "type"  -> "text",
-      "value" -> current,
-      "style" -> (inputCss(current) + "font: inherit; padding: 0; margin: 0; " +
-        s"min-width: 4ch; width: ${math.max(4, current.length + 1)}ch;")),
-    events(
-      onEventOpt("keydown")(keyDown(id, current, onEdit)),
-      onEventOpt("blur")(blurCommit(id, onEdit))))()
+  if (display.exists(hasStyled))
+    styledInputView(id, display, current, onSource, onEdit)
+  else
+    el("input",
+      Map(
+        "type"  -> "text",
+        "value" -> current,
+        "style" -> (inputCss(current) + "font: inherit; padding: 0; margin: 0; " +
+          s"min-width: 4ch; width: ${math.max(4, current.length + 1)}ch;")),
+      events(
+        onEventOpt("keydown")(keyDown(id, current, onEdit)),
+        onEventOpt("blur")(blurCommit(id, onEdit))))()
+}
+
+// An input whose display carries `styled:` styling: the styled run is the
+// surface, the box how it's edited — hidden until a click swaps it in
+// with the flat text, focus, and select-all, then a commit or Escape
+// swaps back. Patching never rewrites an unchanged style attribute, so
+// the swap survives re-renders while the box holds focus.
+private def styledInputView[I](
+    id: Int,
+    display: List[DetachedNode[NodeData]],
+    current: String,
+    onSource: Int => I,
+    onEdit: (Int, String) => I): View[I] =
+  el("span")(
+    el("span",
+      Map("style" -> (inputCss(current) + "cursor: text;")),
+      onEventOpt("click")(startEdit))(
+      display.map(k => viewTree(k, onSource, onEdit))*),
+    el("input",
+      Map(
+        "type"  -> "text",
+        "value" -> current,
+        "style" -> (inputCss(current) + "font: inherit; padding: 0; margin: 0; " +
+          s"min-width: 4ch; width: ${math.max(4, current.length + 1)}ch; " +
+          "display: none;")),
+      events(
+        onEventOpt("keydown")(keyDown(id, current, onEdit)),
+        onEventOpt("blur")(styledBlurCommit(id, onEdit))))())
+
+// Swap the styled run for the text box: hide the run, show and arm the
+// box — one click goes straight to editing, sheet-style.
+private def startEdit(e: dom.Event): Option[Nothing] = {
+  val span = e.currentTarget.asInstanceOf[dom.HTMLElement]
+  span.nextElementSibling match {
+    case in: dom.HTMLInputElement =>
+      span.style.display = "none"
+      in.style.display = ""
+      in.focus()
+      in.select()
+    case _ => ()
+  }
+  None
+}
+
+// Swap the box back for its styled run, then the usual live-blur
+// commit — teardown blurs restore the run but commit nothing.
+private def styledBlurCommit[I](id: Int, onEdit: (Int, String) => I)(
+    e: dom.Event): Option[I] = {
+  val in = e.target.asInstanceOf[dom.HTMLElement]
+  Option(in.previousElementSibling).foreach(
+    _.asInstanceOf[dom.HTMLElement].style.display = "")
+  in.style.display = "none"
+  blurCommit(id, onEdit)(e)
 }
 
 // A box over a hole (its surface text starts with "?") wears the hole
@@ -210,6 +293,13 @@ private def focusContainedInput(e: dom.Event): Unit = {
     else e.currentTarget.asInstanceOf[dom.Element].querySelector("input")
   if (box != null) {
     val inp = box.asInstanceOf[dom.HTMLInputElement]
+    // A styled input's box sits hidden under its display run — swap
+    // them before focusing, as a click on the run itself does.
+    if (inp.style.display == "none") {
+      inp.style.display = ""
+      Option(inp.previousElementSibling).foreach(
+        _.asInstanceOf[dom.HTMLElement].style.display = "none")
+    }
     inp.focus()
     if (box != clicked) inp.select()
   }

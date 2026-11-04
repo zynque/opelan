@@ -74,6 +74,36 @@ class ViewTreeViewSuite extends munit.FunSuite {
     }
   }
 
+  test("an styled: run renders a styled span; unknown roles stay plain") {
+    vt(styled("keyword", txt("means"))) match {
+      case View.Elem("span", attrs, _, Vector(View.Text("means"))) =>
+        assert(attrs("style").contains("font-weight: bold"))
+      case other => fail(s"expected styled span, got $other")
+    }
+    vt(styled("nonsense", txt("x"))) match {
+      case View.Elem("span", attrs, _, Vector(View.Text("x"))) =>
+        assert(!attrs("style").contains("color"))
+      case other => fail(s"expected plain span, got $other")
+    }
+  }
+
+  test("an input with styled display shows the styled run, hiding its box") {
+    vt(ViewTree.input(7, styled("placeholder", txt("a")), txt(" + b"))) match {
+      case View.Elem("span", _, _, Vector(display, box)) =>
+        display match {
+          case View.Elem("span", _, _, _) => ()
+          case other => fail(s"expected display span, got $other")
+        }
+        box match {
+          case View.Elem("input", attrs, _, _) =>
+            assertEquals(attrs("value"), "a + b")
+            assert(attrs("style").contains("display: none"))
+          case other => fail(s"expected hidden input, got $other")
+        }
+      case other => fail(s"expected wrapper span, got $other")
+    }
+  }
+
   test("an input renders a text box carrying its display and commit events") {
     vt(ViewTree.input(7, txt("42"))) match {
       case View.Elem("input", attrs, evs, _) =>

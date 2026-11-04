@@ -5,7 +5,8 @@ import opelan.foundation.langdef._
 import opelan.foundation.langdef.doc._
 import opelan.foundation.means.{Meaning, Rule, RuleSet}
 import opelan.foundation.means.engine.{meaningTree, printWith}
-import opelan.foundation.means.text.{printMeaning, printPattern, printRule}
+import opelan.foundation.means.text.{
+  meaningView, patternView, printMeaning, readPattern, ruleView, whereView}
 import opelan.foundation.view.ViewTree._
 
 // The rules section of the "def" view, rendered as projected inputs:
@@ -32,7 +33,9 @@ private[langdef] def docRuleLines(
 // One `rules` entry as a line: a text-form `rule` edits its leaf in
 // one input bound to the rule node (a commit structures it); a
 // structured rule projects `pattern`/`meaning`/`where` as inputs
-// bound to their own nodes — the meaning field parses through the
+// bound to their own nodes — displaying role-styled text (keywords
+// emphasized, placeholders italic) that a click swaps for the edit
+// box — the meaning field parses through the
 // defined language per keystroke. A `binding` shows its
 // tiers as comma-separated pattern inputs; an `example` is input and
 // expected side by side, checked live — a mismatch trails a hole
@@ -57,33 +60,44 @@ private def ruleLine(
               val r = ruleFromDoc(doc, "", 0,
                 deriveTermIds(doc, doc.rootId), id)
               val fields = List(
-                input(p, txt(printPattern(r.pattern))),
-                txt(" means "),
-                input(m, txt(meaningFieldText(d, r)))) ++
+                input(p, patternView(r.pattern)*),
+                styled("keyword", txt(" means ")),
+                input(m, meaningDisplay(d, r)*)) ++
                 section("where").toList.flatMap(w =>
-                  List(txt(" where "), input(w, txt(whereFieldText(r)))))
+                  List(styled("keyword", txt(" where ")),
+                    input(w, whereView(r.where)*)))
               flow(fields*)
             case _ => hole("rule")
           }
         case None    => hole("rule")
       })
     case Some("binding") =>
-      txt("binding:") +: doc.childrenOf(id)
+      styled("keyword", txt("binding:")) +: doc.childrenOf(id)
         .filter(docCons(doc, _).contains("tier"))
         .map(t => flow((txt("  ") +: commaInputs(doc, t))*))
     case Some("example") =>
       List(flow((doc.childrenOf(id) match {
         case a :: b :: _ =>
           val (inText, outText) = (leafText(doc, a), leafText(doc, b))
-          List(txt("e.g. "), input(a, txt(inText)),
-            txt(" means "), input(b, txt(outText))) ++
+          List(styled("marker", txt("e.g. ")), input(a, txt(inText)),
+            styled("keyword", txt(" means ")), input(b, txt(outText))) ++
             check(inText, outText).map(t => List(txt(" "), hole(t)))
               .getOrElse(Nil)
-        case a :: _      => List(txt("e.g. "), input(a, txt(leafText(doc, a))))
+        case a :: _      => List(styled("marker", txt("e.g. ")),
+          input(a, txt(leafText(doc, a))))
         case _           => List(hole("example"))
       })*))
     case _ => Nil
   }
+
+// The meaning field's display children: a meaning carrying `quote`
+// terms keeps the flat text its phrase projection supplies; a canonical
+// spelling shows styled spans — the constructor tag and `use` names
+// highlight until the field is edited.
+private def meaningDisplay(
+    d: LanguageDef, r: Rule): List[DetachedNode[NodeData]] =
+  if (hasQuote(r.meaning)) List(txt(meaningFieldText(d, r)))
+  else meaningView(r.meaning)
 
 // A stored meaning's field text: `printMeaning`'s canonical spelling,
 // except a meaning carrying `quote` terms — concrete content only a
@@ -113,7 +127,8 @@ private[langdef] def whereFieldText(r: Rule): String =
 
 private def commaInputs(
     doc: Document[NodeData], tierId: Int): List[DetachedNode[NodeData]] =
-  doc.childrenOf(tierId).map(p => input(p, txt(leafText(doc, p))))
+  doc.childrenOf(tierId).map(p =>
+      input(p, patternView(readPattern(leafText(doc, p)))*))
     .flatMap(List(_, txt(", "))).dropRight(1) match {
       case Nil  => List(txt(""))
       case children => children
@@ -123,7 +138,8 @@ private def commaInputs(
 // carries no `rules` node (e.g. a def decoded from an older doc) and
 // for surfaces that only render text.
 private[langdef] def ruleLines(set: RuleSet): List[DetachedNode[NodeData]] =
-  set.rules.map(r => txt(printRule(r))) ++
+  set.rules.map(r => ruleView(r)) ++
     (if (set.tiers.isEmpty) Nil
-     else txt("binding:") +: set.tiers.map(t =>
-       txt("  " + t.patterns.map(printPattern).mkString(", "))))
+     else styled("keyword", txt("binding:")) +: set.tiers.map(t =>
+       flow((txt("  ") +: t.patterns.flatMap(p =>
+         patternView(p) ++ List(txt(", ")))).dropRight(1)*)))
