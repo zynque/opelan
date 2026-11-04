@@ -90,14 +90,14 @@ private def ruleLine(
 // phrase desugars to — which projects back through the language's own
 // printer, so `a / 100` reads as authored, not `div(a, 100)`. A
 // quoted hole shows its `?` mark — the input wears the hole styling.
-private def meaningFieldText(d: LanguageDef, r: Rule): String =
+private[langdef] def meaningFieldText(d: LanguageDef, r: Rule): String =
   (for {
     set <- d.syntax.flatMap(_.rules) if hasQuote(r.meaning)
   } yield printWith(set, termTagOf(d), meaningLeaf)(
     meaningTree(r.meaning, termTagOf(d))))
     .getOrElse(printMeaning(r.meaning))
 
-private def hasQuote(m: Meaning): Boolean =
+private[langdef] def hasQuote(m: Meaning): Boolean =
   m.tag == "quote" || m.arguments.exists(hasQuote)
 
 private def meaningLeaf(data: NodeData): String = data match {
@@ -107,7 +107,7 @@ private def meaningLeaf(data: NodeData): String = data match {
 
 // The `where` field's text — the constraints without the keyword,
 // which the line's own `where` label supplies.
-private def whereFieldText(r: Rule): String =
+private[langdef] def whereFieldText(r: Rule): String =
   r.where.map(c => c.placeholders.mkString(", ") + ": " + c.term)
     .mkString("; ")
 

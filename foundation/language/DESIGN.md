@@ -31,7 +31,15 @@ the document, it writes back.
 ## Text surface (`DocText.scala`)
 
 Typed documents use their language's `parse`/`print` for the content;
-everything else falls back to `Outline`. Resolution is injected — the
+everything else falls back to `Outline`. `lang:` documents' language
+has no `GrammarDef` — their text form is a codec in
+[`../langdef/doc/DefDocText.scala`](../langdef/doc/DefDocText.scala)
+(meta constructs by name, `rule` nodes as `means` lines), supplied by
+`DefLanguage` for any def interpreted as `lang: language`, and applied
+through the same `parse` → `commitContent` path — so a text edit keeps
+the ids of whatever didn't change, and `linkCommitted` then runs the
+language's finishing pass (lang: relinks placeholder uses and term
+constructs). Resolution is injected — the
 caller decides how a type ref finds a language (the
 [examples](../../examples/DESIGN.md)' store-aware resolver, for
 instance). `holeCount` feeds the status bar.

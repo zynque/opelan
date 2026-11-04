@@ -29,7 +29,7 @@ def applyDocText(
     languageFor: Document[NodeData] => Option[Language],
     text: String): Either[String, Document[NodeData]] =
   languageFor(doc).flatMap(_.parse(text)) match {
-    case Some(content) => replaceContent(doc, content)
+    case Some(content) => replaceContent(doc, content, languageFor)
     case None =>
       if (isTyped(doc))
         contentId(doc) match {
@@ -53,16 +53,22 @@ private def contentOutline(doc: Document[NodeData]): String =
 // applyDocText commits a parse.
 def applyDocContent(
     doc: Document[NodeData],
+    languageFor: Document[NodeData] => Option[Language],
     content: DetachedNode[NodeData]): Either[String, Document[NodeData]] =
-  replaceContent(doc, content)
+  replaceContent(doc, content, languageFor)
 
 private def replaceContent(
     doc: Document[NodeData],
-    content: DetachedNode[NodeData]): Either[String, Document[NodeData]] = {
+    content: DetachedNode[NodeData],
+    languageFor: Document[NodeData] => Option[Language])
+    : Either[String, Document[NodeData]] = {
   val inserted = contentId(doc) match {
     case Some(cid) => commitContent(cid, content, doc)
     case None =>
       insertNode(content, doc.rootId, math.min(2, doc.childrenOf(doc.rootId).length), doc)
   }
-  inserted.flatMap(d => contentId(d).map(internalizeRefs(d, _)).getOrElse(Right(d)))
+  inserted.flatMap(d => contentId(d).map(cid =>
+    internalizeRefs(d, cid).map(d2 =>
+      languageFor(d2).map(_.linkCommitted(d2, cid)).getOrElse(d2)))
+    .getOrElse(Right(d)))
 }

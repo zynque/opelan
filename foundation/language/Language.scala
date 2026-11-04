@@ -57,6 +57,13 @@ trait Language {
   // proportion to its size. Its content must equal `parse`'s.
   def textSyntax: Option[TextSyntax] = None
 
+  // A committed content subtree's finishing pass — run after a text- or
+  // input-surface commit rewrote `rootId`'s subtree in place: a language
+  // points the references text can't carry at their nodes (lang:
+  // relinks placeholder uses and term constructs). Default: none.
+  def linkCommitted(
+      doc: Document[NodeData], rootId: Int): Document[NodeData] = doc
+
   // Render with the host's remembered hole attempts, so holes are
   // retried only when a language change touched a rule they consulted.
   // `docUrl` is the shown document's own URL — its stored identity,

@@ -18,6 +18,15 @@ document that stores it (see [`../DESIGN.md`](../DESIGN.md)).
   `literal` operand at the placeholder piece node it names, so a
   placeholder rename heals every use (the rules counterpart of
   `linkUses` for grammar nodes).
+- **`DefDocText`** — the `lang:` document's text surface
+  (`foundation/language/DocText.scala`): the content subtree as an
+  outline in which meta constructs print by name and each `rule`
+  subtree flattens to its `means` line. A string line under `rules`
+  reads back as a `rule` — the surface reads/writes rules rather than
+  leaf strings — while `binding`/`tier`/`example`/`rule` meta nodes
+  keep their structured encoding, so hand-written structure still
+  lands. Phrase meanings a language-aware commit would desugar stay
+  quoted holes; `rephraseRuleSet` retries them at interpretation.
 - **`Meta`** — `metaTermIds`: the node ids of `lang: language`'s own
   constructs, taken from encoding `docLanguageDef`, so code can know a
   meta construct by identity.

@@ -96,7 +96,7 @@ private def step(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel, 
       val session = languageForDoc(m.doc, m.store).flatMap(_.textSyntax)
         .map(syn => m.textSession.fold(TextSession.start(syn, t))(_.retext(syn, t)))
       val applied = session match {
-        case Some(s) => applyDocContent(m.doc, s.content)
+        case Some(s) => applyDocContent(m.doc, langFor(m), s.content)
         case None    => applyDocText(m.doc, langFor(m), t)
       }
       applied match {

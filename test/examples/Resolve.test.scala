@@ -69,7 +69,9 @@ class ResolveSuite extends FunSuite {
     val d = SheetLanguage.langDoc
     val l = languageForDoc(d, seededStore)
     assert(l.isDefined)
-    assertEquals(l.get.views, List("def"))
+    // "print" is the code-supplied text surface — the stored
+    // lang: language doc needn't declare it (DefLanguage.isDocLanguage).
+    assertEquals(l.get.views, List("def", "print"))
     assert(l.get.render("def", d).isRight)
   }
 

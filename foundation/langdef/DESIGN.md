@@ -44,7 +44,9 @@ first meaning node to build it — and `a` spells `use(a)` — an operand
 ref to the pattern's placeholder node — so a rule survives renames on
 either side. Rules compile to `GrammarDef`, which remains the
 implementation layer the interpreter runs. The `means` notation is the
-text surface of the language-definition language, eventually described
+text surface of the language-definition language — `rule` nodes print
+as `means` lines and `means` lines under `rules` commit as `rule`
+nodes (`doc/DefDocText`) — eventually described
 by its own rules (see [`../means/DESIGN.md`](../means/DESIGN.md)).
 
 Other pieces:

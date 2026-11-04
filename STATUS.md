@@ -104,10 +104,8 @@ steps*, item 1).
 
    - *Rule engine loose ends:*
      - **`means` surface polish.** The printer's role spans (`means`
-       emphasized, placeholders styled), a detail-level toggle
-       switching `means` to `=>` and hiding `where`, and the `lang:`
-       text surface itself reading/writing rules rather than leaf
-       strings.
+       emphasized, placeholders styled) reaching the surfaces that
+       show rules.
    - *Meaning layers; demote the old model:*
      - **Semantics as rules.** `add(a, b) means builtin num-add`: eval
        derived from meaning rules bottoming out in builtins, replacing
@@ -140,10 +138,11 @@ steps*, item 1).
        parse-time meanings resolving to stable `InternalNodeRef`s and
        printing back as current positions; ranges (`a .. b`).
      - **`where` and adjustable verbosity.** `where` clauses with
-       constraints inferred from the layer below; a terse/verbose
-       toggle in the `def` view, separate from show/hide
-       implementation; violated constraints surface as holes at every
-       zoom level.
+       constraints inferred from the layer below; a detail-level
+       (terse/verbose) toggle switching `means` to `=>` and hiding
+       `where` behind a marker, in the `def` view, separate from
+       show/hide implementation; violated constraints surface as
+       holes at every zoom level.
      - **Cycle prevention in the editor.** Completion on a meaning
        offers only rules below it in the DAG.
      - **Self-description.** The language-definition language's own

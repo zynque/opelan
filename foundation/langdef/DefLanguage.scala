@@ -9,6 +9,7 @@ import opelan.foundation.means.RuleSet
 import opelan.foundation.means.engine.{compileRules, rephraseRuleSet}
 import opelan.foundation.language.{
   HoleRetry, InputSessions, Language, SyntaxChange, TextSyntax}
+import opelan.foundation.view.ViewTree
 
 // A Language interpreted from a LanguageDef — the bootstrap mechanism:
 // the def carries the grammar as data and names its semantics through
@@ -30,7 +31,20 @@ class DefLanguage(
 
   def typeRef = languageDef.typeRef
   def name = languageDef.name
-  def views = languageDef.views.map(_.name)
+
+  // lang: language's own surfaces are bootstrap scaffolding: a def doc
+  // interpreted as the meta language gets `print` whether the stored
+  // document advertises it or not, so a store seeded before the
+  // surface existed still reads and writes rules as `means` lines
+  // (doc/DefDocText.scala).
+  private def isDocLanguage =
+    languageDef.typeRef.documentUrl == langDefTypeRef.documentUrl &&
+      languageDef.typeRef.nodeId == langDefTypeRef.nodeId
+
+  def views =
+    if (isDocLanguage && !languageDef.views.exists(_.name == "print"))
+      languageDef.views.map(_.name) :+ "print"
+    else languageDef.views.map(_.name)
 
   // The def's document is its encoding — the same bytes a lang: doc
   // holds in the store.
@@ -75,7 +89,11 @@ class DefLanguage(
       view: String, doc: Document[NodeData], retry: HoleRetry,
       docUrl: Option[String] = None)
       : Either[String, DetachedNode[NodeData]] =
-    languageDef.views.find(_.name == view) match {
+    if (isDocLanguage && view == "print")
+      contentId(doc).toRight(s"$name: typed document has no content")
+        .map(id => ViewTree.block(defDocLines(
+          doc, docUrl.getOrElse(""), id).map(ViewTree.txt)*))
+    else languageDef.views.find(_.name == view) match {
       case None => Left(s"$name has no '$view' view")
       case Some(vb) => impls.views.get(vb.builtin) match {
         case None => Left(s"$name: unknown builtin view '${vb.builtin}'")
@@ -86,9 +104,22 @@ class DefLanguage(
       }
     }
 
-  // Total like every recovering grammar: Some whenever a syntax exists.
+  // Total like every recovering grammar: Some whenever a syntax exists —
+  // and always for the meta language, whose text form is the codec in
+  // doc/DefDocText.scala rather than a GrammarDef.
   override def parse(text: String): Option[DetachedNode[NodeData]] =
-    syntax.map { case (lexicon, g) => toDetached(g(In(text, lexicon), 0).tree) }
+    if (isDocLanguage) Some(defDocParse(text))
+    else syntax.map { case (lexicon, g) =>
+      toDetached(g(In(text, lexicon), 0).tree) }
+
+  // lang: documents relink what text can't carry — placeholder uses and
+  // term constructs pointed at their nodes — after a text-surface
+  // commit lands (the same links the doc codec writes).
+  override def linkCommitted(
+      doc: Document[NodeData], rootId: Int): Document[NodeData] =
+    if (isDocLanguage)
+      linkTerms(linkRuleUses(doc, rootId), rootId, deriveTermIds(doc, rootId))
+    else doc
 
   // The interpreted grammar as an incremental parser. Its key is the
   // grammar data plus the construct refs it emits (they pin the def's

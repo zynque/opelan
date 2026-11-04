@@ -65,7 +65,7 @@ private def meaningSpans(meaning: Meaning): List[Styled] =
   meaning.tag match {
   case "use" =>
     meaning.arguments.flatMap(operandSpans)
-  case "source" | "builtin" =>
+  case "source" | "builtin" | "literal" =>
     (Styled(meaning.tag, Role.Keyword) :: punctuation("(") ::
       joined(meaning.arguments.map(operandSpans), ",")) :+ punctuation(")")
   case "quote" =>
