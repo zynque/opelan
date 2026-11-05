@@ -141,7 +141,7 @@ Consequences:
   already defines for dependency bumps). Two pieces are missing for this
   to be real: curated `url@v` versions don't carry an author — only the
   synced change graph does, so an author field is a
-  `Store`/persistence schema change — and a collaborator streaming
+  `Store` record-shape change — and a collaborator streaming
   edits wants the same debounce-coalescing a typing burst does
   (*Granularity*), one change per turn rather than per keystroke.
   Attribution itself needs no session: an author field on the version

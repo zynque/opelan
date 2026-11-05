@@ -139,10 +139,10 @@ steps*, item 1).
    - *Beyond parity:*
      - **Structural rules.** The general rule form of which textual
        `means` is the token-spine projection: a tree pattern — the
-       canonical schema and editor (form: text boxes, dropdowns) for
+       canonical shape and editor (form: text boxes, dropdowns) for
        the construct it declares — matching subtrees instead of
        tokens. `lang: language`'s `metaTerms` and `sheet`'s
-       `sheet`/`row`/`cell` become schema rules, and
+       `sheet`/`row`/`cell` become structural rules, and
        `vocabulary`/`declared` leaves `LanguageDef` entirely.
        Ambiguous surfaces store a deferred-choice gap (the projection
        renders candidates as a dropdown) rather than silently
@@ -271,8 +271,8 @@ steps*, item 1).
    retire the whole-text reparse remote changes go through today
    (sync carries the `Serial` outline, parsed by the outline format;
    making that incremental is scaffolding the CRDT likely supersedes).
-4. **Schemas and typing.** Folded into the generalized rules model
-   (item 1, *Structural rules*): a structural pattern *is* a construct's schema
+4. **Structure and typing.** Folded into the generalized rules model
+   (item 1, *Structural rules*): a structural pattern *is* a construct's shape
    — checking is matching — so typing rides the same tree-pattern
    engine rather than a separate registry.
 5. **Further roadmap:**

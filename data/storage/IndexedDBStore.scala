@@ -8,9 +8,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 // IndexedDB persistence for the workbench — a generic record store over
 // named object stores. Record shapes live in the per-store repos:
 // `documents` in DocumentRepo (versioned outline text) and
-// `automerge_docs` in AutomergeRepo (sync op-log bytes). v2 dropped the
-// scaffold-era "schemas"/"definitions" object stores — schemas become
-// documents and definitions live in them.
+// `automerge_docs` in AutomergeRepo (sync op-log bytes).
 class IndexedDBStore(dbName: String = "opelan-workbench", version: Int = 3) {
   private var db: js.Dynamic = null
   private var isInitialized = false
@@ -33,13 +31,6 @@ class IndexedDBStore(dbName: String = "opelan-workbench", version: Int = 3) {
       request.onupgradeneeded = (event: dom.Event) => {
         val upgradedDb = event.target.asInstanceOf[js.Dynamic].result
         val storeNames = upgradedDb.objectStoreNames
-
-        // Retired scaffold-era stores
-        List("schemas", "definitions").foreach { name =>
-          if (storeNames.contains(name).asInstanceOf[Boolean]) {
-            upgradedDb.deleteObjectStore(name)
-          }
-        }
 
         def ensureStore(name: String, keyPath: String): Unit = {
           if (!storeNames.contains(name).asInstanceOf[Boolean]) {

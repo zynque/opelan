@@ -76,11 +76,11 @@ Every application should have an undo button. Developers take source control for
 
 ### Reactive
 
-The results of a change should be made immediately visible via live examples (similar to unit tests). Changes to anything a document depends on — libraries, schemas, the language it is written in — should surface unobtrusive notifications describing their severity and nature; mechanical migrations apply automatically and remain revertible, while riskier changes wait for a single click (see Evolvable).
+The results of a change should be made immediately visible via live examples (similar to unit tests). Changes to anything a document depends on — libraries and the language it was written in — should surface unobtrusive notifications describing their severity and nature; mechanical migrations apply automatically and remain revertible, while riskier changes wait for a single click (see Evolvable).
 
 ### Incremental
 
-The cost of responding to a change should be proportional to the change, not to the size of everything it touches. An edit to one line should reparse that line, re-evaluate what depends on it, and redraw what shows it — and the same holds when the change is to a language, a library, or a schema rather than to the content written in it. Whatever didn't change keeps its identity, so references, selections, and history stay attached to the work they point at. Incrementality is what lets Reactive and Real Time Collaboration scale.
+The cost of responding to a change should be proportional to the change, not to the size of everything it touches. An edit to one line should reparse that line, re-evaluate what depends on it, and redraw what shows it — and the same holds when the change is to a language or a library rather than to the content written in it. Whatever didn't change keeps its identity, so references, selections, and history stay attached to the work they point at. Incrementality is what lets Reactive and Real Time Collaboration scale.
 
 ### Never Broken
 
