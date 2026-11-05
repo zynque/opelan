@@ -76,10 +76,10 @@ can't express.
 Caveats this design accepts:
 
 - *Left recursion.* Operator rules avoid it by construction (the loop
-  replaces recursion). A left-recursive non-operator rule would make a
-  PEG-style combinator loop at the same position — today's `Ref` guard
-  already degrades that to a gap. Warth's seed-growing left recursion
-  (OMeta, Ohm) is the upgrade if real grammars need it.
+  replaces recursion). A left-recursive pattern — a leading
+  placeholder — is skipped at compile rather than looping. Warth's
+  seed-growing left recursion (OMeta, Ohm) is the upgrade if real
+  grammars need it.
 - *Ordered choice.* Combinator choice takes the first alternative that
   applies, so overlapping rules resolve by order rather than reporting
   ambiguity. Detecting overlap and flagging it in the definition view is
@@ -88,9 +88,9 @@ Caveats this design accepts:
   surface: whether a rule lands in the operator combinator or in a
   sequence is decided by its shape, not by the author.
 
-Recovery stays in the combinators (a missing operand folds to a gap, as
-`chainLeft` does today), keeping `Unrecognized`/`Phrase` out of authored
-definitions.
+Recovery stays in the combinators (a missing operand folds to a gap);
+the operand fallback is the lexicon's (`Lexicon.gapStart`/`gapRun`),
+so nothing but rules is authored.
 
 ## Printing (`Print`, `PrintIndex`, `PrintView`)
 

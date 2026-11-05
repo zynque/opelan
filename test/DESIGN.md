@@ -13,8 +13,9 @@ are checked against (`PRINCIPLES.md`).
   [`../foundation/grammar/DESIGN.md`](../foundation/grammar/DESIGN.md)).
 - `test/examples/**` — the expression and sheet languages, language
   defs, and their document encoding. Includes the 28-input battery
-  holding `DefLanguage(exprDef)` identical to `ExprLanguage` (parse,
-  print, eval) — the regression anchor for the definition machinery
+  holding a constructed `DefLanguage(exprDef)` identical to the
+  `ExprLanguage` singleton (parse, print, eval) — the construction-path
+  check for the definition machinery
   (see [`../examples/DESIGN.md`](../examples/DESIGN.md)).
 - `test/collaboration/**` — `DocSession` convergence under real
   Automerge in Node.

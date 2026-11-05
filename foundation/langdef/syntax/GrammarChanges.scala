@@ -7,52 +7,21 @@ import opelan.foundation.grammar.PTree
 import opelan.foundation.langdef._
 import opelan.foundation.means._
 
-// The named rules of a grammar, by name. When a name is defined twice
-// the first definition wins, everywhere it is used.
-def namedRules(top: GrammarDef): Map[String, GrammarDef] = {
-  def collect(g: GrammarDef): List[(String, GrammarDef)] = g match {
-    case GrammarDef.Named(n, inner)     => (n -> inner) :: collect(inner)
-    case GrammarDef.Choice(alts)        => alts.flatMap(collect)
-    case GrammarDef.Parens(inner)       => collect(inner)
-    case GrammarDef.ChainLeft(_, atom)  => collect(atom)
-    case GrammarDef.Precedence(atom, _) => collect(atom)
-    case GrammarDef.Phrase(inner, _)    => collect(inner)
-    case GrammarDef.Tok(_, _)           => Nil
-    case GrammarDef.Signum              => Nil
-    case GrammarDef.Unrecognized(_, _)  => Nil
-    case GrammarDef.Ref(_)              => Nil
-    case GrammarDef.Gap                => Nil
-  }
-  collect(top).reverse.toMap
-}
-
-// The rules a language change touches: named rules whose definitions
-// differ, plus rules present in only one grammar. A rule that merely
-// *calls* a changed rule is not listed — an incremental session drops
-// its results through the call dependencies it recorded.
-def changedRules(before: GrammarDef, after: GrammarDef): Set[String] = {
-  val (a, b) = (namedRules(before), namedRules(after))
-  (a.keySet ++ b.keySet).filter(name => a.get(name) != b.get(name))
-}
-
 // The memo names a syntax change touches — what a carried-over session
-// must drop. Combinator defs diff by named rule, as before. With a rule
-// set: nothing to drop when the sets compile identically (sameCompiled —
-// a placeholder rename is no change); otherwise the top name (the
-// lexicon's — every placeholder recurses through it) covers operator
-// changes and operand structure, each changed or unpaired sequence rule
-// adds its memo name — those are the only entries that could survive
-// the top name's fall. A form switch, or a change to the atom grammar,
-// marks everything the new parser can name.
+// must drop. Nothing to drop when the sets compile identically
+// (sameCompiled — a placeholder rename is no change); otherwise the
+// top name (the lexicon's — every placeholder recurses through it)
+// covers operator changes and operand structure, each changed or
+// unpaired sequence rule adds its memo name — those are the only
+// entries that could survive the top name's fall.
 def syntaxChanges(before: SyntaxDef, after: SyntaxDef): Set[String] =
   if (before == after) Set.empty
   else (before.rules, after.rules) match {
-    case (None, None) => changedRules(before.grammar, after.grammar)
-    case (Some(b), Some(a)) if before.grammar == after.grammar =>
+    case (Some(b), Some(a)) =>
       if (namesSame(b, a) && sameCompiled(b, a, sameRule)) Set.empty
       else Set(after.lexicon) ++ changedSequenceNames(b, a)
     case _ =>
-      Set(after.lexicon) ++ namedRules(after.grammar).keySet ++
+      Set(after.lexicon) ++
         sequenceRuleNames(before.rules) ++ sequenceRuleNames(after.rules)
   }
 
@@ -127,8 +96,8 @@ private def sameTree(a: Option[PTree], b: Option[PTree]): Boolean =
         sameData(x.data, y.data) && x.children.length == y.children.length &&
         x.children.zip(y.children).forall { case (p, q) =>
           sameTree(Some(p), Some(q)) }
-    case (None, None) => true
-    case _            => false
+    case (None, None)       => true
+    case _                  => false
   }
 
 private def sameData(a: NodeData, b: NodeData): Boolean = (a, b) match {

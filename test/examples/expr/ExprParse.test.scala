@@ -2,9 +2,13 @@ package opelan.examples.expr
 
 import Expr._
 
+// The expression language's parse surface: literals, precedence,
+// parens, signum, and the whole recovery contract — asserted through
+// the def'd language (DefLanguage over exprDef), the only parser now.
 class ExprParseSuite extends munit.FunSuite {
 
-  private def parse(input: String): Expr = parseExpr(input).expr
+  private def parse(input: String): Expr =
+    exprFromDetached(ExprLanguage.parse(input).get)
 
   test("parses literals and left-associative operator chains") {
     assertEquals(parse("42"), Lit(42))
@@ -80,12 +84,5 @@ class ExprParseSuite extends munit.FunSuite {
 
   test("an unclosed paren closes implicitly") {
     assertEquals(parse("(1 +"), Add(Lit(1), Gap("")))
-  }
-
-  test("span map records every node's source range") {
-    val r = parseExpr("1 + 23")
-    assertEquals(r.spans(Nil), ExprSpan(0, 6))
-    assertEquals(r.spans(List(0)), ExprSpan(0, 1))
-    assertEquals(r.spans(List(1)), ExprSpan(4, 6))
   }
 }

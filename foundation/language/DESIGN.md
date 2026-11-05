@@ -32,7 +32,7 @@ the document, it writes back.
 
 Typed documents use their language's `parse`/`print` for the content;
 everything else falls back to `Outline`. `lang:` documents' language
-has no `GrammarDef` — their text form is a format in
+has no rule set — their text form is a format in
 [`../langdef/doc/DefDocText.scala`](../langdef/doc/DefDocText.scala)
 (meta constructs by name, `rule` nodes as `means` lines), supplied by
 `DefLanguage` for any def interpreted as `lang: language`, and applied
@@ -60,7 +60,7 @@ per-document sessions that ride on it:
   session's own text, so a session that missed a re-derived text is
   still correct. A re-decoded but unchanged `lang:` def has the same key
   and keeps the session; a changed one carries it through `changeRules`
-  with the rules `changedRules` reports.
+  with the rules `syntaxChanges` reports.
 - **Projected inputs run on sessions too** (`InputSessions`): a
   `TextSession` per input node id (commits keep the input's id, so the
   key is stable), and a commit goes through `Language.commitInput`. A

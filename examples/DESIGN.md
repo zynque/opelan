@@ -18,7 +18,7 @@ an old store with untyped `lang:` docs falls back to the registry.
 
 ## Expression language (`expr/`)
 
-`ExprLanguage`, `Expr`/`ExprDoc`, `ExprLexicon`, `ExprParse`, `ExprView`
+`ExprLanguage`, `Expr`/`ExprDoc`, `ExprLexicon`, `ExprView`
 — the demonstration language. It has int and float literals (`Num`:
 integer arithmetic stays integral, division and floats are decimal,
 `Num.show` rounds away float noise for display); `+`, `-`, `*`, `/` with
@@ -29,18 +29,14 @@ total, recovering parser. Views render through `LocExpr`, a located read
 that keeps each node's id, so every piece of the view tree carries its
 source id. Evaluation resolves refs through the enclosing document — a
 referenced cell's own subtree is evaluated, so formulas compose — and a
-visiting set reports ref cycles as gaps instead of diverging. The
-parser also emits a **span map** (`Map[List[Int], Span]`, tree path →
-source range), groundwork for mapping text edits onto nodes instead of
-reparsing whole cells — superseded by per-node lengths under
-[incremental parsing](../foundation/grammar/DESIGN.md). `Expr.print`
-round-trips gaps.
+visiting set reports ref cycles as gaps instead of diverging.
+`Expr.print` round-trips gaps.
 
-`ExprRules`/`ExprDef`/`Terms` express the same language as `means`
-rules and as a def, so `DefLanguage(exprDef)` can be held identical to
-`ExprLanguage` (parse, print, and eval) on a 28-input battery — the
-regression anchor for any change to the definition machinery (see
-[`test/`](../test/DESIGN.md)). Code knows an example language's
+`ExprRules`/`ExprDef` define the language as `means` rules and a def —
+`ExprLanguage` IS `DefLanguage(exprDef)`. The 28-input battery holding
+a constructed `DefLanguage(exprDef)` identical to the singleton (parse,
+print, eval) checks the construction path of the definition machinery
+(see [`test/`](../test/DESIGN.md)). Code knows an example language's
 constructs by the ids its canonical encoding assigns (`termRefs`,
 `exprTerms`, `sheetTerms`).
 

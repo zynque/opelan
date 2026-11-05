@@ -11,9 +11,6 @@ import opelan.foundation.means.text._
 // every leaf read string-or-nothing. `root` is the definition's root:
 // the content node of a typed def doc, or the document root for a bare
 // outline. `cons` names the meta construct a node applies, by identity.
-// `grammarFrom` decodes combinator subtrees case by case; its `seen`
-// ancestor set guards the walk the way Document.preorder's visited set
-// does — a malformed document can list a node as its own descendant.
 private class DefDocReader(
     doc: Document[NodeData], root: Int,
     url: String = "", version: Int = 0) {
@@ -35,14 +32,6 @@ private class DefDocReader(
 
   def entries(id: Int, name: String): List[Int] = children(id).filter(cons(_).contains(name))
 
-  // A reference leaf read as the name of what it points at (an op's
-  // term, a use's rule); a leftover string is taken as the name itself.
-  def refName(id: Option[Int]): String = id.flatMap(i => data(i)).flatMap {
-    case NodeData.InternalNodeRef(t) => definitionName(doc, t)
-    case NodeData.StringData(s)      => Some(s)
-    case _                           => None
-  }.getOrElse("")
-
   def shapeFrom(id: Option[Int]): NodeShape = id.flatMap(cons) match {
     case Some("leaf")  => NodeShape.Leaf
     case Some("fixed") => id.flatMap(i => children(i).headOption).flatMap(data) match {
@@ -51,45 +40,6 @@ private class DefDocReader(
     }
     case _ => NodeShape.Any
   }
-
-  def grammarFrom(id: Int, seen: Set[Int] = Set.empty): GrammarDef =
-    if (seen(id)) GrammarDef.Gap
-    else grammarNode(id, seen + id)
-
-  private def grammarNode(id: Int, seen: Set[Int]): GrammarDef = {
-    def sub(i: Int) = children(id).lift(i).map(grammarFrom(_, seen)).getOrElse(GrammarDef.Gap)
-    cons(id) match {
-      case Some("tok")    => GrammarDef.Tok(childStr(id, 0).getOrElse(""), leafFrom(children(id).lift(1)))
-      case Some("choice") => GrammarDef.Choice(children(id).map(grammarFrom(_, seen)))
-      case Some("parens") => GrammarDef.Parens(sub(0))
-      case Some("signum") => GrammarDef.Signum
-      case Some("unrecognized") =>
-        GrammarDef.Unrecognized(setFrom(childStr(id, 0)), setFrom(childStr(id, 1)))
-      case Some("chain")  => GrammarDef.ChainLeft(opsFrom(children(id).lift(1)), sub(0))
-      case Some("precedence") =>
-        GrammarDef.Precedence(sub(0), children(id).lift(1).toList.flatMap(children).map(l => opsFrom(Some(l))))
-      case Some("phrase") => GrammarDef.Phrase(sub(0), setFrom(childStr(id, 1)))
-      case Some("named")  => GrammarDef.Named(childStr(id, 0).getOrElse(""), sub(1))
-      case Some("use")    => GrammarDef.Ref(refName(children(id).headOption))
-      case _              => GrammarDef.Gap
-    }
-  }
-
-  private def leafFrom(child: Option[Int]): LeafKind = child.flatMap(cons) match {
-    case Some("int")   => LeafKind.IntLit
-    case Some("float") => LeafKind.FloatLit
-    case Some("gap")   => LeafKind.GapLeaf
-    case Some("ref")   => LeafKind.RefLit(child.flatMap(childStr(_, 0)).getOrElse(""))
-    case _             => LeafKind.Text
-  }
-
-  private def setFrom(s: Option[String]): Set[String] =
-    s.map(_.split(" ").filter(_.nonEmpty).toSet).getOrElse(Set.empty)
-
-  private def opsFrom(child: Option[Int]): Map[String, String] =
-    child.toList.flatMap(children).filter(cons(_).contains("op")).flatMap { opId =>
-      childStr(opId, 0).map(_ -> refName(children(opId).lift(1)))
-    }.toMap
 
   // A `rules` section: each `rule` node through the recovering reader
   // (RuleDocDecode — a malformed rule becomes a gap rule), `binding`

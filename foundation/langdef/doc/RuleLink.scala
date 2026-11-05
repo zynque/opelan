@@ -3,8 +3,7 @@ package opelan.foundation.langdef.doc
 import opelan.foundation.document._
 
 // Point each meaning's `use`/`source`/`builtin`/`literal` operand at
-// the placeholder piece node it names — the rules counterpart of
-// linkUses for grammar nodes. The operand decodes through the piece's
+// the placeholder piece node it names. The operand decodes through the piece's
 // projected name leaf, so a placeholder rename heals every use. A
 // `literal` argument that isn't a name (a `neg` subtree) isn't a
 // string leaf, so the name check below skips it.
@@ -77,13 +76,10 @@ private[langdef] def deriveTermIds(
   ids
 }
 
-// Point each term use at its declaration — the counterpart of
-// linkUses for meaning constructs and `op` leaves. Every meaning
-// position after the first occurrence of a name becomes
-// InternalNodeRef to the declaration (a rename heals every use);
-// the first keeps its name — it IS the declaration. An `op` encoded
-// with a section-entry ref (vocabulary-section defs, older docs)
-// already carries InternalNodeRef and keeps it.
+// Point each term use at its declaration. Every meaning position
+// after the first occurrence of a name becomes InternalNodeRef to the
+// declaration (a rename heals every use); the first keeps its name —
+// it IS the declaration.
 private[langdef] def linkTerms(
     doc: Document[NodeData], root: Int,
     ids: Map[String, Int]): Document[NodeData] = {
@@ -104,10 +100,7 @@ private[langdef] def linkTerms(
   doc.subtreeIds(root)
     .filter(id => metaTag(doc, id).contains("meaning"))
     .foreach(m => doc.childrenOf(m).foreach(term))
-  val opLeaves = doc.subtreeIds(root)
-    .filter(id => metaTag(doc, id).contains("op"))
-    .flatMap(id => doc.childrenOf(id).lift(1))
-  (uses ++ opLeaves).foldLeft(doc) { (d, id) =>
+  uses.foldLeft(doc) { (d, id) =>
     doc.getNode(id).map(_.data) match {
       case Some(NodeData.StringData(name)) =>
         ids.get(name).flatMap(t =>

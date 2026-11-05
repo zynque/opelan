@@ -15,9 +15,8 @@ there is no token stream and no lexing pass. A *lexicon*
 character-level lexical rules, tried only where a combinator asks what
 starts at its position — the first rule that matches wins, so order is
 priority (`float` before `int`). A grammar's token kinds (`"int"`,
-`"rpar"`) are the names of these rules, so the `GrammarDef` format and
-stored `lang:` documents are unchanged; a syntax names its lexicon
-(`"expr"`) where it once named a lexer. Token-level combinators skip
+`"rpar"`) are the names of these rules; a syntax names its lexicon
+(`"expr"`). Token-level combinators skip
 whitespace before what they match; lexical rules never do. The `means`
 reader is itself a combinator grammar (`RuleGrammar` in
 [`../means/text/`](../means/text/DESIGN.md)) over a rule lexicon. Why
@@ -136,7 +135,7 @@ stale.
   `changeRules(grammar, names)` re-derive their seeds by walking the
   kept marks — an entry's positions are relative to its node, so
   nothing inside an entry or a subtree is touched — plus the side
-  columns' own splice. `changedRules` diffs two `GrammarDef`s to supply
+  columns' own splice. `syntaxChanges` diffs two rule sets to supply
   the names (in
   [`../langdef/syntax/`](../langdef/syntax/DESIGN.md)).
   A version bump is a special change: the rules may be identical, but

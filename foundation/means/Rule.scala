@@ -40,7 +40,7 @@ case class Pattern(pieces: List[Piece]) {
 // constructs: they operate on bound values and never materialize a
 // node of their own.
 //
-// Names here are labels, as in NodeTerm and GrammarDef: in a `lang:`
+// Names here are labels, as in NodeTerm: in a `lang:`
 // document a constructor is a ref to its term's vocabulary entry and a
 // placeholder use an internal ref to the pattern's placeholder node
 // (foundation/document/typed/DESIGN.md, *Everything by reference*).

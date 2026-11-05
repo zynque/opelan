@@ -16,7 +16,7 @@ import opelan.foundation.means.text._
 class GrammarChangesSuite extends FunSuite {
 
   private def syntax(set: RuleSet): SyntaxDef =
-    SyntaxDef("expr", GrammarDef.Gap, Some(set))
+    SyntaxDef("expr", Some(set))
   private def rule(text: String, id: Int): Rule =
     readRule(text).fold(e => fail(e), identity).copy(id = Some(id))
   private def codeRule(text: String): Rule =

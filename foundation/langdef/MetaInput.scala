@@ -2,7 +2,7 @@ package opelan.foundation.langdef
 
 import opelan.foundation.document._
 import opelan.foundation.document.Detached._
-import opelan.foundation.grammar.PTree
+import opelan.foundation.grammar.{PTree, unrecognized}
 import opelan.foundation.langdef.doc._
 import opelan.foundation.langdef.syntax._
 import opelan.foundation.language.InputSessions
@@ -70,7 +70,7 @@ private def desugarCommitted(
     val tag = termTagOf(defined)
     val meaning = phraseMeaning(text, read.pattern.placeholders.toSet,
       set.copy(rules = set.rules.updated(index, read)),
-      atomOf(syn, lex, tag), tag, syn.lexicon, lex,
+      unrecognized(lex.gapStart, lex.gapRun), tag, syn.lexicon, lex,
       lexicalTerms(impls))
     if (hasGap(meaning)) read else read.copy(meaning = meaning)
   }).getOrElse(read)

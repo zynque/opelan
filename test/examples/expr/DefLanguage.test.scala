@@ -7,9 +7,9 @@ import opelan.foundation.langdef._
 import opelan.foundation.langdef.doc._
 import munit.FunSuite
 
-// The regression anchor for the bootstrap: a language described as data
-// and interpreted by DefLanguage must be behaviorally identical to the
-// hand-written implementation it replaces.
+// A language described as data and interpreted by DefLanguage behaves
+// like the registry singleton — a constructed DefLanguage(exprDef)
+// against ExprLanguage across the whole recovery contract.
 class DefLanguageSuite extends FunSuite {
 
   private val lang: LanguageDef = exprDef
@@ -80,17 +80,5 @@ class DefLanguageSuite extends FunSuite {
     val l = new DefLanguage(foreign, implsFor(foreign))
     assertEquals(l.parse("1 + 2"), None)          // "expr" lexicon unbound
     assert(l.render("print", hand.sampleDoc).isLeft)
-  }
-
-  test("a cyclic grammar Ref degrades to a gap instead of looping") {
-    // Named("e", Ref("e")) never consumes input — a malformed def doc
-    // could encode this; the parse must terminate.
-    val cyc = exprDef.copy(syntax = Some(SyntaxDef("expr",
-      GrammarDef.Named("e", GrammarDef.Ref("e")))))
-    assertEquals(
-      new DefLanguage(cyc, implsFor(cyc)).parse("1").map(_.data),
-      Some(NodeData.GapData("")))
-    // …and the real grammar's consuming recursion still works after.
-    assertEquals(defed.parse("1 + 2"), hand.parse("1 + 2"))
   }
 }

@@ -37,18 +37,14 @@ enum NodeShape {
   case Any             // a tag node with variable children
 }
 
-// The text syntax: a named builtin lexicon — the character-level lexical
-// rules the grammar's token kinds name — plus the grammar itself, in one
-// of two forms. With `rules` unset, `grammar` is the whole combinator
-// composition. With `rules` set, the means rules compile over `grammar`
-// as the operand atom — what rules don't express: Gap, the lexicon's
-// recovering unrecognized run (Lexicon's gapStart/gapRun), recovery
-// scaffolding the def document doesn't store; leaf tokens are operands
-// through `where`-bound operand rules against the builtin leaf
-// vocabulary.
+// The text syntax: a named builtin lexicon — the character-level
+// lexical rules token kinds name — plus the means rules that compile
+// over the lexicon's recovery (Lexicon's gapStart/gapRun) as their
+// operand fallback; leaf tokens are operands through `where`-bound
+// operand rules against the builtin leaf vocabulary. A syntax with no
+// rules parses nothing — the whole input reads as a gap.
 case class SyntaxDef(
     lexicon: String,
-    grammar: GrammarDef,
     rules: Option[RuleSet] = None)
 
 // A derived view bound to a builtin: view "eval" → builtin "expr-eval",
@@ -71,29 +67,8 @@ enum InputParserDef {
 // Label keeps it as a string value (sheets), Gap keeps it as a gap.
 enum InputFallback { case Label, Gap }
 
-// A grammar as a combinator composition — the data twin of
-// foundation/grammar. Named/Ref encode recursion (a precedence grammar
-// its own parens refer back to); a doc encoding binds names the same
-// way. Token leaves map through LeafKind — named, since how "42"
-// becomes IntData(42) is semantics. Gap is the recovering read's
-// residue: an unrecognizable grammar node becomes a production that
-// never applies.
-enum GrammarDef {
-  case Tok(kind: String, leaf: LeafKind)
-  case Choice(alts: List[GrammarDef])
-  case Parens(inner: GrammarDef)
-  case Signum
-  case Unrecognized(start: Set[String], run: Set[String])
-  case ChainLeft(ops: Map[String, String], atom: GrammarDef)
-  case Precedence(atom: GrammarDef, levels: List[Map[String, String]])
-  case Phrase(inner: GrammarDef, stops: Set[String])
-  case Named(name: String, g: GrammarDef)
-  case Ref(name: String)
-  case Gap
-}
-
-// How a token's text becomes leaf node data — the named productions a
-// grammar's Tok alternatives use.
+// How a token's text becomes leaf node data — the productions a leaf
+// vocabulary's alternatives use (`LeafDef`, Leaves.scala).
 enum LeafKind {
   case IntLit                   // IntData(text.toInt)
   case FloatLit                 // FloatData(text.toDouble)

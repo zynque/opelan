@@ -4,13 +4,13 @@
 *Frictionless* in practice. A `LanguageDef` (`LanguageDef.scala`) is a
 language as data: identity, a vocabulary of node terms (derived from the
 rules — each term's first meaning occurrence is its declaration), a
-compositional grammar (`GrammarDef`, the data twin of the
-[`foundation/grammar`](../grammar/DESIGN.md) combinators), view
-bindings, and an input grammar. `langDefDoc` encodes a def as a typed
-`lang:` document; `langDefFromDocument` reads it back recoveringly;
-`interpret` (in [`syntax/`](syntax/DESIGN.md)) turns grammar data into a
-total parser; and `DefLanguage` turns a def into a live `Language`. A
-def doc's sections, rule nodes, and grammar combinators are constructs
+`means` rule set, view bindings, and an input grammar. `langDefDoc`
+encodes a def as a typed `lang:` document; `langDefFromDocument` reads
+it back recoveringly; `compileRules` (in
+[`../means/engine/`](../means/engine/DESIGN.md)) turns the rules into a
+total parser over the lexicon's recovery; and `DefLanguage` turns a def
+into a live `Language`. A
+def doc's sections and rule nodes are constructs
 of `lang: language` (`metaTerms`), imported like any other construct.
 `lang: language` imports them from its own vocabulary, which is the
 bootstrap fixpoint. Code knows meta constructs by node id
@@ -28,10 +28,11 @@ scaffolding while behavior still lives in code. The input grammar
 (`InputParserDef.Language(ref, fallback)`, `InputGrammar.scala`) names
 another language by ref, which is how the sheet's cells parse with
 `lang: expression`. `DefDocEncode`/`DefDocDecode`/`DefDocReader` (in
-[`doc/`](doc/DESIGN.md)) implement the def↔document format, with sets and op tables sorted
-so encoding is deterministic. `DefLanguage(exprDef)` is held identical
-to `ExprLanguage` (parse, print, and eval) on a 28-input battery, the
-regression anchor for any change to the definition machinery (see
+[`doc/`](doc/DESIGN.md)) implement the def↔document format, with sets
+sorted so encoding is deterministic. A constructed `DefLanguage(exprDef)`
+is held identical to the `ExprLanguage` singleton (parse, print, and
+eval) on a 28-input battery, checking the construction path of the
+definition machinery (see
 [`test/`](../../test/DESIGN.md)).
 
 **Rules as documents.** A `lang:` document stores each rule as a
@@ -42,8 +43,9 @@ every construct use, a meaning names its constructor by reference:
 `add(a, b)` is a node whose data refers to `add`'s declaration — the
 first meaning node to build it — and `a` spells `use(a)` — an operand
 ref to the pattern's placeholder node — so a rule survives renames on
-either side. Rules compile to `GrammarDef`, which remains the
-implementation layer the interpreter runs. The `means` notation is the
+either side. Rules compile to the recovering combinators of
+[`foundation/grammar`](../grammar/DESIGN.md) — the implementation layer
+— through `compileRules`. The `means` notation is the
 text surface of the language-definition language — `rule` nodes print
 as `means` lines and `means` lines under `rules` commit as `rule`
 nodes (`doc/DefDocText`) — eventually described
@@ -74,6 +76,6 @@ Other pieces:
 Sub-packages:
 
 - [`doc/`](doc/DESIGN.md) — the def↔document format
-- [`syntax/`](syntax/DESIGN.md) — grammar interpretation, vocabulary
-  derivation, grammar diffs
+- [`syntax/`](syntax/DESIGN.md) — vocabulary derivation, language-change
+  diffs, the leaf vocabulary
 - [`view/`](view/DESIGN.md) — the def document's derived views

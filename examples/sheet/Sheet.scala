@@ -1,7 +1,7 @@
 package opelan.examples.sheet
 
 import opelan.examples.termOf
-import opelan.examples.expr.{Expr, Num, docResolver, evalLoc, exprToDetached, parseExpr, printTree, readLocExpr}
+import opelan.examples.expr.{Expr, ExprLanguage, Num, docResolver, evalLoc, exprFromDetached, exprToDetached, printTree, readLocExpr}
 import opelan.foundation.document._
 import opelan.foundation.view.ViewTree
 import opelan.foundation.view.ViewTree._
@@ -131,11 +131,15 @@ def cellText(doc: Document[NodeData], cellId: Int): String =
 def parseCellText(text: String): DetachedNode[NodeData] =
   if (text.startsWith("?")) DetachedNode.leaf(NodeData.GapData(text.drop(1)))
   else if (text.trim.isEmpty) DetachedNode.leaf(NodeData.StringData(""))
-  else parseExpr(text).expr match {
+  else exprOf(text) match {
     case _: Expr.Gap if mentionsCell(text) => DetachedNode.leaf(NodeData.GapData(text))
     case _: Expr.Gap => DetachedNode.leaf(NodeData.StringData(text))
     case e            => exprToDetached(e)
   }
 
+private def exprOf(text: String): Expr =
+  ExprLanguage.parse(text).map(exprFromDetached)
+    .getOrElse(Expr.Gap(text))
+
 private def mentionsCell(text: String): Boolean =
-  text.split("\\s+").exists(w => parseExpr(w).expr.isInstanceOf[Expr.Ref])
+  text.split("\\s+").exists(w => exprOf(w).isInstanceOf[Expr.Ref])

@@ -53,7 +53,7 @@ private def meaningSyntax(
     lexicon <- impls.lexicons.get(s.lexicon)
   } yield {
     val tag = termTagOf(defined)
-    val atom = atomOf(s, lexicon, tag)
+    val atom = unrecognized(lexicon.gapStart, lexicon.gapRun)
     val lexicals = lexicalTerms(impls)
     val placeholders = ruleFromDoc(doc, docUrl, 0,
       deriveTermIds(doc, contentId(doc).getOrElse(doc.rootId)), ruleId)
@@ -67,14 +67,14 @@ private def meaningSyntax(
         choice(placeholderAtom(placeholders), atom),
         tag, s.lexicon, lexicals), Set.empty),
       lexicon,
-      (s.lexicon, s.grammar, set, placeholders, tags),
+      (s.lexicon, set, placeholders, tags),
       changedSince = previous => previous.key match {
-        case (lex: String, g: GrammarDef, before: RuleSet,
+        case (lex: String, before: RuleSet,
               ph: Set[String] @unchecked,
               beforeTags: Map[String, NodeData] @unchecked)
-            if lex == s.lexicon && g == s.grammar && ph == placeholders =>
+            if lex == s.lexicon && ph == placeholders =>
           Some(SyntaxChange(
-            syntaxChanges(SyntaxDef(lex, g, Some(before)), s),
+            syntaxChanges(SyntaxDef(lex, Some(before)), s),
             retagBy(beforeTags, tag)))
         case _ => None
       },

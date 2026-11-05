@@ -58,9 +58,9 @@ def compileRules(
     tag: String => NodeData,
     name: String,
     lexicals: Map[String, LexicalTerm] = Map.empty): Parser = {
-  // `self` is the parser placeholders recurse through — the named
-  // rule, so recursion memoizes and records the call for invalidation
-  // (the same shape as `named`/`use` in the combinator form). The
+  // `self` is the parser placeholders recurse through — a `rule`-named
+  // parser, so recursion memoizes and records the call for invalidation.
+  // The
   // inner lambda keeps its initialization trivial: `compiled` forces
   // `operand`, which names `self`, so `self` must be set first.
   lazy val self: Parser = rule(name)((in, pos) => compiled(in, pos))

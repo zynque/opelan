@@ -33,8 +33,8 @@ def unrecognized(start: Set[String], run: Set[String]): Parser =
     }
   }
 
-// A gap covering all remaining text — for when a grammar has no
-// applicable production at all (GrammarDef.Gap).
+// A gap covering all remaining text — for a syntax that has no
+// applicable production at all (a def's rule-less syntax).
 def restGap: Parser = (in, pos) => {
   val text = in.input
   val start = skipSpace(text, pos)

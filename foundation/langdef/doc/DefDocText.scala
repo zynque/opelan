@@ -18,7 +18,6 @@ import opelan.foundation.means.text.{printPattern, readRuleOrGap}
 //     name "Expressions"
 //     syntax
 //       "expr"
-//       choice …                 the grammar as combinator outline
 //       rules
 //         a + b means add(a, b)
 //         n means n where n: number

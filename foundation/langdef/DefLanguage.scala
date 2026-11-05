@@ -65,13 +65,12 @@ class DefLanguage(
       s <- languageDef.syntax
       lexicon <- impls.lexicons.get(s.lexicon)
     } yield s.rules match {
-      // Rules compile over the operand atom — the def's grammar when
-      // it carries one, else the lexicon's recovery — under the
-      // lexicon's name: the `named`/`use` shape the combinator form
-      // writes by hand. `phrase` supplies the to-EOF recovery the
-      // combinator form encodes explicitly.
+      // Rules compile over the lexicon's recovery as their operand
+      // atom, under the lexicon's name — the `named`/`use` shape a
+      // hand-written grammar memoizes by. `phrase` supplies the
+      // to-EOF recovery.
       case Some(rules) =>
-        val atom = atomOf(s, lexicon, termTag)
+        val atom = unrecognized(lexicon.gapStart, lexicon.gapRun)
         val lexicals = lexicalTerms(impls)
         // Quoted-gap meanings — phrases the set couldn't yet read —
         // retry at interpretation and heal as their rules arrive.
@@ -79,7 +78,7 @@ class DefLanguage(
           rephraseRuleSet(rules, atom, termTag, s.lexicon, lexicon, lexicals)
         (lexicon, phrase(compileRules(rephrased, atom, termTag, s.lexicon,
           lexicals), Set.empty))
-      case None => (lexicon, interpret(s.grammar, termTag))
+      case None => (lexicon, restGap)
     }
 
   def render(view: String, doc: Document[NodeData])
@@ -107,7 +106,7 @@ class DefLanguage(
 
   // Total like every recovering grammar: Some whenever a syntax exists —
   // and always for the meta language, whose text form is the format in
-  // doc/DefDocText.scala rather than a GrammarDef.
+  // doc/DefDocText.scala rather than a rule set.
   override def parse(text: String): Option[DetachedNode[NodeData]] =
     if (isDocLanguage) Some(defDocParse(text))
     else syntax.map { case (lexicon, g) =>
@@ -122,8 +121,8 @@ class DefLanguage(
       linkTerms(linkRuleUses(doc, rootId), rootId, deriveTermIds(doc, rootId))
     else doc
 
-  // The interpreted grammar as an incremental parser. Its key is the
-  // grammar data plus the construct refs it emits (they pin the def's
+  // The compiled rules as an incremental parser. Its key is the
+  // syntax plus the construct refs it emits (they pin the def's
   // version), so a session survives re-decoding an unchanged def; after
   // an edit to the def, only rules whose definitions changed rerun —
   // and a version bump re-pins kept content's term tags rather than
@@ -133,13 +132,12 @@ class DefLanguage(
       s <- languageDef.syntax
       (lexicon, parser) <- syntax
     } yield TextSyntax(parser, lexicon,
-      (s.lexicon, s.grammar, s.rules, termTags),
+      (s.lexicon, s.rules, termTags),
       changedSince = previous => previous.key match {
-        case (s.lexicon, before: GrammarDef,
-              beforeRules: Option[RuleSet] @unchecked,
+        case (s.lexicon, beforeRules: Option[RuleSet] @unchecked,
               beforeTags: Map[String, NodeData] @unchecked) =>
           Some(SyntaxChange(
-            syntaxChanges(SyntaxDef(s.lexicon, before, beforeRules), s),
+            syntaxChanges(SyntaxDef(s.lexicon, beforeRules), s),
             retagBy(beforeTags, termTag)))
         case _ => None
       })

@@ -66,10 +66,9 @@ steps*, item 1).
    built. Open: the op-log compaction boundary, the synced meta-log for
    history mutation, branch merge-back semantics, and the presence
    channel's shape.
-2. *Bootstrap.* Definitions are documents, but their semantics (lexicons,
-   views, eval) still name Scala builtins, and the format is combinator
-   data rather than something a domain expert would write. The `means`
-   series is the planned answer to both.
+2. *Bootstrap.* Definitions are documents and their syntax is authored
+   `means` rules, but their semantics (lexicons, views, eval) still name
+   Scala builtins. The `means` series is the planned answer.
 3. *Immediately typed.* Real typechecking per keystroke over gappy trees
    (Hazelnut-style edit semantics), beyond parse-level gaps.
 4. *Semantic diff/merge.* Node-id-stable documents enable meaning-aware
@@ -122,17 +121,21 @@ steps*, item 1).
        the hand-coded `Expr.eval` behind `expr-eval`. The rule
        dependency DAG and derived layers are computed; a cycle renders
        as a gap at the closing edge.
-     - **Migrate stored definitions.** Users' IndexedDB stores hold
-       `lang:` docs in the combinator format, and seeding never
-       overwrites. Convert legacy grammar subtrees to rules on read
-       (or first load): the first real *Evolvable* migration,
-       revertible because every version is kept.
      - **Demote `GrammarDef` to the implementation layer.** Definitions
-       authored and stored as rules only; `GrammarDef` shown only
-       under show implementation as the escape hatch; remove the
-       combinators rules made redundant in authored definitions
-       (`Unrecognized`, `Phrase`, `Signum`, stop sets). Update
-       DESIGN.md and the demo.
+       authored and stored as rules only; `GrammarDef` leaves
+       `LanguageDef` entirely. No stored docs carry combinator
+       grammars, so no migration is owed — content migration remains
+       a goal under item 2's *Content migration*. `Unrecognized` has
+       already left authored definitions: a rules def's operand
+       fallback is the lexicon's recovery (`Lexicon.gapStart/gapRun`)
+       and stores nothing. Parity with the hand-written combinator
+       parser is retired as a gate — prototype stage, gaps in the
+       rules form get fixed as discovered — so the oracle fixtures
+       (`ExprParse`, `exprCombinatorDef`, `exprRuleGrammar`) go too,
+       their behavioral assertions re-pointed at the rules path.
+       Then `Phrase`, `Signum`, stop sets, `interpret`,
+       `grammarFrom`/`grammarNode`, and the combinator half of
+       `syntaxChanges`. Update DESIGN.md and the demo.
    - *Beyond parity:*
      - **Structural rules.** The general rule form of which textual
        `means` is the token-spine projection: a tree pattern — the

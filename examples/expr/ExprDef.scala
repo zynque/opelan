@@ -5,6 +5,7 @@ import opelan.foundation.document.typed._
 import opelan.foundation.langdef._
 import opelan.foundation.langdef.syntax._
 import opelan.foundation.langdef.doc.termRefs
+import opelan.foundation.langdef.LeafKind._
 import opelan.foundation.means._
 import opelan.foundation.means.engine.printViewWith
 import opelan.foundation.means.text._
@@ -15,39 +16,11 @@ import opelan.foundation.means.text._
 // run the same machinery. `langDefDoc` must round-trip it through
 // `langDefFromDocument`. The def is paired with `exprImpls`, the Impls
 // bundle holding the code-side semantics it names.
-import GrammarDef._
-import NodeShape._
-import LeafKind._
-
 // The language's identity ref — the URL its `lang:` document lives at.
 // A constant, not `ExprLanguage.typeRef`: the object interpreting this
 // def would otherwise be read while the def initializes.
 val exprTypeRef =
   ExternalNodeReference("opelan:languages/int-expression", 0, 0)
-
-private val mulDiv = Map("*" -> Expr.MulTag, "/" -> Expr.DivTag)
-private val addSub = Map("+" -> Expr.AddTag, "-" -> Expr.SubTag)
-
-// The expression grammar as data — the same composition ExprParse
-// writes by hand, with "expr" named so parens recurses to the
-// precedence level (not the phrase wrapper).
-private val exprGrammarDef: GrammarDef = exprGrammarWith(List(mulDiv, addSub))
-
-private def exprGrammarWith(levels: List[Map[String, String]]): GrammarDef =
-  Phrase(
-    Named("expr", Precedence(
-      atom = Choice(List(
-        Tok("int", IntLit),
-        Tok("float", FloatLit),
-        Tok("ref", RefLit("ref:")),
-        Tok("gap", GapLeaf),
-        Parens(Ref("expr")),
-        Signum,
-        Unrecognized(
-          Set("op", "unrecognized"),
-          Set("int", "float", "ref", "unrecognized", "gap")))),
-      levels = levels)),
-    stops = Set.empty)
 
 val exprDef = LanguageDef(
   typeRef = exprTypeRef,
@@ -59,28 +32,21 @@ val exprDef = LanguageDef(
   // carries no vocabulary section — each construct's first meaning
   // occurrence is its declaration.
   vocabulary = vocabularyFrom(exprRules),
-  // No authored grammar — the rules carry the syntax; the operand
-  // fallback they compile over is the lexicon's recovering
-  // unrecognized run (ExprLexicon's gap kinds), which the def
-  // document doesn't store.
-  syntax = Some(SyntaxDef("expr", Gap, Some(exprRules))),
+  // The rules carry the syntax; the operand fallback they compile
+  // over is the lexicon's recovering unrecognized run
+  // (ExprLexicon's gap kinds).
+  syntax = Some(SyntaxDef("expr", Some(exprRules))),
   views = List(
     ViewBinding("print", "expr-print"),
     ViewBinding("eval", "expr-eval")),
   inputParser = None)
-
-// The expression grammar in combinator form — the fixture for
-// GrammarDef interpretation and its rule-diffing while both forms
-// coexist (the def itself carries means rules now).
-val exprCombinatorDef: LanguageDef =
-  exprDef.copy(syntax = Some(SyntaxDef("expr", exprGrammarDef)))
 
 // The demo's starting point for lang: expression: the `/` rule and its
 // binding are missing, so the budget's per-person formula sits as a gap
 // until the audience adds them to the definition document. The vocabulary
 // still declares `div`, so term ids match exprDef's.
 val demoExprDef = exprDef.copy(syntax =
-  Some(SyntaxDef("expr", Gap, Some(withoutPattern(exprRules, "a / b")))))
+  Some(SyntaxDef("expr", Some(withoutPattern(exprRules, "a / b")))))
 
 // A rule set minus one pattern — its rule and every binding entry.
 private def withoutPattern(set: RuleSet, text: String): RuleSet = {

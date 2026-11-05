@@ -9,7 +9,7 @@ import opelan.foundation.document._
 // parenthesization — so the AST needs no paren node.
 //
 // A Gap is the AST's typed hole: text that did not parse, kept verbatim
-// so the cell can heal on later edits (see ExprParse). An empty gap
+// so the cell can heal on later edits. An empty gap
 // means "operand expected here".
 enum Expr {
   case Lit(value: Int)

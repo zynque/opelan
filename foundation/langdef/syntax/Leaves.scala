@@ -76,8 +76,8 @@ val standardTerms: Map[String, LexicalTerm] =
       case _                                                  => true
     }))
 
-// How a token's text becomes leaf node data — the shared mapping
-// GrammarDef.Tok alternatives and leaf productions both use.
+// How a token's text becomes leaf node data — the mapping a leaf
+// production's alternatives use.
 private[langdef] def leafData(leaf: LeafKind, t: Token): NodeData =
   leaf match {
     case LeafKind.IntLit =>

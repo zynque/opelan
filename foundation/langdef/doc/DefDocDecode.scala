@@ -12,7 +12,7 @@ import opelan.foundation.means.Meaning
 // lang: language vocabulary entry a node's import names), never by
 // name, so a def doc whose meta constructs were renamed still decodes.
 // Every section is optional and every read tolerant: missing children
-// default, unrecognized grammar nodes become GrammarDef.Gap, and a def
+// default, unrecognized content degrades, and a def
 // doc under construction keeps decoding (Never Broken applies to
 // language definitions too).
 //
@@ -49,13 +49,6 @@ def langDefFromDocument(
     syntax = r.section("syntax").map { sid =>
       SyntaxDef(
         r.childStr(sid, 0).getOrElse(""),
-        // The grammar child, when stored, sits between the lexicon
-        // name and the rules section. A rules def stores none — its
-        // operand fallback is the lexicon's recovery — so the read
-        // defaults to Gap, which interpretation reads as just that.
-        r.children(sid).drop(1)
-          .find(k => !r.cons(k).contains("rules"))
-          .map(r.grammarFrom(_)).getOrElse(GrammarDef.Gap),
         r.entries(sid, "rules").headOption.map(r.ruleSetFrom))
     },
     views = r.section("views").toList.flatMap { vid =>

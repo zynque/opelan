@@ -1,7 +1,7 @@
 package opelan.examples
 
 import opelan.examples.sheet.{SheetLanguage, sheetDef}
-import opelan.examples.expr.{ExprLanguage, demoExprDef, exprCombinatorDef, exprDef, exprImpls, exprRules}
+import opelan.examples.expr.{ExprLanguage, demoExprDef, exprDef, exprImpls, exprRules}
 import opelan.foundation.document._
 import opelan.foundation.document.store._
 import opelan.foundation.document.typed._
@@ -38,12 +38,6 @@ class LangDefDocSuite extends FunSuite {
     val imported = importEntries(doc).map(_._2)
     assert(imported.contains(metaRef("rule").get))
     assert(imported.forall(_.documentUrl == langDefTypeRef.documentUrl))
-    // The combinator form's operators name the term they build by
-    // internal ref to its vocabulary entry.
-    val combinatorDoc = langDefDoc(exprCombinatorDef)
-    val mulEntry = termRefs(withTermRefs(exprCombinatorDef))("mul").nodeId
-    assert(combinatorDoc.nodes.exists(
-      _.data == NodeData.InternalNodeRef(mulEntry)))
   }
 
   test("means rules encode as structure and decode back") {
@@ -428,14 +422,14 @@ class LangDefDocSuite extends FunSuite {
     val d = langDefFromDocument(
       ExprLanguage.typeRef.documentUrl, doc)
     assertEquals(d.name, "lang: broken") // falls back to the title
-    assertEquals(d.syntax.map(_.grammar), Some(GrammarDef.Gap))
-    // The gap grammar parses nothing — total, not thrown.
+    assertEquals(d.syntax.map(_.rules), Some(None))
+    // A rule-less syntax parses nothing — total, not thrown.
     assertEquals(
       languageFromDef(d).parse("1 + 2").map(_.data),
       Some(NodeData.GapData("1 + 2")))
   }
 
-  test("a cyclic document decodes to gaps instead of looping") {
+  test("a cyclic document decodes without looping") {
     // A malformed Document can list a node as its own descendant —
     // node 3's only child is itself.
     val cyc: Document[NodeData] = Document(0, Vector(
@@ -444,9 +438,7 @@ class LangDefDocSuite extends FunSuite {
       Node(0, NodeData.StringData("expr"), Nil, Some(1)),
       Node(0, meta("choice"), List(3), Some(1))))
     val d = langDefFromDocument("opelan:docs/cyc", cyc)
-    assertEquals(
-      d.syntax.map(_.grammar),
-      Some(GrammarDef.Choice(List(GrammarDef.Gap))))
+    assertEquals(d.syntax.map(_.rules), Some(None))
   }
 
   test("sheet input parsing goes through the language ref") {

@@ -9,9 +9,10 @@ import opelan.foundation.langdef._
 // language-definition language, langDefTypeRef) whose content carries
 // the definition as data. Every construct is used by reference — the
 // meta constructs (`term`, `vocabulary`, `op` …) are imported from
-// lang: language, and references *within* the definition (an operator
-// to the term it builds, `use` to a named grammar) are internal refs to
-// the defining node. Only the definition's own names and literal syntax
+// lang: language, and references *within* the definition (a `use`
+// operand to its placeholder piece, a construct to its declaring
+// meaning node) are internal refs to the defining node. Only the
+// definition's own names and literal syntax
 // are strings. Sets and op maps sort so the bytes are deterministic.
 //
 //   ext: lang: language              type ref on the root's data
@@ -21,10 +22,8 @@ import opelan.foundation.langdef._
 //       description  "the arithmetic-expression language"
 //       name         "Expressions"
 //       vocabulary   term("add", fixed(2))  term("mul", fixed(2)) …
-//       syntax       "expr"  [grammar]  rules(…)  — the grammar child
-//                              only on combinator defs; a rules def's
-//                              operand fallback is the lexicon's
-//                              recovery and stores nothing
+//       syntax       "expr"  rules(…)   — the operand fallback is the
+//                              lexicon's recovery and stores nothing
 //       views        view("print", "expr-print") …
 //                    view("sheet", "sheet-grid", setting("currency", "$"))
 //       inputs       language(&import, as-label)
@@ -58,13 +57,11 @@ private[langdef] def encodeDef(
     else d.vocabulary.map(_.name).zip(doc1.childrenOf(vocabularyId)).toMap
   val doc2 = add(doc1, cid, List(
     d.syntax.map(s => n(pending("syntax"),
-      List(sl(s.lexicon)) ++
-        (if (s.grammar == GrammarDef.Gap) Nil
-         else List(grammarNode(s.grammar, sectionIds))) ++
+      sl(s.lexicon) +:
         s.rules.toList.map(rulesNode(_, d.typeRef.documentUrl, pending))*)),
     Some(n(pending("views"), d.views.map(viewNode)*)),
     d.inputParser.map(cp => n(pending("inputs"), inputsNode(cp)))).flatten*)._1
-  val linked = linkRuleUses(linkUses(doc2, cid), cid)
+  val linked = linkRuleUses(doc2, cid)
   val termIds =
     if (hasRules) deriveTermIds(linked, cid) else sectionIds
   val metaIds =

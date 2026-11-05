@@ -1,19 +1,11 @@
 package opelan.examples.expr
 
-import opelan.foundation.document._
-import opelan.foundation.grammar._
-import opelan.foundation.langdef.syntax.lexicalTerms
 import opelan.foundation.means._
-import opelan.foundation.means.engine._
 import opelan.foundation.means.text._
 
-// The expression language as `means` rules — the same grammar
-// ExprParse writes as combinators and ExprDef writes as
-// GrammarDef data, compiled by compileRules (foundation/means).
-// Behavioral parity with both is the regression anchor for the
-// rule engine (PLAN.md, `means` Phase B); once parity is proven
-// the rules become the definition and the other forms fall away.
-
+// The expression language as `means` rules — the definition ExprDef
+// encodes, compiled by compileRules (foundation/means).
+//
 // `readRuleOrGap` keeps a mistyped rule from breaking the set —
 // it reads as a rule that never applies, and `ruleSetIssues`
 // still reports it (`ExprRulesSuite` asserts the set is clean).
@@ -36,27 +28,3 @@ val exprRules = RuleSet(
     Tier(List(readPattern("a * b"), readPattern("a / b"))),
     Tier(List(readPattern("a + b"), readPattern("a - b")))),
   examples = List(Example("1 + 2 * 3", "1 + (2 * 3)")))
-
-// The operand fallback the rules don't describe — the lexicon's
-// recovering unrecognized run; the leaf tokens are operands through
-// the `n`/`r` operand rules bound to exprImpls' leaf productions
-// (the gap token through the kernel's `gap` operand), and signed
-// numbers are the `+n`/`-n` rules. The same fallback ExprParse's
-// atom writes, minus `parens`, the leaf toks, and `signum`.
-lazy val ruleAtom: Parser =
-  unrecognized(exprLexicon.gapStart, exprLexicon.gapRun)
-
-// The named leaf vocabulary `where` terms bind through — operand
-// status comes from the rules' own operand declarations.
-lazy val exprLexicals: Map[String, LexicalTerm] =
-  lexicalTerms(exprImpls)
-
-// The same wrapper ExprParse gives the hand-written grammar — the
-// grammar inside a to-EOF phrase. The `expr` name is the rule the
-// parser memoizes under — placeholders recurse through it, so it is
-// what a language change names to invalidate the syntax's results.
-lazy val exprRuleGrammar: Parser =
-  phrase(compileRules(
-    rephraseRuleSet(exprRules, ruleAtom, exprTag, "expr", exprLexicon,
-      exprLexicals),
-    ruleAtom, exprTag, "expr", exprLexicals), Set.empty)

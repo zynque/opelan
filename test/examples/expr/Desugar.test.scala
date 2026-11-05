@@ -2,6 +2,7 @@ package opelan.examples.expr
 
 import opelan.foundation.document._
 import opelan.foundation.grammar._
+import opelan.foundation.langdef.syntax.lexicalTerms
 import opelan.foundation.means._
 import opelan.foundation.means.engine._
 import opelan.foundation.means.text._
@@ -17,14 +18,16 @@ import Detached._
 class DesugarSuite extends munit.FunSuite {
 
   private val percent = readRuleOrGap("a % means a / 100")
+  private val atom =
+    unrecognized(exprLexicon.gapStart, exprLexicon.gapRun)
+  private val lexicals = lexicalTerms(exprImpls)
 
   private def desugared(set: RuleSet): RuleSet =
-    rephraseRuleSet(set, ruleAtom, exprTag, "expr", exprLexicon,
-      exprLexicals)
+    rephraseRuleSet(set, atom, exprTag, "expr", exprLexicon, lexicals)
 
   private def grammarFor(set: RuleSet): Parser =
-    phrase(compileRules(set, ruleAtom, exprTag, "expr",
-      exprLexicals), Set.empty)
+    phrase(compileRules(set, atom, exprTag, "expr",
+      lexicals), Set.empty)
 
   private def parse(g: Parser, input: String): PTree =
     g(In(input, exprLexicon), 0).tree
