@@ -14,7 +14,7 @@ Companion docs: `MANIFESTO.md` (principles), `PRINCIPLES.md` (the reasoning
 behind them), `ADOPTION.md` (why workbenches haven't spread, and how this
 one means to), `RELATED_WORK.md` (survey of related systems), `DEMO.md`
 (plan for a shareable demo), `README.md` (build/run), `USAGE.md` (how to
-drive the workbench), `STATUS.md` (current state and next steps), and
+drive the workbench), `PLAN.md` (current state and next steps), and
 `AGENTS.md` (code conventions).
 
 ## Package map
@@ -243,4 +243,4 @@ notation may still be ambiguous.
 - npm dependencies: CodeMirror 6 packages and `@automerge/automerge`.
 
 For what currently works, what's in progress, open questions, and next
-steps, see `STATUS.md`.
+steps, see `PLAN.md`.

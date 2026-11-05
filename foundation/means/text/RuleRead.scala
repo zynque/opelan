@@ -43,7 +43,7 @@ val noLanguage: (Set[String], String) => Meaning =
 
 // A malformed rule becomes a rule that never applies — the Never
 // Broken counterpart of `readRule`'s error report (foundation/DESIGN.md,
-// STATUS Phase C: "a malformed rule into a gap rule"). Nothing in
+// PLAN Phase C: "a malformed rule into a gap rule"). Nothing in
 // it compiles — an empty pattern is neither operator- nor
 // sequence-shaped — but `ruleIssues` still reports it, so the
 // mistake shows up in checking rather than disappearing.

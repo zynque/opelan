@@ -28,7 +28,7 @@ this direction:
   instead of a tokenizer outside the language definition.
 - *Composition.* A separate tokenizer imposes one global token set, so
   an input cannot embed a language with different lexical rules.
-  Character parsers compose freely (STATUS, *Language composition*), and
+  Character parsers compose freely (PLAN, *Language composition*), and
   context-dependent lexing (`ref:3,4`, units like `5kg`, string
   interpolation) is natural.
 - *`glued` gains its meaning* (with the rule compiler). Following Ohm's

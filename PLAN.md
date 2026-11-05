@@ -1,4 +1,4 @@
-# Status
+# Plan
 
 Point-in-time state of the Opelan workbench: what doesn't yet work and
 what comes next. What works is described per package in each folder's

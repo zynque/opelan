@@ -3,7 +3,7 @@
 Why language workbenches and domain-specific languages have not spread to
 domain experts — and how opelan intends to address each blocker. Companion to
 `MANIFESTO.md` (principles), `PRINCIPLES.md` (rationale behind them),
-`STATUS.md` (what is not yet built and what comes next), and
+`PLAN.md` (what is not yet built and what comes next), and
 `RELATED_WORK.md` (prior art).
 
 JetBrains MPS is the reference point throughout: it is the most capable
@@ -35,7 +35,7 @@ arguably the majority of the opportunity — never get written.
 tool they run in, with no external toolchain. Opelan intends to make it trivial
 for anyone to 'look under the hood'. Deriving a usable editor,
 parser, and type rules from a language-definition document is the core open
-problem of the bootstrap (see `STATUS.md`), and the project's make-or-break
+problem of the bootstrap (see `PLAN.md`), and the project's make-or-break
 technical bet.
 
 ## Frozen artifacts

@@ -182,5 +182,5 @@ and evaluation-time meanings are marked; and whether alternative
 notations live in one language document or as notation documents layered
 over a shared one.
 
-The step-by-step plan, with how each step is verified, is in `STATUS.md`
+The step-by-step plan, with how each step is verified, is in `PLAN.md`
 (*Next steps*).

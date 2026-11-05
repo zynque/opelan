@@ -47,7 +47,7 @@ reasons:
   parsing are what combinators are for, and languages beyond arithmetic
   need them.
 - *Composition.* Combinators compose; a closed operator table does not.
-  Embedding one language's grammar in another (STATUS, *Language
+  Embedding one language's grammar in another (PLAN, *Language
   composition*) means composing parsers.
 - *Continuity.* Total, recovering parsing already lives in the
   combinators (gaps instead of failure), and `precedenceTable` already

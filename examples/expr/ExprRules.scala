@@ -11,7 +11,7 @@ import opelan.foundation.means.text._
 // ExprParse writes as combinators and ExprDef writes as
 // GrammarDef data, compiled by compileRules (foundation/means).
 // Behavioral parity with both is the regression anchor for the
-// rule engine (STATUS.md, `means` Phase B); once parity is proven
+// rule engine (PLAN.md, `means` Phase B); once parity is proven
 // the rules become the definition and the other forms fall away.
 
 // `readRuleOrGap` keeps a mistyped rule from breaking the set —

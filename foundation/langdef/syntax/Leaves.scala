@@ -15,7 +15,7 @@ import opelan.foundation.means.engine.LexicalTerm
 // Impls, beside the lexicons — a small fixed set. Which leaves
 // stand alone as operands is authored by operand rules, not
 // derived here; user-defined leaf productions are deferred past
-// the means series (STATUS, *Authored leaf productions*).
+// the means series (PLAN, *Authored leaf productions*).
 case class LeafDef(productions: List[(String, LeafKind)])
 
 // One leaf production as a token-level parser — its alternatives

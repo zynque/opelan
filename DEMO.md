@@ -3,7 +3,7 @@
 Plan for a shareable demo that proves the make-or-break bet of
 `ADOPTION.md`: an end-user application whose implementation is a document
 you can reach, edit, and watch take effect — no toolchain. What is built,
-what still blocks the demo, and the steps to finish it are in `STATUS.md`;
+what still blocks the demo, and the steps to finish it are in `PLAN.md`;
 the architecture is in `DESIGN.md`.
 
 ## Candidate applications

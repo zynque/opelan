@@ -7,7 +7,7 @@ import opelan.foundation.means.engine.printWith
 // The `means`-compiled expression grammar (examples/ExprRules) must
 // produce exactly the hand-written grammar's parse — trees and spans
 // — across the parser battery. This is the parity anchor for the
-// rule engine (STATUS.md, `means` Phase B).
+// rule engine (PLAN.md, `means` Phase B).
 class ExprRulesSuite extends munit.FunSuite {
 
   private val inputs = List(
