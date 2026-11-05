@@ -8,7 +8,7 @@ import opelan.foundation.grammar._
 //
 //   float  digits.digits      int           digits        ref  ref:digits
 //   op     + - * /            lpar          (             rpar  )
-//   hole   ?                  unrecognized  a maximal run of anything
+//   gap   ?                  unrecognized  a maximal run of anything
 //                                           else, stopping at whitespace
 //                                           and + - * / ( ) ?
 
@@ -23,5 +23,5 @@ val exprLexicon = Lexicon(List(
   "op"           -> oneOf("+-*/"),
   "lpar"         -> exactly("("),
   "rpar"         -> exactly(")"),
-  "hole"         -> exactly("?"),
+  "gap"         -> exactly("?"),
   "unrecognized" -> runOf(1)(c => !c.isWhitespace && !structural.contains(c))))

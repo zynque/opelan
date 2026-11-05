@@ -53,11 +53,11 @@ private class DefDocReader(
   }
 
   def grammarFrom(id: Int, seen: Set[Int] = Set.empty): GrammarDef =
-    if (seen(id)) GrammarDef.Hole
+    if (seen(id)) GrammarDef.Gap
     else grammarNode(id, seen + id)
 
   private def grammarNode(id: Int, seen: Set[Int]): GrammarDef = {
-    def sub(i: Int) = children(id).lift(i).map(grammarFrom(_, seen)).getOrElse(GrammarDef.Hole)
+    def sub(i: Int) = children(id).lift(i).map(grammarFrom(_, seen)).getOrElse(GrammarDef.Gap)
     cons(id) match {
       case Some("tok")    => GrammarDef.Tok(childStr(id, 0).getOrElse(""), leafFrom(children(id).lift(1)))
       case Some("choice") => GrammarDef.Choice(children(id).map(grammarFrom(_, seen)))
@@ -71,14 +71,14 @@ private class DefDocReader(
       case Some("phrase") => GrammarDef.Phrase(sub(0), setFrom(childStr(id, 1)))
       case Some("named")  => GrammarDef.Named(childStr(id, 0).getOrElse(""), sub(1))
       case Some("use")    => GrammarDef.Ref(refName(children(id).headOption))
-      case _              => GrammarDef.Hole
+      case _              => GrammarDef.Gap
     }
   }
 
   private def leafFrom(child: Option[Int]): LeafKind = child.flatMap(cons) match {
     case Some("int")   => LeafKind.IntLit
     case Some("float") => LeafKind.FloatLit
-    case Some("gap")   => LeafKind.HoleLeaf
+    case Some("gap")   => LeafKind.GapLeaf
     case Some("ref")   => LeafKind.RefLit(child.flatMap(childStr(_, 0)).getOrElse(""))
     case _             => LeafKind.Text
   }
@@ -92,7 +92,7 @@ private class DefDocReader(
     }.toMap
 
   // A `rules` section: each `rule` node through the recovering reader
-  // (RuleDocDecode — a malformed rule becomes a hole rule), `binding`
+  // (RuleDocDecode — a malformed rule becomes a gap rule), `binding`
   // tiers as pattern texts, `example` pairs.
   def ruleSetFrom(id: Int): RuleSet = RuleSet(
     rules = entries(id, "rule").map(ruleFromDoc(doc, url, version, termIds, _)),
@@ -110,7 +110,7 @@ private class DefDocReader(
             children(c).headOption.flatMap(externalRefOf(doc, _))
               .getOrElse(ExternalNodeReference("", 0, 0)),
             children(c).lift(1).flatMap(cons) match {
-              case Some("as-gap") => InputFallback.Hole
+              case Some("as-gap") => InputFallback.Gap
               case _              => InputFallback.Label
             }))
         case Some("builtin") => childStr(c, 0).map(InputParserDef.Builtin(_))

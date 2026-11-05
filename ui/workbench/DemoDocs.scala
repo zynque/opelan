@@ -12,7 +12,7 @@ import opelan.examples.sheet.SheetLanguage
 // the URL its typeRef names — so following a document's type ref lands
 // on a real node (act 2's "under the hood" beat) — and the budget is
 // the app built on them. lang: expression is seeded staged, without
-// `/`, so the budget's per-person hole heals when the audience adds it.
+// `/`, so the budget's per-person gap heals when the audience adds it.
 //
 // Seeding never overwrites: a URL the store already holds is left
 // alone, so a returning user's edited documents are safe.

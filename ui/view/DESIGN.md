@@ -3,7 +3,7 @@
 `ViewTreeView`: the single recovering interpreter that turns any
 [view tree](../../foundation/view/DESIGN.md) into an
 [`fp`](../fp/DESIGN.md) `View`. Languages emit data, never DOM;
-unrecognized structure degrades to hole chips rather than failing.
+unrecognized structure degrades to gap chips rather than failing.
 
 A `SourceRef` leaf on an element tags it with the node it came from, so
 "click a rendered value to select its producer" is uniform machinery —

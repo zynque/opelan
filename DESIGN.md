@@ -21,13 +21,13 @@ drive the workbench), `STATUS.md` (current state and next steps), and
 
 | Folder | Design |
 |--------|--------|
-| [`foundation/`](foundation/DESIGN.md) | the pure core: documents, versions, grammars, languages, views — and the *Never broken* holes convention |
+| [`foundation/`](foundation/DESIGN.md) | the pure core: documents, versions, grammars, languages, views — and the *Never broken* gaps convention |
 | [`foundation/document/`](foundation/document/DESIGN.md) | the persistent document tree, `NodeData`, `Outline`/`Serial` formats |
 | [`foundation/document/typed/`](foundation/document/typed/DESIGN.md) | typed-document layout, imports, *everything by reference*, `commitContent` |
 | [`foundation/document/store/`](foundation/document/store/DESIGN.md) | the versioned `Store`, names as projections, pins and pending updates |
 | [`foundation/version/`](foundation/version/DESIGN.md) | the version DAG, LSCA merge base, the two-layer history model |
 | [`foundation/grammar/`](foundation/grammar/DESIGN.md) | scannerless recovering combinators, lexicons, incremental packrat parsing |
-| [`foundation/language/`](foundation/language/DESIGN.md) | the `Language` trait, text surface, `TextSession`/`InputSessions`/`HoleRetry` |
+| [`foundation/language/`](foundation/language/DESIGN.md) | the `Language` trait, text surface, `TextSession`/`InputSessions`/`GapRetry` |
 | [`foundation/langdef/`](foundation/langdef/DESIGN.md) | language definitions as `lang:` documents; format in `doc/`, interpretation in `syntax/`, def views in `view/` |
 | [`foundation/means/`](foundation/means/DESIGN.md) | the `means` rule notation; evaluation and rule→combinator compilation in `engine/`, rule text in `text/` |
 | [`foundation/view/`](foundation/view/DESIGN.md) | the derived view-tree vocabulary, `SourceRef` provenance, verbosity |
@@ -104,7 +104,7 @@ to language-invented jumps.
   additions.
 - *Structural jumps*: go to parent/child, next/previous sibling, and
   next/previous node of the same type or category (next definition, next
-  hole). The raw-document editor is just another surface, so these
+  gap). The raw-document editor is just another surface, so these
   primitives apply everywhere — raw editing is not a special mode.
 - *Expand/shrink selection* — the selection itself walks the tree.
 
@@ -125,8 +125,8 @@ to language-invented jumps.
   (mechanism-level follow-ref on the first child — today's F12); the type
   of the *named entity* under the cursor is a semantic `type-of` query.
   Revealing or hiding types is a projection concern (detail level, below).
-- *Next/previous hole or error*: holey documents (`GapData`) make "next
-  problem" a first-class jump; `holeCount` already shows in the status
+- *Next/previous gap or error*: gappy documents (`GapData`) make "next
+  problem" a first-class jump; `gapCount` already shows in the status
   bar.
 - *Provenance navigation*: click a value in a derived view to jump to the
   node that produced it — upstream along the derivation. Implemented for
@@ -223,7 +223,7 @@ surface but not solve (open).
 ambiguous: every construct use is a ref to a fully specified
 declaration. Two imported languages may define overlapping surface
 syntax (two `a + b` rules); rather than silently taking the first, the
-document can store a deferred-choice node — a hole holding the
+document can store a deferred-choice node — a gap holding the
 candidates that the projection renders as a dropdown — so the user can
 type on and disambiguate whenever they choose. Once chosen, the node
 will hold a reference id, so there is no structural ambiguity, though

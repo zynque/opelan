@@ -9,7 +9,7 @@ import opelan.foundation.langdef._
 // the data twin of a combinator in foundation/grammar. Named grammars
 // are bound in a lazy environment so Ref (recursion, e.g. parens
 // reaching back to the expression level) resolves at call time; a Ref
-// to an unknown name produces a hole rather than crashing — a def doc
+// to an unknown name produces a gap rather than crashing — a def doc
 // can contain typos and stay Never Broken.
 //
 // Operator tables name node terms; `tag` turns a term name into the
@@ -25,7 +25,7 @@ def interpret(top: GrammarDef, tag: String => NodeData): Parser = {
   // (name, pos) pairs currently on the call stack. Recursion is legal
   // only when it consumes input (parens reaches Ref at a later pos), so
   // a re-entry at the same pos is a non-consuming cycle — direct
-  // self-reference or left-recursion — and degrades to a hole rather
+  // self-reference or left-recursion — and degrades to a gap rather
   // than overflowing the stack on a malformed def.
   val inProgress = mutable.Set.empty[(String, Int)]
 
@@ -53,15 +53,15 @@ def interpret(top: GrammarDef, tag: String => NodeData): Parser = {
       (in, pos) => env(name)(in, pos)
     case GrammarDef.Ref(name) =>
       (in, pos) =>
-        if (inProgress(name -> pos)) holeHere(in, pos)
+        if (inProgress(name -> pos)) gapHere(in, pos)
         else env.get(name) match {
           case Some(p) =>
             inProgress += (name -> pos)
             try p(in, pos) finally inProgress -= (name -> pos)
-          case None => holeHere(in, pos)
+          case None => gapHere(in, pos)
         }
-    case GrammarDef.Hole =>
-      restHole
+    case GrammarDef.Gap =>
+      restGap
   }
 
   go(top)

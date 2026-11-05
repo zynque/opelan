@@ -8,7 +8,7 @@ import opelan.foundation.document.store._
 import opelan.foundation.document.typed._
 import opelan.foundation.langdef.{autoUpdateEnabled, setAutoUpdate}
 import opelan.foundation.language.{
-  HoleRetry, TextSession, applyDocContent, applyDocText, docText, holeCount}
+  GapRetry, TextSession, applyDocContent, applyDocText, docText, gapCount}
 import opelan.ui.editor.{DocPush, EditorOutput, SelectTarget}
 import opelan.ui.fp.Update
 import TypedDocInput._
@@ -17,17 +17,17 @@ import TypedDocOutput._
 // The pure transition function for the typed-document pane. After each
 // step: an auto-update-opted document accepts pending pin bumps without
 // the click (the same recorded edit as AcceptUpdates), and the pane
-// re-remembers its document's hole attempts against the current store,
+// re-remembers its document's gap attempts against the current store,
 // so the next render reuses every attempt a language change didn't
 // touch. Both are skipped when the step moved neither doc nor store.
 def typedDocUpdate(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel, TypedDocOutput, TypedDocInput] = {
   val u = autoAccept(step(m, input))
   val s = u.state
   val retry =
-    if ((s.doc eq m.doc) && (s.store eq m.store)) s.holeRetry
+    if ((s.doc eq m.doc) && (s.store eq m.store)) s.gapRetry
     else languageForDoc(s.doc, s.store)
-      .fold(HoleRetry())(_.rememberHoles(s.doc, s.holeRetry))
-  u.copy(state = s.copy(holeRetry = retry))
+      .fold(GapRetry())(_.rememberGaps(s.doc, s.gapRetry))
+  u.copy(state = s.copy(gapRetry = retry))
 }
 
 private def autoAccept(
@@ -88,7 +88,7 @@ private def step(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel, 
     case LoadSheetSample =>
       load(m, SheetLanguage.sampleDoc, None, "Sheet sample loaded")
 
-    // A text edit is total: apply returns a new document (with holes
+    // A text edit is total: apply returns a new document (with gaps
     // where the text doesn't fit) or an error that only touches status.
     // A language with an incremental syntax reparses through the pane's
     // text session, so the work follows the size of the edit.
@@ -101,10 +101,10 @@ private def step(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel, 
       }
       applied match {
         case Right(d) =>
-          val holes = holeCount(d)
+          val gaps = gapCount(d)
           val msg =
-            if (holes == 0) "Parsed"
-            else s"Parsed — $holes hole${if (holes == 1) "" else "s"}"
+            if (gaps == 0) "Parsed"
+            else s"Parsed — $gaps gap${if (gaps == 1) "" else "s"}"
           Update(
             m.copy(
               doc = d, pushedDoc = d, pushedSelect = None,

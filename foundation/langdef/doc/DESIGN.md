@@ -26,7 +26,7 @@ The `lang:` document format for a `LanguageDef`/`GrammarDef`/rule set
   leaf strings — while `binding`/`tier`/`example`/`rule` meta nodes
   keep their structured encoding, so hand-written structure still
   lands. Phrase meanings a language-aware commit would desugar stay
-  quoted holes; `rephraseRuleSet` retries them at interpretation.
+  quoted gaps; `rephraseRuleSet` retries them at interpretation.
 - **`Meta`** — `metaTermIds`: the node ids of `lang: language`'s own
   constructs, taken from encoding `docLanguageDef`, so code can know a
   meta construct by identity.

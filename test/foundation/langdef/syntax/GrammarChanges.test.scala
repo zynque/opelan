@@ -16,7 +16,7 @@ import opelan.foundation.means.text._
 class GrammarChangesSuite extends FunSuite {
 
   private def syntax(set: RuleSet): SyntaxDef =
-    SyntaxDef("expr", GrammarDef.Hole, Some(set))
+    SyntaxDef("expr", GrammarDef.Gap, Some(set))
   private def rule(text: String, id: Int): Rule =
     readRule(text).fold(e => fail(e), identity).copy(id = Some(id))
   private def codeRule(text: String): Rule =
@@ -125,7 +125,7 @@ class GrammarChangesSuite extends FunSuite {
       "rpar" -> exactly(")")))
     val set = RuleSet(List(rule("(a) means a", 3)))
     val s = ParseSession.start(
-      compileRules(set, holeHere, NodeData.StringData(_), "e"),
+      compileRules(set, gapHere, NodeData.StringData(_), "e"),
       lexicon, "(5)")
     assert(s.consulted.contains("means:#3"), s.consulted.toString)
   }

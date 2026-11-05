@@ -8,7 +8,7 @@ import Expr._
 // a scannerless combinator composition (foundation/grammar) over the
 // expression lexicon's character-level rules.
 // Every input produces an Expr; text that fits no production is kept
-// verbatim in Hole nodes, so typing continues to heal the tree rather
+// verbatim in Gap nodes, so typing continues to heal the tree rather
 // than fail.
 //
 //   expr   := phrase(precedenceTable(atom, levels))
@@ -54,9 +54,9 @@ private def atom: Parser = choice(
     .getOrElse(NodeData.GapData(t.text))),
   tok("ref")(t => t.text.drop(4).toIntOption
     .map(NodeData.InternalNodeRef(_)).getOrElse(NodeData.GapData(t.text))),
-  tok("hole")(t => NodeData.GapData(t.text)),
+  tok("gap")(t => NodeData.GapData(t.text)),
   parens(exprCore),
   signum,
   unrecognized(
     Set("op", "unrecognized"),
-    Set("int", "float", "ref", "unrecognized", "hole")))
+    Set("int", "float", "ref", "unrecognized", "gap")))

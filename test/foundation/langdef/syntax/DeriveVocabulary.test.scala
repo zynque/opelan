@@ -10,7 +10,7 @@ import opelan.foundation.means.text._
 class DeriveVocabularySuite extends FunSuite {
 
   private def rules(lines: String*): RuleSet =
-    RuleSet(lines.map(readRuleOrHole).toList)
+    RuleSet(lines.map(readRuleOrGap).toList)
 
   private def names(terms: List[NodeTerm]): List[(String, NodeShape)] =
     terms.map(t => (t.name, t.shape))
@@ -54,7 +54,7 @@ class DeriveVocabularySuite extends FunSuite {
     assertEquals(vocabularyFrom(set).length, 1)
   }
 
-  test("a hole rule declares nothing and breaks nothing") {
+  test("a gap rule declares nothing and breaks nothing") {
     val set = rules(
       "a + b means add(a, b)",
       "means only")
@@ -89,14 +89,14 @@ class DeriveVocabularySuite extends FunSuite {
     assert(terms("number").check(NodeData.FloatData(1.5)))
     assert(!terms("number").check(NodeData.InternalNodeRef(1)))
     assert(terms("ref").check(NodeData.InternalNodeRef(1)))
-    // `gap` is the kernel's operand term: the hole token reads as a
+    // `gap` is the kernel's operand term: the gap token reads as a
     // gap in every language, no authored rule required.
     assert(terms("gap").operand)
     assert(terms("gap").parser.isDefined)
     assert(terms("gap").check(NodeData.GapData("x")))
     assert(!terms("gap").check(NodeData.IntData(3)))
     // `value` is the workbench's check-only term: no token production,
-    // refs excluded, holes provisionally satisfied.
+    // refs excluded, gaps provisionally satisfied.
     assert(terms("value").parser.isEmpty)
     assert(!terms("value").check(NodeData.InternalNodeRef(1)))
     assert(terms("value").check(NodeData.GapData("x")))

@@ -91,7 +91,7 @@ private def barButton(label: String, in: TypedDocInput): View[TypedDocInput] =
 
 private def derivedBody(name: String, m: TypedDocModel): View[TypedDocInput] = {
   val rendered = languageForDoc(m.doc, m.store)
-    .map(_.renderWith(name, m.doc, m.holeRetry, m.docUrl))
+    .map(_.renderWith(name, m.doc, m.gapRetry, m.docUrl))
     .getOrElse(Left("no language for this document"))
   el("div", style("flex: 1; overflow: auto; padding: 12px;"))(
     body(rendered))

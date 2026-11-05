@@ -100,7 +100,7 @@ class PrintSuite extends FunSuite {
       "if 1 then 2 + 3 else 4")
   }
 
-  test("a placeholder the meaning doesn't name prints as a hole") {
+  test("a placeholder the meaning doesn't name prints as a gap") {
     val dropSet = set.copy(rules =
       aRule("a + b means keep(a)") +: set.rules)
     val keep = printWith(dropSet, NodeData.StringData(_), {
@@ -110,7 +110,7 @@ class PrintSuite extends FunSuite {
     assertEquals(keep(node("keep", lit(1))), "1 + ?")
   }
 
-  test("constructs no rule claims and loose data degrade to holes") {
+  test("constructs no rule claims and loose data degrade to gaps") {
     assertEquals(print(node("wat", lit(1))), "?")
     assertEquals(print(DetachedNode.leaf(NodeData.GapData("x"))), "x")
     assertEquals(print(DetachedNode.leaf(NodeData.GapData(""))), "?")

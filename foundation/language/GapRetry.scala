@@ -2,12 +2,12 @@ package opelan.foundation.language
 
 import opelan.foundation.document._
 
-// A hole's last parse attempt: the syntax it ran under, every rule the
+// A gap's last parse attempt: the syntax it ran under, every rule the
 // parse consulted, and the content it produced.
-case class HoleAttempt(
+case class GapAttempt(
     syntax: TextSyntax, calls: Set[String], content: DetachedNode[NodeData])
 
-// Retrying holes when a language changes (*Incremental*): a hole's text
+// Retrying gaps when a language changes (*Incremental*): a gap's text
 // is reparsed only if its last attempt consulted a rule the change
 // touched. Attempts under the same syntax are reused outright; under a
 // changed syntax that can describe itself, an attempt that never
@@ -15,10 +15,10 @@ case class HoleAttempt(
 // content may carry data the change moved (a term tag's version pin).
 // Anything else — no attempt yet, or a change that can't be described —
 // parses.
-case class HoleRetry(attempts: Map[String, HoleAttempt] = Map.empty) {
+case class GapRetry(attempts: Map[String, GapAttempt] = Map.empty) {
 
   def parse(
-      syntax: TextSyntax, text: String): (DetachedNode[NodeData], HoleRetry) =
+      syntax: TextSyntax, text: String): (DetachedNode[NodeData], GapRetry) =
     attempts.get(text) match {
       case Some(a) if a.syntax.key == syntax.key => (a.content, this)
       case Some(a) =>
@@ -26,7 +26,7 @@ case class HoleRetry(attempts: Map[String, HoleAttempt] = Map.empty) {
           (a.calls & ch.rules).isEmpty) match {
           case Some(ch) =>
             val content = a.content.map(ch.migrate)
-            (content, HoleRetry(attempts.updated(
+            (content, GapRetry(attempts.updated(
               text, a.copy(syntax = syntax, content = content))))
           case None => fresh(syntax, text)
         }
@@ -35,10 +35,10 @@ case class HoleRetry(attempts: Map[String, HoleAttempt] = Map.empty) {
 
   private def fresh(
       syntax: TextSyntax,
-      text: String): (DetachedNode[NodeData], HoleRetry) = {
+      text: String): (DetachedNode[NodeData], GapRetry) = {
     val s = TextSession.start(syntax, text)
     val calls = s.session.consulted
-    (s.content, HoleRetry(attempts.updated(
-      text, HoleAttempt(syntax, calls, s.content))))
+    (s.content, GapRetry(attempts.updated(
+      text, GapAttempt(syntax, calls, s.content))))
   }
 }

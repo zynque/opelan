@@ -86,7 +86,7 @@ class OperatorsSuite extends FunSuite {
       node("add", node("pct", lit(5)), lit(1)))
   }
 
-  test("a missing infix operand becomes a hole in the built node") {
+  test("a missing infix operand becomes a gap in the built node") {
     val p = operatorTable(atom, List(List(infix("+", "add"))))
     assertEquals(parse(p, "1 +"),
       node("add", lit(1), DetachedNode(NodeData.GapData(""), Nil)))

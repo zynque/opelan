@@ -40,7 +40,7 @@ case class ParseMark(
 // from a session's surviving columns, read back as an immutable
 // snapshot when the parse ends (see ParseSession). `marking` stamps a
 // fresh result's root with its ParseMark — sessions set it so the
-// result tree carries the memo; one-off parses (holes, `reparse`
+// result tree carries the memo; one-off parses (gaps, `reparse`
 // sub-parses) leave it off so no foreign marks leak in.
 final class MemoTable(
     seed: Vector[Map[String, MemoEntry]] = Vector.empty,

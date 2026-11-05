@@ -23,7 +23,7 @@ def sequence(data: NodeData)(parts: Parser*): Parser =
       r.ok
     }
     if (ok) POut(cur, node(in, data, children.result(), pos), ok = true, seen)
-    else emptyHole(in, pos, seen)
+    else emptyGap(in, pos, seen)
   }
 
 // Zero or more `p`, as one node; stops when `p` fails or stops consuming.
@@ -72,7 +72,7 @@ def anyToken: Parser = (in, pos) => {
     case Some(t) => POut(t.to,
       PTree(NodeData.StringData(t.kind), t.text, t.from, t.text.length),
       ok = true, scanned.examined)
-    case None => emptyHole(in, pos, scanned.examined)
+    case None => emptyGap(in, pos, scanned.examined)
   }
 }
 

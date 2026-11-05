@@ -18,12 +18,12 @@ import opelan.foundation.means._
 // and `check` constrains the bound tree after — in a sequence the
 // violation fails the piece for recovery, and an operator operand
 // bound to any term is checked after binding (a violation surfaces
-// the whole application as a hole). Which leaves stand alone as
+// the whole application as a gap). Which leaves stand alone as
 // operands is authored, not a leaf property: a lone-placeholder rule
 // bound through `where` (`n means n where n: number`) is the operand
 // declaration — except a term that flags itself `operand`, the
 // kernel's way of giving every language a builtin operand without an
-// authored rule (`gap`, the workbench's hole leaf).
+// authored rule (`gap`, the workbench's gap leaf).
 case class LexicalTerm(
     parser: Option[Parser],
     check: NodeData => Boolean,
@@ -46,7 +46,7 @@ case class LexicalTerm(
 // Compiles as far as it can (Never Broken): rules the binding list
 // forgot join loosest, a pattern a sequence can't compile (leading
 // placeholder — `a , b , c` would left-recurse) is skipped, and a
-// malformed meaning degrades to a hole at apply time. Associativity
+// malformed meaning degrades to a gap at apply time. Associativity
 // reads from worked examples — left by default, `a ^ b ^ c means
 // a ^ (b ^ c)` selects right (Associativity.scala). A `where`
 // term `lexicals` doesn't name leaves the placeholder unconstrained,
@@ -77,7 +77,7 @@ def compileRules(
     set.rules.flatMap(leafOperand)
   // Terms flagged `operand` join the operand choice after the
   // authored leaf rules — the kernel's `gap` term makes the
-  // workbench's hole token an operand in every language, no `g
+  // workbench's gap token an operand in every language, no `g
   // means g where g: gap` rule required (an authored rule still
   // wins, being tried first).
   lazy val builtinOperands: List[Parser] =
@@ -138,7 +138,7 @@ def compileRules(
       assoc = operatorAssoc(set, theRule),
       build = (operands, in, from, to) =>
         // An operand bound against a `where` term is checked after
-        // binding: a violation makes the whole application the hole.
+        // binding: a violation makes the whole application the gap.
         if (names.zip(operands).exists { case (n, t) =>
               bound.get(n).exists(lt => !lt.check(t.data)) })
           gapNode(in, from, to)

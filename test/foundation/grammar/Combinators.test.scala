@@ -70,7 +70,7 @@ class CombinatorSuite extends FunSuite {
     assertEquals(open.tree.text, "(1")
   }
 
-  test("phrase merges unplaced leftovers into one hole") {
+  test("phrase merges unplaced leftovers into one gap") {
     val r = phrase(int, Set.empty)(in("1x"), 0)
     assertEquals(r.tree.data, NodeData.GapData("1x"))
     assertEquals(r.pos, 2)

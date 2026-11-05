@@ -10,7 +10,7 @@ import opelan.ui.view._
 // The live right-hand column: every derived view the document's language
 // provides, stacked and re-rendered on each document change — print on
 // top, eval below for the expression language. Views render through the
-// single view-tree interpreter: holes show as chips, and fragments tagged
+// single view-tree interpreter: gaps show as chips, and fragments tagged
 // with SourceRef provenance select their producing node when clicked.
 def typedDocSidebar(m: TypedDocModel): View[TypedDocInput] = {
   val sections = languageForDoc(m.doc, m.store).toList.flatMap(lang =>
@@ -36,7 +36,7 @@ private def section(
       el("div",
         style("font-family: Consolas, monospace; font-size: 16px; " +
           "white-space: pre-wrap;"))(
-        body(lang.renderWith(viewName, m.doc, m.holeRetry, m.docUrl)))))
+        body(lang.renderWith(viewName, m.doc, m.gapRetry, m.docUrl)))))
 
 private[typeddoc] def body(
     r: Either[String, DetachedNode[NodeData]]): View[TypedDocInput] =

@@ -12,7 +12,7 @@ language. Otherwise it falls back to the code registry (`allLanguages`:
 `ExprLanguage`, `SheetLanguage`, and `DocLanguage` — the code-resident
 language that `lang:` documents are themselves typed by, defined in
 [`../foundation/langdef/Defs.scala`](../foundation/langdef/DESIGN.md);
-that is where the regress stops). Malformed defs degrade to holes:
+that is where the regress stops). Malformed defs degrade to gaps:
 missing refs, cyclic grammars, and cyclic documents are all guarded, and
 an old store with untyped `lang:` docs falls back to the registry.
 
@@ -29,12 +29,12 @@ total, recovering parser. Views render through `LocExpr`, a located read
 that keeps each node's id, so every piece of the view tree carries its
 source id. Evaluation resolves refs through the enclosing document — a
 referenced cell's own subtree is evaluated, so formulas compose — and a
-visiting set reports ref cycles as holes instead of diverging. The
+visiting set reports ref cycles as gaps instead of diverging. The
 parser also emits a **span map** (`Map[List[Int], Span]`, tree path →
 source range), groundwork for mapping text edits onto nodes instead of
 reparsing whole cells — superseded by per-node lengths under
 [incremental parsing](../foundation/grammar/DESIGN.md). `Expr.print`
-round-trips holes.
+round-trips gaps.
 
 `ExprRules`/`ExprDef`/`Terms` express the same language as `means`
 rules and as a def, so `DefLanguage(exprDef)` can be held identical to
@@ -56,15 +56,15 @@ grammar, referenced by type ref — pinned, so a new `lang: expression`
 version reaches sheet cells when the sheet's ref bumps to it, not when
 the expression doc is saved (see
 [`../foundation/document/store/DESIGN.md`](../foundation/document/store/DESIGN.md)).
-Rejected text that mentions a cell (`ref:N`) is kept as a hole rather
+Rejected text that mentions a cell (`ref:N`) is kept as a gap rather
 than a label: a formula the grammar can't read yet. Both views render a
 *healed* sheet (`SheetHeal`): builtin views receive a `ViewContext` (the
 view's settings plus the language's current input grammar), and
-`healHoles` retries each hole cell's text against that grammar, so a
-hole that now parses renders as the formula it reads as. The document
-keeps the hole (what the user wrote) until the cell is committed again.
+`healGaps` retries each gap cell's text against that grammar, so a
+gap that now parses renders as the formula it reads as. The document
+keeps the gap (what the user wrote) until the cell is committed again.
 View settings are data in the def doc (`view(name, builtin,
 setting(key, value)…)`); the sheet's `currency` setting formats computed
-values. A hole or cycle in a referenced cell propagates only to the
+values. A gap or cycle in a referenced cell propagates only to the
 cells that use it — the app recovers like the documents it is made of.
 `sampleDoc` seeds the demo's household budget.

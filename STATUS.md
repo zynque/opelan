@@ -22,8 +22,8 @@ steps*, item 1).
     (it lands as a child; outdent it), then edit its symbol and retarget
     its term ref by node id (`&33`). The `means` series replaces this
     with one readable line.
-  - *Healing is derived:* a healed hole computes in both views, but the
-    document still holds the hole text until the cell is re-committed
+  - *Healing is derived:* a healed gap computes in both views, but the
+    document still holds the gap text until the cell is re-committed
     (e.g. from the `formulas` view).
   - *Update edges:* the cascade runs on local saves only and skips
     synced docs; the full list of pin edges — remote heads, content
@@ -48,7 +48,7 @@ steps*, item 1).
   branching; cross-document paste doesn't externalize and re-import refs
   (`extractExternalized` and `internalizeRefs` are the primitives).
 - **Old stores aren't migrated.** Stores from before the by-reference
-  format degrade to holes; use **Reset** to reseed. Seeds' construct ids
+  format degrade to gaps; use **Reset** to reseed. Seeds' construct ids
   must match code's canonical encodings (`metaTermIds`, `termRefs`), so
   changing a seed's layout needs a reset or a migration.
 - **Vocabularies are descriptive only:** node terms aren't checked, and the
@@ -65,8 +65,8 @@ steps*, item 1).
    views, eval) still name Scala builtins, and the format is combinator
    data rather than something a domain expert would write. The `means`
    series is the planned answer to both.
-3. *Immediately typed.* Real typechecking per keystroke over holey trees
-   (Hazelnut-style edit semantics), beyond parse-level holes.
+3. *Immediately typed.* Real typechecking per keystroke over gappy trees
+   (Hazelnut-style edit semantics), beyond parse-level gaps.
 4. *Semantic diff/merge.* Node-id-stable documents enable meaning-aware
    diffs; compaction is the defined lineage boundary.
 5. *Polysyntactic parity.* The text surface is per-language and
@@ -111,7 +111,7 @@ steps*, item 1).
        derived from meaning rules bottoming out in builtins, replacing
        the hand-coded `Expr.eval` behind `expr-eval`. The rule
        dependency DAG and derived layers are computed; a cycle renders
-       as a hole at the closing edge.
+       as a gap at the closing edge.
      - **Migrate stored definitions.** Users' IndexedDB stores hold
        `lang:` docs in the combinator format, and seeding never
        overwrites. Convert legacy grammar subtrees to rules on read
@@ -131,7 +131,7 @@ steps*, item 1).
        tokens. `lang: language`'s `metaTerms` and `sheet`'s
        `sheet`/`row`/`cell` become schema rules, and
        `vocabulary`/`declared` leaves `LanguageDef` entirely.
-       Ambiguous surfaces store a deferred-choice hole (the projection
+       Ambiguous surfaces store a deferred-choice gap (the projection
        renders candidates as a dropdown) rather than silently
        first-wins.
      - **Sheet on rules.** Positional refs (`ref:c,r`, then `C4`) as
@@ -142,7 +142,7 @@ steps*, item 1).
        (terse/verbose) toggle switching `means` to `=>` and hiding
        `where` behind a marker, in the `def` view, separate from
        show/hide implementation; violated constraints surface as
-       holes at every zoom level.
+       gaps at every zoom level.
      - **Value-level `where` — types, not tokens.** Today's `where`
        binds only leaf productions: `n: number` means an int/float
        *token* fills `n`. `a, b: int` meaning "the bound subtree has
@@ -158,7 +158,7 @@ steps*, item 1).
          `a + b means add(a, b)` derives `a, b: number` unwritten
          (`foundation/means/DESIGN.md`, *Placeholders and `where`*:
          implied constraints show only on zoom-in).
-       - *`typeOf` over holey trees.* Enforcement stays a
+       - *`typeOf` over gappy trees.* Enforcement stays a
          post-binding check like `leafAccepts`, but on the bound
          subtree's inferred type — the result type of the construct
          that produced it, structural rather than evaluated. A gap
@@ -192,13 +192,13 @@ steps*, item 1).
      against it.
    - *Content migration.* Accepting bumps refs but never rewrites
      committed structure — a cell parsed under expression v0 keeps its
-     v0 shape and meaning forever; only source-bearing holes re-lift
+     v0 shape and meaning forever; only source-bearing gaps re-lift
      eagerly. Deriving content migrations for dependents when a
      definition changes (the *Evolvable* question) is the deep half of
      this item: today "update" means pins only.
    - *Broken-import repair.* `broken: N` reports refs whose node is
      gone at head; there is no gesture to repoint one to a surviving
-     node, swap the import, or convert it to a hole.
+     node, swap the import, or convert it to a gap.
    - *Accept granularity.* Update bumps every pending ref at once —
      per-ref acceptance (bump the language, hold that import) isn't
      offered.

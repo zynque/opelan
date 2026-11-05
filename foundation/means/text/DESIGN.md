@@ -11,7 +11,7 @@ notation is an ordinary grammar, ahead of full self-description.
   combinators: `rule := pattern means? meaning? where?`, with the
   meaning alternatives `build` (`word(args)`), `use` (a lone
   placeholder), and `phrase` (a phrase in the defined language, taken
-  raw). It always produces a tree — total parsing, holes included.
+  raw). It always produces a tree — total parsing, gaps included.
 - **`RuleRead`** — turns a `RuleGrammar` tree into a `Rule`. `=>` is
   accepted wherever `means` is — the terse spelling.
 - **`RulePrint`** — rule text as role-tagged spans (`Role`: keyword,

@@ -15,14 +15,14 @@ def printTree(e: LocExpr): DetachedNode[NodeData] = child(e, 0)
 
 // A leaf's printed form for the derived print view — the same leaves
 // the LocExpr cases produce, so printViewWith emits an identical
-// tree: ints/floats as data leaves, refs as `ref:` text, gaps as hole
-// chips, anything else as a hole showing its data.
+// tree: ints/floats as data leaves, refs as `ref:` text, gaps as gap
+// chips, anything else as a gap showing its data.
 def exprViewLeaf(data: NodeData): DetachedNode[NodeData] = data match {
   case NodeData.IntData(v)         => il(v)
   case NodeData.FloatData(f)       => fl(f)
   case NodeData.InternalNodeRef(t) => txt(s"ref:$t")
-  case NodeData.GapData(t)         => hole(t)
-  case other                       => hole(holeText(other))
+  case NodeData.GapData(t)         => gap(t)
+  case other                       => gap(gapText(other))
 }
 
 private def prec(e: LocExpr): Int = e match {
@@ -39,7 +39,7 @@ private def child(e: LocExpr, ctx: Int): DetachedNode[NodeData] =
 private def bare(e: LocExpr): DetachedNode[NodeData] = e match {
   case LocExpr.LocLit(id, v)     => from(id, il(v))
   case LocExpr.LocFLit(id, f)    => from(id, fl(f))
-  case LocExpr.LocHole(id, t)    => from(id, hole(t))
+  case LocExpr.LocGap(id, t)    => from(id, gap(t))
   case LocExpr.LocRef(id, t)     => from(id, txt(s"ref:$t"))
   case LocExpr.LocAdd(id, l, r)  => op(id, l, " + ", r, 1)
   case LocExpr.LocSub(id, l, r)  => op(id, l, " - ", r, 1)
@@ -52,26 +52,26 @@ private def op(
     p: Int): DetachedNode[NodeData] =
   flow(src(id), child(l, p), txt(sym), child(r, p + 1))
 
-// The "eval" view: the value, or the hole evaluation is waiting on —
+// The "eval" view: the value, or the gap evaluation is waiting on —
 // tagged with the blocking node's id so the view points at the gap.
 // Refs resolve through `doc`: a referenced cell's own subtree is
 // evaluated, so formulas compose; the visiting set catches ref cycles.
 def evalTree(doc: Document[NodeData], e: LocExpr): DetachedNode[NodeData] =
   evalLoc(e, docResolver(doc, Set(e.src))) match {
     case Right(n)        => from(e.src, txt(Num.show(n)))
-    case Left((msg, id)) => from(id, hole(msg))
+    case Left((msg, id)) => from(id, gap(msg))
   }
 
 // Left carries (message, source id) — the display text and the node to
 // point at, which is not necessarily the node eval failed on: a blocked
-// ref points at the hole inside its target.
+// ref points at the gap inside its target.
 private[examples] def evalLoc(
     e: LocExpr,
     resolve: Int => Either[(String, Int), Num]): Either[(String, Int), Num] =
   e match {
     case LocExpr.LocLit(_, v)      => Right(Num.I(v))
     case LocExpr.LocFLit(_, v)     => Right(Num.F(v))
-    case LocExpr.LocHole(id, t)    => Left((t, id))
+    case LocExpr.LocGap(id, t)    => Left((t, id))
     case LocExpr.LocRef(_, target) => resolve(target)
     case LocExpr.LocAdd(id, l, r)  => binEval(l, r, id, resolve, Num.add)
     case LocExpr.LocSub(id, l, r)  => binEval(l, r, id, resolve, Num.sub)

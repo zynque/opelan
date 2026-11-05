@@ -26,14 +26,14 @@ private[langdef] def commitMeaningInput(
     doc: Document[NodeData], docUrl: String,
     id: Int, text: String, inputs: InputSessions, impls: Impls)
     : (DetachedNode[NodeData], InputSessions) =
-  // An explicit `?` is a hole — the input grammar's own convention.
+  // An explicit `?` is a gap — the input grammar's own convention.
   if (text.startsWith("?"))
-    (meaningNode(Meaning.hole(text.drop(1)), doc, docUrl, id), inputs)
+    (meaningNode(Meaning.gap(text.drop(1)), doc, docUrl, id), inputs)
   else meaningSyntax(doc, docUrl, id, impls) match {
     case Some(syntax) => inputs.parse(id, syntax, text)
     // A meaning field somewhere its def has no rules: keep the text
-    // as a quoted hole rather than corrupting the node with a string.
-    case None => (meaningNode(Meaning.hole(text), doc, docUrl, id), inputs)
+    // as a quoted gap rather than corrupting the node with a string.
+    case None => (meaningNode(Meaning.gap(text), doc, docUrl, id), inputs)
   }
 
 // The incremental syntax of one meaning field: the def's own rules

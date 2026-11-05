@@ -21,7 +21,7 @@ def namedRules(top: GrammarDef): Map[String, GrammarDef] = {
     case GrammarDef.Signum              => Nil
     case GrammarDef.Unrecognized(_, _)  => Nil
     case GrammarDef.Ref(_)              => Nil
-    case GrammarDef.Hole                => Nil
+    case GrammarDef.Gap                => Nil
   }
   collect(top).reverse.toMap
 }

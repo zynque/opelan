@@ -76,8 +76,8 @@ private[text] def meaningSpans(meaning: Meaning): List[Styled] =
 }
 
 // A quoted subtree's text — decoded trees carry no source span, only
-// data. A quoted hole prints its bare text: the canonical spelling
-// re-reads to the same hole (views mark the `?` separately).
+// data. A quoted gap prints its bare text: the canonical spelling
+// re-reads to the same gap (views mark the `?` separately).
 private def quoteText(t: opelan.foundation.grammar.PTree): String =
   t.data match {
     case NodeData.GapData(text) => text

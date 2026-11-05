@@ -16,7 +16,7 @@ import opelan.foundation.view.ViewTree._
 // text leaf, so editing a rule commits through the doc language's
 // input parser and the next decode re-reads it; and `ctx.interpret`
 // runs each worked example against the live definition, a failing one
-// showing as a hole. `ctx.docUrl` supplies the document's stored
+// showing as a gap. `ctx.docUrl` supplies the document's stored
 // identity — a def doc's URL is the language it defines, and the
 // decode needs it so interpretation binds the right implementations.
 def defView(doc: Document[NodeData], contentRootId: Int,
@@ -92,7 +92,7 @@ private def grammarLines(g: GrammarDef, indent: String = ""): List[String] =
     case GrammarDef.Named(name, inner) =>
       s"${indent}$name =" :: grammarLines(inner, indent + "  ")
     case GrammarDef.Ref(name) => List(s"${indent}ref $name")
-    case GrammarDef.Hole      => List(s"${indent}?")
+    case GrammarDef.Gap      => List(s"${indent}?")
   }
 
 private def opsText(ops: Map[String, String]): String =
@@ -103,6 +103,6 @@ private def leafName(l: LeafKind): String = l match {
   case LeafKind.IntLit        => "int"
   case LeafKind.FloatLit      => "float"
   case LeafKind.RefLit(p)     => s"ref ($p)"
-  case LeafKind.HoleLeaf      => "hole"
+  case LeafKind.GapLeaf      => "gap"
   case LeafKind.Text          => "text"
 }

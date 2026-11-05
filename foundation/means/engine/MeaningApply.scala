@@ -18,20 +18,20 @@ import opelan.foundation.means._
 //            turns a bound `number` into its negation; the leaf covers
 //            the whole match like `source` does
 //   builtin  not yet — evaluation-time meanings are Phase D; an
-//            unknown builtin is a hole, Never Broken
+//            unknown builtin is a gap, Never Broken
 //   other    a construct: the meaning's `reference` when it carries
 //            one, else `tag(name)` maps the term name to node data
 //            (DefLanguage.termTag)
 //
 // Malformed input stays Never Broken: an unbound placeholder or a
-// degenerated operand becomes a hole covering the match.
+// degenerated operand becomes a gap covering the match.
 def applyMeaning(
     meaning: Meaning,
     bindings: Map[String, PTree],
     in: In, from: Int, to: Int,
     tag: String => NodeData): PTree = meaning.tag match {
   case "use" => bound(meaning, bindings) match {
-      // A bound tree that degenerated to a hole lets the hole grow
+      // A bound tree that degenerated to a gap lets the gap grow
       // over the match's literals — `parens` does the same.
       case Some(t) if t.data.isInstanceOf[NodeData.GapData] =>
         gapNode(in, from, to)
@@ -63,7 +63,7 @@ def applyMeaning(
       meaning.arguments.map(a => argumentTree(a, bindings, in, to, tag))
         .map(rebased(_, from)))
   // Any other builtin tag — the meaning language grows a word this
-  // build doesn't know — is a hole, not a node named after it.
+  // build doesn't know — is a gap, not a node named after it.
   case _ => gapNode(in, from, to)
 }
 
@@ -103,7 +103,7 @@ private def argumentTree(
   case _     => applyMeaning(meaning, bindings, in, at, at, tag)
 }
 
-// The tree that covers `from`..`to` — a verbatim hole.
+// The tree that covers `from`..`to` — a verbatim gap.
 private[means] def gapNode(in: In, from: Int, to: Int): PTree = {
   val text = in.input.substring(from, to)
   PTree(NodeData.GapData(text), text, from, to - from)

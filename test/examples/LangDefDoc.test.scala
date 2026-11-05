@@ -234,7 +234,7 @@ class LangDefDocSuite extends FunSuite {
       Some(NodeData.IntData(200)))
   }
 
-  test("a malformed rule line commit lands as a hole rule") {
+  test("a malformed rule line commit lands as a gap rule") {
     val url = exprDef.typeRef.documentUrl
     val doc = langDefDoc(exprDef)
     val ruleId = ruleNodeIds(doc).last // any rule slot serves the commit
@@ -266,21 +266,21 @@ class LangDefDocSuite extends FunSuite {
     assert(text.contains("a % means a / 100"), text)
   }
 
-  test("a phrase the set can't read stays a quoted hole and heals on arrival") {
+  test("a phrase the set can't read stays a quoted gap and heals on arrival") {
     val url = demoExprDef.typeRef.documentUrl
     val doc = langDefDoc(demoExprDef) // no `/` rule yet
     val pctId = ruleNodeIds(doc)(1)   // a * b means mul(a, b)
     val pct = commitMetaInput(doc, url, pctId,
       "a % means a / 100", impls = implsFor(demoExprDef)).get._1
     val withPct = commitContent(pctId, pct, doc).toOption.get
-    // The unparseable phrase stores as a quoted hole — `a / 100`
-    // keeps its text and prints back marked as a hole.
+    // The unparseable phrase stores as a quoted gap — `a / 100`
+    // keeps its text and prints back marked as a gap.
     val pctRule = langDefFromDocument(url, withPct)
       .syntax.get.rules.get.rules(1)
     assertEquals(pctRule.meaning.tag, "quote")
     assertEquals(printRule(pctRule), "a % means a / 100")
     // Committing `/` into another slot gives the phrase its rule; the
-    // interpretation-time rephrase retries — the stored hole produces
+    // interpretation-time rephrase retries — the stored gap produces
     // real terms and `5 %` parses as div(5, 100).
     val subId = ruleNodeIds(withPct)(3) // a - b means sub(a, b)
     val withDiv = commitContent(subId,
@@ -303,7 +303,7 @@ class LangDefDocSuite extends FunSuite {
     case _ => t.children.flatMap(inputSourceIds)
   }
 
-  // GapData leaves in a view tree — the hole chips a check reports.
+  // GapData leaves in a view tree — the gap chips a check reports.
   private def gapChips(t: DetachedNode[NodeData]): List[String] = t match {
     case DetachedNode(NodeData.GapData(s), _) => List(s)
     case _ => t.children.flatMap(gapChips)
@@ -346,7 +346,7 @@ class LangDefDocSuite extends FunSuite {
       !isImportEntry(doc, id) &&
         metaConsOf(doc, id).contains("rule")).toList
 
-  test("a rule node missing its pattern decodes as a hole rule") {
+  test("a rule node missing its pattern decodes as a gap rule") {
     // Never Broken for rules too: a malformed rule becomes a rule
     // that never applies, and the rest of the set still compiles.
     val doc = langDefDoc(exprDef)
@@ -360,7 +360,7 @@ class LangDefDocSuite extends FunSuite {
 
   test("a text-form rule still decodes — the transitional encoding") {
     // A `rule` node whose first child is a string reads through
-    // readRuleOrHole, as docs written before the structured form did.
+    // readRuleOrGap, as docs written before the structured form did.
     val doc = langDefDoc(exprDef)
     val ruleId = ruleNodeIds(doc)(2)
     val texty = commitContent(ruleId,
@@ -417,7 +417,7 @@ class LangDefDocSuite extends FunSuite {
       render(langDefDoc(exprDef)))
   }
 
-  test("a damaged def doc still decodes — unknown grammar nodes become holes") {
+  test("a damaged def doc still decodes — unknown grammar nodes become gaps") {
     val doc = makeTyped(langDefTypeRef, er(docTitleRef), er(docImportsRef),
       s("lang: broken"),
       n(meta("definition"),
@@ -428,14 +428,14 @@ class LangDefDocSuite extends FunSuite {
     val d = langDefFromDocument(
       ExprLanguage.typeRef.documentUrl, doc)
     assertEquals(d.name, "lang: broken") // falls back to the title
-    assertEquals(d.syntax.map(_.grammar), Some(GrammarDef.Hole))
-    // The hole grammar parses nothing — total, not thrown.
+    assertEquals(d.syntax.map(_.grammar), Some(GrammarDef.Gap))
+    // The gap grammar parses nothing — total, not thrown.
     assertEquals(
       languageFromDef(d).parse("1 + 2").map(_.data),
       Some(NodeData.GapData("1 + 2")))
   }
 
-  test("a cyclic document decodes to holes instead of looping") {
+  test("a cyclic document decodes to gaps instead of looping") {
     // A malformed Document can list a node as its own descendant —
     // node 3's only child is itself.
     val cyc: Document[NodeData] = Document(0, Vector(
@@ -446,7 +446,7 @@ class LangDefDocSuite extends FunSuite {
     val d = langDefFromDocument("opelan:docs/cyc", cyc)
     assertEquals(
       d.syntax.map(_.grammar),
-      Some(GrammarDef.Choice(List(GrammarDef.Hole))))
+      Some(GrammarDef.Choice(List(GrammarDef.Gap))))
   }
 
   test("sheet input parsing goes through the language ref") {

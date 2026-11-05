@@ -58,12 +58,12 @@ Other pieces:
 - **`InputGrammar.scala`** — a def's input grammar: how text committed
   in a projected input becomes content. A builtin parser runs as named;
   a grammar that refers to another language reads the text with that
-  language's parser — through the host's remembered hole attempts when
+  language's parser — through the host's remembered gap attempts when
   rendering, through its per-input sessions when committing — then
   classifies the result (see
   [`../language/DESIGN.md`](../language/DESIGN.md)).
-- **`InputHoles.scala`** — `rememberInputHoles`: records a parse attempt
-  for every hole in a document under the input grammar's current syntax,
+- **`InputGaps.scala`** — `rememberInputGaps`: records a parse attempt
+  for every gap in a document under the input grammar's current syntax,
   reusing attempts the last language change left valid and dropping
   attempts for texts no longer present.
 - **`MeaningInput.scala`** — the meaning field of a rule in a `lang:`

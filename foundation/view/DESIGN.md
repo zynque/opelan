@@ -3,12 +3,12 @@
 **View trees.** A derived view is itself document data: a detached tree
 in a minimal presentational vocabulary (`ViewTree.scala`) — `block`,
 `flow`, `heading`, `grid`/`row`/`cell`/`hcell` containers, scalar leaves
-as text runs, `GapData` as holes, `input`, an editable text region, and
+as text runs, `GapData` as gaps, `input`, an editable text region, and
 `styled:role`, an emphasized run whose role names a presentation
 (`keyword`, `placeholder`, ...) the interpreter paints.
 Languages emit data, never DOM; a single recovering interpreter
 ([`ui/view/ViewTreeView`](../../ui/view/DESIGN.md)) turns any view tree
-into an fp `View`, and unrecognized structure degrades to hole chips
+into an fp `View`, and unrecognized structure degrades to gap chips
 rather than failing. Because a view tree is ordinary document data, a
 stored view tree can be inspected or edited like any other document —
 and the same vocabulary is what a language document's view spec will

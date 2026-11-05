@@ -82,9 +82,9 @@ Parsed tools fail on incomplete input; work-in-progress is indistinguishable
 from broken. (MPS avoids *parse* failure structurally, but has no semantics
 for incomplete programs beyond red squiggles.)
 
-**Opelan's answer** — *Never Broken*, *Immediately Typed*: typed holes keep
+**Opelan's answer** — *Never Broken*, *Immediately Typed*: typed gaps keep
 unfinished input first-class and editable, and the goal is Hazel-style type
-checking per keystroke over holey trees, so every intermediate state is
+checking per keystroke over gappy trees, so every intermediate state is
 valid and useful.
 
 ## DSLs that produce nothing
@@ -115,15 +115,15 @@ Tree-sitter, LSP, and VS Code made cheap textual DSLs easy, shrinking the
 technical moat workbenches once held. Competing on "define a language
 quickly" is a losing game.
 
-**Opelan's answer** — compete where text tooling cannot: structure, holes,
+**Opelan's answer** — compete where text tooling cannot: structure, gaps,
 semantic history, live sync, and languages that are applications. The moat
 is the *user experience around* the language, not the language definition itself.
 
 ## LLMs change the calculus — both ways
 
 Natural-language interfaces reduce the need for bespoke languages at all.
-But structured trees with typed holes are arguably the best possible medium
-for LLM-assisted authoring: edits are guaranteed well-formed, a hole is a
+But structured trees with typed gaps are arguably the best possible medium
+for LLM-assisted authoring: edits are guaranteed well-formed, a gap is a
 natural generation target, and a typed language can constrain and check
 model output.
 

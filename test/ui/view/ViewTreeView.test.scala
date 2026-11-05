@@ -54,7 +54,7 @@ class ViewTreeViewSuite extends munit.FunSuite {
     }
   }
 
-  test("an unknown tag degrades to a hole chip plus rendered children") {
+  test("an unknown tag degrades to a gap chip plus rendered children") {
     vt(n(s("mystery"), sl("inner"))) match {
       case View.Elem("div", _, _, children) =>
         assertEquals(children.length, 2)
@@ -67,10 +67,10 @@ class ViewTreeViewSuite extends munit.FunSuite {
     }
   }
 
-  test("a gap leaf renders as a hole chip") {
-    vt(hole("abc")) match {
+  test("a gap leaf renders as a gap chip") {
+    vt(gap("abc")) match {
       case View.Elem("span", _, _, Vector(View.Text("abc"))) => ()
-      case other => fail(s"expected hole chip, got $other")
+      case other => fail(s"expected gap chip, got $other")
     }
   }
 
@@ -114,10 +114,10 @@ class ViewTreeViewSuite extends munit.FunSuite {
     }
   }
 
-  test("an input without a source ref degrades to a hole") {
+  test("an input without a source ref degrades to a gap") {
     vt(n(s("input"), sl("42"))) match {
       case View.Elem("span", _, _, Vector(View.Text("?input"))) => ()
-      case other => fail(s"expected hole chip, got $other")
+      case other => fail(s"expected gap chip, got $other")
     }
   }
 }

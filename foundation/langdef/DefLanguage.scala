@@ -8,7 +8,7 @@ import opelan.foundation.langdef.syntax._
 import opelan.foundation.means.RuleSet
 import opelan.foundation.means.engine.{compileRules, rephraseRuleSet}
 import opelan.foundation.language.{
-  HoleRetry, InputSessions, Language, SyntaxChange, TextSyntax}
+  GapRetry, InputSessions, Language, SyntaxChange, TextSyntax}
 import opelan.foundation.view.ViewTree
 
 // A Language interpreted from a LanguageDef — the bootstrap mechanism:
@@ -52,7 +52,7 @@ class DefLanguage(
 
   // What a parsed node of `term` carries: the construct's ref (inline —
   // the destination document imports it on insert). A term the
-  // vocabulary doesn't define becomes a hole that keeps its parsed
+  // vocabulary doesn't define becomes a gap that keeps its parsed
   // children.
   def termTag(term: String): NodeData =
     termTags.getOrElse(term, NodeData.GapData(term))
@@ -72,7 +72,7 @@ class DefLanguage(
       case Some(rules) =>
         val atom = interpret(s.grammar, termTag)
         val lexicals = lexicalTerms(impls)
-        // Quoted-hole meanings — phrases the set couldn't yet read —
+        // Quoted-gap meanings — phrases the set couldn't yet read —
         // retry at interpretation and heal as their rules arrive.
         val rephrased =
           rephraseRuleSet(rules, atom, termTag, s.lexicon, lexicon, lexicals)
@@ -83,10 +83,10 @@ class DefLanguage(
 
   def render(view: String, doc: Document[NodeData])
       : Either[String, DetachedNode[NodeData]] =
-    renderWith(view, doc, HoleRetry())
+    renderWith(view, doc, GapRetry())
 
   override def renderWith(
-      view: String, doc: Document[NodeData], retry: HoleRetry,
+      view: String, doc: Document[NodeData], retry: GapRetry,
       docUrl: Option[String] = None)
       : Either[String, DetachedNode[NodeData]] =
     if (isDocLanguage && view == "print")
@@ -144,15 +144,15 @@ class DefLanguage(
       })
 
   override def parseInput(text: String): Option[DetachedNode[NodeData]] =
-    inputs.parse(HoleRetry())(text)
+    inputs.parse(GapRetry())(text)
 
   override def commitInput(id: Int, text: String, sessions: InputSessions)
       : Option[(DetachedNode[NodeData], InputSessions)] =
     inputs.commit(id, text, sessions)
 
-  override def rememberHoles(
-      doc: Document[NodeData], retry: HoleRetry): HoleRetry =
-    rememberInputHoles(doc, inputs.syntax, retry)
+  override def rememberGaps(
+      doc: Document[NodeData], retry: GapRetry): GapRetry =
+    rememberInputGaps(doc, inputs.syntax, retry)
 
   private lazy val inputs =
     InputGrammar(languageDef.inputParser, impls, resolve)

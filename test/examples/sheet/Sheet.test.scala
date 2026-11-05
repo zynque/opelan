@@ -26,7 +26,7 @@ class SheetSuite extends munit.FunSuite {
     assert(!doc.nodes.exists(_.data == NodeData.StringData(SheetTag)))
     // Each construct is imported once: title, sheet, hrow, row, mul,
     // add. (The imports construct itself stays a direct ext ref; `div`
-    // appears only in the per-person hole's text.)
+    // appears only in the per-person gap's text.)
     assertEquals(importEntries(doc).length, 6)
   }
 
@@ -58,9 +58,9 @@ class SheetSuite extends munit.FunSuite {
     assert(srcs.contains(cellId(6, 3)), srcs.mkString(","))
   }
 
-  test("a hole in a referenced cell blocks the cells that use it") {
+  test("a gap in a referenced cell blocks the cells that use it") {
     // Replace Coffee's price (row 3, col 2) with a gap: its line total,
-    // the total, and the per-person row all degrade to holes.
+    // the total, and the per-person row all degrade to gaps.
     val broken =
       updateNodeData(cellId(3, 2), NodeData.GapData("oops"), doc).toOption.get
     val f = SheetLanguage.render("sheet", broken).map(ViewTree.flatten)
@@ -71,13 +71,13 @@ class SheetSuite extends munit.FunSuite {
     assertEquals(rows(1), "Apples\t4\t1.2\t$4.80")
   }
 
-  test("the per-person cell is seeded as a hole holding formula text") {
+  test("the per-person cell is seeded as a gap holding formula text") {
     val cell = doc.getNode(cellId(6, 3)).get
     assertEquals(cell.data,
       NodeData.GapData(s"ref:${cellId(4, 3)} / ref:${cellId(5, 1)}"))
   }
 
-  test("a hole heals in the views when the cell grammar can read it") {
+  test("a gap heals in the views when the cell grammar can read it") {
     import opelan.foundation.langdef.ViewContext
     val sid = contentId(doc).get
     val noGrammar = ViewTree.flatten(sheetView(doc, sid))
@@ -85,13 +85,13 @@ class SheetSuite extends munit.FunSuite {
     val healed = ViewTree.flatten(
       sheetView(doc, sid, ViewContext(parseInput = t => Some(parseCellText(t)))))
     assertEquals(healed.split("\n")(6), "per person\t\t\t8.1")
-    // the document itself still holds the hole
+    // the document itself still holds the gap
     assert(doc.getNode(cellId(6, 3)).exists(_.data.isInstanceOf[NodeData.GapData]))
   }
 
   test("a self-referencing cell reports a cycle, not a hang") {
     // Point a leaf cell at itself: the qty cell's own value and every
-    // formula downstream show the cycle hole rather than diverging.
+    // formula downstream show the cycle gap rather than diverging.
     val cyc = updateNodeData(
       cellId(1, 1), NodeData.InternalNodeRef(cellId(1, 1)), doc).toOption.get
     val rows = SheetLanguage.render("sheet", cyc)
@@ -131,7 +131,7 @@ class SheetSuite extends munit.FunSuite {
     assertEquals(parseCellText("?oops").data, NodeData.GapData("oops"))
     assertEquals(parseCellText("?").data, NodeData.GapData(""))
     assertEquals(parseCellText("").data, NodeData.StringData(""))
-    // unparsed text that mentions a cell is a formula-in-waiting: a hole
+    // unparsed text that mentions a cell is a formula-in-waiting: a gap
     assertEquals(parseCellText("ref:1 % ref:2").data, NodeData.GapData("ref:1 % ref:2"))
     assertEquals(parseCellText("2 % people").data, NodeData.StringData("2 % people"))
     assertEquals(

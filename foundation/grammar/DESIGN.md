@@ -38,13 +38,13 @@ this direction:
   Unglued pieces skip whitespace implicitly, so rules never mention it.
   Landed between *lexical* pieces — a literal, or a placeholder bound
   to a leaf production — so `-n` fuses sign and number (`- 4` is a
-  hole) while `( 1 )` still parses through the non-lexical `a`.
+  gap) while `( 1 )` still parses through the non-lexical `a`.
 - *The rule notation is an ordinary grammar*, ahead of full
   self-description.
 
 Recovery keeps its token-level vocabulary (`Recovery.scala`):
 `unrecognized` gathers a run of lexicon matches of given kinds into a
-hole, and `phrase` stops at given kinds, so behavior is identical to the
+gap, and `phrase` stops at given kinds, so behavior is identical to the
 token-stream version. A character no lexical rule accepts still forms a
 one-character token, so no text is lost. Once grammars are compiled from
 rules, the same recovery can be phrased in terms of the literals a
@@ -82,7 +82,7 @@ different needs:
   meaning change or a re-created node still does; code-authored rules
   fall back to pattern-key names.
   Stored documents are trees and need no reparse at all: a language
-  change re-renders views and retries the holes whose failed parse
+  change re-renders views and retries the gaps whose failed parse
   called a changed rule — the demo's healing moment, done
   incrementally.
 
@@ -106,7 +106,7 @@ the document keeps the result, not the scaffolding.
 
 Two constraints follow for the combinators: rule applications must be
 *named* (they carry the identity the memo key needs), and every result —
-including holes and unrecognized runs — must report an honest examined
+including gaps and unrecognized runs — must report an honest examined
 range, or invalidation will miss cases. The guard is a property test:
 for any edit, an incremental reparse equals a full parse of the edited
 text (see [`test/`](../../test/DESIGN.md)).
@@ -152,6 +152,6 @@ stale.
   are the same objects, even after length-changing edits.
 
 The sessions that carry this machinery into the pane — `TextSession`,
-`InputSessions`, `HoleRetry` — are in
+`InputSessions`, `GapRetry` — are in
 [`../language/DESIGN.md`](../language/DESIGN.md); the commit-side
 reconcile is in [`../document/typed/DESIGN.md`](../document/typed/DESIGN.md).

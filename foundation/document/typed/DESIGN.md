@@ -70,6 +70,6 @@ rather than preserving whatever the surface happened to hold. If a
 language ever needs genuinely meaningful layout (a verbatim block, a
 comment, a chosen block format), the answer is an explicit construct in
 its `NodeData` — content, not inferred trivia — the same way `GapData`
-already carries a hole's raw text. This makes provenance a function of
+already carries a gap's raw text. This makes provenance a function of
 content and format, computable on demand, instead of stored data that
 can disagree with the text it describes.

@@ -75,14 +75,14 @@ class CompileSuite extends FunSuite {
       node("add", lit(1), gap("")))
   }
 
-  test("a degenerate bracket keeps its brackets in the hole") {
+  test("a degenerate bracket keeps its brackets in the gap") {
     assertEquals(parse(arithmetic, "(1 2)"), gap("(1 2)"))
     assertEquals(parse(arithmetic, "(1 2) + 3"),
       node("add", gap("(1 2)"), lit(3)))
   }
 
   test("a phrase meaning desugars with the language's own rules") {
-    // The context-free read stores a quoted hole; the interpretation's
+    // The context-free read stores a quoted gap; the interpretation's
     // rephrase reads it into terms.
     val percent = rephraseRuleSet(arithmetic.copy(
       rules = arithmetic.rules :+ aRule("a % means a / 100"),
@@ -178,7 +178,7 @@ class CompileSuite extends FunSuite {
     assertEquals(parse(set, "x"), gap("x"))
   }
 
-  test("a where on operator operands surfaces violations as a hole") {
+  test("a where on operator operands surfaces violations as a gap") {
     val set = RuleSet(
       rules = List(
         aRule("(a) means a"),
@@ -190,7 +190,7 @@ class CompileSuite extends FunSuite {
     assertEquals(parse(set, "(5) + 6", lexicals),
       node("add", lit(5), lit(6)))
     // A bound gap violates the constraint — the whole application
-    // surfaces as the hole.
+    // surfaces as the gap.
     assertEquals(parse(set, "(x) + 5", lexicals), gap("(x) + 5"))
     assertEquals(parse(set, "5 + (x)", lexicals), gap("5 + (x)"))
   }
@@ -206,10 +206,10 @@ class CompileSuite extends FunSuite {
       node("add", lit(5), lit(6)))
     assertEquals(parse(set, "(5) + 6", cellLexicals),
       node("add", lit(5), lit(6)))
-    // A bound ref violates — the whole application is the hole.
+    // A bound ref violates — the whole application is the gap.
     assertEquals(parse(set, "x + 5", cellLexicals), gap("x + 5"))
     assertEquals(parse(set, "5 + x", cellLexicals), gap("5 + x"))
-    // A bound hole satisfies provisionally — unknown, not wrong.
+    // A bound gap satisfies provisionally — unknown, not wrong.
     assertEquals(parse(set, "5 + ", cellLexicals),
       node("add", lit(5), gap("")))
   }
@@ -217,7 +217,7 @@ class CompileSuite extends FunSuite {
   test("a check-only where in a sequence reads an expression, then checks") {
     // `value` has no token production: the placeholder parses a full
     // expression and the check runs on the bound tree — a violation
-    // fails the piece and recovery holes the rule.
+    // fails the piece and recovery gaps the rule.
     val set = RuleSet(
       rules = List(
         aRule("c means c where c: cell"),

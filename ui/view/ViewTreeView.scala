@@ -11,7 +11,7 @@ import org.scalajs.dom
 // language renders through here, so languages emit data, never DOM.
 //
 // Recovering (Never Broken): an unrecognized tag or a datum with no
-// presentational meaning renders as a hole chip rather than failing, and
+// presentational meaning renders as a gap chip rather than failing, and
 // children always render — a malformed view tree degrades gracefully.
 //
 // Provenance: an element whose first child is a SourceRef leaf is tagged
@@ -27,7 +27,7 @@ def viewTree[I](
     case _ => (None, t.children)
   }
   if (t.data == NodeData.StringData("input"))
-    src.fold(holeView("?input"))(id => inputView(id, children, onSource, onEdit))
+    src.fold(gapView("?input"))(id => inputView(id, children, onSource, onEdit))
   else {
     val v = content(t.data, children, onSource, onEdit)
     src.fold(v)(id => annotated(v, id, onSource))
@@ -46,21 +46,21 @@ private def content[I](
     case NodeData.StringData(tag) if ViewTree.tags(tag) =>
       element(tag, children.map(k => viewTree(k, onSource, onEdit)))
     case NodeData.StringData(tag) if children.nonEmpty =>
-      // An unrecognized element: surface the tag as a hole, children
+      // An unrecognized element: surface the tag as a gap, children
       // still render.
       element("block",
-        holeView(s"?$tag") +: children.map(k => viewTree(k, onSource, onEdit)))
+        gapView(s"?$tag") +: children.map(k => viewTree(k, onSource, onEdit)))
     case NodeData.StringData(s) => text(s)
     case NodeData.GapData(t) =>
-      val chip = holeView(if (t.isEmpty) "?" else t)
+      val chip = gapView(if (t.isEmpty) "?" else t)
       if (children.isEmpty) chip
       else els("span")(chip +: children.map(k => viewTree(k, onSource, onEdit)))
     case other =>
-      // Scalars render as text; refs and stray SourceRefs become holes.
+      // Scalars render as text; refs and stray SourceRefs become gaps.
       val lead = other match {
         case NodeData.IntData(i)   => text(i.toString)
         case NodeData.FloatData(f) => text(f.toString)
-        case d                     => holeView(NodeDataText.show(d))
+        case d                     => gapView(NodeDataText.show(d))
       }
       if (children.isEmpty) lead
       else element("block",
@@ -87,7 +87,7 @@ private def element[I](tag: String, children: Iterable[View[I]]): View[I] =
 private val cellCss = "border: 1px solid #ddd; padding: 2px 8px;"
 
 // The styles a `styled:` role paints with — the one place a presentation
-// role becomes pixels (a solarized accent each, as the hole chips use).
+// role becomes pixels (a solarized accent each, as the gap chips use).
 private def roleCss(role: String): String = role match {
   case "keyword"     => "color: #268bd2; font-weight: bold; "
   case "placeholder" => "font-style: italic; color: #6c71c4; "
@@ -185,7 +185,7 @@ private def styledBlurCommit[I](id: Int, onEdit: (Int, String) => I)(
   blurCommit(id, onEdit)(e)
 }
 
-// A box over a hole (its surface text starts with "?") wears the hole
+// A box over a gap (its surface text starts with "?") wears the gap
 // chip's colors, so a stuck input reads as one at a glance.
 private def inputCss(current: String): String =
   if (current.startsWith("?"))
@@ -241,7 +241,7 @@ private def asCell[I](v: View[I]): View[I] = v match {
   case other => el("td", style(cellCss))(other)
 }
 
-private def holeView[I](t: String): View[I] =
+private def gapView[I](t: String): View[I] =
   el("span",
     style("background: #fdf3d7; color: #8a6d1a; border: 1px solid #e8d48a; " +
       "border-radius: 3px; padding: 0 4px;"))(

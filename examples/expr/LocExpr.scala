@@ -17,21 +17,21 @@ enum LocExpr {
   case LocDiv(src: Int, left: LocExpr, right: LocExpr)
   // A ref node: `src` is the ref's own id, `target` the node it points at.
   case LocRef(src: Int, target: Int)
-  case LocHole(src: Int, text: String)
+  case LocGap(src: Int, text: String)
 }
 
 // Read the subtree at nodeId as an expression, keeping node ids.
 // Recovering like exprFromDocument: malformed nodes and foreign
-// constructs read as holes.
+// constructs read as gaps.
 def readLocExpr(doc: Document[NodeData], nodeId: Int): LocExpr =
   doc.getNode(nodeId) match {
-    case None => LocExpr.LocHole(nodeId, "missing")
+    case None => LocExpr.LocGap(nodeId, "missing")
     case Some(node) => termOf(exprTerms, doc, nodeId) match {
       case Some(tag) if binTags(tag) && node.childIds.length == 2 =>
         binNode(tag, nodeId,
           readLocExpr(doc, node.childIds(0)), readLocExpr(doc, node.childIds(1)))
       case _ if externalRefOf(doc, nodeId).isDefined =>
-        LocExpr.LocHole(nodeId, holeText(node.data))
+        LocExpr.LocGap(nodeId, gapText(node.data))
       case _ => node.data match {
         case NodeData.IntData(v) if node.childIds.isEmpty =>
           LocExpr.LocLit(nodeId, v)
@@ -40,8 +40,8 @@ def readLocExpr(doc: Document[NodeData], nodeId: Int): LocExpr =
         case NodeData.InternalNodeRef(id) if node.childIds.isEmpty =>
           LocExpr.LocRef(nodeId, id)
         case NodeData.GapData(t) =>
-          LocExpr.LocHole(nodeId, t)
-        case other => LocExpr.LocHole(nodeId, holeText(other))
+          LocExpr.LocGap(nodeId, t)
+        case other => LocExpr.LocGap(nodeId, gapText(other))
       }
     }
   }

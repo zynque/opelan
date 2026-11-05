@@ -23,7 +23,7 @@ The substrate everything is built on — a direct port of olw-p4, extended:
   `FloatData`, `InternalNodeRef(nodeId)`, `ExternalNodeRef(ref)` — a
   transclusion-style cross-document reference whose
   `ExternalNodeReference(documentUrl, documentVersionId, nodeId)` reads
-  as `url@version#node` — **`GapData(text)`** (a hole, see
+  as `url@version#node` — **`GapData(text)`** (a gap, see
   [`../DESIGN.md`](../DESIGN.md)), and **`SourceRef(nodeId)`**, a pointer
   to the definition, which, when interpreted, produced this node.
 - **`Outline`** — a text format for raw documents: one line per node,

@@ -26,8 +26,8 @@ mechanics:
   [`examples/Resolve`](../../examples/DESIGN.md)), so an edited `lang:`
   document takes effect immediately.
 - The pane owns the incremental parse state — a `TextSession` for the
-  text surface, `InputSessions` for projected inputs, and a `HoleRetry`
-  for stored holes (see
+  text surface, `InputSessions` for projected inputs, and a `GapRetry`
+  for stored gaps (see
   [`foundation/language`](../../foundation/language/DESIGN.md)).
 - The pending-pin accept button and the `auto-update` toggle live here
   (`TypedDocView`, `TypedDocModel`, `TypedDocUpdate`); the save-time

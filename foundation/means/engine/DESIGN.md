@@ -50,7 +50,7 @@ reasons:
   Embedding one language's grammar in another (STATUS, *Language
   composition*) means composing parsers.
 - *Continuity.* Total, recovering parsing already lives in the
-  combinators (holes instead of failure), and `precedenceTable` already
+  combinators (gaps instead of failure), and `precedenceTable` already
   shows the pattern: an operator table is one meta-combinator, not a
   format feature. Compiling rules to the same combinators makes parity
   with `ExprLanguage` a matter of producing the same composition.
@@ -78,7 +78,7 @@ Caveats this design accepts:
 - *Left recursion.* Operator rules avoid it by construction (the loop
   replaces recursion). A left-recursive non-operator rule would make a
   PEG-style combinator loop at the same position — today's `Ref` guard
-  already degrades that to a hole. Warth's seed-growing left recursion
+  already degrades that to a gap. Warth's seed-growing left recursion
   (OMeta, Ohm) is the upgrade if real grammars need it.
 - *Ordered choice.* Combinator choice takes the first alternative that
   applies, so overlapping rules resolve by order rather than reporting
@@ -88,7 +88,7 @@ Caveats this design accepts:
   surface: whether a rule lands in the operator combinator or in a
   sequence is decided by its shape, not by the author.
 
-Recovery stays in the combinators (a missing operand folds to a hole, as
+Recovery stays in the combinators (a missing operand folds to a gap, as
 `chainLeft` does today), keeping `Unrecognized`/`Phrase` out of authored
 definitions.
 

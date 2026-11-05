@@ -26,10 +26,10 @@ Three surfaces over one document:
 - **text** — the document's text surface in a CodeMirror editor.
   Typed documents use their language's parse/print; everything else uses
   the outline format. Edits reparse the whole text; malformed input
-  becomes holes, not errors.
+  becomes gaps, not errors.
 - **Sidebar** — the language's derived views (e.g. `print`, `eval` for the
   expression language; `sheet`, `formulas` for the sheet language),
-  re-rendered live on each change. Holes render as
+  re-rendered live on each change. Gaps render as
   yellow chips. Fragments tagged with a source node show a `node #n`
   tooltip and select that node in the structural editor when clicked.
 
@@ -48,22 +48,22 @@ of label, literal, and formula cells (`qty * price`, a summed total,
 `total / people`) whose `sheet` view computes values and whose
 `formulas` view shows the expressions.
 
-Sheet cells are projected editors: value cells (labels, numbers, holes)
+Sheet cells are projected editors: value cells (labels, numbers, gaps)
 and every cell in the `formulas` view show a text box — edit in place,
 Enter or click-away commits, Escape reverts. A commit rewrites the
 source node in place, so formulas referencing the cell recompute.
-Typing `?` writes a hole; text that parses as an expression (numbers,
+Typing `?` writes a gap; text that parses as an expression (numbers,
 `ref:N`, `a * b`) becomes formula content; text that doesn't parse but
-mentions a cell (`ref:N`) is kept as a hole; anything else is a label.
-Hole cells show in yellow. The cell grammar is `lang: expression` at
-the version the sheet's ref pins, so a hole heals (computes) once the
+mentions a cell (`ref:N`) is kept as a gap; anything else is a label.
+Gap cells show in yellow. The cell grammar is `lang: expression` at
+the version the sheet's ref pins, so a gap heals (computes) once the
 sheet's pin bumps to a version that can read it — via the Update
 button or auto-update, not just by saving the definition. Computed
 values are formatted by the `sheet` view's `currency` setting in
 `lang: sheet`.
 
 The seeded `lang: expression` starts without `/`, so the budget's
-`per person` cell starts as a hole: the demo's healing moment
+`per person` cell starts as a gap: the demo's healing moment
 (`DEMO.md`). **Reset** clears the store and reseeds.
 
 ## Structural editor keys
@@ -94,7 +94,7 @@ Typed into the inline edit box:
 - `42`, `1.5` → int / float
 - `&5` → internal ref to node 5
 - `ext:url@v#n` → external ref to node `n` of `url`'s version `v`
-- `?text` → gap (hole) holding `text`
+- `?text` → gap holding `text`
 
 ### Following refs
 

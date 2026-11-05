@@ -27,11 +27,11 @@ Packages:
   languages, its engine, and its text surface
 - [`view/`](view/DESIGN.md) — the derived view-tree vocabulary
 
-## Holes — *Never broken*
+## Gaps — *Never broken*
 
 `GapData` marks text or structure that doesn't fit yet. Parsers are
-total — every input parses, with holes holding the verbatim text that
+total — every input parses, with gaps holding the verbatim text that
 didn't fit — so ongoing edits heal the tree instead of failing
-(Hazel-inspired typed holes). Evaluation, rendering, and language
-resolution degrade the same way: a hole or cycle blocks only what
+(Hazel's *typed holes*, made structural). Evaluation, rendering, and language
+resolution degrade the same way: a gap or cycle blocks only what
 depends on it.

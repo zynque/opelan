@@ -14,7 +14,7 @@ The demo must show: app → navigate to definition → change → see effect.
   qty × price, computed totals. Unmistakably an *application* — the
   ADOPTION argument is that Excel/Notion won domain-expert programming, so
   a spreadsheet is the most honest flex. Strongest impl-change moment: a
-  formula sitting as a hole (`total / people`, `/` not yet in the grammar)
+  formula sitting as a gap (`total / people`, `/` not yet in the grammar)
   *heals into a live number* when the production is added to the grammar
   document — *Never Broken* + *Evolvable* + bootstrap in one gesture.
 - **Task/project checklist.** Cheapest real app, but reads as a form;
@@ -38,7 +38,7 @@ freshly seeded (**Reset** reseeds a used store).
 1. Open `Household budget`, switch to the `sheet` view — the spreadsheet
    alone fills the pane; no outline, no machinery. Not a program: a
    document; everything on screen is a derived view.
-2. One cell shows `?` — formula `total / people` is a hole because `/`
+2. One cell shows `?` — formula `total / people` is a gap because `/`
    is not in the grammar. The app still works; every other cell
    computes. (*Never Broken.*)
 3. Click a `line total` cell → its formula node is selected in the
@@ -82,7 +82,7 @@ freshly seeded (**Reset** reseeds a used store).
    keeps it on expression v0. `lang: sheet` shows a pending update —
    accepting bumps its cell-grammar ref, and saving publishes `lang:
    sheet` v1, which pends the budget. Back on the budget, one accept →
-   the `total / people` hole heals and the cell computes. No rebuild, no
+   the `total / people` gap heals and the cell computes. No rebuild, no
    redeploy: a running application's language changed by editing a
    document, and adopting it was an explicit, versioned gesture at each
    layer — opting a document into automatic updates makes the same

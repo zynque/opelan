@@ -5,7 +5,7 @@ import opelan.foundation.document._
 // Recovering parser combinators over characters — the Hazel-style answer
 // to combinator parsing: parsers are *total* (they never fail or throw);
 // `ok = false` means the production did not apply and the returned node
-// is a hole covering what could not be placed. Recovery replaces
+// is a gap covering what could not be placed. Recovery replaces
 // backtracking.
 //
 // Positions are character offsets. Token-level combinators skip
@@ -46,9 +46,9 @@ case class POut(pos: Int, tree: PTree, ok: Boolean, examined: Int)
 // A combinator: input + character position → result.
 type Parser = (In, Int) => POut
 
-// The zero-length hole produced where a production should have applied,
+// The zero-length gap produced where a production should have applied,
 // placed after any whitespace.
-private[grammar] def emptyHole(in: In, pos: Int, examined: Int): POut = {
+private[grammar] def emptyGap(in: In, pos: Int, examined: Int): POut = {
   val at = skipSpace(in.input, pos)
   POut(pos, PTree(NodeData.GapData(""), "", at, 0), ok = false,
     examined.max(at + 1))
@@ -66,15 +66,15 @@ def tokWhere(kind: String)(accept: Token => Boolean)(f: Token => NodeData): Pars
       case Some(t) if t.kind == kind && accept(t) =>
         POut(t.to, PTree(f(t), t.text, t.from, t.text.length), ok = true,
           scanned.examined)
-      case _ => emptyHole(in, pos, scanned.examined)
+      case _ => emptyGap(in, pos, scanned.examined)
     }
   }
 
-// A production that never applies — the parse-tree hole for a place
+// A production that never applies — the parse-tree gap for a place
 // where a grammar couldn't provide one.
-def holeHere: Parser = (in, pos) => emptyHole(in, pos, pos)
+def gapHere: Parser = (in, pos) => emptyGap(in, pos, pos)
 
-// First alternative that applies; if none do, an empty hole.
+// First alternative that applies; if none do, an empty gap.
 def choice(ps: Parser*): Parser =
   (in, pos) => {
     var seen = pos
@@ -83,7 +83,7 @@ def choice(ps: Parser*): Parser =
       seen = seen.max(r.examined)
       r
     }.find(_.ok).map(_.copy(examined = seen))
-      .getOrElse(emptyHole(in, pos, seen))
+      .getOrElse(emptyGap(in, pos, seen))
   }
 
 // Two productions in sequence, combined by `f`; if either fails the
@@ -95,7 +95,7 @@ def seq(a: Parser, b: Parser)(f: (PTree, PTree) => PTree): Parser =
     else {
       val rb = b(in, ra.pos)
       val seen = ra.examined.max(rb.examined)
-      if (!rb.ok) emptyHole(in, pos, seen)
+      if (!rb.ok) emptyGap(in, pos, seen)
       else POut(rb.pos, f(ra.tree, rb.tree), ok = true, seen)
     }
   }

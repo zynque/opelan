@@ -13,10 +13,10 @@ import Detached._
 // language's own rules when it is read, becoming term trees —
 // `use` placeholders, construct terms by ref, `quote`d concrete
 // content — and evaluation only ever sees terms. A phrase the set
-// can't yet read stays a quoted hole until `rephraseRuleSet` heals it.
+// can't yet read stays a quoted gap until `rephraseRuleSet` heals it.
 class DesugarSuite extends munit.FunSuite {
 
-  private val percent = readRuleOrHole("a % means a / 100")
+  private val percent = readRuleOrGap("a % means a / 100")
 
   private def desugared(set: RuleSet): RuleSet =
     rephraseRuleSet(set, ruleAtom, exprTag, "expr", exprLexicon,
@@ -31,14 +31,14 @@ class DesugarSuite extends munit.FunSuite {
 
   private val set = exprRules.copy(rules = exprRules.rules :+ percent)
 
-  test("a context-free read keeps the phrase a quoted hole") {
-    // `readRuleOrHole` has no language to desugar through — the
-    // phrase keeps its text as a hole for a later re-read to heal.
+  test("a context-free read keeps the phrase a quoted gap") {
+    // `readRuleOrGap` has no language to desugar through — the
+    // phrase keeps its text as a gap for a later re-read to heal.
     assertEquals(percent.meaning.tag, "quote")
-    assertEquals(holeQuoteText(percent.meaning), Some("a / 100"))
+    assertEquals(gapQuoteText(percent.meaning), Some("a / 100"))
   }
 
-  test("a set without hole phrases rephrases to itself") {
+  test("a set without gap phrases rephrases to itself") {
     assertEquals(desugared(exprRules), exprRules)
   }
 
@@ -72,11 +72,11 @@ class DesugarSuite extends munit.FunSuite {
       n(exprTag("div"), n(exprTag("add"), il(2), il(3)), il(100)))
   }
 
-  test("an unbound placeholder lands as a hole inside the terms") {
+  test("an unbound placeholder lands as a gap inside the terms") {
     // `b` isn't in the pattern — the placeholder atom can't lex it,
-    // so it parses as an unrecognized run and quotes as a hole inside
-    // the structure (`div(hole, 100)`), not over the whole phrase.
-    val unbound = readRuleOrHole("a % means b / 100")
+    // so it parses as an unrecognized run and quotes as a gap inside
+    // the structure (`div(gap, 100)`), not over the whole phrase.
+    val unbound = readRuleOrGap("a % means b / 100")
     val meaning = desugared(
       exprRules.copy(rules = exprRules.rules :+ unbound))
       .rules.last.meaning
@@ -84,9 +84,9 @@ class DesugarSuite extends munit.FunSuite {
     assert(hasGap(meaning))
   }
 
-  test("a hole in the phrase quotes the hole") {
+  test("a gap in the phrase quotes the gap") {
     val s = exprRules.copy(rules =
-      exprRules.rules :+ readRuleOrHole("a % means a +"))
+      exprRules.rules :+ readRuleOrGap("a % means a +"))
     assertEquals(desugared(s).rules.last.meaning.tag, "add")
     val tree = parse(grammarFor(desugared(s)), "5 %")
     assertEquals(toDetached(tree),

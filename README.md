@@ -2,7 +2,7 @@
 
 I dream of a world where anyone can "look under the hood" of any program at the click of a button — then edit, tinker, and share their modifications, all without leaving the browser. A world where code takes the shape best suited to its domain — visual, textual, or a mix of both. A world where code is worth reading not just by machines or professional developers, but by anyone and everyone seeking to understand and improve the digital systems that shape our world. The next generation of software development is not only open, but also tangible, maleable, and approachable by anyone with curiosity.
 
-This project is a step toward that vision — an experimental prototype exploring language workbench concepts (structured editing, polysyntactic views, typed holes, and local-first documents) built with Scala.js and CodeMirror. It draws inspiration from prior language workbench and projectional editing systems — MPS, OMeta, and many others — as well as ideas I've gathered over more than 30 years of tinkering and pondering.
+This project is a step toward that vision — an experimental prototype exploring language workbench concepts (structured editing, polysyntactic views, typed gaps, and local-first documents) built with Scala.js and CodeMirror. It draws inspiration from prior language workbench and projectional editing systems — MPS, OMeta, and many others — as well as ideas I've gathered over more than 30 years of tinkering and pondering.
 
 **This is a research prototype, not production software.** It exists to explore ideas from the [MANIFESTO](MANIFESTO.md); expect rough edges, incomplete features, and evolving design. See [STATUS.md](STATUS.md) for an honest accounting of what doesn't work yet and what comes next.
 
@@ -14,7 +14,7 @@ Working today:
 
 - **Document Model**: Everything is a versioned, structured tree — programs, documents, and tooling state
 - **Polysyntactic Editing**: Structural editor, text surface, and language-provided derived views over one document
-- **Typed Holes**: Hazel-inspired holes keep incomplete input editable instead of failing
+- **Typed Gaps**: Hazel-inspired gaps keep incomplete input editable instead of failing
 - **Local-First**: Browser-only deployment with IndexedDB persistence
 - **Versioned History**: Version DAG as a document — branching undo and a click-to-jump history tree
 - **Live Sync**: Automerge-backed editing shared live between browser tabs (BroadcastChannel — no server)

@@ -11,13 +11,13 @@ import opelan.foundation.grammar._
 // `=>` is accepted wherever `means` is — the terse spelling. The text is
 // parsed by RuleGrammar, which always produces a tree; this turns the
 // tree into a Rule, or says what's missing. Callers decide how to keep
-// malformed text (a document decoder will hold it as a hole rule, per
+// malformed text (a document decoder will hold it as a gap rule, per
 // *Never broken*).
 //
 // `phrase` reads a meaning that isn't a `build`/`use` spelling — the
 // spellings only a language-aware reader can interpret. It gets the
 // pattern's bound placeholder names and the phrase's text; the default
-// keeps the text as a quoted hole, the context-free reading.
+// keeps the text as a quoted gap, the context-free reading.
 def readRule(
     text: String,
     phrase: (Set[String], String) => Meaning = noLanguage)
@@ -37,27 +37,27 @@ def readRule(
 }
 
 // The context-free phrase reading: a meaning the language can't be
-// asked to read stays a quoted hole that prints back as written.
+// asked to read stays a quoted gap that prints back as written.
 val noLanguage: (Set[String], String) => Meaning =
-  (_, text) => Meaning.hole(text)
+  (_, text) => Meaning.gap(text)
 
 // A malformed rule becomes a rule that never applies — the Never
 // Broken counterpart of `readRule`'s error report (foundation/DESIGN.md,
-// STATUS Phase C: "a malformed rule into a hole rule"). Nothing in
+// STATUS Phase C: "a malformed rule into a gap rule"). Nothing in
 // it compiles — an empty pattern is neither operator- nor
 // sequence-shaped — but `ruleIssues` still reports it, so the
 // mistake shows up in checking rather than disappearing.
-def readRuleOrHole(
+def readRuleOrGap(
     text: String,
     phrase: (Set[String], String) => Meaning): Rule =
-  readRule(text, phrase).getOrElse(holeRule)
+  readRule(text, phrase).getOrElse(gapRule)
 
-// The context-free read — phrases land as quoted holes.
-def readRuleOrHole(text: String): Rule =
-  readRuleOrHole(text, noLanguage)
+// The context-free read — phrases land as quoted gaps.
+def readRuleOrGap(text: String): Rule =
+  readRuleOrGap(text, noLanguage)
 
-// The hole rule itself, for decoders keeping a slot they can't read.
-val holeRule: Rule = Rule(Pattern(Nil), Meaning.hole(""))
+// The gap rule itself, for decoders keeping a slot they can't read.
+val gapRule: Rule = Rule(Pattern(Nil), Meaning.gap(""))
 
 // A meaning field's own text: the `build`/`use` spellings read as
 // terms — the rest is phrase text for the caller's language-aware

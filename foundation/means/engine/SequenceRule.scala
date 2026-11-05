@@ -13,10 +13,10 @@ import opelan.foundation.means._
 // A *closed* rule (literal at both edges) recovers like `parens`:
 // once its opening literal matches it is committed. When a piece
 // fails the rule scans forward for its closing literal — found,
-// everything up to it is a hole (`(1 2)` keeps its parens as
+// everything up to it is a gap (`(1 2)` keeps its parens as
 // "(1 2)"); absent at the end of input with the middle intact, the
 // bracket closes implicitly and the meaning still builds (`(1 +`
-// stays add(1, hole)); anything else is a hole to the end. A
+// stays add(1, gap)); anything else is a gap to the end. A
 // non-closed rule (`if c then a else b`) stays all-or-nothing for
 // now — partial keyword recovery is a later refinement.
 //
@@ -31,7 +31,7 @@ import opelan.foundation.means._
 // pick up a phrase. A placeholder bound to a check-only term
 // (`value`) still parses a full expression, then the term's `check`
 // runs on the bound tree — a violation fails the piece, so the
-// rule's recovery holes it like an unmatched literal.
+// rule's recovery gaps it like an unmatched literal.
 //
 // Glue is lexical adjacency: a glued piece must start exactly where
 // the previous piece ended — when *both* pieces are lexical (a
@@ -62,7 +62,7 @@ def sequenceRule(
     seen = seen.max(first.examined)
     val open = first.token.filter(t => t.text == literalText(pieces(0)))
     open match {
-      case None => failedHole(in, pos, seen)
+      case None => failedGap(in, pos, seen)
       case Some(opened) =>
         val from = opened.from
         var cur = opened.to
@@ -104,7 +104,7 @@ def sequenceRule(
             POut(cur, applyMeaning(theRule.meaning, bindings, in, from,
               cur, tag), ok = true, seen)
           case Some(at) => closer match {
-            case None => failedHole(in, pos, seen)
+            case None => failedGap(in, pos, seen)
             case Some(text) =>
               val (end, s) = findLiteral(text, in, cur)
               seen = seen.max(s)
@@ -153,8 +153,8 @@ private def findLiteral(
   (found, seen)
 }
 
-// The local `emptyHole` (the grammar package's is private to it).
-private def failedHole(in: In, pos: Int, examined: Int): POut = {
+// The local `emptyGap` (the grammar package's is private to it).
+private def failedGap(in: In, pos: Int, examined: Int): POut = {
   val at = skipSpace(in.input, pos)
   POut(pos, PTree(NodeData.GapData(""), "", at, 0), ok = false,
     examined.max(at + 1))

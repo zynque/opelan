@@ -14,7 +14,7 @@ import opelan.foundation.means.text._
 // rule engine (STATUS.md, `means` Phase B); once parity is proven
 // the rules become the definition and the other forms fall away.
 
-// `readRuleOrHole` keeps a mistyped rule from breaking the set —
+// `readRuleOrGap` keeps a mistyped rule from breaking the set —
 // it reads as a rule that never applies, and `ruleSetIssues`
 // still reports it (`ExprRulesSuite` asserts the set is clean).
 val exprRules = RuleSet(
@@ -28,10 +28,10 @@ val exprRules = RuleSet(
     "-n means literal(neg(n)) where n: number",
     // The operand declarations — which builtin leaves stand alone.
     // `n means n` is the `operand ::= number` production: the `where`
-    // binds the token and `use` passes the leaf through. The hole
+    // binds the token and `use` passes the leaf through. The gap
     // token needs no rule: `gap` is a kernel operand term.
     "n means n where n: number",
-    "r means r where r: ref").map(readRuleOrHole),
+    "r means r where r: ref").map(readRuleOrGap),
   tiers = List(
     Tier(List(readPattern("a * b"), readPattern("a / b"))),
     Tier(List(readPattern("a + b"), readPattern("a - b")))),
@@ -40,12 +40,12 @@ val exprRules = RuleSet(
 // The operand fallback the rules don't describe — just the
 // recovering unrecognized run; the leaf tokens are operands through
 // the `n`/`r` operand rules bound to exprImpls' leaf productions
-// (the hole token through the kernel's `gap` operand), and signed
+// (the gap token through the kernel's `gap` operand), and signed
 // numbers are the `+n`/`-n` rules. The same fallback ExprParse's
 // atom writes, minus `parens`, the leaf toks, and `signum`.
 lazy val ruleAtom: Parser =
   unrecognized(Set("op", "unrecognized"),
-    Set("int", "float", "ref", "unrecognized", "hole"))
+    Set("int", "float", "ref", "unrecognized", "gap"))
 
 // The named leaf vocabulary `where` terms bind through — operand
 // status comes from the rules' own operand declarations.

@@ -14,7 +14,7 @@ def exprToDetached(e: Expr): DetachedNode[NodeData] = e match {
   case Lit(v)    => DetachedNode.leaf(NodeData.IntData(v))
   case FLit(v)   => DetachedNode.leaf(NodeData.FloatData(v))
   case Ref(id)   => DetachedNode.leaf(NodeData.InternalNodeRef(id))
-  case Hole(t)   => DetachedNode.leaf(NodeData.GapData(t))
+  case Gap(t)   => DetachedNode.leaf(NodeData.GapData(t))
   case Add(l, r) => opNode(Expr.AddTag, l, r)
   case Sub(l, r) => opNode(Expr.SubTag, l, r)
   case Mul(l, r) => opNode(Expr.MulTag, l, r)
@@ -37,7 +37,7 @@ private def binOf(tag: String): (Expr, Expr) => Expr = tag match {
 // Interpret the subtree rooted at nodeId as an expression. The read is
 // recovering: nodes that are not valid expression syntax (unrecognized
 // data, foreign constructs, wrong arity, literals with children) read as
-// holes, so malformed subtrees surface as gaps rather than errors — the
+// gaps, so malformed subtrees surface as gaps rather than errors — the
 // same totality the text parser gives typed input.
 def exprFromDocument(doc: Document[NodeData], nodeId: Int): Either[String, Expr] =
   doc.getNode(nodeId) match {
@@ -48,13 +48,13 @@ def exprFromDocument(doc: Document[NodeData], nodeId: Int): Either[String, Expr]
           left <- exprFromDocument(doc, node.childIds(0))
           right <- exprFromDocument(doc, node.childIds(1))
         } yield binOf(tag)(left, right)
-      case _ if externalRefOf(doc, nodeId).isDefined => Right(Hole(holeText(node.data)))
+      case _ if externalRefOf(doc, nodeId).isDefined => Right(Gap(gapText(node.data)))
       case _ => Right(leafExpr(node.data, node.childIds.isEmpty))
     }
   }
 
 // The detached-tree counterpart of exprFromDocument — same recovery:
-// anything that is not valid expression syntax reads as a hole.
+// anything that is not valid expression syntax reads as a gap.
 def exprFromDetached(t: DetachedNode[NodeData]): Expr =
   termOfData(exprTerms, t.data) match {
     case Some(tag) if binTags(tag) && t.children.length == 2 =>
@@ -66,13 +66,13 @@ private def leafExpr(data: NodeData, isLeaf: Boolean): Expr = data match {
   case NodeData.IntData(v) if isLeaf         => Lit(v)
   case NodeData.FloatData(f) if isLeaf       => FLit(f)
   case NodeData.InternalNodeRef(id) if isLeaf => Ref(id)
-  case NodeData.GapData(t)                   => Hole(t)
-  case other                                 => Hole(holeText(other))
+  case NodeData.GapData(t)                   => Gap(t)
+  case other                                 => Gap(gapText(other))
 }
 
-// What a malformed node contributes to a hole: its surface text —
-// strings unquoted, so hole text reparses as the same unrecognized run.
-private[examples] def holeText(data: NodeData): String = data match {
+// What a malformed node contributes to a gap: its surface text —
+// strings unquoted, so gap text reparses as the same unrecognized run.
+private[examples] def gapText(data: NodeData): String = data match {
   case NodeData.StringData(s) => s
   case other                  => NodeDataText.show(other)
 }

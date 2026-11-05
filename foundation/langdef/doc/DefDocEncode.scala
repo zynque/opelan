@@ -101,6 +101,6 @@ private def inputsNode(cp: InputParserDef): DetachedNode[NodeData] = cp match {
   case InputParserDef.Language(ref, fb) =>
     n(pending("language"), erl(ref), DetachedNode.leaf(pending(fb match {
       case InputFallback.Label => "as-label"
-      case InputFallback.Hole  => "as-gap"
+      case InputFallback.Gap  => "as-gap"
     })))
 }

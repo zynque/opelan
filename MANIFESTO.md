@@ -84,7 +84,7 @@ The cost of responding to a change should be proportional to the change, not to 
 
 ### Never Broken
 
-Every intermediate state of a user's work — unfinished, inconsistent, or outright malformed — is valid and useful information. Software should interpret whatever exists as far as it can, treating the gaps as first-class content rather than as failures. A hole is a place the user has not finished yet; it should be visible and able to heal as work continues — never an error that blocks rendering, discards input, or prevents the rest of the work from functioning.
+Every intermediate state of a user's work — unfinished, inconsistent, or outright malformed — is valid and useful information. Software should interpret whatever exists as far as it can, treating the gaps as first-class content rather than as failures. A gap is a place the user has not finished yet; it should be visible and able to heal as work continues — never an error that blocks rendering, discards input, or prevents the rest of the work from functioning.
 
 ### Real Time Collaboration
 

@@ -40,7 +40,7 @@ private val exprGrammarDef: GrammarDef = exprGrammarWith(List(mulDiv, addSub))
 // productions.
 private val exprAtom: GrammarDef =
   Unrecognized(Set("op", "unrecognized"),
-    Set("int", "float", "ref", "unrecognized", "hole"))
+    Set("int", "float", "ref", "unrecognized", "gap"))
 
 private def exprGrammarWith(levels: List[Map[String, String]]): GrammarDef =
   Phrase(
@@ -49,12 +49,12 @@ private def exprGrammarWith(levels: List[Map[String, String]]): GrammarDef =
         Tok("int", IntLit),
         Tok("float", FloatLit),
         Tok("ref", RefLit("ref:")),
-        Tok("hole", HoleLeaf),
+        Tok("gap", GapLeaf),
         Parens(Ref("expr")),
         Signum,
         Unrecognized(
           Set("op", "unrecognized"),
-          Set("int", "float", "ref", "unrecognized", "hole")))),
+          Set("int", "float", "ref", "unrecognized", "gap")))),
       levels = levels)),
     stops = Set.empty)
 
@@ -81,7 +81,7 @@ val exprCombinatorDef: LanguageDef =
   exprDef.copy(syntax = Some(SyntaxDef("expr", exprGrammarDef)))
 
 // The demo's starting point for lang: expression: the `/` rule and its
-// binding are missing, so the budget's per-person formula sits as a hole
+// binding are missing, so the budget's per-person formula sits as a gap
 // until the audience adds them to the definition document. The vocabulary
 // still declares `div`, so term ids match exprDef's.
 val demoExprDef = exprDef.copy(syntax =

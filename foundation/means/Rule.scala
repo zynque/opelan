@@ -50,7 +50,7 @@ case class Pattern(pieces: List[Piece]) {
 // have none until encoded, and a placeholder resolves by name within
 // its rule. `quoted` holds a `quote` term's subtree — concrete content
 // a phrase desugared to, stored as a parse tree whose children's offsets
-// are relative, ready to re-span onto a match. A quoted hole is the
+// are relative, ready to re-span onto a match. A quoted gap is the
 // stored form of a phrase the set couldn't yet read (Never Broken).
 case class Meaning(
     tag: String,
@@ -63,7 +63,7 @@ object Meaning {
   // the defined language's terms (so a `use` must never reach
   // vocabularyFrom). `builtin` is reserved for evaluation-time meanings
   // (`add(a, b) means builtin num-add`, Phase D); `quote` carries a
-  // desugared phrase's concrete subtree — including the hole a phrase
+  // desugared phrase's concrete subtree — including the gap a phrase
   // that didn't read lands as; `literal` evaluates a value
   // term to leaf data (`-n means literal(neg(n))`, parse-time values).
   val builtins: Set[String] =
@@ -90,10 +90,10 @@ object Meaning {
   // re-spanned onto the match.
   def quote(node: PTree): Meaning = Meaning("quote", quoted = Some(node))
 
-  // A quoted hole — the stored form of a meaning a reader couldn't
+  // A quoted gap — the stored form of a meaning a reader couldn't
   // interpret (a phrase with no language context, or one the set can't
   // yet read): it prints back as its text and heals by re-reading.
-  def hole(text: String): Meaning =
+  def gap(text: String): Meaning =
     quote(PTree(NodeData.GapData(text), text, 0, text.length))
 
   // The name a bare term carries — `use`/`source`'s operand — or None

@@ -96,13 +96,13 @@ class TypedDocSuite extends munit.FunSuite {
       u1.state.doc, opelan.examples.registryForDoc, "1 + 2 * 3"))
   }
 
-  test("TextEdited leaves holes where text does not fit") {
+  test("TextEdited leaves gaps where text does not fit") {
     val u = typedDocUpdate(init, TypedDocInput.TextEdited("1 + abc"))
     val content = contentId(u.state.doc).get
     assertEquals(
       exprFromDocument(u.state.doc, content),
-      Right(Expr.Add(Expr.Lit(1), Expr.Hole("abc"))))
-    assert(u.state.status.contains("hole"))
+      Right(Expr.Add(Expr.Lit(1), Expr.Gap("abc"))))
+    assert(u.state.status.contains("gap"))
   }
 
   test("editor edits re-derive the text and bump the epoch") {

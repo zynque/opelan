@@ -81,6 +81,13 @@ projected text boxes.
 
 ## Documents
 
+**Gap**:
+Text or structure that doesn't fit its language yet, kept verbatim in
+the document so later edits heal it instead of failing — the *Never
+broken* convention (Hazel's *typed holes*, made structural). Stored as
+`GapData`, spelled `?text`, bound by the kernel `gap` operand term.
+_Avoid_: hole, error, broken, placeholder
+
 **Format**:
 A paired conversion between two representations of the same content —
 a document tree and its text (`Outline`, `Serial`), a def and its

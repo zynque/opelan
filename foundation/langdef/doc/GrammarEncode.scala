@@ -29,7 +29,7 @@ private[langdef] def grammarNode(
       n(pending("phrase"), go(inner), sl(words(stops)))
     case GrammarDef.Named(name, inner) => n(pending("named"), sl(name), go(inner))
     case GrammarDef.Ref(name)          => n(pending("use"), sl(name))
-    case GrammarDef.Hole               => DetachedNode.leaf(pending("hole"))
+    case GrammarDef.Gap               => DetachedNode.leaf(pending("gap"))
   }
   def opPairs(ops: Map[String, String]): List[DetachedNode[NodeData]] =
     ops.toList.sortBy(_._1).map { case (sym, tag) =>
@@ -44,7 +44,7 @@ private def words(s: Set[String]): String = s.toList.sorted.mkString(" ")
 private def leafNode(l: LeafKind): DetachedNode[NodeData] = l match {
   case LeafKind.IntLit         => DetachedNode.leaf(pending("int"))
   case LeafKind.FloatLit       => DetachedNode.leaf(pending("float"))
-  case LeafKind.HoleLeaf       => DetachedNode.leaf(pending("gap"))
+  case LeafKind.GapLeaf       => DetachedNode.leaf(pending("gap"))
   case LeafKind.Text           => DetachedNode.leaf(pending("text"))
   case LeafKind.RefLit(prefix) => n(pending("ref"), sl(prefix))
 }

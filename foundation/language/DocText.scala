@@ -39,8 +39,8 @@ def applyDocText(
       else applyOutline(doc, text)
   }
 
-// Number of holes in the reachable document — feedback for the status bar.
-def holeCount(doc: Document[NodeData]): Int =
+// Number of gaps in the reachable document — feedback for the status bar.
+def gapCount(doc: Document[NodeData]): Int =
   reachableIds(doc).count(id =>
     doc.getNode(id).exists(_.data.isInstanceOf[NodeData.GapData]))
 

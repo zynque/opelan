@@ -20,7 +20,7 @@ import opelan.foundation.document.Detached._
 //                               role (keyword, placeholder, ...) a
 //                               surface may paint
 //   leaves    StringData/IntData/FloatData render as text runs;
-//             GapData renders as a hole chip
+//             GapData renders as a gap chip
 //   src:n     a SourceRef LEAF as an element's first child is its
 //             provenance — the source-document node it was derived from
 //
@@ -28,7 +28,7 @@ import opelan.foundation.document.Detached._
 // language renderers (foundation) and the single view interpreter (ui),
 // and it is what a language definition's view spec will eventually
 // encode as a document. Anything unrecognized still renders (Never
-// Broken): unknown containers show their tag as a hole.
+// Broken): unknown containers show their tag as a gap.
 object ViewTree {
 
   val tags = Set("block", "flow", "heading", "grid", "row", "cell", "hcell", "input")
@@ -53,9 +53,9 @@ object ViewTree {
   def styled(role: String, children: DetachedNode[NodeData]*) =
     tagged(s"styled:$role", children)
 
-  // A hole: the view is waiting on this (verbatim source text; an empty
-  // hole renders '?').
-  def hole(text: String): DetachedNode[NodeData] =
+  // A gap: the view is waiting on this (verbatim source text; an empty
+  // gap renders '?').
+  def gap(text: String): DetachedNode[NodeData] =
     DetachedNode.leaf(NodeData.GapData(text))
 
   // A provenance annotation: valid as an element's first child.
@@ -74,9 +74,9 @@ object ViewTree {
     flow(src(nodeId) +: children*)
 
   // The view tree projected to plain text — for surfaces that only speak
-  // text (the print view feeding docText). Text runs and holes
+  // text (the print view feeding docText). Text runs and gaps
   // concatenate; block and grid break lines, row separates cells with
-  // tabs; unrecognized structure degrades to holes so flattened output
+  // tabs; unrecognized structure degrades to gaps so flattened output
   // reparses as gaps.
   def flatten(t: DetachedNode[NodeData]): String = t match {
     case DetachedNode(NodeData.SourceRef(_), _) => ""

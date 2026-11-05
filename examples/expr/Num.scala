@@ -41,7 +41,7 @@ object Num {
   }
 
   // Division always floats and is partial at zero — the caller renders
-  // the failure (as a hole, not an error).
+  // the failure (as a gap, not an error).
   def div(a: Num, b: Num): Option[Num] =
     if (b.toDouble == 0.0) None else Some(Num.F(a.toDouble / b.toDouble))
 }

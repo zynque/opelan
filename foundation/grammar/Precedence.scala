@@ -12,7 +12,7 @@ import opelan.foundation.document._
 // symbol → node-data table (the construct the operator builds, by ref);
 // each step builds tag(l, r) spanning both operands. An operand that
 // doesn't apply (an op or ")" or the end where a value was expected)
-// still folds as its empty hole — then the level ends and the caller's
+// still folds as its empty gap — then the level ends and the caller's
 // `phrase`/`parens` handles the boundary.
 def chainLeft(
     ops: Map[String, NodeData],
@@ -56,7 +56,7 @@ def precedenceTable(
   levels.foldLeft(atom)((lower, ops) => chainLeft(ops, opKind)(lower))
 
 // "(" inner ")" with recovery: a missing ")" closes the group at the end
-// of input, and an inner that degenerated to a hole extends the hole's
+// of input, and an inner that degenerated to a gap extends the gap's
 // text over the parens ("(1 2)" stays "(1 2)", not "1 2").
 def parens(inner: => Parser): Parser =
   (in, pos) => {
@@ -71,7 +71,7 @@ def parens(inner: => Parser): Parser =
         val endPos = close.map(_.to).getOrElse(r.pos)
         r.tree.data match {
           case NodeData.GapData(_) =>
-            hole(in, t.from, end, endPos, ok = true, seen)
+            gap(in, t.from, end, endPos, ok = true, seen)
           case _ =>
             val text = in.input.substring(t.from, end)
             // The node grows to cover the parens: its start moves back
@@ -82,6 +82,6 @@ def parens(inner: => Parser): Parser =
               children = r.tree.children.map(k => k.copy(from = k.from + shift))),
               ok = true, seen)
         }
-      case _ => emptyHole(in, pos, open.examined)
+      case _ => emptyGap(in, pos, open.examined)
     }
   }

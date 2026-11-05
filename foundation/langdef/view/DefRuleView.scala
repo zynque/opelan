@@ -16,11 +16,11 @@ import opelan.foundation.view.ViewTree._
 // while binding patterns and example fields bind to their text
 // leaves. A text-form `rule` (a string first child — the transitional
 // encoding) keeps a single whole-line input; a malformed line reads
-// as a hole rule, never an error.
+// as a gap rule, never an error.
 // Falls back to None when the document has no `rules` node (a def
 // decoded but never written as one), so callers can print instead.
 // `check` runs a worked example — input text, expected text — and
-// returns a failure detail the line shows as a hole.
+// returns a failure detail the line shows as a gap.
 private[langdef] def docRuleLines(
     doc: Document[NodeData], rootId: Int, d: LanguageDef,
     check: (String, String) => Option[String])
@@ -38,7 +38,7 @@ private[langdef] def docRuleLines(
 // box — the meaning field parses through the
 // defined language per keystroke. A `binding` shows its
 // tiers as comma-separated pattern inputs; an `example` is input and
-// expected side by side, checked live — a mismatch trails a hole
+// expected side by side, checked live — a mismatch trails a gap
 // saying what the input read as.
 private def ruleLine(
     doc: Document[NodeData], id: Int, d: LanguageDef,
@@ -67,9 +67,9 @@ private def ruleLine(
                   List(styled("keyword", txt(" where ")),
                     input(w, whereView(r.where)*)))
               flow(fields*)
-            case _ => hole("rule")
+            case _ => gap("rule")
           }
-        case None    => hole("rule")
+        case None    => gap("rule")
       })
     case Some("binding") =>
       styled("keyword", txt("binding:")) +: doc.childrenOf(id)
@@ -81,11 +81,11 @@ private def ruleLine(
           val (inText, outText) = (leafText(doc, a), leafText(doc, b))
           List(styled("marker", txt("e.g. ")), input(a, txt(inText)),
             styled("keyword", txt(" means ")), input(b, txt(outText))) ++
-            check(inText, outText).map(t => List(txt(" "), hole(t)))
+            check(inText, outText).map(t => List(txt(" "), gap(t)))
               .getOrElse(Nil)
         case a :: _      => List(styled("marker", txt("e.g. ")),
           input(a, txt(leafText(doc, a))))
-        case _           => List(hole("example"))
+        case _           => List(gap("example"))
       })*))
     case _ => Nil
   }
@@ -103,7 +103,7 @@ private def meaningDisplay(
 // except a meaning carrying `quote` terms — concrete content only a
 // phrase desugars to — which projects back through the language's own
 // printer, so `a / 100` reads as authored, not `div(a, 100)`. A
-// quoted hole shows its `?` mark — the input wears the hole styling.
+// quoted gap shows its `?` mark — the input wears the gap styling.
 private[langdef] def meaningFieldText(d: LanguageDef, r: Rule): String =
   (for {
     set <- d.syntax.flatMap(_.rules) if hasQuote(r.meaning)

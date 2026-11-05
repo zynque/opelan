@@ -8,7 +8,7 @@ Grammar data → parser: the interpretation layer of a language def (see
   [`foundation/grammar`](../../grammar/DESIGN.md). Named grammars are
   bound in a lazy environment so `Ref` (recursion, e.g. parens reaching
   back to the expression level) resolves at call time; a `Ref` to an
-  unknown name produces a hole rather than crashing — a def doc can
+  unknown name produces a gap rather than crashing — a def doc can
   name rules that don't exist yet (*Never broken*).
 - **`DeriveVocabulary`** — a def's vocabulary derived from its rules:
   construct terms come from construct meanings (`add(a, b)` declares a

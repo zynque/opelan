@@ -37,8 +37,8 @@ class ExprSuite extends munit.FunSuite {
     assert(eval(Ref(7)).isLeft)
   }
 
-  test("eval is blocked by holes") {
-    assert(eval(Add(Lit(1), Hole("x"))).isLeft)
+  test("eval is blocked by gaps") {
+    assert(eval(Add(Lit(1), Gap("x"))).isLeft)
   }
 
   test("print uses minimal parentheses") {
@@ -46,8 +46,8 @@ class ExprSuite extends munit.FunSuite {
     assertEquals(print(Sub(Sub(Lit(1), Lit(2)), Lit(3))), "1 - 2 - 3")
     assertEquals(print(Add(Lit(1), Add(Lit(2), Lit(3)))), "1 + (2 + 3)")
     assertEquals(print(Lit(42)), "42")
-    assertEquals(print(Hole("")), "?")
-    assertEquals(print(Add(Lit(1), Hole("foo"))), "1 + foo")
+    assertEquals(print(Gap("")), "?")
+    assertEquals(print(Add(Lit(1), Gap("foo"))), "1 + foo")
   }
 
   test("print respects * and / precedence") {
@@ -67,14 +67,14 @@ class ExprSuite extends munit.FunSuite {
     assertEquals(exprFromDocument(doc, doc.rootId), Right(sample))
   }
 
-  test("fromDocument reads non-expression nodes as holes") {
+  test("fromDocument reads non-expression nodes as gaps") {
     val doc = buildDocument(sl("hello"))
-    assertEquals(exprFromDocument(doc, doc.rootId), Right(Hole("hello")))
+    assertEquals(exprFromDocument(doc, doc.rootId), Right(Gap("hello")))
   }
 
-  test("fromDocument reads a wrong-arity operator as a hole") {
+  test("fromDocument reads a wrong-arity operator as a gap") {
     val doc = buildDocument(n(s(Expr.AddTag), il(1)))
-    assertEquals(exprFromDocument(doc, doc.rootId), Right(Hole(Expr.AddTag)))
+    assertEquals(exprFromDocument(doc, doc.rootId), Right(Gap(Expr.AddTag)))
   }
 
   test("toDetached/fromDocument round-trip refs and floats") {
@@ -96,7 +96,7 @@ class ExprSuite extends munit.FunSuite {
       Right("1 + 2 - (3 - 4)"))
   }
 
-  test("rendered views keep holes as gap nodes") {
+  test("rendered views keep gaps as gap nodes") {
     val doc = applyDocText(ExprLanguage.sampleDoc, registryForDoc, "1 + abc").toOption.get
     assertEquals(
       gaps(ExprLanguage.render("eval", doc).toOption.get), List("abc"))
@@ -110,18 +110,18 @@ class ExprSuite extends munit.FunSuite {
     assertEquals(
       ExprLanguage.render("eval", doc),
       Right(ViewTree.from(cid, ViewTree.txt("4"))))
-    // A hole blocking eval points at the node holding it.
-    val holey = applyDocText(ExprLanguage.sampleDoc, registryForDoc, "1 + abc").toOption.get
-    val gapId = holey.nodes.indexWhere(_.data == NodeData.GapData("abc"))
+    // A gap blocking eval points at the node holding it.
+    val gappy = applyDocText(ExprLanguage.sampleDoc, registryForDoc, "1 + abc").toOption.get
+    val gapId = gappy.nodes.indexWhere(_.data == NodeData.GapData("abc"))
     assertEquals(
-      ExprLanguage.render("eval", holey),
-      Right(ViewTree.from(gapId, ViewTree.hole("abc"))))
+      ExprLanguage.render("eval", gappy),
+      Right(ViewTree.from(gapId, ViewTree.gap("abc"))))
   }
 
   test("the derived print view matches the hand-written print tree") {
     // printTree over readLocExpr is the oracle printViewWith replaces:
     // the derived printer must emit the identical provenance-tagged
-    // tree — pieces, parens, holes, and src: ids alike.
+    // tree — pieces, parens, gaps, and src: ids alike.
     val inputs = List(
       "1 + 2 - 3", "(1 + 2) * 3", "1.5 * 2", "ref:3 + 1", "-4 + 5",
       "1 - 2 - 3", "1 + (2 - 3)", "1 + abc", "1 +", "(1 2)", "abc",

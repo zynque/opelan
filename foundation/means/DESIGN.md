@@ -95,8 +95,8 @@ is the language being defined: the phrase parses as it is entered — its
 placeholder names recognized against the rule's own pattern (each
 becomes a `use` term), its concrete content stored as quoted subtrees —
 so `a / 100` lands as `div(use(a), ‹100›)`. A phrase that can't parse
-yet, because the rule it needs hasn't been entered, is an ordinary hole
-input and heals when that rule arrives — the same hole-retry the
+yet, because the rule it needs hasn't been entered, is an ordinary gap
+input and heals when that rule arrives — the same gap-retry the
 document surface already uses. The ordering sensitivity of a language
 applied to itself becomes live feedback while authoring rather than a
 deferred choice, and evaluation never sees anything but terms — there
@@ -133,7 +133,7 @@ Hidden is never absent:
 - a `where` narrower than inference leaves a marker in the terse view,
   like a fold indicator;
 - a violated `where` is enforced at every zoom level and surfaces as a
-  hole.
+  gap.
 
 Detail-level zoom stays within the rule's own layer and never descends
 into the meaning's implementation; that is the separate *implementation*
@@ -154,7 +154,7 @@ graph downward.
   (*Discoverable*, *Immediately typed*).
 - *Tolerance in the model*: text edits and CRDT merges can still produce
   one — two collaborators each adding a rule that uses the other's merge
-  cleanly in Automerge. A cycle renders as a hole at the edge that
+  cleanly in Automerge. A cycle renders as a gap at the edge that
   closes it, as ref cycles already do in evaluation (*Never broken*).
 
 **Documents keep what the user wrote.** `5%` is stored as `percent(5)`,

@@ -7,9 +7,9 @@ import opelan.foundation.langdef.doc._
 import opelan.foundation.langdef.syntax._
 import opelan.foundation.language.InputSessions
 import opelan.foundation.means.{Meaning, Pattern, Rule}
-import opelan.foundation.means.engine.{hasGap, holeQuoteText, phraseMeaning}
+import opelan.foundation.means.engine.{hasGap, gapQuoteText, phraseMeaning}
 import opelan.foundation.means.text.{
-  readConstraintsText, readPattern, readRuleOrHole}
+  readConstraintsText, readPattern, readRuleOrGap}
 
 // Text committed against a meta construct produces the structured
 // subtree its decode reads back, never a bare string: a `rule` line
@@ -30,7 +30,7 @@ def commitMetaInput(
   metaConsOf(doc, id) match {
     case Some("rule") =>
       Some((ruleNode(desugarCommitted(doc, docUrl, id,
-          readRuleOrHole(text), impls),
+          readRuleOrGap(text), impls),
         docUrl, pieceIdsFor(doc, id), externalMeta), inputs))
     case Some("pattern") =>
       Some((patternNode(readPattern(text), externalMeta), inputs))
@@ -50,10 +50,10 @@ def enclosingRuleId(
   else doc.getNode(id).flatMap(_.parentId)
     .filter(metaConsOf(doc, _).contains("rule")).getOrElse(id)
 
-// A committed meaning that landed as one quoted hole re-reads through
+// A committed meaning that landed as one quoted gap re-reads through
 // the doc's own rules — with the new rule swapped into the set — the
 // whole-line commit's share of *Phrases desugar at entry*. A phrase
-// the set can't yet read keeps its quoted-hole form: the
+// the set can't yet read keeps its quoted-gap form: the
 // interpretation-time retry (`rephraseRuleSet`) heals it as rules
 // arrive.
 private def desugarCommitted(
@@ -65,7 +65,7 @@ private def desugarCommitted(
     set   <- syn.rules
     lex   <- impls.lexicons.get(syn.lexicon)
     index <- ruleIndex(doc, id)
-    text  <- holeQuoteText(read.meaning)
+    text  <- gapQuoteText(read.meaning)
   } yield {
     val tag = termTagOf(defined)
     val meaning = phraseMeaning(text, read.pattern.placeholders.toSet,
@@ -86,7 +86,7 @@ private def ruleIndex(doc: Document[NodeData], id: Int): Option[Int] =
     i = rules.indexOf(id) if i >= 0
   } yield i
 
-// Term name → the decoded construct's ref (or a hole — Never Broken).
+// Term name → the decoded construct's ref (or a gap — Never Broken).
 private[langdef] def termTagOf(d: LanguageDef): String => NodeData = {
   val refs = termRefs(d)
   name => refs.get(name).map(NodeData.ExternalNodeRef(_))

@@ -28,7 +28,7 @@ class ExprParseSuite extends munit.FunSuite {
     assertEquals(parse("1.5"), FLit(1.5))
     assertEquals(parse("0.25"), FLit(0.25))
     assertEquals(parse("ref:7"), Ref(7))
-    assertEquals(parse("12."), Hole("12."))  // a dangling dot is unrecognized
+    assertEquals(parse("12."), Gap("12."))  // a dangling dot is unrecognized
   }
 
   test("* and / bind tighter than + and -") {
@@ -53,33 +53,33 @@ class ExprParseSuite extends munit.FunSuite {
     assertEquals(parse(print(e)), e)
   }
 
-  test("missing operand produces an empty hole") {
-    assertEquals(parse("1 +"), Add(Lit(1), Hole("")))
-    assertEquals(parse("?"), Hole("?"))
+  test("missing operand produces an empty gap") {
+    assertEquals(parse("1 +"), Add(Lit(1), Gap("")))
+    assertEquals(parse("?"), Gap("?"))
   }
 
-  test("unrecognized text produces a hole holding the verbatim text") {
-    assertEquals(parse("1 + abc"), Add(Lit(1), Hole("abc")))
-    assertEquals(parse("hello"), Hole("hello"))
+  test("unrecognized text produces a gap holding the verbatim text") {
+    assertEquals(parse("1 + abc"), Add(Lit(1), Gap("abc")))
+    assertEquals(parse("hello"), Gap("hello"))
   }
 
-  test("empty input produces an empty hole") {
-    assertEquals(parse(""), Hole(""))
-    assertEquals(parse("   "), Hole(""))
+  test("empty input produces an empty gap") {
+    assertEquals(parse(""), Gap(""))
+    assertEquals(parse("   "), Gap(""))
   }
 
-  test("tokens left after a complete expression merge into a hole") {
-    assertEquals(parse("1 + 2 3"), Hole("1 + 2 3"))
-    assertEquals(parse("1 + 2 )"), Hole("1 + 2 )"))
+  test("tokens left after a complete expression merge into a gap") {
+    assertEquals(parse("1 + 2 3"), Gap("1 + 2 3"))
+    assertEquals(parse("1 + 2 )"), Gap("1 + 2 )"))
   }
 
-  test("a degenerate paren group keeps its parens in the hole text") {
-    assertEquals(parse("(1 2)"), Hole("(1 2)"))
-    assertEquals(parse("(1 2) + 3"), Add(Hole("(1 2)"), Lit(3)))
+  test("a degenerate paren group keeps its parens in the gap text") {
+    assertEquals(parse("(1 2)"), Gap("(1 2)"))
+    assertEquals(parse("(1 2) + 3"), Add(Gap("(1 2)"), Lit(3)))
   }
 
   test("an unclosed paren closes implicitly") {
-    assertEquals(parse("(1 +"), Add(Lit(1), Hole("")))
+    assertEquals(parse("(1 +"), Add(Lit(1), Gap("")))
   }
 
   test("span map records every node's source range") {

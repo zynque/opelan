@@ -1,17 +1,17 @@
 package opelan.foundation.langdef
 
 import opelan.foundation.document._
-import opelan.foundation.language.{HoleRetry, InputSessions, Language, TextSyntax}
+import opelan.foundation.language.{GapRetry, InputSessions, Language, TextSyntax}
 
 // A def's input grammar: how text committed in a projected input becomes
 // content. A builtin parser runs as named; a grammar that refers to
 // another language reads the text with that language's parser — through
-// the host's remembered hole attempts when rendering, through its
+// the host's remembered gap attempts when rendering, through its
 // per-input sessions when committing — and then classifies the result:
-// explicit "?"-holes and whitespace-only inputs aside, real content
-// stands, and a pure hole becomes the fallback (a label or a gap).
+// explicit "?"-gaps and whitespace-only inputs aside, real content
+// stands, and a pure gap becomes the fallback (a label or a gap).
 // Rejected text that mentions a reference is a formula the grammar
-// can't read yet, so it stays a hole even under the label fallback,
+// can't read yet, so it stays a gap even under the label fallback,
 // ready to heal.
 case class InputGrammar(
     parser: Option[InputParserDef],
@@ -23,7 +23,7 @@ case class InputGrammar(
     parser.collect { case InputParserDef.Language(ref, _) => ref }
       .flatMap(resolve).flatMap(_.textSyntax)
 
-  def parse(retry: HoleRetry)(text: String): Option[DetachedNode[NodeData]] =
+  def parse(retry: GapRetry)(text: String): Option[DetachedNode[NodeData]] =
     parser.map {
       case InputParserDef.Builtin(name) =>
         impls.inputParsers.get(name)
@@ -50,7 +50,7 @@ case class InputGrammar(
           case None =>
             (classify(ref, fb, text, language.flatMap(_.parse(text))), inputs)
         })
-      case _ => parse(HoleRetry())(text).map((_, inputs))
+      case _ => parse(GapRetry())(text).map((_, inputs))
     }
 
   private def shortcut(
@@ -64,9 +64,9 @@ case class InputGrammar(
       ref: ExternalNodeReference, fb: InputFallback, text: String,
       read: Option[DetachedNode[NodeData]]): DetachedNode[NodeData] =
     read match {
-      case Some(t) if isHoleLeaf(t) && mentionsRef(ref, text) =>
+      case Some(t) if isGapLeaf(t) && mentionsRef(ref, text) =>
         DetachedNode.leaf(NodeData.GapData(text))
-      case Some(t) if isHoleLeaf(t) =>
+      case Some(t) if isGapLeaf(t) =>
         DetachedNode.leaf(fallbackData(fb, text))
       case Some(t) => t
       case None    => DetachedNode.leaf(fallbackData(fb, text))
@@ -77,12 +77,12 @@ case class InputGrammar(
       l.parse(w).exists(t =>
         t.children.isEmpty && t.data.isInstanceOf[NodeData.InternalNodeRef])))
 
-  private def isHoleLeaf(t: DetachedNode[NodeData]): Boolean =
+  private def isGapLeaf(t: DetachedNode[NodeData]): Boolean =
     t.children.isEmpty && t.data.isInstanceOf[NodeData.GapData]
 
   private def fallbackData(fb: InputFallback, text: String): NodeData =
     fb match {
       case InputFallback.Label => NodeData.StringData(text)
-      case InputFallback.Hole  => NodeData.GapData(text)
+      case InputFallback.Gap  => NodeData.GapData(text)
     }
 }

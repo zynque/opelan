@@ -21,7 +21,7 @@ object NodeData {
   // remaps it.
   case class SourceRef(nodeId: Int) extends NodeData
 
-  // A typed hole: text that did not fit the language's grammar, kept
+  // A typed gap: text that did not fit the language's grammar, kept
   // verbatim so it can heal when reparsing later accepts it. May carry
   // children holding any sub-fragments that did parse.
   case class GapData(text: String) extends NodeData

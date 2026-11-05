@@ -25,7 +25,7 @@ case class Impls(
 
 // What a builtin view gets from the language rendering it: the view's
 // settings as written in the def doc, the language's current input
-// grammar — so a view can retry holes against it (a hole whose text
+// grammar — so a view can retry gaps against it (a gap whose text
 // now parses renders healed) — and `interpretDef`, a way to run a
 // decoded definition as a live language (the "def" view checks worked
 // examples through it; absent where no resolution context exists).

@@ -52,7 +52,6 @@ private[langdef] val metaTerms: List[NodeTerm] = List(
   NodeTerm("phrase", Fixed(2)),
   NodeTerm("named", Fixed(2)),
   NodeTerm("use", Fixed(1)),       // ref to a named grammar
-  NodeTerm("hole", Fixed(0)),
   NodeTerm("int", Fixed(0)),       // token piece terms
   NodeTerm("float", Fixed(0)),
   NodeTerm("text", Fixed(0)),
@@ -85,7 +84,7 @@ val docLanguageDef = LanguageDef(
   views = List(ViewBinding("def", "def-view")),
   // Projected inputs in a def doc — rule lines, binding patterns,
   // example lines — commit their text as a plain string leaf; the
-  // recovering decode (readRuleOrHole & co.) turns it back into content.
+  // recovering decode (readRuleOrGap & co.) turns it back into content.
   inputParser = Some(InputParserDef.Builtin("text")))
 
 val DocLanguage: Language = new DefLanguage(docLanguageDef, docImpls)

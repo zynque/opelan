@@ -5,7 +5,7 @@ import opelan.foundation.document.typed._
 import opelan.foundation.langdef._
 import opelan.foundation.langdef.view.{meaningFieldText, whereFieldText}
 import opelan.foundation.means.Rule
-import opelan.foundation.means.text.{printPattern, readRuleOrHole}
+import opelan.foundation.means.text.{printPattern, readRuleOrGap}
 
 // The text surface of a `lang:` document (foundation/language,
 // DocText): the def's content subtree as an outline in which meta
@@ -35,7 +35,7 @@ import opelan.foundation.means.text.{printPattern, readRuleOrHole}
 // Writing back: a bare word naming a meta construct is that construct
 // (quoting keeps a word a string); `ref:`/`src:`/`?`/number lines keep
 // the outline payloads. Under `rules`, a string line is a rule — it
-// reads through readRuleOrHole into the structured
+// reads through readRuleOrGap into the structured
 // pattern/meaning/where encoding — while `binding`,
 // `tier`, `example`, and `rule` meta nodes keep their structured
 // encoding, so hand-written structure still lands.
@@ -71,7 +71,7 @@ def defDocLines(
 // Total: bare meta words become construct refs, rule lines under
 // `rules` become `rule` nodes, and anything else stays the outline
 // payload it spelled. Phrase meanings a language-aware commit would
-// desugar stay quoted holes here — interpretation retries them
+// desugar stay quoted gaps here — interpretation retries them
 // (rephraseRuleSet).
 def defDocParse(text: String): DetachedNode[NodeData] = {
   val entries = text.split("\n", -1).toList
@@ -108,7 +108,7 @@ private def structured(t: DetachedNode[NodeData]): DetachedNode[NodeData] = {
   if (isMeta(t.data, "rules"))
     DetachedNode(t.data, children.map(c => c.data match {
       case NodeData.StringData(line) =>
-        ruleNode(readRuleOrHole(line), "", Map.empty, externalMeta)
+        ruleNode(readRuleOrGap(line), "", Map.empty, externalMeta)
       case _ => c
     }))
   else DetachedNode(t.data, children)

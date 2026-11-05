@@ -16,14 +16,14 @@ import opelan.foundation.means._
 // placeholder-accepting operand — so a phrase may use syntax the set
 // defines after the rule that means it. The ordering tolerance the
 // apply-time form needed comes from compiling rather than deferring.
-// A phrase the set can't yet read lands as a quoted hole — Never
+// A phrase the set can't yet read lands as a quoted gap — Never
 // Broken — and `rephraseRuleSet` retries it as rules arrive: the
 // meaning input's healing.
 
 // Phrase text as a meaning term: placeholder names lex as operand
 // atoms marking themselves (each becomes `use`), and the rest parses
 // with the language's own rules — construct nodes become construct
-// terms, leaves and holes become `quote`s.
+// terms, leaves and gaps become `quote`s.
 def phraseMeaning(
     text: String,
     placeholders: Set[String],
@@ -40,9 +40,9 @@ def phraseMeaning(
   toTerm(expression(In(text, lexicon), 0).tree, namesByData(set, tag))
 }
 
-// Retry a meaning that is one quoted hole — the stored form of a
+// Retry a meaning that is one quoted gap — the stored form of a
 // phrase the set couldn't yet read. A re-read that reaches real terms
-// replaces it; one that lands as a hole again keeps the authored text.
+// replaces it; one that lands as a gap again keeps the authored text.
 def rephraseMeaning(
     m: Meaning,
     placeholders: Set[String],
@@ -52,14 +52,14 @@ def rephraseMeaning(
     name: String,
     lexicon: Lexicon,
     lexicals: Map[String, LexicalTerm] = Map.empty): Meaning =
-  holeQuoteText(m).fold(m) { text =>
+  gapQuoteText(m).fold(m) { text =>
     val read = phraseMeaning(text, placeholders, set, atom, tag, name,
       lexicon, lexicals)
-    if (holeQuoteText(read).isDefined) m else read
+    if (gapQuoteText(read).isDefined) m else read
   }
 
-// Every quoted-hole meaning in the set retries; other terms pass
-// through unchanged. Interpretation runs this, so a stored hole heals
+// Every quoted-gap meaning in the set retries; other terms pass
+// through unchanged. Interpretation runs this, so a stored gap heals
 // the moment the rule it needs arrives — even in a doc never
 // re-committed.
 def rephraseRuleSet(
@@ -74,16 +74,16 @@ def rephraseRuleSet(
       r.pattern.placeholders.toSet, set, atom, tag, name, lexicon,
       lexicals))))
 
-// The text a quoted hole keeps — Some only when the meaning is exactly
-// a hole, the "phrase the set can't yet read" marker. The text lives
+// The text a quoted gap keeps — Some only when the meaning is exactly
+// a gap, the "phrase the set can't yet read" marker. The text lives
 // in the gap's data: decoded trees carry no source span.
-def holeQuoteText(m: Meaning): Option[String] =
+def gapQuoteText(m: Meaning): Option[String] =
   if (m.tag == "quote")
     m.quoted.collect {
       case PTree(NodeData.GapData(text), _, _, _, Nil, _) => text }
   else None
 
-// A desugared meaning that still holds a hole — the phrase didn't
+// A desugared meaning that still holds a gap — the phrase didn't
 // fully read.
 def hasGap(m: Meaning): Boolean =
   m.arguments.exists(hasGap) || m.quoted.exists(gapTree)
@@ -105,7 +105,7 @@ def placeholderAtom(names: Set[String]): Parser =
         POut(t.to, PTree(PlaceholderMark, t.text, t.from, t.text.length),
           ok = true, scanned.examined)
       case _ =>
-        // The local `emptyHole` (the grammar package's is private).
+        // The local `emptyGap` (the grammar package's is private).
         val at = skipSpace(in.input, pos)
         POut(pos, PTree(NodeData.GapData(""), "", at, 0), ok = false,
           scanned.examined.max(at + 1))
@@ -125,7 +125,7 @@ def toTerm(t: PTree, names: Map[NodeData, String]): Meaning =
   }
 
 // A quoted subtree holds no marks — a placeholder inside content that
-// didn't resolve to a term reads as a hole rather than leaking the
+// didn't resolve to a term reads as a gap rather than leaking the
 // desugar's mark into the output.
 private def scrubbed(t: PTree): PTree =
   if (t.data == PlaceholderMark)

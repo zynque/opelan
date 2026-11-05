@@ -3,19 +3,19 @@ package opelan.foundation.grammar
 import opelan.foundation.document._
 
 // The recovering productions: where text fits no production it becomes a
-// hole holding the verbatim text, so input is never lost (*Never broken*).
+// gap holding the verbatim text, so input is never lost (*Never broken*).
 
-// The fallback hole: applies only when the token at `pos` can start an
+// The fallback gap: applies only when the token at `pos` can start an
 // unrecognized run (its kind is in `start` — a boundary like ")" never
-// begins a hole), then covers the maximal run of following tokens whose
-// kinds are in `run`. At the end of input it produces the empty hole —
+// begins a gap), then covers the maximal run of following tokens whose
+// kinds are in `run`. At the end of input it produces the empty gap —
 // "operand expected" — and still applies.
 def unrecognized(start: Set[String], run: Set[String]): Parser =
   (in, pos) => {
     val first = scanAt(in, pos)
     first.token match {
       case None =>
-        emptyHole(in, pos, first.examined).copy(ok = true)
+        emptyGap(in, pos, first.examined).copy(ok = true)
       case Some(t0) if start(t0.kind) =>
         var end = t0.to
         var seen = first.examined
@@ -28,24 +28,24 @@ def unrecognized(start: Set[String], run: Set[String]): Parser =
             case _                      => more = false
           }
         }
-        hole(in, t0.from, end, end, ok = true, seen)
-      case _ => emptyHole(in, pos, first.examined)
+        gap(in, t0.from, end, end, ok = true, seen)
+      case _ => emptyGap(in, pos, first.examined)
     }
   }
 
-// A hole covering all remaining text — for when a grammar has no
-// applicable production at all (GrammarDef.Hole).
-def restHole: Parser = (in, pos) => {
+// A gap covering all remaining text — for when a grammar has no
+// applicable production at all (GrammarDef.Gap).
+def restGap: Parser = (in, pos) => {
   val text = in.input
   val start = skipSpace(text, pos)
   var end = text.length
   while (end > start && text.charAt(end - 1).isWhitespace) end -= 1
-  hole(in, start, end, text.length, ok = true, text.length + 1)
+  gap(in, start, end, text.length, ok = true, text.length + 1)
 }
 
 // The level cleanup: if text remains that `p` did not place — and the
 // next token isn't a stop kind (")" inside a group) — the whole level
-// merges into one hole covering its text.
+// merges into one gap covering its text.
 def phrase(p: Parser, stops: Set[String]): Parser =
   (in, pos) => {
     val r = p(in, pos)
@@ -60,7 +60,7 @@ def phrase(p: Parser, stops: Set[String]): Parser =
         next = scanAt(in, end)
         seen = seen.max(next.examined)
       }
-      hole(in, r.tree.from, end, end, r.ok, seen)
+      gap(in, r.tree.from, end, end, r.ok, seen)
     }
   }
 
@@ -73,13 +73,13 @@ def signum: Parser =
     val first = scanAt(in, pos)
     first.token
       .filter(t => t.kind == "op" && (t.text == "+" || t.text == "-"))
-      .fold(emptyHole(in, pos, first.examined)) { op =>
+      .fold(emptyGap(in, pos, first.examined)) { op =>
         val next = scanAt(in, op.to)
         val seen = first.examined.max(next.examined)
         next.token
           .filter(t => t.from == op.to &&
             (t.kind == "int" || t.kind == "float"))
-          .fold(emptyHole(in, pos, seen)) { num =>
+          .fold(emptyGap(in, pos, seen)) { num =>
             val negative = op.text == "-"
             val data = (if (num.kind == "int")
                           num.text.toIntOption.map(NodeData.IntData(_))
@@ -97,7 +97,7 @@ def signum: Parser =
       }
   }
 
-private[grammar] def hole(
+private[grammar] def gap(
     in: In, from: Int, to: Int, pos: Int, ok: Boolean, examined: Int): POut = {
   val text = in.input.substring(from, to)
   POut(pos, PTree(NodeData.GapData(text), text, from, to - from), ok, examined)

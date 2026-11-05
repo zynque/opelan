@@ -21,7 +21,7 @@ object SheetLanguage extends DefLanguage(
   // The demo's app: a small household budget. Cells are positional;
   // formula refs are InternalNodeRefs to other cells, seeded here with
   // "r:<row>,<col>" placeholders resolved against the built document.
-  // `per person` is seeded as a hole holding formula text: it computes
+  // `per person` is seeded as a gap holding formula text: it computes
   // once the cell grammar (lang: expression) can read `/`.
   def sampleDoc: Document[NodeData] = {
     val doc0 = makeTyped(typeRef,

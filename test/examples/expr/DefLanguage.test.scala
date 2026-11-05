@@ -16,7 +16,7 @@ class DefLanguageSuite extends FunSuite {
   private val defed = new DefLanguage(lang, implsFor(lang))
   private val hand = ExprLanguage
 
-  // Valid, holey, and boundary inputs — the whole recovery contract.
+  // Valid, gappy, and boundary inputs — the whole recovery contract.
   private val inputs = List(
     "1", "1 + 2", "1 + 2 * 3", "(1 + 2) * 3", "1.5 * 2",
     "ref:3 + 1", "-4 + 5", "- 4.5", "1 - 2 - 3",
@@ -82,7 +82,7 @@ class DefLanguageSuite extends FunSuite {
     assert(l.render("print", hand.sampleDoc).isLeft)
   }
 
-  test("a cyclic grammar Ref degrades to a hole instead of looping") {
+  test("a cyclic grammar Ref degrades to a gap instead of looping") {
     // Named("e", Ref("e")) never consumes input — a malformed def doc
     // could encode this; the parse must terminate.
     val cyc = exprDef.copy(syntax = Some(SyntaxDef("expr",

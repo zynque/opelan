@@ -66,14 +66,14 @@ enum InputParserDef {
 }
 
 // What an input commit produces when the text doesn't fit the grammar:
-// Label keeps it as a string value (sheets), Hole keeps it as a gap.
-enum InputFallback { case Label, Hole }
+// Label keeps it as a string value (sheets), Gap keeps it as a gap.
+enum InputFallback { case Label, Gap }
 
 // A grammar as a combinator composition — the data twin of
 // foundation/grammar. Named/Ref encode recursion (a precedence grammar
 // its own parens refer back to); a doc encoding binds names the same
 // way. Token leaves map through LeafKind — named, since how "42"
-// becomes IntData(42) is semantics. Hole is the recovering read's
+// becomes IntData(42) is semantics. Gap is the recovering read's
 // residue: an unrecognizable grammar node becomes a production that
 // never applies.
 enum GrammarDef {
@@ -87,7 +87,7 @@ enum GrammarDef {
   case Phrase(inner: GrammarDef, stops: Set[String])
   case Named(name: String, g: GrammarDef)
   case Ref(name: String)
-  case Hole
+  case Gap
 }
 
 // How a token's text becomes leaf node data — the named productions a
@@ -96,6 +96,6 @@ enum LeafKind {
   case IntLit                   // IntData(text.toInt)
   case FloatLit                 // FloatData(text.toDouble)
   case RefLit(prefix: String)   // InternalNodeRef(text.drop(prefix).toInt)
-  case HoleLeaf                 // GapData(text) — the hole keeps its source
+  case GapLeaf                    // GapData(text) — the gap keeps its source
   case Text                     // StringData(text)
 }

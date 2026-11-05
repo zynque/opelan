@@ -44,7 +44,7 @@ class ExprRulesSuite extends munit.FunSuite {
     case NodeData.FloatData(f)        => f.toString
     case NodeData.InternalNodeRef(id) => s"ref:$id"
     case NodeData.GapData(t)          => if (t.isEmpty) "?" else t
-    case other                        => holeText(other)
+    case other                        => gapText(other)
   }
 
   test("the rule-derived printer matches Expr.print") {

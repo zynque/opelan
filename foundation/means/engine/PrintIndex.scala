@@ -66,7 +66,7 @@ private[means] case class PrintIndex(
 
   // Placeholder name → the argument position it fills, so its child is
   // the tree it prints. A name repeated (`add(a, a)`) binds the first;
-  // a pattern placeholder the meaning never names prints as a hole.
+  // a pattern placeholder the meaning never names prints as a gap.
   def argumentIndex(rule: Rule): Map[String, Int] =
     if (Meaning.isConstruct(rule.meaning))
       rule.meaning.arguments.zipWithIndex.flatMap { case (a, i) =>

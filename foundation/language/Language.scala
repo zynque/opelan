@@ -30,14 +30,14 @@ trait Language {
 
   // Render a derived view of the typed document's content as a view
   // tree. Left for genuine failures (no content, wrong type), Right
-  // otherwise — a hole-blocked result is a GapData node in the tree, not
+  // otherwise — a gap-blocked result is a GapData node in the tree, not
   // an error. Emitted nodes may carry SourceRef provenance so the view
   // can point back at the document nodes that produced them.
   def render(view: String, doc: Document[NodeData]): Either[String, DetachedNode[NodeData]]
 
   // Text syntax, if the language has one: parse text into a content
   // subtree. Recovering parsers return Some even for malformed input,
-  // embedding holes (GapData nodes) where the text does not fit.
+  // embedding gaps (GapData nodes) where the text does not fit.
   def parse(text: String): Option[DetachedNode[NodeData]] = None
 
   // Input grammar, if the language's views emit "input" elements: parse
@@ -64,17 +64,17 @@ trait Language {
   def linkCommitted(
       doc: Document[NodeData], rootId: Int): Document[NodeData] = doc
 
-  // Render with the host's remembered hole attempts, so holes are
+  // Render with the host's remembered gap attempts, so gaps are
   // retried only when a language change touched a rule they consulted.
   // `docUrl` is the shown document's own URL — its stored identity,
   // when the host knows it (a def doc's URL is the language it defines).
-  def renderWith(view: String, doc: Document[NodeData], retry: HoleRetry,
+  def renderWith(view: String, doc: Document[NodeData], retry: GapRetry,
       docUrl: Option[String] = None)
       : Either[String, DetachedNode[NodeData]] = render(view, doc)
 
-  // Remember a parse attempt for each hole in `doc` (reusing `retry`'s
+  // Remember a parse attempt for each gap in `doc` (reusing `retry`'s
   // attempts where a language change left them valid).
-  def rememberHoles(doc: Document[NodeData], retry: HoleRetry): HoleRetry =
+  def rememberGaps(doc: Document[NodeData], retry: GapRetry): GapRetry =
     retry
 
   // The document `typeRef` names: the language's own definition,

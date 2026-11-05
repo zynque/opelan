@@ -42,7 +42,7 @@ language's finishing pass (lang: relinks placeholder uses and term
 constructs). Resolution is injected — the
 caller decides how a type ref finds a language (the
 [examples](../../examples/DESIGN.md)' store-aware resolver, for
-instance). `holeCount` feeds the status bar.
+instance). `gapCount` feeds the status bar.
 
 ## Sessions — incremental parsing state
 
@@ -66,24 +66,24 @@ per-document sessions that ride on it:
   key is stable), and a commit goes through `Language.commitInput`. A
   def's `InputGrammar` reads the text through the referred language's
   session when it parses incrementally, then classifies the result
-  exactly as `parseInput` does (`?`-holes, blanks, label fallback,
-  ref-mentioning holes); builtin input parsers still parse whole.
+  exactly as `parseInput` does (`?`-gaps, blanks, label fallback,
+  ref-mentioning gaps); builtin input parsers still parse whole.
   Sessions of inputs that left the document are dropped on commit.
-- **Stored holes retry the same way** (`HoleRetry`) — and only holes
-  need to. A hole is the one node that still holds its source text;
+- **Stored gaps retry the same way** (`GapRetry`) — and only gaps
+  need to. A gap is the one node that still holds its source text;
   every other node is committed structure, re-*evaluated* by each
   render's recovering read but never re-*parsed* — rewriting committed
   structure on a language change is migration, gated by the
   [pending-update machinery](../document/store/DESIGN.md), not a render
-  step. `HoleRetry` remembers, for each hole text in the document, the
+  step. `GapRetry` remembers, for each gap text in the document, the
   last attempt's syntax, content, and every rule the parse consulted.
   Views ask the input grammar through it (`Language.renderWith`), so a
-  hole is reparsed only when the syntax changed and the change either
+  gap is reparsed only when the syntax changed and the change either
   touched a consulted rule or can't name its rules; otherwise the failed
   attempt stands — reused content is migrated (term tags re-pin) —
   sound because the consulted set is closed under calls, so a change
   disjoint from it replays identically. After each update the pane
-  re-remembers its holes (`rememberInputHoles` in
+  re-remembers its gaps (`rememberInputGaps` in
   [`../langdef`](../langdef/DESIGN.md)) against the current store and
   drops attempts for texts no longer present. What moves a stored
   document's input grammar is a pin bump, so healing follows the

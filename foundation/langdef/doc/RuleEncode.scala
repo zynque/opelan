@@ -13,7 +13,7 @@ import opelan.foundation.means.text._
 // the source wrote them unspaced; the meaning is the term subtree —
 // `use`/`source`/`builtin` operands name their bound placeholder (by
 // name until a link pass points them at the piece node), `quote`
-// keeps its desugared subtree (a quoted hole is a phrase the set
+// keeps its desugared subtree (a quoted gap is a phrase the set
 // couldn't yet read), and
 // a construct's data is its name — the first occurrence in doc order
 // is the term's declaration, so a document of the defined language

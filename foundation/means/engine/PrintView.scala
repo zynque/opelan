@@ -38,7 +38,7 @@ def printViewWith(
 
   def emit(id: Int): (DetachedNode[NodeData], Int) =
     doc.getNode(id) match {
-      case None => (from(id, hole("missing")), Int.MaxValue)
+      case None => (from(id, gap("missing")), Int.MaxValue)
       case Some(node) => builders.get(resolved(id)) match {
         case Some(rule) if isOperatorPattern(rule.pattern) =>
           (flow(src(id) +: walk(node, rule, operandCtx(rule, _, _))*),
@@ -65,7 +65,7 @@ def printViewWith(
         case Piece.Placeholder(name, _) =>
           val child = args.get(name).flatMap(node.childIds.lift) match {
             case Some(cid) => render(cid, ctxOf(i, resolved(cid)))
-            case None => hole("?")
+            case None => gap("?")
           }
           if (i == 0 || piece.glued) acc :+ child
           else acc.lastOption match {

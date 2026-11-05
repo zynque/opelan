@@ -85,8 +85,8 @@ class ResolveSuite extends FunSuite {
   // The demo's healing moment under pin semantics: `/` saved as
   // expression v1 changes nothing until the sheet def accepts its
   // pending update (input-grammar ref → v1, publishing sheet v1) and
-  // the budget accepts the sheet's — the hole heals on the last bump.
-  test("a stored hole heals as each layer accepts its pending update") {
+  // the budget accepts the sheet's — the gap heals on the last bump.
+  test("a stored gap heals as each layer accepts its pending update") {
     import opelan.foundation.view.ViewTree
     // Seeded like the demo: lang: expression v0 staged without `/`,
     // so every pin to it lands on the staged grammar.
@@ -103,7 +103,7 @@ class ResolveSuite extends FunSuite {
     val sheet = languageForDoc(budget, staged).get
     assertEquals(sheet.parseInput("ref:1 / ref:2").map(_.data),
       Some(NodeData.GapData("ref:1 / ref:2")))
-    // Saving `/` as expression v1: pins unchanged — still a hole.
+    // Saving `/` as expression v1: pins unchanged — still a gap.
     val fixed = staged.put(
       ExprLanguage.typeRef.documentUrl, ExprLanguage.langDoc)._1
     assert(perPerson(fixed, budget).contains("?ref:"), perPerson(fixed, budget))
@@ -111,7 +111,7 @@ class ResolveSuite extends FunSuite {
     val sheetDoc = fixed.get("opelan:languages/sheet", 0).get
     val s2 = fixed.put(
       "opelan:languages/sheet", acceptUpdates(sheetDoc, fixed).get)._1
-    // The budget accepts: type ref and term imports bump — the hole heals.
+    // The budget accepts: type ref and term imports bump — the gap heals.
     val budget2 = acceptUpdates(budget, s2).get
     assertEquals(perPerson(s2, budget2), "per person\t\t\t$8.10")
   }

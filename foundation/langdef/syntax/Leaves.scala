@@ -38,7 +38,7 @@ private def dataMatches(leaf: LeafKind, data: NodeData): Boolean =
     case (LeafKind.IntLit, NodeData.IntData(_))           => true
     case (LeafKind.FloatLit, NodeData.FloatData(_))       => true
     case (_: LeafKind.RefLit, _: NodeData.InternalNodeRef) => true
-    case (LeafKind.HoleLeaf, _: NodeData.GapData)         => true
+    case (LeafKind.GapLeaf, _: NodeData.GapData)         => true
     case (LeafKind.Text, NodeData.StringData(_))          => true
     case _                                                => false
   }
@@ -54,17 +54,17 @@ def lexicalTerms(impls: Impls): Map[String, LexicalTerm] =
   standardTerms ++ impls.leaves.map { case (name, theLeaf) =>
     name -> LexicalTerm(Some(leafParser(theLeaf)), leafAccepts(theLeaf)) }
 
-// The workbench's hole leaf: the `hole` token reads as a gap.
-private val gapLeaf = LeafDef(List("hole" -> LeafKind.HoleLeaf))
+// The workbench's gap leaf: the `gap` token reads as a gap.
+private val gapLeaf = LeafDef(List("gap" -> LeafKind.GapLeaf))
 
 // The `where` terms every language gets, kernel-provided. `gap` is
-// the builtin operand: the workbench's hole token stands alone as a
-// gap operand in every language with no authored rule (holes are
+// the builtin operand: the workbench's gap token stands alone as a
+// gap operand in every language with no authored rule (gaps are
 // kernel machinery, not language content — a language may opt out
 // later, for now none can). `value` is a check-only constraint on a
 // bound tree that reads no token of its own: "a real value of the
 // language" — a bound cell ref (InternalNodeRef) or provenance ref
-// (SourceRef) is a workbench leaf, not a value; a bound hole
+// (SourceRef) is a workbench leaf, not a value; a bound gap
 // satisfies provisionally — its value is unknown, not wrong (Never
 // Broken).
 val standardTerms: Map[String, LexicalTerm] =
@@ -90,6 +90,6 @@ private[langdef] def leafData(leaf: LeafKind, t: Token): NodeData =
       t.text.drop(prefix.length).toIntOption
         .map(NodeData.InternalNodeRef(_))
         .getOrElse(NodeData.GapData(t.text))
-    case LeafKind.HoleLeaf => NodeData.GapData(t.text)
+    case LeafKind.GapLeaf => NodeData.GapData(t.text)
     case LeafKind.Text     => NodeData.StringData(t.text)
   }

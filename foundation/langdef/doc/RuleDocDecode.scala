@@ -9,23 +9,23 @@ import opelan.foundation.means.text._
 
 // A `rule` node read back to a `Rule` — the inverse of RuleEncode. A
 // string first child is the text form (read tolerantly through
-// readRuleOrHole, as docs written before the structured encoding did);
+// readRuleOrGap, as docs written before the structured encoding did);
 // otherwise the structured form — `pattern` pieces, the `meaning` term
 // subtree, `where` constraints (foundation/document/typed/DESIGN.md,
 // *Everything by reference*).
-// Every read is total: missing or malformed parts become holes.
+// Every read is total: missing or malformed parts become gaps.
 private[langdef] def ruleFromDoc(
     doc: Document[NodeData], url: String,
     version: Int, termIds: Map[String, Int], id: Int): Rule =
   doc.childrenOf(id).headOption.flatMap(i => strOf(doc, i))
-    .map(t => readRuleOrHole(t).copy(id = Some(id))).getOrElse(Rule(
+    .map(t => readRuleOrGap(t).copy(id = Some(id))).getOrElse(Rule(
       entriesOf(doc, id, "pattern").headOption
         .map(p => Pattern(doc.childrenOf(p).map(pieceFrom(doc, _))))
         .getOrElse(Pattern(Nil)),
       entriesOf(doc, id, "meaning").headOption
         .flatMap(m => doc.childrenOf(m).headOption)
         .map(meaningFromDoc(doc, url, version, termIds, _))
-        .getOrElse(Meaning.hole("")),
+        .getOrElse(Meaning.gap("")),
       entriesOf(doc, id, "where").headOption.toList.flatMap(w =>
         entriesOf(doc, w, "constraint")
           .flatMap(constraintFrom(doc, _))),
