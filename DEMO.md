@@ -79,14 +79,21 @@ freshly seeded (**Reset** reseeds a used store).
    the `*` op node in the grammar's first precedence level, changed to
    `/` building `div`). Save → `lang: expression` is v1 — and the budget
    is unchanged: its pin keeps it on `lang: sheet` v0, whose own pin
-   keeps it on expression v0. `lang: sheet` shows a pending update —
-   accepting bumps its cell-grammar ref, and saving publishes `lang:
-   sheet` v1, which pends the budget. Back on the budget, one accept →
-   the `total / people` gap heals and the cell computes. No rebuild, no
-   redeploy: a running application's language changed by editing a
-   document, and adopting it was an explicit, versioned gesture at each
-   layer — opting a document into automatic updates makes the same
-   recorded accepts happen without the clicks. **The moment.**
+   keeps it on expression v0. `lang: sheet` shows a pending update as a
+   *change proposal* — accepting bumps its cell-grammar ref, and saving
+   publishes `lang: sheet` v1, which pends the budget. Back on the
+   budget, its change proposal shows what accepting would do: the pins
+   move to sheet v1, and the `total / people` gap, reparsed under the
+   new rule, becomes the AST `div(ref total, ref people)`, its `div` a
+   reference to the declaration in `lang: expression` v1 like every
+   other construct use. One accept → that proposal becomes the
+   budget's next version, and the cell computes. The formula isn't
+   re-rendered text: it was stored as a tree all along, gap included,
+   and now the tree holds the rule. No rebuild, no redeploy: a running
+   application's language changed by editing a document, and adopting
+   it was an explicit, versioned gesture at each layer — opting a
+   document into automatic updates makes the same recorded accepts
+   happen without the clicks. **The moment.**
 8. Cosmetic contrast: edit the `sheet` view's `currency` setting in
    `lang: sheet` (`$` → `€`) and save → the computed column restyles.
    View specs are data too.
@@ -94,9 +101,9 @@ freshly seeded (**Reset** reseeds a used store).
 **Act 3 — the substrate flex.**
 
 9. The budget's type ref is `opelan:languages/sheet@0` — a pin execution
-   honors. The accepts in step 7 were real upgrades, recorded as
-   versions; the pinned old versions still open and compute correctly.
-   (*Evolvable*.)
+   honors. The proposals accepted in step 7 were real upgrades, recorded
+   as versions — the heal included; the pinned old versions still open
+   and compute correctly, the old budget with its gap. (*Evolvable*.)
 10. Second tab → Sync → edit a price in one tab, totals update in both.
 
 Close: the app, its data, and its implementation are three documents in
@@ -105,7 +112,10 @@ compiled.
 
 ## Scope
 
-Explicit cuts: no type system, no derived migrations of stored content
-(pending updates move pins, they don't rewrite subtrees; auto-update is
-a per-document opt-in, never the default), no network transport. Projectional editing is limited to the grid's cells
-and the definitions' text surface.
+Explicit cuts: no type system; no content migrations beyond healing
+gaps (a pending update moves pins and heals gaps; it never rewrites
+committed subtrees); change proposals are live previews with a simple
+before/after rendering, not stored branches or semantic diffs;
+auto-update is a per-document opt-in, never the default; no network
+transport. Projectional editing is limited to the grid's cells and the
+definitions' text surface.

@@ -37,14 +37,22 @@ changes a dependent only when the dependent's pins are bumped.
 
 **Pending update**:
 The state of a document whose external refs pin versions behind a
-store head. Accepting pending updates rewrites the pins as one ordinary
-edit — a new version of the dependent, which may itself pend the layer
-above.
+store head. It is offered as a change proposal: the pins bumped and the
+gaps the newer languages now read healed, together as one edit.
+Accepting it makes a new version of the dependent, which may itself
+pend the layer above.
+
+**Change proposal**:
+A proposed new version of a document, shown to the user as what would
+change and recorded as a version only once accepted. The workbench
+proposes for pending updates (pin bumps plus heals); other actors, such
+as an LLM pass, can propose the same way.
+_Avoid_: pull request, merge request, PR (git-specific jargon)
 
 **Auto-update**:
-A per-document opt-in that accepts pending updates automatically — the
-pins are still rewritten as a recorded, versioned edit, never resolved
-at head invisibly.
+A per-document opt-in that accepts the change proposals of pending
+updates automatically — still a recorded, versioned edit, never
+resolved at head invisibly.
 
 **State-as-document**:
 The choice that a running application's state is itself a typed document,
@@ -87,6 +95,17 @@ the document so later edits heal it instead of failing — the *Never
 broken* convention (Hazel's *typed holes*, made structural). Stored as
 `GapData`, spelled `?text`, bound by the kernel `gap` operand term.
 _Avoid_: hole, error, broken, placeholder
+
+**Heal**:
+A gap becoming content: once the language a document pins reads the
+gap's text, the gap is replaced by the AST it now parses to, with its
+construct uses by reference like any other content (`ref a / ref b`
+becomes `div(ref a, ref b)`, plus an imports entry for `div`). Stored
+content is never reparsed, so a new rule can only heal gaps, never
+change what committed content means. A heal is an edit, carried by the
+change proposal of the pending update that brought the rule in; until
+it is accepted, views may preview it.
+_Avoid_: fix, repair
 
 **Format**:
 A paired conversion between two representations of the same content —

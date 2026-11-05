@@ -24,7 +24,12 @@ steps*, item 1).
     with one readable line.
   - *Healing is derived:* a healed gap computes in both views, but the
     document still holds the gap text until the cell is re-committed
-    (e.g. from the `formulas` view).
+    (e.g. from the `formulas` view). The demo now narrates committed
+    healing through a change proposal (next steps, item 2).
+  - *Gap refs are text:* the seeded `total / people` gap stores its
+    cell refs as `ref:N` inside the gap string, so before it heals
+    they are not real references: a row deletion or a sync that
+    renumbers ids leaves them dangling or retargeted.
   - *Update edges:* the cascade runs on local saves only and skips
     synced docs; the full list of pin edges — remote heads, content
     migration, broken-import repair — is item 2 in next steps.
@@ -78,6 +83,11 @@ steps*, item 1).
    categorically safer than semantic ones, and the generator knows which
    it produced. How migrations are classified, and whether semantic ones
    auto-apply with notification or wait for opt-in review, is open.
+   Heals are one candidate safe class: extension is additive and stored
+   content is never reparsed, so a new rule only turns unknowns into
+   content. Whether that makes heals safe to apply without review, while
+   changed rules always arrive as change proposals, is part of the
+   question.
 7. *Language composition & interop.* The fragmentation answer
    (`ADOPTION.md`) needs mechanisms that don't exist yet. The intent is
    settled (`DESIGN.md`, *Towers*). Open: resolving input-surface
@@ -178,8 +188,39 @@ steps*, item 1).
        (`n means number(n) where n: digits`), once `where` narrowing
        grows past builtin token kinds (the opaque-type question).
        Deferred past the means series, like the lexicons they name.
-2. **Pins, pending updates, auto-update** (`foundation/document/store/DESIGN.md`,
-   *Pins select behavior*). Still open:
+2. **Pins, pending updates, change proposals, auto-update**
+   (`foundation/document/store/DESIGN.md`, *Pins select behavior*).
+   The demo's healing moment (`DEMO.md`, step 7) needs the first three
+   steps, in order:
+
+   - *Structured gaps.* A gap keeps the parts that did parse as real
+     children (`ref a`, then the unparsed `/` as text, then `ref b`),
+     so references inside a gap are structural before it heals rather
+     than `ref:N` text. The seed's `total / people` cell is the first
+     user.
+   - *Committed healing.* Accepting a pending update bumps the pins
+     and, in the same edit, reparses the gaps whose failed parse
+     consulted a changed rule (`GapRetry`) under the newly pinned
+     grammar, committing each one that now reads with `commitContent`.
+     Constructs the healed AST uses for the first time (`div`) get an
+     imports entry through `internalizeRefs`, pinned at the same
+     version as the language's other entries, so one document never
+     mixes versions of a language. `healGaps` remains as the preview.
+     An ambiguous heal (two imported rules read the gap) stores a
+     deferred-choice gap rather than taking the first.
+   - *Change proposals.* A pending update is presented as a proposal:
+     the document as it would be after accepting (bumped pins plus
+     heals), shown with what would change, and recorded as a version
+     only on accept. First stage: a live derivation recomputed as head
+     moves, so a proposal never goes stale and needs no merge, with a
+     simple before/after rendering of the changed nodes. Later stages:
+     stored proposal branches in the `Store` (today it is linear per
+     url), an author field on versions so a proposal names its actor
+     (`auto-update`, `llm`; see item 3), and semantic diffs. Policy
+     becomes per document: manual, propose, or auto-update (accept
+     without review).
+
+   Still open:
 
    - *Remote heads.* The Update scan and the cascade run against this
      tab's store, which changes only on local saves and boot hydration
@@ -190,18 +231,19 @@ steps*, item 1).
      computed per tab. This is really the store-convergence half of
      item 3: once a remote head is observable, the cascade should run
      against it.
-   - *Content migration.* Accepting bumps refs but never rewrites
-     committed structure — a cell parsed under expression v0 keeps its
-     v0 shape and meaning forever; only source-bearing gaps re-lift
-     eagerly. Deriving content migrations for dependents when a
-     definition changes (the *Evolvable* question) is the deep half of
-     this item: today "update" means pins only.
+   - *Content migration.* Beyond heals, accepting never rewrites
+     committed structure: a cell parsed under expression v0 keeps its
+     v0 shape and meaning forever. Deriving content migrations for
+     dependents when a definition *changes* rather than grows (the
+     *Evolvable* question, open question 6) is the deep half of this
+     item; such migrations would arrive as change proposals.
    - *Broken-import repair.* `broken: N` reports refs whose node is
      gone at head; there is no gesture to repoint one to a surviving
      node, swap the import, or convert it to a gap.
    - *Accept granularity.* Update bumps every pending ref at once —
      per-ref acceptance (bump the language, hold that import) isn't
-     offered.
+     offered. With proposals, the question extends to accepting some
+     heals and not others.
    - *Head fallback.* `pinnedOrHead` resolves at head when the pinned
      version isn't stored — unreachable while the store is
      append-only, but it becomes a silent semantic change if
@@ -214,8 +256,8 @@ steps*, item 1).
    ephemeral broadcast state off the change graph); actor attribution
    on curated versions, with background changes (auto-update accepts,
    LLM edits) authored by non-user actors arriving through the merge
-   path — and LLM edits possibly as *proposals* via the pending-update
-   UX (`collaboration/DESIGN.md`, *Attribution*); debounce-coalesced edit bursts,
+   path — and LLM edits possibly as change proposals (item 2)
+   (`collaboration/DESIGN.md`, *Attribution*); debounce-coalesced edit bursts,
    including per-turn coalescing for streamed collaborator edits;
    undo stacks rebuilt on resume; branch interception for
    text-surface edits; branch merge-back; durable history beyond a tab's
