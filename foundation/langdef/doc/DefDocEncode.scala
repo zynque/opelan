@@ -21,7 +21,10 @@ import opelan.foundation.langdef._
 //       description  "the arithmetic-expression language"
 //       name         "Expressions"
 //       vocabulary   term("add", fixed(2))  term("mul", fixed(2)) …
-//       syntax       "expr"  phrase(named("expr", precedence(…)), "")
+//       syntax       "expr"  [grammar]  rules(…)  — the grammar child
+//                              only on combinator defs; a rules def's
+//                              operand fallback is the lexicon's
+//                              recovery and stores nothing
 //       views        view("print", "expr-print") …
 //                    view("sheet", "sheet-grid", setting("currency", "$"))
 //       inputs       language(&import, as-label)
@@ -55,7 +58,9 @@ private[langdef] def encodeDef(
     else d.vocabulary.map(_.name).zip(doc1.childrenOf(vocabularyId)).toMap
   val doc2 = add(doc1, cid, List(
     d.syntax.map(s => n(pending("syntax"),
-      List(sl(s.lexicon), grammarNode(s.grammar, sectionIds)) ++
+      List(sl(s.lexicon)) ++
+        (if (s.grammar == GrammarDef.Gap) Nil
+         else List(grammarNode(s.grammar, sectionIds))) ++
         s.rules.toList.map(rulesNode(_, d.typeRef.documentUrl, pending))*)),
     Some(n(pending("views"), d.views.map(viewNode)*)),
     d.inputParser.map(cp => n(pending("inputs"), inputsNode(cp)))).flatten*)._1

@@ -26,7 +26,9 @@ def defView(doc: Document[NodeData], contentRootId: Int,
     Some(heading(txt(d.title))),
     Some(txt(d.description)),
     d.syntax.map(s =>
-      section("syntax", grammarLines(s.grammar).map(txt) ++
+      section("syntax",
+        (if (s.rules.isEmpty) grammarLines(s.grammar).map(txt)
+         else Nil) ++
         s.rules.toList.flatMap(rs =>
           docRuleLines(doc, contentRootId, d, exampleChecker(d, ctx))
             .getOrElse(ruleLines(rs))))),

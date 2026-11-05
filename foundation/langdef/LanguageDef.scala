@@ -41,9 +41,11 @@ enum NodeShape {
 // rules the grammar's token kinds name — plus the grammar itself, in one
 // of two forms. With `rules` unset, `grammar` is the whole combinator
 // composition. With `rules` set, the means rules compile over `grammar`
-// as the operand atom — what rules don't express (the unrecognized
-// fallback); leaf tokens are operands through `where`-bound operand
-// rules against the builtin leaf vocabulary.
+// as the operand atom — what rules don't express: Gap, the lexicon's
+// recovering unrecognized run (Lexicon's gapStart/gapRun), recovery
+// scaffolding the def document doesn't store; leaf tokens are operands
+// through `where`-bound operand rules against the builtin leaf
+// vocabulary.
 case class SyntaxDef(
     lexicon: String,
     grammar: GrammarDef,

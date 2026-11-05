@@ -24,4 +24,9 @@ val exprLexicon = Lexicon(List(
   "lpar"         -> exactly("("),
   "rpar"         -> exactly(")"),
   "gap"         -> exactly("?"),
-  "unrecognized" -> runOf(1)(c => !c.isWhitespace && !structural.contains(c))))
+  "unrecognized" -> runOf(1)(c => !c.isWhitespace && !structural.contains(c))),
+  // What no production places becomes a gap: an operator or
+  // unrecognized text starts one and it runs over operand-ish kinds,
+  // stopping at structural boundaries (`(`, `)`, `op` after the first).
+  gapStart = Set("op", "unrecognized"),
+  gapRun = Set("int", "float", "ref", "unrecognized", "gap"))

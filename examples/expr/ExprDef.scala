@@ -33,15 +33,6 @@ private val addSub = Map("+" -> Expr.AddTag, "-" -> Expr.SubTag)
 // precedence level (not the phrase wrapper).
 private val exprGrammarDef: GrammarDef = exprGrammarWith(List(mulDiv, addSub))
 
-// The operand fallback the means rules compile over — just the
-// recovering unrecognized run now that leaf tokens come from
-// `where`-bound rules (`n means n where n: number`) and signed
-// numbers are the `+n`/`-n` rules, all bound through exprImpls' leaf
-// productions.
-private val exprAtom: GrammarDef =
-  Unrecognized(Set("op", "unrecognized"),
-    Set("int", "float", "ref", "unrecognized", "gap"))
-
 private def exprGrammarWith(levels: List[Map[String, String]]): GrammarDef =
   Phrase(
     Named("expr", Precedence(
@@ -68,7 +59,11 @@ val exprDef = LanguageDef(
   // carries no vocabulary section — each construct's first meaning
   // occurrence is its declaration.
   vocabulary = vocabularyFrom(exprRules),
-  syntax = Some(SyntaxDef("expr", exprAtom, Some(exprRules))),
+  // No authored grammar — the rules carry the syntax; the operand
+  // fallback they compile over is the lexicon's recovering
+  // unrecognized run (ExprLexicon's gap kinds), which the def
+  // document doesn't store.
+  syntax = Some(SyntaxDef("expr", Gap, Some(exprRules))),
   views = List(
     ViewBinding("print", "expr-print"),
     ViewBinding("eval", "expr-eval")),
@@ -85,7 +80,7 @@ val exprCombinatorDef: LanguageDef =
 // until the audience adds them to the definition document. The vocabulary
 // still declares `div`, so term ids match exprDef's.
 val demoExprDef = exprDef.copy(syntax =
-  Some(SyntaxDef("expr", exprAtom, Some(withoutPattern(exprRules, "a / b")))))
+  Some(SyntaxDef("expr", Gap, Some(withoutPattern(exprRules, "a / b")))))
 
 // A rule set minus one pattern — its rule and every binding entry.
 private def withoutPattern(set: RuleSet, text: String): RuleSet = {

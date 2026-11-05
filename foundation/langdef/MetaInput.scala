@@ -70,7 +70,7 @@ private def desugarCommitted(
     val tag = termTagOf(defined)
     val meaning = phraseMeaning(text, read.pattern.placeholders.toSet,
       set.copy(rules = set.rules.updated(index, read)),
-      interpret(syn.grammar, tag), tag, syn.lexicon, lex,
+      atomOf(syn, lex, tag), tag, syn.lexicon, lex,
       lexicalTerms(impls))
     if (hasGap(meaning)) read else read.copy(meaning = meaning)
   }).getOrElse(read)

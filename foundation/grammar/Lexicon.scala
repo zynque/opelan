@@ -20,7 +20,14 @@ case class Scan(end: Int, examined: Int)
 
 type LexicalRule = (String, Int) => Scan
 
-case class Lexicon(rules: List[(String, LexicalRule)])
+// The token kinds that begin a gap run and those a gap continues over —
+// the `unrecognized` combinator's start/run sets (Recovery.scala). A
+// rules-based def stores no operand fallback: the lexicon, which owns
+// the kinds, supplies the recovery.
+case class Lexicon(
+    rules: List[(String, LexicalRule)],
+    gapStart: Set[String] = Set.empty,
+    gapRun: Set[String] = Set.empty)
 
 // The kind of a character no lexical rule accepts: it still forms a
 // one-character token, so text is never lost and recovery can place it.

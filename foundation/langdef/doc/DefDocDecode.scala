@@ -49,8 +49,13 @@ def langDefFromDocument(
     syntax = r.section("syntax").map { sid =>
       SyntaxDef(
         r.childStr(sid, 0).getOrElse(""),
-        r.children(sid).lift(1).map(k => r.grammarFrom(k))
-          .getOrElse(GrammarDef.Gap),
+        // The grammar child, when stored, sits between the lexicon
+        // name and the rules section. A rules def stores none — its
+        // operand fallback is the lexicon's recovery — so the read
+        // defaults to Gap, which interpretation reads as just that.
+        r.children(sid).drop(1)
+          .find(k => !r.cons(k).contains("rules"))
+          .map(r.grammarFrom(_)).getOrElse(GrammarDef.Gap),
         r.entries(sid, "rules").headOption.map(r.ruleSetFrom))
     },
     views = r.section("views").toList.flatMap { vid =>

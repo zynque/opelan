@@ -65,12 +65,13 @@ class DefLanguage(
       s <- languageDef.syntax
       lexicon <- impls.lexicons.get(s.lexicon)
     } yield s.rules match {
-      // Rules compile over the interpreted grammar as their operand
-      // atom, under the lexicon's name — the `named`/`use` shape the
-      // combinator form writes by hand. `phrase` supplies the to-EOF
-      // recovery the combinator form encodes explicitly.
+      // Rules compile over the operand atom — the def's grammar when
+      // it carries one, else the lexicon's recovery — under the
+      // lexicon's name: the `named`/`use` shape the combinator form
+      // writes by hand. `phrase` supplies the to-EOF recovery the
+      // combinator form encodes explicitly.
       case Some(rules) =>
-        val atom = interpret(s.grammar, termTag)
+        val atom = atomOf(s, lexicon, termTag)
         val lexicals = lexicalTerms(impls)
         // Quoted-gap meanings — phrases the set couldn't yet read —
         // retry at interpretation and heal as their rules arrive.

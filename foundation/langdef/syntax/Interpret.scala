@@ -66,3 +66,16 @@ def interpret(top: GrammarDef, tag: String => NodeData): Parser = {
 
   go(top)
 }
+
+// The operand atom a rule set compiles over (compileRules' `atom`):
+// the def's grammar when it carries one — a stored combinator def's
+// fallback — else the lexicon's recovery. A rules-def's grammar is
+// only that fallback: scaffolding, not authored syntax, so defs keep
+// GrammarDef.Gap there and the lexicon, owner of the token kinds,
+// describes the unrecognized run.
+def atomOf(s: SyntaxDef, lexicon: Lexicon, tag: String => NodeData)
+    : Parser =
+  s.grammar match {
+    case GrammarDef.Gap => unrecognized(lexicon.gapStart, lexicon.gapRun)
+    case g              => interpret(g, tag)
+  }

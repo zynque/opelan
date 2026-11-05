@@ -53,7 +53,7 @@ private def meaningSyntax(
     lexicon <- impls.lexicons.get(s.lexicon)
   } yield {
     val tag = termTagOf(defined)
-    val atom = interpret(s.grammar, tag)
+    val atom = atomOf(s, lexicon, tag)
     val lexicals = lexicalTerms(impls)
     val placeholders = ruleFromDoc(doc, docUrl, 0,
       deriveTermIds(doc, contentId(doc).getOrElse(doc.rootId)), ruleId)
