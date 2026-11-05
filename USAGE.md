@@ -53,8 +53,9 @@ and every cell in the `formulas` view show a text box — edit in place,
 Enter or click-away commits, Escape reverts. A commit rewrites the
 source node in place, so formulas referencing the cell recompute.
 Typing `?` writes a gap; text that parses as an expression (numbers,
-`ref:N`, `a * b`) becomes formula content; text that doesn't parse but
-mentions a cell (`ref:N`) is kept as a gap; anything else is a label.
+cell refs like `B2`, `a * b`) becomes formula content; text that
+doesn't parse but mentions a cell (`B2`, `ref:N`) is kept as a gap;
+anything else is a label.
 Gap cells show in yellow. The cell grammar is `lang: expression` at
 the version the sheet's ref pins, so a gap heals (computes) once the
 sheet's pin bumps to a version that can read it — via the Update

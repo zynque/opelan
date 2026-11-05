@@ -44,15 +44,25 @@ constructs by the ids its canonical encoding assigns (`termRefs`,
 
 `Sheet`, `SheetLanguage` — the demo app: a typed document whose content
 subtree is `sheet > row/hrow > cell`. Label cells (plain string leaves)
-pass through; every other cell is read as an expression and evaluated,
-with `InternalNodeRef` leaves addressing other cells. The `sheet` view
+pass through; every other cell is read as an expression and evaluated.
+Cells name each other A1-style (`D5` = column D, row 5), and the
+document fully reflects the semantics: a cell ref is a `ref` construct
+holding its fields — `ref > column("B"), row(3)` — resolved
+positionally against the live grid at read time (`GridExpr`), never a
+baked-in node id. A typed name commits as a gap or label leaf — the
+structure text can't carry — and `linkCellRefs`, the sheet's
+`commitLink`, materializes the `ref` subtree (`Language.linkCommitted`
+runs on input commits as it does on text-surface ones). Refs print
+back as the position they name; `ref:N` remains as a raw
+`InternalNodeRef` escape hatch, displayed by position too (`CellRef`).
+The `sheet` view
 renders the computed grid; `formulas` renders each cell's expression
 instead of its value. Cells parse with the expression language's
 grammar, referenced by type ref — pinned, so a new `lang: expression`
 version reaches sheet cells when the sheet's ref bumps to it, not when
 the expression doc is saved (see
 [`../foundation/document/store/DESIGN.md`](../foundation/document/store/DESIGN.md)).
-Rejected text that mentions a cell (`ref:N`) is kept as a gap rather
+Rejected text that mentions a cell (`B2`, `ref:N`) is kept as a gap rather
 than a label: a formula the grammar can't read yet. Both views render a
 *healed* sheet (`SheetHeal`): builtin views receive a `ViewContext` (the
 view's settings plus the language's current input grammar), and

@@ -27,9 +27,9 @@ steps*, item 1).
     (e.g. from the `formulas` view). The demo now narrates committed
     healing through a change proposal (next steps, item 2).
   - *Gap refs are text:* the seeded `total / people` gap stores its
-    cell refs as `ref:N` inside the gap string, so before it heals
-    they are not real references: a row deletion or a sync that
-    renumbers ids leaves them dangling or retargeted.
+    cell refs as names (`D5 / B6`) inside the gap string, so before it
+    heals they are not real references: a row insertion retargets them
+    silently.
   - *Update edges:* the cascade runs on local saves only and skips
     synced docs; the full list of pin edges — remote heads, content
     migration, broken-import repair — is item 2 in next steps.
@@ -147,7 +147,8 @@ steps*, item 1).
        Ambiguous surfaces store a deferred-choice gap (the projection
        renders candidates as a dropdown) rather than silently
        first-wins.
-     - **Sheet on rules.** Positional refs (`ref:c,r`, then `C4`) as
+     - **Sheet on rules.** Positional refs (`C4` naming works at commit time via
+      `commitLink`/`linkCellRefs`; parse-time meanings remain) as
        parse-time meanings resolving to stable `InternalNodeRef`s and
        printing back as current positions; ranges (`a .. b`).
      - **`where` and adjustable verbosity.** `where` clauses with

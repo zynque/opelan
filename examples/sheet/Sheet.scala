@@ -1,7 +1,7 @@
 package opelan.examples.sheet
 
 import opelan.examples.termOf
-import opelan.examples.expr.{Expr, ExprLanguage, Num, docResolver, evalLoc, exprFromDetached, exprToDetached, printTree, readLocExpr}
+import opelan.examples.expr.{Expr, ExprLanguage, Num, evalLoc, exprFromDetached, exprToDetached, printTree}
 import opelan.foundation.document._
 import opelan.foundation.view.ViewTree
 import opelan.foundation.view.ViewTree._
@@ -11,7 +11,8 @@ import opelan.foundation.langdef.ViewContext
 // children are rows — `row`, or `hrow` for a header row — and a row's
 // children are the cells. A cell holds its content directly: a literal,
 // a label (a plain string leaf), a gap, or an expression subtree that
-// may reference other cells via InternalNodeRef leaves. `sheet`, `row`
+// references other cells via `ref` constructs (`ref > column, row` —
+// resolved positionally at read time, GridExpr). `sheet`, `row`
 // and `hrow` are lang: sheet constructs and the operators lang:
 // expression ones, all used by reference through the imports section.
 //
@@ -24,6 +25,8 @@ import opelan.foundation.langdef.ViewContext
 val SheetTag = "sheet"
 val RowTag = "row"
 val HRowTag = "hrow"
+val RefTag = "ref"
+val ColumnTag = "column"
 
 // The "sheet" view: a grid of evaluated cells. A string leaf is a label
 // rendered as-is; anything else is read as an expression and evaluated —
@@ -97,7 +100,7 @@ private def valueOf(
 private def evalCell(
     doc: Document[NodeData], cellId: Int,
     currency: Option[String]): DetachedNode[NodeData] =
-  evalLoc(readLocExpr(doc, cellId), docResolver(doc, Set(cellId))) match {
+  evalLoc(readGridExpr(doc, cellId), gridResolver(doc, Set(cellId))) match {
     case Right(n) if currency.isDefined =>
       txt(currency.get + "%.2f".format(n.toDouble))
     case Right(n)           => txt(Num.show(n))
@@ -107,7 +110,8 @@ private def evalCell(
 // The surface text a cell's projected editor shows — in both views —
 // matching what parseCellText produces on commit, so an unchanged edit
 // is a genuine no-op: labels show bare, gaps show `?text`, refs show
-// `ref:N`, and formulas show their printed expression.
+// their target's cell name ("D5"), and formulas show their printed
+// expression with refs named the same way.
 def cellText(doc: Document[NodeData], cellId: Int): String =
   doc.getNode(cellId) match {
     case Some(node) if node.childIds.isEmpty => node.data match {
@@ -115,19 +119,20 @@ def cellText(doc: Document[NodeData], cellId: Int): String =
       case NodeData.IntData(i)         => i.toString
       case NodeData.FloatData(f)       => Num.show(Num.F(f))
       case NodeData.GapData(t)         => s"?$t"
-      case NodeData.InternalNodeRef(n) => s"ref:$n"
+      case NodeData.InternalNodeRef(n) => refText(doc, cellId, n)
       case other                       => NodeDataText.show(other)
     }
-    case _ => ViewTree.flatten(printTree(readLocExpr(doc, cellId)))
+    case _ => nameRefs(doc, cellId,
+      ViewTree.flatten(printTree(readGridExpr(doc, cellId))))
   }
 
 // The sheet's input grammar (Language.parseInput): text committed in a
 // cell's box becomes the cell's new content. A leading '?' writes a gap
 // (matching the outline format's `?text` gaps); otherwise a full
 // expression parses to its subtree — numbers, refs, whole formulas;
-// text that doesn't parse but mentions a cell (`ref:N`) is a formula the
-// grammar can't read yet, kept as a gap; anything else is a label — in
-// a sheet, plain text is a string value, not an error.
+// text that doesn't parse but mentions a cell (`B2`, `ref:N`) is a
+// formula the grammar can't read yet, kept as a gap; anything else is
+// a label — in a sheet, plain text is a string value, not an error.
 def parseCellText(text: String): DetachedNode[NodeData] =
   if (text.startsWith("?")) DetachedNode.leaf(NodeData.GapData(text.drop(1)))
   else if (text.trim.isEmpty) DetachedNode.leaf(NodeData.StringData(""))
@@ -142,4 +147,5 @@ private def exprOf(text: String): Expr =
     .getOrElse(Expr.Gap(text))
 
 private def mentionsCell(text: String): Boolean =
-  text.split("\\s+").exists(w => exprOf(w).isInstanceOf[Expr.Ref])
+  text.split("\\s+").exists(w =>
+    isCellRefName(w) || exprOf(w).isInstanceOf[Expr.Ref])

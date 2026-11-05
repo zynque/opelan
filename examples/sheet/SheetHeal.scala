@@ -14,7 +14,8 @@ def healGaps(
     doc: Document[NodeData], sheetId: Int,
     parseCell: String => Option[DetachedNode[NodeData]]): Document[NodeData] =
   doc.childrenOf(sheetId).flatMap(doc.childrenOf).foldLeft(doc) { (d, cellId) =>
-    healableText(d, cellId).flatMap(parseCell).filter(heals) match {
+    healableText(d, cellId).flatMap(parseCell)
+      .map(linkCellRefs).filter(heals) match {
       case Some(content) => commitContent(cellId, content, d).getOrElse(d)
       case None          => d
     }

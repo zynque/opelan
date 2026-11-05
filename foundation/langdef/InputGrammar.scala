@@ -24,7 +24,7 @@ case class InputGrammar(
       .flatMap(resolve).flatMap(_.textSyntax)
 
   def parse(retry: GapRetry)(text: String): Option[DetachedNode[NodeData]] =
-    parser.map {
+    parser.map(p => commitLinked(p match {
       case InputParserDef.Builtin(name) =>
         impls.inputParsers.get(name)
           .map(_(text))
@@ -33,7 +33,7 @@ case class InputGrammar(
         shortcut(fb, text).getOrElse(classify(ref, fb, text,
           resolve(ref).flatMap(l => l.textSyntax
             .map(retry.parse(_, text)._1).orElse(l.parse(text)))))
-    }
+    }))
 
   // A commit: the same content as `parse`, read through the input's
   // session when the referred language parses incrementally.
@@ -49,9 +49,14 @@ case class InputGrammar(
             (classify(ref, fb, text, Some(read)), next)
           case None =>
             (classify(ref, fb, text, language.flatMap(_.parse(text))), inputs)
-        })
+        }).map { case (t, s) => (commitLinked(t), s) }
       case _ => parse(GapRetry())(text).map((_, inputs))
     }
+
+  // The impls' finishing pass on committed content — structure text
+  // can't carry (a sheet's cell names → `ref` constructs).
+  private def commitLinked(t: DetachedNode[NodeData]): DetachedNode[NodeData] =
+    impls.commitLink.map(_(t)).getOrElse(t)
 
   private def shortcut(
       fb: InputFallback, text: String): Option[DetachedNode[NodeData]] =
@@ -73,8 +78,9 @@ case class InputGrammar(
     }
 
   private def mentionsRef(ref: ExternalNodeReference, text: String): Boolean =
-    resolve(ref).exists(l => text.split("\\s+").exists(w =>
-      l.parse(w).exists(t =>
+    text.split("\\s+").exists(w =>
+      impls.refName.exists(_(w)) ||
+      resolve(ref).exists(l => l.parse(w).exists(t =>
         t.children.isEmpty && t.data.isInstanceOf[NodeData.InternalNodeRef])))
 
   private def isGapLeaf(t: DetachedNode[NodeData]): Boolean =

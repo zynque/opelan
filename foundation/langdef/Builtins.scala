@@ -16,12 +16,21 @@ import opelan.foundation.langdef.view._
 type BuiltinView =
   (Document[NodeData], Int, ViewContext) => DetachedNode[NodeData]
 type BuiltinInputParser = String => DetachedNode[NodeData]
+// The finishing pass committed input content gets: structure text
+// can't carry (a sheet's cell names → `ref` constructs) is
+// materialized before the commit lands.
+type CommitLink = DetachedNode[NodeData] => DetachedNode[NodeData]
 
 case class Impls(
     lexicons: Map[String, Lexicon] = Map.empty,
     leaves: Map[String, LeafDef] = Map.empty,
     views: Map[String, BuiltinView] = Map.empty,
-    inputParsers: Map[String, BuiltinInputParser] = Map.empty)
+    inputParsers: Map[String, BuiltinInputParser] = Map.empty,
+    // A word naming a reference the committed parse resolves later:
+    // unparsed text mentioning one stays a healable gap rather than
+    // falling back to a label (InputGrammar).
+    refName: Option[String => Boolean] = None,
+    commitLink: Option[CommitLink] = None)
 
 // What a builtin view gets from the language rendering it: the view's
 // settings as written in the def doc, the language's current input

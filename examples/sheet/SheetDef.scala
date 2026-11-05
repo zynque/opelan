@@ -28,7 +28,11 @@ val sheetDef = LanguageDef(
     NodeTerm("row", Any),
     NodeTerm("label", Leaf),
     NodeTerm("literal", Leaf),
-    NodeTerm("ref", Leaf),
+    // A cell reference, fully structured: `ref(column("B"), row(3))` —
+    // `column` a field node, `row` the field's number (reusing the
+    // grid's `row` term).
+    NodeTerm("ref", Fixed(2)),
+    NodeTerm("column", Fixed(1)),
     NodeTerm("formula", Any)),
   syntax = None,
   views = List(
@@ -40,12 +44,17 @@ val sheetDef = LanguageDef(
   inputParser = Some(
     InputParserDef.Language(exprTypeRef, InputFallback.Label)))
 
-// The code-side semantics the def names — kept beside it.
+// The code-side semantics the def names — kept beside it. `refName`
+// keeps unparsed text mentioning a cell name a healable gap;
+// `commitLink` materializes committed cell names ("D5") as `ref`
+// constructs — the reference structure text can't carry.
 val sheetImpls = Impls(
   views = Map(
     "sheet-grid"     -> ((doc, id, ctx) => sheetView(doc, id, ctx)),
     "sheet-formulas" -> ((doc, id, ctx) => formulasView(doc, id, ctx))),
-  inputParsers = Map("sheet-cell" -> parseCellText))
+  inputParsers = Map("sheet-cell" -> parseCellText),
+  refName = Some(isCellRefName),
+  commitLink = Some(linkCellRefs))
 
 // Construct identities of the language. Code names a term ("hrow") only
 // to look up its vocabulary entry in the canonical encoding; documents

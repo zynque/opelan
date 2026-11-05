@@ -99,14 +99,18 @@ class ResolveSuite extends FunSuite {
       languageForDoc(b, st).get
         .render("sheet", b).map(ViewTree.flatten).toOption.get
         .split("\n")(6)
-    assert(perPerson(staged, budget).contains("?ref:"), perPerson(staged, budget))
+    assert(perPerson(staged, budget).contains("?D5 / B6"), perPerson(staged, budget))
     val sheet = languageForDoc(budget, staged).get
     assertEquals(sheet.parseInput("ref:1 / ref:2").map(_.data),
       Some(NodeData.GapData("ref:1 / ref:2")))
+    // Cell names too: unparsed text mentioning one stays a healable
+    // gap rather than a label.
+    assertEquals(sheet.parseInput("D5 / B6").map(_.data),
+      Some(NodeData.GapData("D5 / B6")))
     // Saving `/` as expression v1: pins unchanged — still a gap.
     val fixed = staged.put(
       ExprLanguage.typeRef.documentUrl, ExprLanguage.langDoc)._1
-    assert(perPerson(fixed, budget).contains("?ref:"), perPerson(fixed, budget))
+    assert(perPerson(fixed, budget).contains("?D5 / B6"), perPerson(fixed, budget))
     // lang: sheet accepts: its input-grammar ref bumps to expression v1.
     val sheetDoc = fixed.get("opelan:languages/sheet", 0).get
     val s2 = fixed.put(

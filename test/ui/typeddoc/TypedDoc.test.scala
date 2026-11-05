@@ -1,7 +1,8 @@
 package opelan.ui.typeddoc
 
 import opelan.examples.expr.{Expr, ExprLanguage, exprFromDocument}
-import opelan.examples.sheet.{SheetLanguage, sheetDef}
+import opelan.examples.termOf
+import opelan.examples.sheet.{RefTag, SheetLanguage, sheetDef, sheetTerms}
 import opelan.foundation.document._
 import opelan.foundation.document.store._
 import opelan.foundation.document.typed._
@@ -173,19 +174,18 @@ class TypedDocSuite extends munit.FunSuite {
     val m = typedDocUpdate(init, TypedDocInput.LoadSheetSample).state
     val total = cellId(m.doc, 1, 3) // Apples' line total = qty * price
     val refs = m.doc.childrenOf(total)
-    val Seq(NodeData.InternalNodeRef(qty), NodeData.InternalNodeRef(price)) =
-      refs.map(id => m.doc.getNode(id).get.data).runtimeChecked
     val u = typedDocUpdate(
-      m, TypedDocInput.CommitInputText(total, s"ref:$qty + ref:$price"))
-    // mul → add changed the node's data, but the ref nodes kept their
-    // ids and the cell itself was never replaced.
+      m, TypedDocInput.CommitInputText(total, "B2 + C2"))
+    // mul → add changed the node's data, but the ref subtrees ("B2",
+    // "C2" name the same cells) kept their ids and the cell itself was
+    // never replaced.
     assertEquals(u.state.doc.childrenOf(total), refs)
     assertEquals(
-      exprFromDocument(u.state.doc, total),
-      Right(Expr.Add(Expr.Ref(qty), Expr.Ref(price))))
+      refs.map(id => termOf(sheetTerms, u.state.doc, id)),
+      List(Some(RefTag), Some(RefTag)))
     // A fresh part gets a fresh id; the rest stay put.
     val u2 = typedDocUpdate(
-      m, TypedDocInput.CommitInputText(total, s"ref:$qty * 3"))
+      m, TypedDocInput.CommitInputText(total, "B2 * 3"))
     val after = u2.state.doc.childrenOf(total)
     assertEquals(after(0), refs(0))
     assertNotEquals(after(1), refs(1))
