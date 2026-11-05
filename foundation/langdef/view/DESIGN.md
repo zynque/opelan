@@ -5,8 +5,8 @@ the raw tree (see [`../DESIGN.md`](../DESIGN.md)). Each emits a
 [view tree](../../view/DESIGN.md), never DOM.
 
 - **`DefView`** — the `def` view: decodes the doc and lays the
-  definition out readably — title, description, the vocabulary of
-  terms, the grammar as indented combinator text, the means rules as
+  definition out readably — title, description, the grammar as
+  indented combinator text, the means rules as
   editable lines, view bindings, and the input grammar's target.
 - **`DefRuleView`** — the per-rule projection inside the def view:
   pattern, meaning, `where`, and the rule's worked examples.

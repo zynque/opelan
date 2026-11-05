@@ -7,9 +7,9 @@ import opelan.foundation.view.ViewTree
 import opelan.foundation.view.ViewTree._
 
 // The "def" view of a language-definition document: decode the doc and
-// lay the definition out readably — title, description, the vocabulary
-// of terms, the grammar as indented combinator text, the means rules as
-// editable lines, view bindings, and the input grammar's target. The
+// lay the definition out readably — title, description, the grammar as
+// indented combinator text, the means rules as editable lines, view
+// bindings, and the input grammar's target. The
 // document is still the source of truth; this is the skim-friendly
 // rendering of it.
 // A rules section renders each line as a projected input bound to its
@@ -25,8 +25,6 @@ def defView(doc: Document[NodeData], contentRootId: Int,
   block(List(
     Some(heading(txt(d.title))),
     Some(txt(d.description)),
-    Some(section("vocabulary", d.vocabulary.map(t =>
-      txt(s"${t.name} — ${shapeName(t.shape)}")))),
     d.syntax.map(s =>
       section("syntax", grammarLines(s.grammar).map(txt) ++
         s.rules.toList.flatMap(rs =>
@@ -57,12 +55,6 @@ private def settingsText(settings: Map[String, String]): String =
   if (settings.isEmpty) ""
   else settings.toList.sorted.map((k, v) => s"$k: $v").mkString(" (", ", ", ")")
 
-private def shapeName(s: NodeShape): String = s match {
-  case NodeShape.Leaf    => "leaf"
-  case NodeShape.Any     => "any"
-  case NodeShape.Fixed(n) => s"fixed $n"
-}
-
 private def inputParserText(cp: InputParserDef): String = cp match {
   case InputParserDef.Builtin(name) => s"builtin $name"
   case InputParserDef.Language(ref, fb) =>
@@ -78,8 +70,7 @@ private def grammarLines(g: GrammarDef, indent: String = ""): List[String] =
     case GrammarDef.Parens(inner) =>
       s"${indent}parens" :: grammarLines(inner, indent + "  ")
     case GrammarDef.Signum => List(s"${indent}signum")
-    case GrammarDef.Unrecognized(start, run) =>
-      List(s"${indent}unrecognized starts {${start.mkString(" ")}} runs {${run.mkString(" ")}}")
+    case GrammarDef.Unrecognized(_, _) => Nil
     case GrammarDef.ChainLeft(ops, atom) =>
       s"${indent}chain ${opsText(ops)}" :: grammarLines(atom, indent + "  ")
     case GrammarDef.Precedence(atom, levels) =>
