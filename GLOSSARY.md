@@ -21,14 +21,12 @@ Adding rules to a layer expressed purely in constructs from the layers
 below — strictly additive. Narrowing is by non-import, and a rule from below
 is never redefined: needing to change one means the layer below wasn't
 general enough, so the fix lands there as a new version.
-_Avoid_: override, shadow, monkey-patch
 
 **Opt-out**:
 A layer or application declining a capability the platform provides
 transitively (inspectability, editability, history). A projection and
 deployment choice, not a different implementation — the document remains
 the truth, and shipping without it is a build-time optimization.
-_Avoid_: disable, strip
 
 **Pin**:
 The `version` in an `url@version#node` reference. Execution resolves
@@ -47,7 +45,6 @@ A proposed new version of a document, shown to the user as what would
 change and recorded as a version only once accepted. The workbench
 proposes for pending updates (pin bumps plus heals); other actors, such
 as an LLM pass, can propose the same way.
-_Avoid_: pull request, merge request, PR (git-specific jargon)
 
 **Auto-update**:
 A per-document opt-in that accepts the change proposals of pending
@@ -76,16 +73,12 @@ views (which shown alone is the "app" surface).
 A document rendered as editable text — its language's print/parse
 round-trip, or the outline format for raw documents. Edits reparse into
 the content subtree, keeping the ids of what didn't change.
-_Avoid_: text cell
 
 **Input**:
 An editable text box a derived view projects over a document node — the
 view tree's `input` element. Committing parses the text through the
 language's input grammar and rewrites the node in place; a language
 without an input grammar projects read-only views.
-_Avoid_: cell — "cell" is reserved for the worksheet's grid entries
-(the sheet example) and table cells in view-tree grids, not for
-projected text boxes.
 
 ## Documents
 
@@ -94,7 +87,6 @@ Text or structure that doesn't fit its language yet, kept verbatim in
 the document so later edits heal it instead of failing — the *Never
 broken* convention (Hazel's *typed holes*, made structural). Stored as
 `GapData`, spelled `?text`, bound by the kernel `gap` operand term.
-_Avoid_: hole, error, broken, placeholder
 
 **Heal**:
 A gap becoming content: once the language a document pins reads the
@@ -105,7 +97,6 @@ content is never reparsed, so a new rule can only heal gaps, never
 change what committed content means. A heal is an edit, carried by the
 change proposal of the pending update that brought the rule in; until
 it is accepted, views may preview it.
-_Avoid_: fix, repair
 
 **Format**:
 A paired conversion between two representations of the same content —
