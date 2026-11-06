@@ -272,12 +272,11 @@ class WorkbenchUpdateSuite extends munit.FunSuite {
       Some(TypedDocInput.Load(target, Some(target.rootId))))
   }
 
-  test("children declares all seams and both panes") {
+  test("children declares all seams and the document pane") {
     val children = workbench.children(init)
     assertEquals(children.map(_.key).toSet,
-      Set("storage", "prompt", "random", "sync", "doc", "demo"))
+      Set("storage", "prompt", "random", "sync", "doc"))
     assertEquals(children.find(_.key == "doc").map(_.slot), Some("doc"))
-    assertEquals(children.find(_.key == "demo").map(_.slot), Some("demo"))
   }
 
   test("saving a dependency cascades pin bumps through opted-in dependents") {

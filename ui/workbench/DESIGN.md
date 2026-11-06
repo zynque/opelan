@@ -10,9 +10,8 @@ as inputs. Document-store decisions live in the pure `Workspace` value;
 markup lives in `WorkbenchView`; `WorkbenchShell` is the browser edge.
 
 The view is a sidebar listing stored document heads (with New), a
-toolbar (a switch between the **document** pane hosting
-[`TypedDoc`](../typeddoc/DESIGN.md) and a **components** demo pane, plus
-Save, Sync, and Reset), and a status bar; the expression and sheet
+toolbar (Save, Sync, and Reset) over the document pane hosting
+[`TypedDoc`](../typeddoc/DESIGN.md), and a status bar; the expression and sheet
 samples load from the pane's own toolbar. On first load, `DemoDocs`
 seeds each registered language's `langDoc` at the URL its type ref
 names, plus the household budget — never overwriting a URL the store

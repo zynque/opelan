@@ -1,7 +1,6 @@
 package opelan.ui.workbench
 
 import opelan.ui.fp._
-import opelan.ui.fp.demo.{CounterList, CounterListInput}
 import opelan.ui.fx._
 import opelan.ui.typeddoc.{TypedDoc, TypedDocInput, TypedDocOutput}
 import opelan.ui.workbench.WorkbenchInput._
@@ -48,7 +47,5 @@ class Workbench(
         TypedDocInput.Pane(
           s.panePush, s.pushSeq, s.pullSerial, s.workspace.store,
           s.workspace.openUrl),
-        FromPane(_), slot = "doc"),
-      Child("demo", CounterList, CounterListInput.Noop,
-        o => FromDemo(o.toString), slot = "demo"))
+        FromPane(_), slot = "doc"))
 }

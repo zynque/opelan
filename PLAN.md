@@ -115,27 +115,12 @@ steps*, item 1).
    (`foundation/means/text/DESIGN.md`, `foundation/view/DESIGN.md`).
    Remaining steps, in order:
 
-   - *Meaning layers; demote the old model:*
+   - *Meaning layers:*
      - **Semantics as rules.** `add(a, b) means builtin num-add`: eval
        derived from meaning rules bottoming out in builtins, replacing
        the hand-coded `evalTree` behind `expr-eval`. The rule
        dependency DAG and derived layers are computed; a cycle renders
        as a gap at the closing edge.
-     - **Demote `GrammarDef` to the implementation layer.** Definitions
-       authored and stored as rules only; `GrammarDef` leaves
-       `LanguageDef` entirely. No stored docs carry combinator
-       grammars, so no migration is owed — content migration remains
-       a goal under item 2's *Content migration*. `Unrecognized` has
-       already left authored definitions: a rules def's operand
-       fallback is the lexicon's recovery (`Lexicon.gapStart/gapRun`)
-       and stores nothing. Parity with the hand-written combinator
-       parser is retired as a gate — prototype stage, gaps in the
-       rules form get fixed as discovered — so the oracle fixtures
-       (`ExprParse`, `exprCombinatorDef`, `exprRuleGrammar`) go too,
-       their behavioral assertions re-pointed at the rules path.
-       Then `Phrase`, `Signum`, stop sets, `interpret`,
-       `grammarFrom`/`grammarNode`, and the combinator half of
-       `syntaxChanges`. Update DESIGN.md and the demo.
    - *Beyond parity:*
      - **Structural rules.** The general rule form of which textual
        `means` is the token-spine projection: a tree pattern — the

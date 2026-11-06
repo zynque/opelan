@@ -23,6 +23,3 @@ p3's lesson that a hand-grown ad-hoc UI layer becomes unmanageable.
   their DOM (CodeMirror); keyed, and remounted when the key changes.
 - `Handle`/`Subject` — the external face of a mounted tree: push inputs,
   subscribe to outputs.
-
-`demo/` holds small example components (`Counter`, `CounterList`) used
-by the workbench's components demo pane.

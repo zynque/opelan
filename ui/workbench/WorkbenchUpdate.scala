@@ -33,9 +33,6 @@ object WorkbenchUpdate {
         val (m2, id) = nextReq(m)
         up(m2.copy(storageQ = m2.storageQ :+ StorageReq.Hydrate(id)))
 
-      case SwitchShellView(v) =>
-        up(m.copy(view = v, status = s"Switched to ${viewName(v)} view"))
-
       case NewDocument =>
         val (m2, id) = nextReq(m)
         up(m2.copy(
@@ -84,13 +81,5 @@ object WorkbenchUpdate {
       case FromPrompt(ev)  => fromPrompt(m, ev)
       case FromRandom(ev)  => fromRandom(m, ev)
       case FromSync(ev)    => fromSync(m, ev)
-
-      case FromDemo(msg) => up(m.copy(status = msg))
-    }
-
-  def viewName(v: ShellView): String =
-    v match {
-      case ShellView.Document => "documents"
-      case ShellView.Components => "components"
     }
 }

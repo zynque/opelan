@@ -8,8 +8,7 @@ root, open `index.html`.
 - **Documents sidebar** — lists stored document heads as `label vN`. Click
   one to open its head version. **New Document** prompts for a name and
   creates `untitled@v0` (etc.) under a slugified URL.
-- **Toolbar** — **Document** / **Components** switch the main pane between
-  the document workbench and the fp-components demo. **Save** appends a
+- **Toolbar** — **Save** appends a
   new version of the open document to the store (IndexedDB) — every save
   is a new `vN`, old versions are never overwritten.
 - **Sync** — toggles live sync of the open document between tabs of this

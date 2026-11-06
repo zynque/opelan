@@ -4,13 +4,6 @@ import opelan.foundation.document._
 import opelan.ui.fx._
 import opelan.ui.typeddoc.{TypedDocInput, TypedDocOutput}
 
-// Which main-area pane the toolbar is showing. Both stay mounted —
-// hiding rather than unmounting keeps each pane's DOM (editor state,
-// focus) intact across switches.
-enum ShellView {
-  case Document, Components
-}
-
 // What an outstanding prompt is for — set when prompt is raised, read
 // when its reply arrives.
 enum PromptFor {
@@ -35,7 +28,6 @@ enum PromptFor {
 //               suppression (fires only when the text actually moved)
 case class WorkbenchModel(
     workspace: Workspace = Workspace.empty,
-    view: ShellView = ShellView.Document,
     status: String = "Ready",
     syncOn: Boolean = false,
     synced: Map[String, String] = Map.empty,
@@ -57,7 +49,6 @@ case class WorkbenchModel(
 enum WorkbenchInput {
   // Sent once by Runtime.mount — kicks off storage hydration.
   case Boot
-  case SwitchShellView(view: ShellView)
   case NewDocument
   case SelectDocument(url: String)
   case SaveRequested
@@ -70,5 +61,4 @@ enum WorkbenchInput {
   case FromPrompt(ev: PromptEv)
   case FromRandom(ev: RandomEv)
   case FromSync(ev: SyncEv)
-  case FromDemo(message: String)
 }

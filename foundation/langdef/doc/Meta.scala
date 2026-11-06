@@ -5,7 +5,7 @@ import opelan.foundation.document.typed._
 import opelan.foundation.langdef._
 
 // Meta-construct identity. A def document uses `term`, `vocabulary`,
-// `op` … by importing the vocabulary entries of lang: language, so code
+// `rule` … by importing the vocabulary entries of lang: language, so code
 // recognizes them by node id, never by name: these ids come from
 // encoding docLanguageDef (the seed of opelan:languages/language), and
 // stay valid however the stored entries are renamed — ids are never

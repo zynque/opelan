@@ -6,11 +6,9 @@ import opelan.ui.fp.Dsl._
 import WorkbenchInput._
 
 // The workbench's chrome as a pure view: a documents sidebar listing the
-// store's heads, a view-switcher toolbar with save and sync, two named
-// pane mounts (document and components demo — both stay mounted, hidden
-// not unmounted, so their state survives switching), the status bar, and
-// a mount for the invisible seam children (storage, prompt, random,
-// sync) at the end.
+// store's heads, a toolbar with save and sync, a named pane mount for
+// the document, the status bar, and a mount for the invisible seam
+// children (storage, prompt, random, sync) at the end.
 def workbenchView(m: WorkbenchModel): View[WorkbenchInput] =
   el("div",
     style("display: flex; height: 100vh; font-family: Arial, sans-serif;"))(
@@ -49,8 +47,6 @@ private def docList(m: WorkbenchModel): View[WorkbenchInput] =
 private def toolbar(m: WorkbenchModel): View[WorkbenchInput] =
   el("div",
     style("padding: 10px; border-bottom: 1px solid #ccc; background: #f9f9f9;"))(
-    viewButton("Document", ShellView.Document, m),
-    viewButton("Components", ShellView.Components, m),
     el("button",
       style("margin-right: 5px; padding: 5px 10px;"),
       events = on("click", SaveRequested))(text("Save")),
@@ -65,23 +61,9 @@ private def toolbar(m: WorkbenchModel): View[WorkbenchInput] =
       events = on("click", ResetStorage))(text("Reset")),
     el("span", style("margin-left: 20px;"))(text(currentDocLabel(m))))
 
-private def viewButton(
-    label: String, v: ShellView, m: WorkbenchModel): View[WorkbenchInput] =
-  el("button",
-    style("margin-right: 5px; padding: 5px 10px;" +
-      (if (m.view == v) " font-weight: bold; background: #dde9f5;" else "")),
-    events = on("click", SwitchShellView(v)))(
-    text(label))
-
 private def content(m: WorkbenchModel): View[WorkbenchInput] =
   el("div", style("flex: 1; padding: 10px; overflow: auto;"))(
-    el("div",
-      style("height: 100%;" + hidden(m.view != ShellView.Document)))(
-      mountIn("doc")),
-    el("div",
-      style("height: 100%; border: 1px solid #ccc; padding: 10px;" +
-        hidden(m.view != ShellView.Components)))(
-      mountIn("demo")))
+    el("div", style("height: 100%;"))(mountIn("doc")))
 
 private def statusBar(m: WorkbenchModel): View[WorkbenchInput] =
   el("div",
@@ -95,6 +77,3 @@ private def currentDocLabel(m: WorkbenchModel): String =
       s"${Store.labelOf(d).getOrElse(url)} — $url@v$v"
     case _ => "unsaved"
   }
-
-private def hidden(condition: Boolean): String =
-  if (condition) " display: none;" else ""

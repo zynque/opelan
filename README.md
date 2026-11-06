@@ -40,7 +40,7 @@ foundation/           # Pure model layer
 examples/             # Expression and sheet languages (the demo)
 
 ui/                   # User interface components
-├── fp/               # Elm-style component runtime (+ demo components)
+├── fp/               # Elm-style component runtime
 ├── editor/           # Structural document editor
 ├── typeddoc/         # Typed-document pane: structure + text + derived views
 ├── view/             # View-tree renderer

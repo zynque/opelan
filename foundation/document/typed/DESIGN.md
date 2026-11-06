@@ -31,7 +31,7 @@ document, picks up the new name. The editor shows each use
 projectionally: the resolved name in bold, with the raw `&n` beside it.
 References *within* a definition are plain internal refs to the
 declaring node, for example a meaning's second `mul` to the first, an
-operator to the term it builds, or a `use` to a `named` grammar rule.
+operator to the term it builds, or a `use` operand to its pattern piece.
 Def documents carry no `vocabulary` section once rules can declare the
 terms — the section persists only for rules-less defs (`lang: language`
 itself, the sheet), where it is authored declaration content, not a
