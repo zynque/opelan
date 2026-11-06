@@ -118,7 +118,7 @@ steps*, item 1).
    - *Meaning layers; demote the old model:*
      - **Semantics as rules.** `add(a, b) means builtin num-add`: eval
        derived from meaning rules bottoming out in builtins, replacing
-       the hand-coded `Expr.eval` behind `expr-eval`. The rule
+       the hand-coded `evalTree` behind `expr-eval`. The rule
        dependency DAG and derived layers are computed; a cycle renders
        as a gap at the closing edge.
      - **Demote `GrammarDef` to the implementation layer.** Definitions

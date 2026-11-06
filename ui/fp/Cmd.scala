@@ -22,7 +22,4 @@ object Cmd {
     new Cmd[I] { def run(emit: I => Unit): Unit = body(emit) }
 
   def emit[I](i: I): Cmd[I] = Cmd(e => e(i))
-
-  def batch[I](cs: Iterable[Cmd[I]]): Cmd[I] =
-    Cmd(emit => cs.foreach(_.run(emit)))
 }

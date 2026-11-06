@@ -436,7 +436,7 @@ class LangDefDocSuite extends FunSuite {
       Node(0, NodeData.StringData("lang: cyc"), List(1), None),
       Node(0, meta("syntax"), List(2, 3), Some(0)),
       Node(0, NodeData.StringData("expr"), Nil, Some(1)),
-      Node(0, meta("choice"), List(3), Some(1))))
+      Node(0, meta("term"), List(3), Some(1))))
     val d = langDefFromDocument("opelan:docs/cyc", cyc)
     assertEquals(d.syntax.map(_.rules), Some(None))
   }

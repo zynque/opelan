@@ -26,10 +26,6 @@ object Dsl {
   def on[I](event: String, input: I): Map[String, dom.Event => Option[I]] =
     Map(event -> (_ => Some(input)))
 
-  // Map a DOM event to an input.
-  def onEvent[I](event: String)(f: dom.Event => I): Map[String, dom.Event => Option[I]] =
-    Map(event -> (e => Some(f(e))))
-
   // Map a DOM event to an optional input (None = ignore the event).
   def onEventOpt[I](event: String)(f: dom.Event => Option[I]): Map[String, dom.Event => Option[I]] =
     Map(event -> f)

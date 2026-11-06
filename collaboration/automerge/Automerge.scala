@@ -34,9 +34,6 @@ object Automerge {
     am.applyDynamic("from")(js.Dynamic.literal("text" -> text), actorId)
       .asInstanceOf[js.Dynamic]
 
-  def actorIdOf(doc: Doc): String =
-    am.getActorId(doc).asInstanceOf[String]
-
   def textOf(doc: Doc): String = doc.text.toString.asInstanceOf[String]
 
   // Apply a new full text: updateText diffs old->new and splices the

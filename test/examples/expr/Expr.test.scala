@@ -13,6 +13,25 @@ class ExprSuite extends munit.FunSuite {
   // (1 + 2) - (3 - 4)  ==  4
   val sample = Sub(Add(Lit(1), Lit(2)), Sub(Lit(3), Lit(4)))
 
+  // The live evaluator's contract stated against Expr trees: evalLoc
+  // over a located read (source ids are arbitrary — only ref targets
+  // and gap reports carry them).
+  private def eval(
+      e: Expr,
+      resolve: Int => Option[Num] = _ => None): Either[(String, Int), Num] =
+    evalLoc(loc(e), id => resolve(id).toRight(("unresolved", id)))
+
+  private def loc(e: Expr): LocExpr = e match {
+    case Lit(v)    => LocExpr.LocLit(0, v)
+    case FLit(v)   => LocExpr.LocFLit(0, v)
+    case Ref(id)   => LocExpr.LocRef(0, id)
+    case Gap(t)    => LocExpr.LocGap(0, t)
+    case Add(l, r) => LocExpr.LocAdd(0, loc(l), loc(r))
+    case Sub(l, r) => LocExpr.LocSub(0, loc(l), loc(r))
+    case Mul(l, r) => LocExpr.LocMul(0, loc(l), loc(r))
+    case Div(l, r) => LocExpr.LocDiv(0, loc(l), loc(r))
+  }
+
   test("eval computes integer results") {
     assertEquals(eval(sample), Right(Num.I(4)))
     assertEquals(eval(Lit(-7)), Right(Num.I(-7)))

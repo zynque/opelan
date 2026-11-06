@@ -1,7 +1,5 @@
 package opelan.examples.expr
 
-import opelan.foundation.document._
-
 // The abstract syntax of the expression language: int/float literals,
 // the four arithmetic operations, references to other nodes in the
 // enclosing document (a cell pulls the referenced node's value), and
@@ -36,30 +34,6 @@ object Expr {
   val SubTag = "sub"
   val MulTag = "mul"
   val DivTag = "div"
-
-  // Evaluation is partial: a gap anywhere blocks it; a Ref blocks it
-  // unless the resolver (which can see the document) supplies the
-  // referenced node's value; division by zero fails.
-  def eval(
-      e: Expr,
-      resolve: Int => Option[Num] = _ => None): Either[String, Num] = e match {
-    case Lit(v)    => Right(Num.I(v))
-    case FLit(v)   => Right(Num.F(v))
-    case Ref(id)   => resolve(id).toRight(s"unresolved ref: $id")
-    case Add(l, r) => bin(l, r, resolve, Num.add)
-    case Sub(l, r) => bin(l, r, resolve, Num.sub)
-    case Mul(l, r) => bin(l, r, resolve, Num.mul)
-    case Div(l, r) =>
-      for {
-        a <- eval(l, resolve); b <- eval(r, resolve)
-        q <- Num.div(a, b).toRight("division by zero")
-      } yield q
-    case Gap(t)   => Left(s"expression contains a gap${if (t.isEmpty) "" else s": $t"}")
-  }
-
-  private def bin(l: Expr, r: Expr, resolve: Int => Option[Num],
-      f: (Num, Num) => Num): Either[String, Num] =
-    for { a <- eval(l, resolve); b <- eval(r, resolve) } yield f(a, b)
 
   // Infix text with minimal parentheses: `*` and `/` bind tighter than
   // `+` and `-`, and every level is left-associative, so a compound right

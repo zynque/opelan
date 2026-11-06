@@ -38,22 +38,7 @@ private[langdef] val metaTerms: List[NodeTerm] = List(
   NodeTerm("fixed", Fixed(1)),
   NodeTerm("as-label", Fixed(0)),  // input fallbacks
   NodeTerm("as-gap", Fixed(0)),
-  // The legacy combinator vocabulary — dead since defs store rules
-  // only; retained because term ids are positional.
-  NodeTerm("tok", Fixed(2)),
-  NodeTerm("choice", Any),
-  NodeTerm("parens", Fixed(1)),
-  NodeTerm("signum", Fixed(0)),
-  NodeTerm("unrecognized", Fixed(2)),
-  NodeTerm("chain", Fixed(2)),
-  NodeTerm("ops", Any),
-  NodeTerm("op", Fixed(2)),
-  NodeTerm("precedence", Fixed(2)),
-  NodeTerm("levels", Any),
-  NodeTerm("level", Any),
-  NodeTerm("phrase", Fixed(2)),
-  NodeTerm("named", Fixed(2)),
-  NodeTerm("use", Fixed(1)),       // also live: meaning operands
+  NodeTerm("use", Fixed(1)),       // meaning operands
   NodeTerm("int", Fixed(0)),
   NodeTerm("float", Fixed(0)),
   NodeTerm("text", Fixed(0)),
