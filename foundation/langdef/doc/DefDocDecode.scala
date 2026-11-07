@@ -107,7 +107,10 @@ def withTermRefs(d: LanguageDef): LanguageDef = {
       })))))
 }
 
-// Term name → the construct's identity, for code that builds or reads
-// documents in a defined language.
+// Term name → the construct's vocabulary-entry identity inside this
+// def — references meanings use and renames retarget. The
+// *content*-side map (which construct ref a parsed or built node
+// carries) is `DefLanguage.termTags`, where foundational names
+// resolve to the foundation's own refs.
 def termRefs(d: LanguageDef): Map[String, ExternalNodeReference] =
   withTermRefs(d).vocabulary.flatMap(t => t.ref.map(t.name -> _)).toMap

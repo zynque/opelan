@@ -61,8 +61,8 @@ case class Meaning(
 object Meaning {
   // The meaning-language's vocabulary — `lang:`'s own constructs, never
   // the defined language's terms (so a `use` must never reach
-  // vocabularyFrom). `builtin` is reserved for evaluation-time meanings
-  // (`add(a, b) means builtin num-add`, Phase D); `quote` carries a
+  // vocabularyFrom). `builtin` names a foundational definition in an
+  // evaluation-time meaning (Eval.scala); `quote` carries a
   // desugared phrase's concrete subtree — including the gap a phrase
   // that didn't read lands as; `literal` evaluates a value
   // term to leaf data (`-n means literal(neg(n))`, parse-time values).

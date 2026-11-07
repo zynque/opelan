@@ -7,7 +7,7 @@ import opelan.foundation.langdef.syntax._
 import opelan.foundation.langdef.doc.termRefs
 import opelan.foundation.langdef.LeafKind._
 import opelan.foundation.means._
-import opelan.foundation.means.engine.printViewWith
+import opelan.foundation.means.engine.{evalView, printViewWith, semanticsOf}
 import opelan.foundation.means.text._
 
 // The expression language's definition as data — what its `lang:`
@@ -77,7 +77,8 @@ val exprImpls = Impls(
   views = Map(
     "expr-print" -> ((doc, id, _) =>
       printViewWith(exprRules, exprTag, exprViewLeaf)(doc, id)),
-    "expr-eval"  -> ((doc, id, _) => evalTree(doc, readLocExpr(doc, id)))))
+    "expr-eval"  -> ((doc, id, _) =>
+      evalView(semanticsOf(exprRules), exprTerms)(doc, id))))
 
 // Construct identities of the language. Code names a term ("mul") only
 // to look up its vocabulary entry in the canonical encoding; documents

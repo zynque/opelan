@@ -17,8 +17,9 @@ import opelan.foundation.means._
 //   literal  the operand term evaluated to leaf data — `literal(neg(n))`
 //            turns a bound `number` into its negation; the leaf covers
 //            the whole match like `source` does
-//   builtin  not yet — evaluation-time meanings are Phase D; an
-//            unknown builtin is a gap, Never Broken
+//   builtin  not applied at parse time — it names a foundational
+//            definition for the evaluator (Eval.scala); here it is a
+//            gap, Never Broken
 //   other    a construct: the meaning's `reference` when it carries
 //            one, else `tag(name)` maps the term name to node data
 //            (DefLanguage.termTag)

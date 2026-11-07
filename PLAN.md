@@ -115,12 +115,15 @@ steps*, item 1).
    (`foundation/means/text/DESIGN.md`, `foundation/view/DESIGN.md`).
    Remaining steps, in order:
 
-   - *Meaning layers:*
-     - **Semantics as rules.** `add(a, b) means builtin num-add`: eval
-       derived from meaning rules bottoming out in builtins, replacing
-       the hand-coded `evalTree` behind `expr-eval`. The rule
-       dependency DAG and derived layers are computed; a cycle renders
-       as a gap at the closing edge.
+   - *Meaning layers:* eval is derived (`means/engine/Eval.scala`):
+     a node's construct resolves to an authored semantics rule — a
+     pattern spelled `square(a) means mul(a, a)` — else to a
+     foundational definition by reference (`Primitives.scala`), and
+     `expr-eval` runs it. The semantics-rule DAG and derived layers
+     are computed; a cycle renders as a gap at the closing edge.
+     Still ahead: def docs encoding foundational imports so a decoded
+     `add` is the foundational `add`, and retiring `evalTree`/`LocExpr`
+     once the sheet's eval path derives too.
    - *Beyond parity:*
      - **Structural rules.** The general rule form of which textual
        `means` is the token-spine projection: a tree pattern — the
