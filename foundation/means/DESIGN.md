@@ -70,7 +70,7 @@ construct the rule declares. The user-authored document is always the
 input AST, preserved as-is; the meaning side says how the input is
 interpreted — rendered as text, a chart, a 3d scene — it never rewrites
 its input. Compilation is the same relation cached in a lower layer
-(kernel or host) — a future optimization; interpretation is the model.
+(foundation or host) — a future optimization; interpretation is the model.
 As in Scheme, the machinery is a pattern and a template over trees;
 identity-by-node-id replaces hygienic renaming, and one rule yields both
 matcher and renderer.

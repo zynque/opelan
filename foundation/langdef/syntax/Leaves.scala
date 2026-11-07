@@ -11,7 +11,7 @@ import opelan.foundation.means.engine.LexicalTerm
 // Tok pairing of the old operand atom, named so rules can name
 // it: `n means n where n: number` makes number tokens operands,
 // and `pick n ... where n: whole number` narrows a sequence
-// placeholder to the production's tokens. Kernel builtins in
+// placeholder to the production's tokens. Foundation builtins in
 // Impls, beside the lexicons — a small fixed set. Which leaves
 // stand alone as operands is authored by operand rules, not
 // derived here; user-defined leaf productions are deferred past
@@ -43,12 +43,12 @@ private def dataMatches(leaf: LeafKind, data: NodeData): Boolean =
     case _                                                => false
   }
 
-// Every leaf an Impls names as a LexicalTerm, plus the kernel's
+// Every leaf an Impls names as a LexicalTerm, plus the foundation's
 // standard `where` terms — the `where` table compileRules binds
 // constraint terms through. Operand status is not a leaf property:
 // a lone-placeholder rule bound to the production (`n means n where
 // n: number`) is what makes tokens operands, unless the term flags
-// itself an operand as the kernel's `gap` does. An Impls leaf
+// itself an operand as the foundation's `gap` does. An Impls leaf
 // naming a standard term overrides it.
 def lexicalTerms(impls: Impls): Map[String, LexicalTerm] =
   standardTerms ++ impls.leaves.map { case (name, theLeaf) =>
@@ -57,10 +57,10 @@ def lexicalTerms(impls: Impls): Map[String, LexicalTerm] =
 // The workbench's gap leaf: the `gap` token reads as a gap.
 private val gapLeaf = LeafDef(List("gap" -> LeafKind.GapLeaf))
 
-// The `where` terms every language gets, kernel-provided. `gap` is
+// The `where` terms every language gets, foundation-provided. `gap` is
 // the builtin operand: the workbench's gap token stands alone as a
 // gap operand in every language with no authored rule (gaps are
-// kernel machinery, not language content — a language may opt out
+// foundation machinery, not language content — a language may opt out
 // later, for now none can). `value` is a check-only constraint on a
 // bound tree that reads no token of its own: "a real value of the
 // language" — a bound cell ref (InternalNodeRef) or provenance ref

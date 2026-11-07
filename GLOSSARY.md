@@ -56,11 +56,19 @@ The choice that a running application's state is itself a typed document,
 so history, branching, sync, and inspection apply to it unchanged.
 Time-driven change is versioned per meaningful action, not per frame.
 
-**Instruction set**:
-The fixed, minimal builtin vocabulary the rules regress bottoms out in —
-the irreducible primitives and effects (arithmetic, IO, randomness,
-rendering) that cannot themselves be documents. The Scala substrate is
-expected to shrink toward it over time.
+**Foundation**:
+The platform-provided floor beneath `lang: language` — machinery every
+language gets that is not itself definable in documents: the `gap`
+operand term, the recovery floor, and the foundational definitions.
+
+**Foundational definitions**:
+The fixed, minimal primitive vocabulary's own definition entries —
+name, signature, documentation, worked examples — for the irreducible
+primitives and effects (arithmetic, IO, randomness, rendering) that
+cannot themselves be documents. Their form differs from authored defs:
+behavior is bound to code rather than derived from rules, so an entry
+declares the contract the substrate implements rather than defining it.
+The Scala substrate is expected to shrink toward it over time.
 
 ## Surfaces
 
@@ -86,7 +94,7 @@ without an input grammar projects read-only views.
 Text or structure that doesn't fit its language yet, kept verbatim in
 the document so later edits heal it instead of failing — the *Never
 broken* convention (Hazel's *typed holes*, made structural). Stored as
-`GapData`, spelled `?text`, bound by the kernel `gap` operand term.
+`GapData`, spelled `?text`, bound by the foundation `gap` operand term.
 
 **Heal**:
 A gap becoming content: once the language a document pins reads the

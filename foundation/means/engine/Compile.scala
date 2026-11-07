@@ -22,7 +22,7 @@ import opelan.foundation.means._
 // operands is authored, not a leaf property: a lone-placeholder rule
 // bound through `where` (`n means n where n: number`) is the operand
 // declaration — except a term that flags itself `operand`, the
-// kernel's way of giving every language a builtin operand without an
+// foundation's way of giving every language a builtin operand without an
 // authored rule (`gap`, the workbench's gap leaf).
 case class LexicalTerm(
     parser: Option[Parser],
@@ -76,7 +76,7 @@ def compileRules(
   lazy val leafOperands: List[Parser] =
     set.rules.flatMap(leafOperand)
   // Terms flagged `operand` join the operand choice after the
-  // authored leaf rules — the kernel's `gap` term makes the
+  // authored leaf rules — the foundation's `gap` term makes the
   // workbench's gap token an operand in every language, no `g
   // means g where g: gap` rule required (an authored rule still
   // wins, being tried first).

@@ -21,7 +21,7 @@ val exprRules = RuleSet(
     // The operand declarations — which builtin leaves stand alone.
     // `n means n` is the `operand ::= number` production: the `where`
     // binds the token and `use` passes the leaf through. The gap
-    // token needs no rule: `gap` is a kernel operand term.
+    // token needs no rule: `gap` is a foundation operand term.
     "n means n where n: number",
     "r means r where r: ref").map(readRuleOrGap),
   tiers = List(

@@ -89,7 +89,7 @@ class DeriveVocabularySuite extends FunSuite {
     assert(terms("number").check(NodeData.FloatData(1.5)))
     assert(!terms("number").check(NodeData.InternalNodeRef(1)))
     assert(terms("ref").check(NodeData.InternalNodeRef(1)))
-    // `gap` is the kernel's operand term: the gap token reads as a
+    // `gap` is the foundation's operand term: the gap token reads as a
     // gap in every language, no authored rule required.
     assert(terms("gap").operand)
     assert(terms("gap").parser.isDefined)
