@@ -19,7 +19,7 @@ def chainLeft(
     opKind: String = "op")(atom: Parser): Parser =
   (in, pos) => {
     val first = atom(in, pos)
-    if (!first.ok) first
+    if (!first.applied) first
     else {
       var acc = first.tree
       var cur = first.position
@@ -38,11 +38,11 @@ def chainLeft(
               acc.from, r.tree.to - acc.from,
               List(adopted(acc, acc.from), adopted(r.tree, acc.from)))
             cur = r.position
-            more = r.ok
+            more = r.applied
           case _ => more = false
         }
       }
-      ParseResult(cur, acc, ok = true, seen)
+      ParseResult(cur, acc, applied = true, seen)
     }
   }
 
@@ -71,7 +71,7 @@ def parentheses(inner: => Parser): Parser =
         val endPos = close.map(_.to).getOrElse(r.position)
         r.tree.data match {
           case NodeData.GapData(_) =>
-            gap(in, t.from, end, endPos, ok = true, seen)
+            gap(in, t.from, end, endPos, applied = true, seen)
           case _ =>
             val text = in.input.substring(t.from, end)
             // The node grows to cover the parentheses: its start moves back
@@ -80,7 +80,7 @@ def parentheses(inner: => Parser): Parser =
             ParseResult(endPos, r.tree.copy(text = text, from = t.from,
               length = end - t.from,
               children = r.tree.children.map(k => k.copy(from = k.from + shift))),
-              ok = true, seen)
+              applied = true, seen)
         }
       case _ => emptyGap(in, pos, open.examined)
     }

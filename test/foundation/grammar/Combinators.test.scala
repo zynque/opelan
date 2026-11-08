@@ -25,7 +25,7 @@ class CombinatorSuite extends FunSuite {
     val i = in("1+")
     assertEquals(int(i, 0).tree.data, NodeData.IntData(1))
     val miss = int(i, 1)
-    assertEquals(miss.ok, false)
+    assertEquals(miss.applied, false)
     assertEquals(miss.position, 1) // nothing consumed
     assertEquals(miss.tree.data, NodeData.GapData(""))
   }

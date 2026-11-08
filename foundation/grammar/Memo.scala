@@ -22,7 +22,7 @@ case class MemoEntry(result: ParseResult, calls: Set[String])
 // parse that owns it. Everything is relative, so a mark survives
 // relocation, adoption, and copies without adjustment:
 //
-//   applied   application position minus the node's own start
+//   appliedAt application position minus the node's own start
 //             (0 for rules whose result starts where they applied)
 //   consumed  result end minus the application position
 //   examined  examined end minus the application position
@@ -30,11 +30,11 @@ case class MemoEntry(result: ParseResult, calls: Set[String])
 //             no longer stand in for the result its mark recorded
 //
 // From a node at absolute position `A` the mark claims an entry
-// keyed `(rule, A + applied)`, reconstructible exactly:
-// `stored(pos, examined, tree.from)` = `(consumed, examined, -applied)`.
+// keyed `(rule, A + appliedAt)`, reconstructible exactly:
+// `stored(pos, examined, tree.from)` = `(consumed, examined, -appliedAt)`.
 case class ParseMark(
-    rule: String, applied: Int, consumed: Int, examined: Int,
-    ok: Boolean, span: Int, calls: Set[String])
+    rule: String, appliedAt: Int, consumed: Int, examined: Int,
+    applied: Boolean, span: Int, calls: Set[String])
 
 // The memo table of one parse. Mutable only within that parse: seeded
 // from a session's surviving columns, read back as an immutable
@@ -64,7 +64,7 @@ final class MemoTable(
           if (!marking) r
           else r.copy(tree = r.tree.copy(marks = ParseMark(
             name, pos - r.tree.from, r.position - pos, r.examined - pos,
-            r.ok, r.tree.length, calls.toSet) :: r.tree.marks))
+            r.applied, r.tree.length, calls.toSet) :: r.tree.marks))
         column(pos)(name) = MemoEntry(stored(marked, pos), calls.toSet)
         noteCall(name, calls.toSet)
         marked

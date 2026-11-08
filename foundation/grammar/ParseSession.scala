@@ -93,12 +93,12 @@ case class ParseSession(
   }
 
   // A node's mark claims the entry its rule stored — rebuilt exactly
-  // as MemoTable.stored wrote it (stored.from = -applied).
+  // as MemoTable.stored wrote it (stored.from = -appliedAt).
   private def markEntry(
       pos: Int, node: ParseTree, mark: ParseMark): (String, Int, MemoEntry) =
     (mark.rule, pos, MemoEntry(
-      ParseResult(mark.consumed, node.copy(from = -mark.applied), mark.ok,
-        mark.examined),
+      ParseResult(mark.consumed, node.copy(from = -mark.appliedAt),
+        mark.applied, mark.examined),
       mark.calls))
 
   // Fold mark-derived entries into the side-table columns.
@@ -141,7 +141,7 @@ private[grammar] def liveMarks(t: ParseTree): List[(Int, ParseTree, ParseMark)] 
   def go(node: ParseTree, base: Int): Unit = {
     val abs = base + node.from
     node.marks.foreach(m =>
-      if (m.span == node.length) found += ((abs + m.applied, node, m)))
+      if (m.span == node.length) found += ((abs + m.appliedAt, node, m)))
     node.children.foreach(k => go(k, abs))
   }
   go(t, 0)

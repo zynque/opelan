@@ -113,11 +113,11 @@ def compileRules(
       case List(Piece.Placeholder(name, _)) =>
         boundLexicals(theRule).get(name).flatMap(_.parser).map { bound =>
           (in: ParseInput, pos: Int) => {
-            val applied = bound(in, pos)
-            if (!applied.ok) applied
-            else applied.copy(tree = applyMeaning(theRule.meaning,
-              Map(name -> applied.tree), in, applied.tree.from,
-              applied.tree.to, tag))
+            val parsed = bound(in, pos)
+            if (!parsed.applied) parsed
+            else parsed.copy(tree = applyMeaning(theRule.meaning,
+              Map(name -> parsed.tree), in, parsed.tree.from,
+              parsed.tree.to, tag))
           }
         }
       case _ => None

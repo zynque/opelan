@@ -103,11 +103,11 @@ def placeholderAtom(names: Set[String]): Parser =
     scanned.token match {
       case Some(t) if names(t.text) =>
         ParseResult(t.to, ParseTree(PlaceholderMark, t.text, t.from, t.text.length),
-          ok = true, scanned.examined)
+          applied = true, scanned.examined)
       case _ =>
         // The local `emptyGap` (the grammar package's is private).
         val at = skipSpace(in.input, pos)
-        ParseResult(pos, ParseTree(NodeData.GapData(""), "", at, 0), ok = false,
+        ParseResult(pos, ParseTree(NodeData.GapData(""), "", at, 0), applied = false,
           scanned.examined.max(at + 1))
     }
   }

@@ -4,7 +4,7 @@ import opelan.foundation.document._
 
 // Recovering parser combinators over characters — the Hazel-style answer
 // to combinator parsing: parsers are *total* (they never fail or throw);
-// `ok = false` means the production did not apply and the returned node
+// `applied = false` means the production did not apply and the returned node
 // is a gap covering what could not be placed. Recovery replaces
 // backtracking.
 //
@@ -42,7 +42,7 @@ case class ParseTree(
 // A parse result: where parsing stopped, the produced tree, whether the
 // production genuinely applied, and how far it read.
 case class ParseResult(
-    position: Int, tree: ParseTree, ok: Boolean, examined: Int)
+    position: Int, tree: ParseTree, applied: Boolean, examined: Int)
 
 // A combinator: input + character position → result.
 type Parser = (ParseInput, Int) => ParseResult
@@ -51,7 +51,7 @@ type Parser = (ParseInput, Int) => ParseResult
 // placed after any whitespace.
 private[grammar] def emptyGap(in: ParseInput, pos: Int, examined: Int): ParseResult = {
   val at = skipSpace(in.input, pos)
-  ParseResult(pos, ParseTree(NodeData.GapData(""), "", at, 0), ok = false,
+  ParseResult(pos, ParseTree(NodeData.GapData(""), "", at, 0), applied = false,
     examined.max(at + 1))
 }
 
@@ -65,7 +65,7 @@ def tokenWhere(kind: String)(accept: Token => Boolean)(f: Token => NodeData): Pa
     val scanned = scanAt(in, pos)
     scanned.token match {
       case Some(t) if t.kind == kind && accept(t) =>
-        ParseResult(t.to, ParseTree(f(t), t.text, t.from, t.text.length), ok = true,
+        ParseResult(t.to, ParseTree(f(t), t.text, t.from, t.text.length), applied = true,
           scanned.examined)
       case _ => emptyGap(in, pos, scanned.examined)
     }
@@ -83,7 +83,7 @@ def choice(ps: Parser*): Parser =
       val r = p(in, pos)
       seen = seen.max(r.examined)
       r
-    }.find(_.ok).map(_.copy(examined = seen))
+    }.find(_.applied).map(_.copy(examined = seen))
       .getOrElse(emptyGap(in, pos, seen))
   }
 
@@ -92,11 +92,11 @@ def choice(ps: Parser*): Parser =
 def andThen(a: Parser, b: Parser)(f: (ParseTree, ParseTree) => ParseTree): Parser =
   (in, pos) => {
     val ra = a(in, pos)
-    if (!ra.ok) ParseResult(pos, ra.tree, ok = false, ra.examined)
+    if (!ra.applied) ParseResult(pos, ra.tree, applied = false, ra.examined)
     else {
       val rb = b(in, ra.position)
       val seen = ra.examined.max(rb.examined)
-      if (!rb.ok) emptyGap(in, pos, seen)
-      else ParseResult(rb.position, f(ra.tree, rb.tree), ok = true, seen)
+      if (!rb.applied) emptyGap(in, pos, seen)
+      else ParseResult(rb.position, f(ra.tree, rb.tree), applied = true, seen)
     }
   }

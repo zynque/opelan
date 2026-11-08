@@ -87,14 +87,14 @@ def sequenceRule(
               // A check-only `where` term constrains the bound tree
               // after the expression parse — a violation fails the
               // piece like an unmatched literal.
-              val violated = r.ok && term.exists(t =>
+              val violated = r.applied && term.exists(t =>
                 t.parser.isEmpty && !t.check(r.tree.data))
-              if (violated || (tight(i) && r.ok && r.tree.from != cur))
+              if (violated || (tight(i) && r.applied && r.tree.from != cur))
                 failedAt = Some(i)
               else {
                 bindings += name -> r.tree
                 cur = r.position
-                if (!r.ok) failedAt = Some(i)
+                if (!r.applied) failedAt = Some(i)
               }
           }
           i += 1
@@ -102,7 +102,7 @@ def sequenceRule(
         failedAt match {
           case None =>
             ParseResult(cur, applyMeaning(theRule.meaning, bindings, in, from,
-              cur, tag), ok = true, seen)
+              cur, tag), applied = true, seen)
           case Some(at) => closer match {
             case None => failedGap(in, pos, seen)
             case Some(text) =>
@@ -112,15 +112,15 @@ def sequenceRule(
               val middleIntact = at == pieces.length - 1
               end match {
                 case Some(closeEnd) =>
-                  ParseResult(closeEnd, gapNode(in, from, closeEnd), ok = true, seen)
+                  ParseResult(closeEnd, gapNode(in, from, closeEnd), applied = true, seen)
                 case None
                     if middleIntact &&
                        skipSpace(in.input, cur) >= in.input.length =>
                   ParseResult(cur, applyMeaning(theRule.meaning, bindings, in,
-                    from, in.input.length, tag), ok = true, seen)
+                    from, in.input.length, tag), applied = true, seen)
                 case None =>
                   ParseResult(in.input.length,
-                    gapNode(in, from, in.input.length), ok = true, seen)
+                    gapNode(in, from, in.input.length), applied = true, seen)
               }
           }
         }
@@ -156,6 +156,6 @@ private def findLiteral(
 // The local `emptyGap` (the grammar package's is private to it).
 private def failedGap(in: ParseInput, pos: Int, examined: Int): ParseResult = {
   val at = skipSpace(in.input, pos)
-  ParseResult(pos, ParseTree(NodeData.GapData(""), "", at, 0), ok = false,
+  ParseResult(pos, ParseTree(NodeData.GapData(""), "", at, 0), applied = false,
     examined.max(at + 1))
 }

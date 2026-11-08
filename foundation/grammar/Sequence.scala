@@ -4,11 +4,11 @@ import opelan.foundation.document._
 
 // Structural combinators: sequences, repetition, options, and lookahead.
 // Unlike the recovering productions they report failure plainly
-// (`ok = false`) and leave recovery to the grammar using them.
+// (`applied = false`) and leave recovery to the grammar using them.
 
 // Succeeds without consuming anything.
 def nothing(data: NodeData = NodeData.GapData("")): Parser =
-  (_, pos) => ParseResult(pos, ParseTree(data, "", pos, 0), ok = true, pos)
+  (_, pos) => ParseResult(pos, ParseTree(data, "", pos, 0), applied = true, pos)
 
 // All of `parts` in order, as one node whose children are their trees.
 def sequence(data: NodeData)(parts: Parser*): Parser =
@@ -16,13 +16,13 @@ def sequence(data: NodeData)(parts: Parser*): Parser =
     var cur = pos
     var seen = pos
     val children = List.newBuilder[ParseTree]
-    val ok = parts.forall { p =>
+    val applied = parts.forall { p =>
       val r = p(in, cur)
       seen = seen.max(r.examined)
-      if (r.ok) { children += r.tree; cur = r.position }
-      r.ok
+      if (r.applied) { children += r.tree; cur = r.position }
+      r.applied
     }
-    if (ok) ParseResult(cur, node(in, data, children.result(), pos), ok = true, seen)
+    if (applied) ParseResult(cur, node(in, data, children.result(), pos), applied = true, seen)
     else emptyGap(in, pos, seen)
   }
 
@@ -36,10 +36,10 @@ def many(data: NodeData)(p: Parser): Parser =
     while (more) {
       val r = p(in, cur)
       seen = seen.max(r.examined)
-      if (r.ok && r.position > cur) { children += r.tree; cur = r.position }
+      if (r.applied && r.position > cur) { children += r.tree; cur = r.position }
       else more = false
     }
-    ParseResult(cur, node(in, data, children.result(), pos), ok = true, seen)
+    ParseResult(cur, node(in, data, children.result(), pos), applied = true, seen)
   }
 
 // `p`, or nothing.
@@ -48,20 +48,20 @@ def optional(p: Parser): Parser = choice(p, nothing())
 // Lookahead: succeeds without consuming when `p` would apply.
 def followedBy(p: Parser): Parser = (in, pos) => {
   val r = p(in, pos)
-  ParseResult(pos, ParseTree(NodeData.GapData(""), "", pos, 0), r.ok, r.examined)
+  ParseResult(pos, ParseTree(NodeData.GapData(""), "", pos, 0), r.applied, r.examined)
 }
 
 // Negative lookahead: succeeds without consuming when `p` would not apply.
 def notFollowedBy(p: Parser): Parser = (in, pos) => {
   val r = followedBy(p)(in, pos)
-  r.copy(ok = !r.ok)
+  r.copy(applied = !r.applied)
 }
 
 // Only whitespace remains.
 def endOfInput: Parser = (in, pos) => {
   val start = skipSpace(in.input, pos)
-  val ok = start >= in.input.length
-  ParseResult(pos, ParseTree(NodeData.GapData(""), "", start, 0), ok,
+  val applied = start >= in.input.length
+  ParseResult(pos, ParseTree(NodeData.GapData(""), "", start, 0), applied,
     in.input.length.min(start) + 1)
 }
 
@@ -71,7 +71,7 @@ def anyToken: Parser = (in, pos) => {
   scanned.token match {
     case Some(t) => ParseResult(t.to,
       ParseTree(NodeData.StringData(t.kind), t.text, t.from, t.text.length),
-      ok = true, scanned.examined)
+      applied = true, scanned.examined)
     case None => emptyGap(in, pos, scanned.examined)
   }
 }

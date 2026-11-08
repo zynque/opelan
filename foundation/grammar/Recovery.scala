@@ -15,7 +15,7 @@ def unrecognized(start: Set[String], run: Set[String]): Parser =
     val first = scanAt(in, pos)
     first.token match {
       case None =>
-        emptyGap(in, pos, first.examined).copy(ok = true)
+        emptyGap(in, pos, first.examined).copy(applied = true)
       case Some(t0) if start(t0.kind) =>
         var end = t0.to
         var seen = first.examined
@@ -28,7 +28,7 @@ def unrecognized(start: Set[String], run: Set[String]): Parser =
             case _                      => more = false
           }
         }
-        gap(in, t0.from, end, end, ok = true, seen)
+        gap(in, t0.from, end, end, applied = true, seen)
       case _ => emptyGap(in, pos, first.examined)
     }
   }
@@ -40,7 +40,7 @@ def restGap: Parser = (in, pos) => {
   val start = skipSpace(text, pos)
   var end = text.length
   while (end > start && text.charAt(end - 1).isWhitespace) end -= 1
-  gap(in, start, end, text.length, ok = true, text.length + 1)
+  gap(in, start, end, text.length, applied = true, text.length + 1)
 }
 
 // The level cleanup: if text remains that `p` did not place — and the
@@ -60,7 +60,7 @@ def phrase(p: Parser, stops: Set[String]): Parser =
         next = scanAt(in, end)
         seen = seen.max(next.examined)
       }
-      gap(in, r.tree.from, end, end, r.ok, seen)
+      gap(in, r.tree.from, end, end, r.applied, seen)
     }
   }
 
@@ -92,13 +92,13 @@ def signum: Parser =
                 case d => d
               }
             ParseResult(num.to, ParseTree(data, in.input.substring(op.from, num.to),
-              op.from, num.to - op.from), ok = true, seen)
+              op.from, num.to - op.from), applied = true, seen)
           }
       }
   }
 
 private[grammar] def gap(
-    in: ParseInput, from: Int, to: Int, pos: Int, ok: Boolean, examined: Int): ParseResult = {
+    in: ParseInput, from: Int, to: Int, pos: Int, applied: Boolean, examined: Int): ParseResult = {
   val text = in.input.substring(from, to)
-  ParseResult(pos, ParseTree(NodeData.GapData(text), text, from, to - from), ok, examined)
+  ParseResult(pos, ParseTree(NodeData.GapData(text), text, from, to - from), applied, examined)
 }

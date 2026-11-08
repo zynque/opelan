@@ -55,7 +55,7 @@ def operatorTable(atom: => Parser, tiers: List[List[Operator]]): Parser = {
           seen = seen.max(r.examined)
           out = Some(ParseResult(r.position,
             op.build(List(r.tree), in, start, r.tree.to.max(cur)),
-            ok = true, seen))
+            applied = true, seen))
         case (None, s) => seen = seen.max(s)
       }
     }
@@ -71,7 +71,7 @@ def operatorTable(atom: => Parser, tiers: List[List[Operator]]): Parser = {
   // operand and then refuse a second operator at this level.
   def level(i: Int): Parser = (in, pos) => {
     val first = operand(i)(in, pos)
-    if (!first.ok) first
+    if (!first.applied) first
     else {
       var acc = first.tree
       var cur = first.position
@@ -100,14 +100,14 @@ def operatorTable(atom: => Parser, tiers: List[List[Operator]]): Parser = {
                   acc = op.build(
                     List(acc, rhs.tree), in, acc.from, rhs.tree.to)
                   cur = rhs.position
-                  more = rhs.ok && op.assoc != Associativity.NonAssociative
+                  more = rhs.applied && op.assoc != Associativity.NonAssociative
                 }
               case _ => ()
             }
           case None => more = false
         }
       }
-      ParseResult(cur, acc, ok = true, seen)
+      ParseResult(cur, acc, applied = true, seen)
     }
   }
 
@@ -140,9 +140,9 @@ private def matchLiterals(
   var cur = pos
   var seen = pos
   var start = -1
-  var ok = true
+  var matched = true
   val it = literals.iterator
-  while (ok && it.hasNext) {
+  while (matched && it.hasNext) {
     val text = it.next()
     val s = scanAt(in, cur)
     seen = seen.max(s.examined)
@@ -150,8 +150,8 @@ private def matchLiterals(
       case Some(t) if t.text == text =>
         if (start < 0) start = t.from
         cur = t.to
-      case _ => ok = false
+      case _ => matched = false
     }
   }
-  (if (ok) Some((cur, start)) else None, seen)
+  (if (matched) Some((cur, start)) else None, seen)
 }

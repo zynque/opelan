@@ -38,7 +38,7 @@ class ParseSessionSuite extends FunSuite {
   // A changed `words` rule: words may now be separated by "+".
   private val g2 = grammar(chainLeft(Map("+" -> tag("and")))(word))
 
-  private def normal(r: ParseResult) = (r.position, r.ok, r.examined, r.tree)
+  private def normal(r: ParseResult) = (r.position, r.applied, r.examined, r.tree)
   // A marking table so the oracle's trees carry the same ParseMarks a
   // session's do — marks are deterministic bookkeeping, not content.
   private def full(g: Parser, text: String) =
