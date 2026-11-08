@@ -7,7 +7,7 @@ import opelan.foundation.view.ViewTree._
 
 // printWith's provenance sibling (foundation/view/DESIGN.md, view
 // trees): the same
-// rule-derived minimal-parens printing, walked over a document's
+// rule-derived minimal-parentheses printing, walked over a document's
 // located nodes and emitted as a view tree — every emitted piece
 // carries a `src:` leaf naming the node it was derived from, so a
 // click in a derived print view selects its producer. Construct nodes

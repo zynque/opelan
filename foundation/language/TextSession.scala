@@ -1,7 +1,7 @@
 package opelan.foundation.language
 
 import opelan.foundation.document._
-import opelan.foundation.grammar.{Lexicon, ParseSession, Parser, PTree, toDetached}
+import opelan.foundation.grammar.{Lexicon, ParseSession, Parser, ParseTree, toDetached}
 import opelan.foundation.grammar.{Edit => TextEdit}
 
 // What changed between two syntaxes: the rules whose definitions
@@ -23,7 +23,7 @@ case class TextSyntax(
     lexicon: Lexicon,
     key: Any,
     changedSince: TextSyntax => Option[SyntaxChange] = _ => None,
-    toContent: PTree => DetachedNode[NodeData] = toDetached)
+    toContent: ParseTree => DetachedNode[NodeData] = toDetached)
 
 // A text surface's parse carried across edits (*Incremental*). Each new
 // text is applied as one edit against the session's own text, so a

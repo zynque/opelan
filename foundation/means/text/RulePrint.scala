@@ -1,7 +1,7 @@
 package opelan.foundation.means.text
 
 import opelan.foundation.document.{NodeData, NodeDataText}
-import opelan.foundation.grammar.{In, scanAt}
+import opelan.foundation.grammar.{ParseInput, scanAt}
 import opelan.foundation.means._
 import opelan.foundation.view.Verbosity
 
@@ -55,8 +55,8 @@ private[text] def pieceSpans(pieces: List[Piece]): List[Styled] =
 // A literal that would read back as something else gets quoted: it must
 // be exactly one unquoted token, and neither a placeholder nor a keyword.
 private def quoteIfNeeded(text: String): String = {
-  val token = scanAt(In(text, ruleLexicon), 0).token
-  val plain = token.exists(t => t.from == 0 && t.to == text.length && t.kind != "quoted") &&
+  val scanned = scanAt(ParseInput(text, ruleLexicon), 0).token
+  val plain = scanned.exists(t => t.from == 0 && t.to == text.length && t.kind != "quoted") &&
     !isPlaceholderWord(text) && !ruleKeywords(text)
   if (plain) text else s"'$text'"
 }
@@ -78,7 +78,7 @@ private[text] def meaningSpans(meaning: Meaning): List[Styled] =
 // A quoted subtree's text — decoded trees carry no source span, only
 // data. A quoted gap prints its bare text: the canonical spelling
 // re-reads to the same gap (views mark the `?` separately).
-private def quoteText(t: opelan.foundation.grammar.PTree): String =
+private def quoteText(t: opelan.foundation.grammar.ParseTree): String =
   t.data match {
     case NodeData.GapData(text) => text
     case d if t.children.isEmpty    => NodeDataText.show(d)

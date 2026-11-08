@@ -3,7 +3,7 @@ package opelan.foundation.langdef.doc
 import opelan.foundation.document._
 import opelan.foundation.document.store._
 import opelan.foundation.document.typed._
-import opelan.foundation.grammar.PTree
+import opelan.foundation.grammar.ParseTree
 import opelan.foundation.means._
 import opelan.foundation.means.engine.foundationalOf
 import opelan.foundation.means.text._
@@ -107,8 +107,8 @@ private def kindName(
     case None    => strOf(doc, id).getOrElse("")
   }
 
-private def treeFrom(doc: Document[NodeData], id: Int): PTree =
-  PTree(doc.getNode(id).map(_.data).getOrElse(NodeData.GapData("")),
+private def treeFrom(doc: Document[NodeData], id: Int): ParseTree =
+  ParseTree(doc.getNode(id).map(_.data).getOrElse(NodeData.GapData("")),
     "", 0, 0, doc.childrenOf(id).map(treeFrom(doc, _)))
 
 // A constraint's strings are its placeholder names then its term.

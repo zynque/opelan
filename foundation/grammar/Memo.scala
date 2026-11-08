@@ -14,7 +14,7 @@ import scala.collection.mutable
 // length, the tree's `from` an offset from the column) — so when an
 // edit moves a column, nothing inside its entries changes.
 
-case class MemoEntry(result: POut, calls: Set[String])
+case class MemoEntry(result: ParseResult, calls: Set[String])
 
 // A memo entry that lives on the parse-tree node its rule produced.
 // Marks plus the session's side table are the whole memo (DESIGN.md,
@@ -50,7 +50,7 @@ final class MemoTable(
   private var callers = List.empty[mutable.Set[String]]
   private var evaluated = 0
 
-  def apply(name: String, pos: Int, body: => POut): POut =
+  def apply(name: String, pos: Int, body: => ParseResult): ParseResult =
     column(pos).get(name) match {
       case Some(entry) =>
         noteCall(name, entry.calls)
@@ -63,7 +63,7 @@ final class MemoTable(
         val marked =
           if (!marking) r
           else r.copy(tree = r.tree.copy(marks = ParseMark(
-            name, pos - r.tree.from, r.pos - pos, r.examined - pos,
+            name, pos - r.tree.from, r.position - pos, r.examined - pos,
             r.ok, r.tree.length, calls.toSet) :: r.tree.marks))
         column(pos)(name) = MemoEntry(stored(marked, pos), calls.toSet)
         noteCall(name, calls.toSet)
@@ -76,14 +76,14 @@ final class MemoTable(
   }
 
   // A live result, positions rebased for storage at column `base`.
-  private def stored(r: POut, base: Int): POut = r.copy(
-    pos = r.pos - base, examined = r.examined - base,
+  private def stored(r: ParseResult, base: Int): ParseResult = r.copy(
+    position = r.position - base, examined = r.examined - base,
     tree = r.tree.copy(from = r.tree.from - base))
 
   // A stored result, relocated to column `base`. Shallow: the tree's
   // children are already relative, so only its own `from` is rebased.
-  private def relocated(r: POut, base: Int): POut = r.copy(
-    pos = base + r.pos, examined = base + r.examined,
+  private def relocated(r: ParseResult, base: Int): ParseResult = r.copy(
+    position = base + r.position, examined = base + r.examined,
     tree = r.tree.copy(from = base + r.tree.from))
 
   private def noteCall(name: String, calls: Set[String]): Unit =

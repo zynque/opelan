@@ -33,11 +33,11 @@ case class ParseSession(
     // Memo entries the result tree doesn't represent: one column per
     // position, holding the rejected and re-spanned results only.
     side: Vector[Map[String, MemoEntry]],
-    result: POut,
+    result: ParseResult,
     // Rule bodies the last parse ran — the work the change cost.
     evaluations: Int) {
 
-  def tree: PTree = result.tree
+  def tree: ParseTree = result.tree
 
   // Every rule the last parse applied — the marks on its result tree
   // plus whatever the side table still holds.
@@ -95,9 +95,9 @@ case class ParseSession(
   // A node's mark claims the entry its rule stored — rebuilt exactly
   // as MemoTable.stored wrote it (stored.from = -applied).
   private def markEntry(
-      pos: Int, node: PTree, mark: ParseMark): (String, Int, MemoEntry) =
+      pos: Int, node: ParseTree, mark: ParseMark): (String, Int, MemoEntry) =
     (mark.rule, pos, MemoEntry(
-      POut(mark.consumed, node.copy(from = -mark.applied), mark.ok,
+      ParseResult(mark.consumed, node.copy(from = -mark.applied), mark.ok,
         mark.examined),
       mark.calls))
 
@@ -124,7 +124,7 @@ object ParseSession {
       grammar: Parser, lexicon: Lexicon, text: String,
       seed: Vector[Map[String, MemoEntry]]): ParseSession = {
     val table = MemoTable(seed, marking = true)
-    val result = grammar(In(text, lexicon, table), 0)
+    val result = grammar(ParseInput(text, lexicon, table), 0)
     val claimed = liveMarks(result.tree).map((pos, _, mark) =>
       (mark.rule, pos)).toSet
     val side = table.snapshot.zipWithIndex.map { case (column, i) =>
@@ -136,9 +136,9 @@ object ParseSession {
 // (application position, node, mark) for every mark still valid in
 // the tree — a mark is valid while its node spans what it recorded.
 // Absolute positions are sums down the path (spansOf's convention).
-private[grammar] def liveMarks(t: PTree): List[(Int, PTree, ParseMark)] = {
-  val found = List.newBuilder[(Int, PTree, ParseMark)]
-  def go(node: PTree, base: Int): Unit = {
+private[grammar] def liveMarks(t: ParseTree): List[(Int, ParseTree, ParseMark)] = {
+  val found = List.newBuilder[(Int, ParseTree, ParseMark)]
+  def go(node: ParseTree, base: Int): Unit = {
     val abs = base + node.from
     node.marks.foreach(m =>
       if (m.span == node.length) found += ((abs + m.applied, node, m)))

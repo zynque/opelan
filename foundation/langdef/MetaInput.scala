@@ -2,7 +2,7 @@ package opelan.foundation.langdef
 
 import opelan.foundation.document._
 import opelan.foundation.document.Detached._
-import opelan.foundation.grammar.{PTree, unrecognized}
+import opelan.foundation.grammar.{ParseTree, unrecognized}
 import opelan.foundation.langdef.doc._
 import opelan.foundation.langdef.syntax._
 import opelan.foundation.language.InputSessions

@@ -24,7 +24,7 @@ def readRule(
     phrase: (Set[String], String) => Meaning = noLanguage,
     resolve: String => Option[ExternalNodeReference] = foundationRefs.get)
     : Either[String, Rule] = {
-  val parts = ruleGrammar(In(text, ruleLexicon), 0).tree.children
+  val parts = ruleGrammar(ParseInput(text, ruleLexicon), 0).tree.children
   val (pattern, keyword, meaning, where) = (parts(0), parts(1), parts(2), parts(3))
   if (!isToken(keyword)) Left("missing 'means'")
   else if (pattern.children.isEmpty) Left("empty pattern")
@@ -70,7 +70,7 @@ val gapRule: Rule = Rule(Pattern(Nil), Meaning.gap(""))
 def readMeaningText(text: String, phrase: String => Meaning,
     resolve: String => Option[ExternalNodeReference] = foundationRefs.get)
     : Option[Meaning] =
-  meaningText(In(text, ruleLexicon), 0).tree match {
+  meaningText(ParseInput(text, ruleLexicon), 0).tree match {
     case t if Set("build", "use")(tagOf(t)) =>
       Some(readMeaning(t, phrase, resolve))
     case _ => None
@@ -81,24 +81,24 @@ def readMeaningText(text: String, phrase: String => Meaning,
 // far as it can — the constraint list may come back short or empty.
 def readConstraintsText(text: String): List[Constraint] = {
   val stripped = text.trim.stripPrefix("where").trim
-  readWhere(constraintsText(In("where " + stripped, ruleLexicon), 0).tree)
+  readWhere(constraintsText(ParseInput("where " + stripped, ruleLexicon), 0).tree)
     .getOrElse(Nil)
 }
 
 // A bare pattern — how the binding list names a rule (`a * b`).
 def readPattern(text: String): Pattern = {
-  val tree = many(NodeData.StringData("pattern"))(anyToken)(In(text, ruleLexicon), 0).tree
+  val tree = many(NodeData.StringData("pattern"))(anyToken)(ParseInput(text, ruleLexicon), 0).tree
   Pattern(pieces(tokensIn(tree)))
 }
 
-private def isToken(t: PTree): Boolean = t.data match {
+private def isToken(t: ParseTree): Boolean = t.data match {
   case NodeData.StringData(kind) => t.children.isEmpty && ruleTokenKinds(kind)
   case _                         => false
 }
 
-private def isTagged(t: PTree): Boolean = t.data.isInstanceOf[NodeData.StringData]
+private def isTagged(t: ParseTree): Boolean = t.data.isInstanceOf[NodeData.StringData]
 
-private def tagOf(t: PTree): String = t.data match {
+private def tagOf(t: ParseTree): String = t.data match {
   case NodeData.StringData(s) => s
   case _                      => ""
 }
@@ -106,8 +106,8 @@ private def tagOf(t: PTree): String = t.data match {
 // The tokens under a node, in order, each with its absolute start —
 // a child's `from` is relative to its parent, so the base accumulates
 // on the way down.
-private def tokensIn(t: PTree): List[(Int, PTree)] = {
-  def go(t: PTree, base: Int): List[(Int, PTree)] =
+private def tokensIn(t: ParseTree): List[(Int, ParseTree)] = {
+  def go(t: ParseTree, base: Int): List[(Int, ParseTree)] =
     if (isToken(t)) List((base + t.from, t))
     else t.children.flatMap(k => go(k, base + t.from))
   go(t, 0)
@@ -116,7 +116,7 @@ private def tokensIn(t: PTree): List[(Int, PTree)] = {
 // Placeholder words become placeholders, everything else literal; a piece
 // is glued when no whitespace separates it from the previous one. The
 // first piece is never glued — nothing precedes it.
-private def pieces(tokens: List[(Int, PTree)]): List[Piece] =
+private def pieces(tokens: List[(Int, ParseTree)]): List[Piece] =
   tokens.zipWithIndex.map { case ((start, t), i) =>
     val glued = i > 0 && {
       val (previousStart, previous) = tokens(i - 1)
@@ -129,7 +129,7 @@ private def pieces(tokens: List[(Int, PTree)]): List[Piece] =
     }
   }
 
-private def readMeaning(t: PTree, phrase: String => Meaning,
+private def readMeaning(t: ParseTree, phrase: String => Meaning,
     resolve: String => Option[ExternalNodeReference]): Meaning =
   tagOf(t) match {
     case "build" =>
@@ -153,13 +153,13 @@ private def readMeaning(t: PTree, phrase: String => Meaning,
 // A builtin's operand as a name term — `source(a)` binds `a`'s name,
 // not its meaning; `builtin`'s operand names a foundational
 // definition, so it binds the ref on read too.
-private def nameTermOf(t: PTree, phrase: String => Meaning,
+private def nameTermOf(t: ParseTree, phrase: String => Meaning,
     resolve: String => Option[ExternalNodeReference]): Meaning =
   if (tagOf(t) == "use") Meaning.nameTerm(t.children(0).text)
   else readMeaning(t, phrase, resolve)
 
 // `a, b: number; c: whole number` — one constraint per group.
-private def readWhere(t: PTree): Either[String, List[Constraint]] = {
+private def readWhere(t: ParseTree): Either[String, List[Constraint]] = {
   val groups = t.children(1) :: t.children(2).children.map(_.children(1))
   groups.foldRight[Either[String, List[Constraint]]](Right(Nil)) { (g, acc) =>
     val names = tokensIn(g.children(0)).map(_._2.text).filterNot(_ == ",")

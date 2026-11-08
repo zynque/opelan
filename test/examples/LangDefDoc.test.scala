@@ -122,9 +122,9 @@ class LangDefDocSuite extends FunSuite {
     val d0 = langDefFromDocument(url, doc)
     // The `(a)` rule's `use` operand points at its placeholder piece —
     // rename the piece's name leaf, as the use-rename test does.
-    val parens = d0.syntax.get.rules.get.rules
+    val parentheses = d0.syntax.get.rules.get.rules
       .find(_.meaning.tag == "use").get
-    val pieceId = parens.meaning.arguments.head.reference.get.nodeId
+    val pieceId = parentheses.meaning.arguments.head.reference.get.nodeId
     val renamed = updateNodeData(
       doc.childrenOf(pieceId).head, s("x"), doc).toOption.get
     val d1 = langDefFromDocument(url, renamed)

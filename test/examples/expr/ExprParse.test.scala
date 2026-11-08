@@ -3,7 +3,7 @@ package opelan.examples.expr
 import Expr._
 
 // The expression language's parse surface: literals, precedence,
-// parens, signum, and the whole recovery contract — asserted through
+// parentheses, signum, and the whole recovery contract — asserted through
 // the def'd language (DefLanguage over exprDef), the only parser now.
 class ExprParseSuite extends munit.FunSuite {
 
@@ -77,7 +77,7 @@ class ExprParseSuite extends munit.FunSuite {
     assertEquals(parse("1 + 2 )"), Gap("1 + 2 )"))
   }
 
-  test("a degenerate paren group keeps its parens in the gap text") {
+  test("a degenerate paren group keeps its parentheses in the gap text") {
     assertEquals(parse("(1 2)"), Gap("(1 2)"))
     assertEquals(parse("(1 2) + 3"), Add(Gap("(1 2)"), Lit(3)))
   }

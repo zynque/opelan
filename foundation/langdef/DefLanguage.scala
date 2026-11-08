@@ -110,7 +110,7 @@ class DefLanguage(
   override def parse(text: String): Option[DetachedNode[NodeData]] =
     if (isDocLanguage) Some(defDocParse(text))
     else syntax.map { case (lexicon, g) =>
-      toDetached(g(In(text, lexicon), 0).tree) }
+      toDetached(g(ParseInput(text, lexicon), 0).tree) }
 
   // lang: documents relink what text can't carry — placeholder uses and
   // term constructs pointed at their nodes — after a text-surface

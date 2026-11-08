@@ -51,7 +51,9 @@
 - Scala CLI is at `C:\Users\Jeremy\AppData\Local\Coursier\data\bin\scala-cli.bat`
   (not on the default bash PATH).
 - Test: `test.bat` or:
-  `scala-cli.bat test --server=false --power project.scala foundation ui data collaboration test`.
+  `scala-cli.bat test --server=false --power Main.scala project.scala foundation examples ui data collaboration test`
+  (the source list must match test.bat — omitting `examples` breaks
+  `opelan.examples` imports under `ui/`).
   The scripts set `TEMP`/`TMPDIR` to `./.tmp` first — the Scala.js test
   runner writes the linked main.js there, and the doc-sync suite needs Node
   to resolve `node_modules` (`@automerge/automerge`) from it. Without the

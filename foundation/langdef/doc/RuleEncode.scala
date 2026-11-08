@@ -2,7 +2,7 @@ package opelan.foundation.langdef.doc
 
 import opelan.foundation.document._
 import opelan.foundation.document.Detached._
-import opelan.foundation.grammar.PTree
+import opelan.foundation.grammar.ParseTree
 import opelan.foundation.means._
 import opelan.foundation.means.text._
 
@@ -106,7 +106,7 @@ private def constructData(
     case _                             => NodeData.StringData(tag)
   }
 
-private def detachedOf(t: PTree): DetachedNode[NodeData] =
+private def detachedOf(t: ParseTree): DetachedNode[NodeData] =
   DetachedNode(t.data, t.children.map(detachedOf))
 
 // Meta-construct data for detached rule content — a real import ref,

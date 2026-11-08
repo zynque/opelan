@@ -10,10 +10,10 @@ import opelan.foundation.means._
 // language (`expression` — the rule set's own compiled parser, so
 // brackets nest and keyword-led forms contain operators).
 //
-// A *closed* rule (literal at both edges) recovers like `parens`:
+// A *closed* rule (literal at both edges) recovers like `parentheses`:
 // once its opening literal matches it is committed. When a piece
 // fails the rule scans forward for its closing literal — found,
-// everything up to it is a gap (`(1 2)` keeps its parens as
+// everything up to it is a gap (`(1 2)` keeps its parentheses as
 // "(1 2)"); absent at the end of input with the middle intact, the
 // bracket closes implicitly and the meaning still builds (`(1 +`
 // stays add(1, gap)); anything else is a gap to the end. A
@@ -66,7 +66,7 @@ def sequenceRule(
       case Some(opened) =>
         val from = opened.from
         var cur = opened.to
-        var bindings = Map.empty[String, PTree]
+        var bindings = Map.empty[String, ParseTree]
         var failedAt: Option[Int] = None
         var i = 1
         while (failedAt.isEmpty && i < pieces.length) {
@@ -93,7 +93,7 @@ def sequenceRule(
                 failedAt = Some(i)
               else {
                 bindings += name -> r.tree
-                cur = r.pos
+                cur = r.position
                 if (!r.ok) failedAt = Some(i)
               }
           }
@@ -101,7 +101,7 @@ def sequenceRule(
         }
         failedAt match {
           case None =>
-            POut(cur, applyMeaning(theRule.meaning, bindings, in, from,
+            ParseResult(cur, applyMeaning(theRule.meaning, bindings, in, from,
               cur, tag), ok = true, seen)
           case Some(at) => closer match {
             case None => failedGap(in, pos, seen)
@@ -112,14 +112,14 @@ def sequenceRule(
               val middleIntact = at == pieces.length - 1
               end match {
                 case Some(closeEnd) =>
-                  POut(closeEnd, gapNode(in, from, closeEnd), ok = true, seen)
+                  ParseResult(closeEnd, gapNode(in, from, closeEnd), ok = true, seen)
                 case None
                     if middleIntact &&
                        skipSpace(in.input, cur) >= in.input.length =>
-                  POut(cur, applyMeaning(theRule.meaning, bindings, in,
+                  ParseResult(cur, applyMeaning(theRule.meaning, bindings, in,
                     from, in.input.length, tag), ok = true, seen)
                 case None =>
-                  POut(in.input.length,
+                  ParseResult(in.input.length,
                     gapNode(in, from, in.input.length), ok = true, seen)
               }
           }
@@ -136,7 +136,7 @@ private def literalText(piece: Piece): String = piece match {
 // Scan forward for a token whose text is `text` — its end position,
 // or None at the end of input — plus how far the scan read.
 private def findLiteral(
-    text: String, in: In, pos: Int): (Option[Int], Int) = {
+    text: String, in: ParseInput, pos: Int): (Option[Int], Int) = {
   var cur = pos
   var seen = pos
   var found: Option[Int] = None
@@ -154,8 +154,8 @@ private def findLiteral(
 }
 
 // The local `emptyGap` (the grammar package's is private to it).
-private def failedGap(in: In, pos: Int, examined: Int): POut = {
+private def failedGap(in: ParseInput, pos: Int, examined: Int): ParseResult = {
   val at = skipSpace(in.input, pos)
-  POut(pos, PTree(NodeData.GapData(""), "", at, 0), ok = false,
+  ParseResult(pos, ParseTree(NodeData.GapData(""), "", at, 0), ok = false,
     examined.max(at + 1))
 }

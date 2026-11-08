@@ -37,7 +37,7 @@ object Expr {
 
   // Infix text with minimal parentheses: `*` and `/` bind tighter than
   // `+` and `-`, and every level is left-associative, so a compound right
-  // operand at the same or lower precedence needs parens. A gap prints
+  // operand at the same or lower precedence needs parentheses. A gap prints
   // its verbatim text (or '?' when empty), so printed gaps reparse.
   def print(e: Expr): String = pp(e, 0)
 

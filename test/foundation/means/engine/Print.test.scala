@@ -50,7 +50,7 @@ class PrintSuite extends FunSuite {
   private def choose(c: DetachedNode[NodeData], a: DetachedNode[NodeData],
       b: DetachedNode[NodeData]) = node("choose", c, a, b)
 
-  test("infix prints without redundant parens") {
+  test("infix prints without redundant parentheses") {
     assertEquals(print(add(lit(1), mul(lit(2), lit(3)))), "1 + 2 * 3")
     assertEquals(print(mul(add(lit(1), lit(2)), lit(3))), "(1 + 2) * 3")
     assertEquals(print(add(mul(lit(1), lit(2)), lit(3))), "1 * 2 + 3")
@@ -58,14 +58,14 @@ class PrintSuite extends FunSuite {
   }
 
   test("left-associative infix regroups the same way it parses") {
-    // `1 - 2 - 3` is (1 - 2) - 3; a compound right operand keeps parens.
+    // `1 - 2 - 3` is (1 - 2) - 3; a compound right operand keeps parentheses.
     assertEquals(print(sub(sub(lit(1), lit(2)), lit(3))), "1 - 2 - 3")
     assertEquals(print(sub(lit(1), sub(lit(2), lit(3)))), "1 - (2 - 3)")
     assertEquals(print(add(sub(lit(1), lit(2)), lit(3))), "1 - 2 + 3")
     assertEquals(print(add(lit(1), div(lit(2), lit(3)))), "1 + 2 / 3")
   }
 
-  test("a prefix operand takes parens one level tighter") {
+  test("a prefix operand takes parentheses one level tighter") {
     // `-` binds tightest here, so a compound operand always parenthesizes.
     assertEquals(print(neg(lit(1))), "-1")
     assertEquals(print(neg(add(lit(1), lit(2)))), "-(1 + 2)")
@@ -76,7 +76,7 @@ class PrintSuite extends FunSuite {
 
   test("a postfix applies to the result of its level") {
     // `%` binds tightest here, so `1 + 2 %` reads as 1 + (2 %);
-    // pct(1 + 2) must print with parens.
+    // pct(1 + 2) must print with parentheses.
     assertEquals(print(pct(add(lit(1), lit(2)))), "(1 + 2) %")
     assertEquals(print(pct(mul(lit(1), lit(2)))), "(1 * 2) %")
     assertEquals(print(pct(neg(lit(1)))), "-1 %")
@@ -117,8 +117,8 @@ class PrintSuite extends FunSuite {
     assertEquals(print(DetachedNode.leaf(NodeData.GapData(""))), "?")
   }
 
-  // The round-trip set: like `set` but the parens rule means `a` —
-  // grouping is surface-only and leaves no node, so minimal parens
+  // The round-trip set: like `set` but the parentheses rule means `a` —
+  // grouping is surface-only and leaves no node, so minimal parentheses
   // the printer adds are absorbed on reparse. The prefix is spelled
   // `- a` (unglued) because the lexicon's sym tokens are runs —
   // glued output like `--1` would lex as one token (a tokenization
@@ -147,11 +147,11 @@ class PrintSuite extends FunSuite {
     "sym"  -> runOf(1)(c => "+-*/%!".contains(c))))
 
   private val atom: Parser = choice(
-    tok("int")(t => NodeData.IntData(t.text.toInt)),
+    token("int")(t => NodeData.IntData(t.text.toInt)),
     unrecognized(Set("sym", "word"), Set("int", "word", "sym")))
 
   // Every tree to height 2 over the atoms and constructors — height
-  // 2 is where the precedence/parens interplay bites (a compound
+  // 2 is where the precedence/parentheses interplay bites (a compound
   // operand inside a compound) — plus a keyword-led case.
   private val generated: List[DetachedNode[NodeData]] = {
     def grow(ts: List[DetachedNode[NodeData]])
@@ -167,7 +167,7 @@ class PrintSuite extends FunSuite {
   }
 
   // `parse(print(t)) == t`: the printer writes only what the compiled
-  // rules read back — minimal parens included.
+  // rules read back — minimal parentheses included.
   test("printed text reparses to the same tree") {
     val grammar = phrase(
       compileRules(rtSet, atom, NodeData.StringData(_), "e"), Set.empty)
@@ -177,7 +177,7 @@ class PrintSuite extends FunSuite {
     })
     generated.foreach { t =>
       assertEquals(
-        toDetached(grammar(In(printer(t), lex), 0).tree), t,
+        toDetached(grammar(ParseInput(printer(t), lex), 0).tree), t,
         s"round trip of '${printer(t)}'")
     }
   }

@@ -10,19 +10,19 @@ class OperatorsSuite extends FunSuite {
     "sym" -> runOf(1)(c => "+-*/%^~!".contains(c))))
 
   private val atom: Parser =
-    tok("int")(t => NodeData.IntData(t.text.toInt))
+    token("int")(t => NodeData.IntData(t.text.toInt))
 
-  private def tagged(name: String): (List[PTree], In, Int, Int) => PTree =
-    (operands, in, from, to) => PTree(
+  private def tagged(name: String): (List[ParseTree], ParseInput, Int, Int) => ParseTree =
+    (operands, in, from, to) => ParseTree(
       NodeData.StringData(name), in.input.substring(from, to),
       from, to - from, operands.map(adopted(_, from)))
 
   private def infix(
-      symbol: String, name: String, assoc: Assoc = Assoc.Left): Operator =
+      symbol: String, name: String, assoc: Associativity = Associativity.Left): Operator =
     Operator(name, OperatorShape.Infix, List(symbol), assoc, tagged(name))
 
   private def parse(p: Parser, text: String): DetachedNode[NodeData] =
-    toDetached(p(In(text, lex), 0).tree)
+    toDetached(p(ParseInput(text, lex), 0).tree)
 
   private def node(name: String, children: DetachedNode[NodeData]*) =
     DetachedNode(NodeData.StringData(name), children.toList)
@@ -37,16 +37,16 @@ class OperatorsSuite extends FunSuite {
 
   test("right-associative infix nests on the right") {
     val p =
-      operatorTable(atom, List(List(infix("^", "pow", Assoc.Right))))
+      operatorTable(atom, List(List(infix("^", "pow", Associativity.Right))))
     assertEquals(parse(p, "2 ^ 3 ^ 4"),
       node("pow", lit(2), node("pow", lit(3), lit(4))))
   }
 
   test("non-associative infix refuses a second operator at its level") {
-    val p = operatorTable(atom, List(List(infix("~", "cmp", Assoc.Non))))
-    val r = p(In("1 ~ 2 ~ 3", lex), 0)
+    val p = operatorTable(atom, List(List(infix("~", "cmp", Associativity.NonAssociative))))
+    val r = p(ParseInput("1 ~ 2 ~ 3", lex), 0)
     assertEquals(toDetached(r.tree), node("cmp", lit(1), lit(2)))
-    assertEquals(r.pos, 5) // `~ 3` left for the caller's recovery
+    assertEquals(r.position, 5) // `~ 3` left for the caller's recovery
   }
 
   test("the binding list orders tiers, tightest first") {

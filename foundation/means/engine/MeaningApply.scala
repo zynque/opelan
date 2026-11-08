@@ -9,8 +9,8 @@ import opelan.foundation.means._
 // evaluated*):
 //
 //   use      the bound tree itself, grown to cover the whole match —
-//            `(a)` keeps the operand's node, parens included in its
-//            span, exactly as the `parens` combinator does
+//            `(a)` keeps the operand's node, parentheses included in its
+//            span, exactly as the `parentheses` combinator does
 //   source   the bound source text, as a leaf
 //   quote    a desugared phrase's concrete subtree — the stored tree,
 //            re-spanned onto the match
@@ -28,12 +28,12 @@ import opelan.foundation.means._
 // degenerated operand becomes a gap covering the match.
 def applyMeaning(
     meaning: Meaning,
-    bindings: Map[String, PTree],
-    in: In, from: Int, to: Int,
-    tag: String => NodeData): PTree = meaning.tag match {
+    bindings: Map[String, ParseTree],
+    in: ParseInput, from: Int, to: Int,
+    tag: String => NodeData): ParseTree = meaning.tag match {
   case "use" => bound(meaning, bindings) match {
       // A bound tree that degenerated to a gap lets the gap grow
-      // over the match's literals — `parens` does the same.
+      // over the match's literals — `parentheses` does the same.
       case Some(t) if t.data.isInstanceOf[NodeData.GapData] =>
         gapNode(in, from, to)
       case Some(t) => grown(t, in, from, to)
@@ -41,7 +41,7 @@ def applyMeaning(
     }
   case "source" =>
     bound(meaning, bindings) match {
-      case Some(t) => PTree(NodeData.StringData(t.text),
+      case Some(t) => ParseTree(NodeData.StringData(t.text),
           in.input.substring(from, to), from, to - from)
       case None    => gapNode(in, from, to)
     }
@@ -53,12 +53,12 @@ def applyMeaning(
   case "literal" =>
     meaning.arguments.headOption.flatMap(valueTerm(_, bindings)) match {
       case Some(data) =>
-        PTree(data, in.input.substring(from, to), from, to - from)
+        ParseTree(data, in.input.substring(from, to), from, to - from)
       case None       => gapNode(in, from, to)
     }
   case "builtin" => gapNode(in, from, to)
   case construct if Meaning.isConstruct(meaning) =>
-    PTree(
+    ParseTree(
       meaning.reference.map(NodeData.ExternalNodeRef(_)).getOrElse(tag(construct)),
       in.input.substring(from, to), from, to - from,
       meaning.arguments.map(a => argumentTree(a, bindings, in, to, tag))
@@ -70,7 +70,7 @@ def applyMeaning(
 
 // The tree a `use` term's operand name binds — None unbound.
 private def bound(
-    meaning: Meaning, bindings: Map[String, PTree]): Option[PTree] =
+    meaning: Meaning, bindings: Map[String, ParseTree]): Option[ParseTree] =
   meaning.arguments.headOption.flatMap(Meaning.nameOf).flatMap(bindings.get)
 
 // A `literal` operand evaluated to leaf data: a bound placeholder's
@@ -79,7 +79,7 @@ private def bound(
 // step of meanings evaluating (DESIGN.md, *A meaning is a term,
 // evaluated*), scoped to leaves at parse time.
 private def valueTerm(
-    m: Meaning, bindings: Map[String, PTree]): Option[NodeData] =
+    m: Meaning, bindings: Map[String, ParseTree]): Option[NodeData] =
   Meaning.nameOf(m).flatMap(bindings.get).map(_.data).orElse(m.tag match {
     case "neg" =>
       m.arguments.headOption.flatMap(valueTerm(_, bindings)).flatMap {
@@ -97,25 +97,25 @@ private def valueTerm(
 // its real tree — negative relative offsets place it correctly.
 private def argumentTree(
     meaning: Meaning,
-    bindings: Map[String, PTree],
-    in: In, at: Int,
-    tag: String => NodeData): PTree = meaning.tag match {
+    bindings: Map[String, ParseTree],
+    in: ParseInput, at: Int,
+    tag: String => NodeData): ParseTree = meaning.tag match {
   case "use" => bound(meaning, bindings).getOrElse(gapNode(in, at, at))
   case _     => applyMeaning(meaning, bindings, in, at, at, tag)
 }
 
 // The tree that covers `from`..`to` — a verbatim gap.
-private[means] def gapNode(in: In, from: Int, to: Int): PTree = {
+private[means] def gapNode(in: ParseInput, from: Int, to: Int): ParseTree = {
   val text = in.input.substring(from, to)
-  PTree(NodeData.GapData(text), text, from, to - from)
+  ParseTree(NodeData.GapData(text), text, from, to - from)
 }
 
 // A tree grown to cover `from`..`to`: start moves back (or forward),
 // so its children's relative offsets shift by the same amount — the same
-// re-span `parens` performs. The root's marks go stale: the grown
+// re-span `parentheses` performs. The root's marks go stale: the grown
 // node no longer spans what the marked rule recorded, so the rule's
 // memo entry stays in the side table.
-private[means] def grown(t: PTree, in: In, from: Int, to: Int): PTree = {
+private[means] def grown(t: ParseTree, in: ParseInput, from: Int, to: Int): ParseTree = {
   val shift = t.from - from
   t.copy(text = in.input.substring(from, to), from = from,
     length = to - from, marks = Nil,
@@ -124,5 +124,5 @@ private[means] def grown(t: PTree, in: In, from: Int, to: Int): PTree = {
 
 // A child's absolute `from` rebased to an offset from `base` — the local
 // `adopted` (that one is private to the grammar package).
-private[means] def rebased(child: PTree, base: Int): PTree =
+private[means] def rebased(child: ParseTree, base: Int): ParseTree =
   child.copy(from = child.from - base)

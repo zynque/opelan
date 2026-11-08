@@ -112,7 +112,7 @@ def compileRules(
     theRule.pattern.pieces match {
       case List(Piece.Placeholder(name, _)) =>
         boundLexicals(theRule).get(name).flatMap(_.parser).map { bound =>
-          (in: In, pos: Int) => {
+          (in: ParseInput, pos: Int) => {
             val applied = bound(in, pos)
             if (!applied.ok) applied
             else applied.copy(tree = applyMeaning(theRule.meaning,

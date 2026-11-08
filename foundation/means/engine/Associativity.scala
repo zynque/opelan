@@ -1,6 +1,6 @@
 package opelan.foundation.means.engine
 
-import opelan.foundation.grammar.Assoc
+import opelan.foundation.grammar.Associativity
 import opelan.foundation.means._
 
 // An infix operator's associativity, read off the rule set's worked
@@ -16,31 +16,31 @@ import opelan.foundation.means._
 // notation says it. Examples check against the compiled parser, so a
 // witness the derivation disagrees with still reports as a failing
 // example rather than silently choosing.
-def operatorAssoc(set: RuleSet, theRule: Rule): Assoc =
-  if (theRule.shape != Shape.Infix) Assoc.Left
+def operatorAssoc(set: RuleSet, theRule: Rule): Associativity =
+  if (theRule.shape != Shape.Infix) Associativity.Left
   else set.examples.view.flatMap(witness(theRule, _)).headOption
-    .getOrElse(Assoc.Left)
+    .getOrElse(Associativity.Left)
 
 // One example's verdict on `theRule`, or None when it doesn't
 // witness: the rule's literals — joined as a chain spells them —
-// must appear exactly twice outside parens in the input, giving the
+// must appear exactly twice outside parentheses in the input, giving the
 // three operands the expected regroups.
-private def witness(theRule: Rule, e: Example): Option[Assoc] = {
+private def witness(theRule: Rule, e: Example): Option[Associativity] = {
   val chain = theRule.pattern.pieces
     .collect { case Piece.Literal(t, _) => t }.mkString(" ")
   if (chain.isEmpty) None else splitTop(e.input, chain) match {
     case List(x, y, z) =>
       val expected = compact(e.expected)
       if (expected == compact(s"$x $chain ($y $chain $z)"))
-        Some(Assoc.Right)
+        Some(Associativity.Right)
       else if (expected == compact(s"($x $chain $y) $chain $z"))
-        Some(Assoc.Left)
+        Some(Associativity.Left)
       else None
     case _ => None
   }
 }
 
-// `text` split on `chain`'s occurrences outside parens — `a ^ b ^ c`
+// `text` split on `chain`'s occurrences outside parentheses — `a ^ b ^ c`
 // on `^` gives `a`, `b`, `c`. String-level, not lexed: a witness is a
 // shape — `a`, `b`, `c` are operand positions, not language tokens.
 private def splitTop(text: String, chain: String): List[String] = {

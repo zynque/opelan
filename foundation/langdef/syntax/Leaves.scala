@@ -22,7 +22,7 @@ case class LeafDef(productions: List[(String, LeafKind)])
 // tried in order, each token mapped through its LeafKind.
 def leafParser(theLeaf: LeafDef): Parser =
   choice(theLeaf.productions.map { case (kind, leaf) =>
-    tok(kind)(t => leafData(leaf, t))
+    token(kind)(t => leafData(leaf, t))
   }*)
 
 // Whether a bound tree satisfies a leaf production — the `where`

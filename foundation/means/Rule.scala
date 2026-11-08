@@ -1,7 +1,7 @@
 package opelan.foundation.means
 
 import opelan.foundation.document.{ExternalNodeReference, NodeData}
-import opelan.foundation.grammar.PTree
+import opelan.foundation.grammar.ParseTree
 
 // The model behind `pattern means meaning` language definitions
 // (DESIGN.md):
@@ -76,7 +76,7 @@ case class Meaning(
     tag: String,
     arguments: List[Meaning] = Nil,
     reference: Option[ExternalNodeReference] = None,
-    quoted: Option[PTree] = None)
+    quoted: Option[ParseTree] = None)
 
 object Meaning {
   // The meaning-language's vocabulary — `lang:`'s own constructs, never
@@ -108,13 +108,13 @@ object Meaning {
   // A quoted subtree — concrete content a phrase desugared to
   // (`a / 100`'s `100`). At apply the stored subtree is the value,
   // re-spanned onto the match.
-  def quote(node: PTree): Meaning = Meaning("quote", quoted = Some(node))
+  def quote(node: ParseTree): Meaning = Meaning("quote", quoted = Some(node))
 
   // A quoted gap — the stored form of a meaning a reader couldn't
   // interpret (a phrase with no language context, or one the set can't
   // yet read): it prints back as its text and heals by re-reading.
   def gap(text: String): Meaning =
-    quote(PTree(NodeData.GapData(text), text, 0, text.length))
+    quote(ParseTree(NodeData.GapData(text), text, 0, text.length))
 
   // The name a bare term carries — `use`/`source`'s operand — or None
   // for a term that isn't a name leaf.

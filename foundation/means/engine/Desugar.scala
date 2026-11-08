@@ -37,7 +37,7 @@ def phraseMeaning(
     compileRules(set, choice(placeholderAtom(placeholders), atom),
       tag, name, lexicals),
     Set.empty)
-  toTerm(expression(In(text, lexicon), 0).tree, namesByData(set, tag))
+  toTerm(expression(ParseInput(text, lexicon), 0).tree, namesByData(set, tag))
 }
 
 // Retry a meaning that is one quoted gap — the stored form of a
@@ -80,7 +80,7 @@ def rephraseRuleSet(
 def gapQuoteText(m: Meaning): Option[String] =
   if (m.tag == "quote")
     m.quoted.collect {
-      case PTree(NodeData.GapData(text), _, _, _, Nil, _) => text }
+      case ParseTree(NodeData.GapData(text), _, _, _, Nil, _) => text }
   else None
 
 // A desugared meaning that still holds a gap — the phrase didn't
@@ -88,7 +88,7 @@ def gapQuoteText(m: Meaning): Option[String] =
 def hasGap(m: Meaning): Boolean =
   m.arguments.exists(hasGap) || m.quoted.exists(gapTree)
 
-private def gapTree(t: PTree): Boolean =
+private def gapTree(t: ParseTree): Boolean =
   t.data.isInstanceOf[NodeData.GapData] || t.children.exists(gapTree)
 
 // The node data a placeholder atom emits — a mark the desugar's
@@ -102,12 +102,12 @@ def placeholderAtom(names: Set[String]): Parser =
     val scanned = scanAt(in, pos)
     scanned.token match {
       case Some(t) if names(t.text) =>
-        POut(t.to, PTree(PlaceholderMark, t.text, t.from, t.text.length),
+        ParseResult(t.to, ParseTree(PlaceholderMark, t.text, t.from, t.text.length),
           ok = true, scanned.examined)
       case _ =>
         // The local `emptyGap` (the grammar package's is private).
         val at = skipSpace(in.input, pos)
-        POut(pos, PTree(NodeData.GapData(""), "", at, 0), ok = false,
+        ParseResult(pos, ParseTree(NodeData.GapData(""), "", at, 0), ok = false,
           scanned.examined.max(at + 1))
     }
   }
@@ -116,7 +116,7 @@ def placeholderAtom(names: Set[String]): Parser =
 // nodes carrying a construct's data become construct terms (keeping
 // the ref a `lang:` doc's nodes would hold), and everything else —
 // leaves, gaps, nodes no term names — is quoted verbatim.
-def toTerm(t: PTree, names: Map[NodeData, String]): Meaning =
+def toTerm(t: ParseTree, names: Map[NodeData, String]): Meaning =
   if (t.data == PlaceholderMark) Meaning.use(t.text)
   else names.get(t.data) match {
     case Some(name) =>
@@ -127,7 +127,7 @@ def toTerm(t: PTree, names: Map[NodeData, String]): Meaning =
 // A quoted subtree holds no marks — a placeholder inside content that
 // didn't resolve to a term reads as a gap rather than leaking the
 // desugar's mark into the output.
-private def scrubbed(t: PTree): PTree =
+private def scrubbed(t: ParseTree): ParseTree =
   if (t.data == PlaceholderMark)
     t.copy(data = NodeData.GapData(t.text))
   else t.copy(children = t.children.map(scrubbed))

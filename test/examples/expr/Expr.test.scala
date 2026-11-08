@@ -140,7 +140,7 @@ class ExprSuite extends munit.FunSuite {
   test("the derived print view matches the hand-written print tree") {
     // printTree over readLocExpr is the oracle printViewWith replaces:
     // the derived printer must emit the identical provenance-tagged
-    // tree — pieces, parens, gaps, and src: ids alike.
+    // tree — pieces, parentheses, gaps, and src: ids alike.
     val inputs = List(
       "1 + 2 - 3", "(1 + 2) * 3", "1.5 * 2", "ref:3 + 1", "-4 + 5",
       "1 - 2 - 3", "1 + (2 - 3)", "1 + abc", "1 +", "(1 2)", "abc",

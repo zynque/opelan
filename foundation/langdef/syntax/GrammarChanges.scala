@@ -3,7 +3,7 @@ package opelan.foundation.langdef.syntax
 import opelan.foundation.document.{
   ExternalNodeReference, NodeData}
 import opelan.foundation.document.typed.sameNode
-import opelan.foundation.grammar.PTree
+import opelan.foundation.grammar.ParseTree
 import opelan.foundation.langdef._
 import opelan.foundation.means._
 
@@ -89,7 +89,7 @@ private def sameRef(
     case _                  => false
   }
 
-private def sameTree(a: Option[PTree], b: Option[PTree]): Boolean =
+private def sameTree(a: Option[ParseTree], b: Option[ParseTree]): Boolean =
   (a, b) match {
     case (Some(x), Some(y)) =>
       x.text == y.text && x.from == y.from && x.length == y.length &&

@@ -20,27 +20,28 @@ import opelan.foundation.grammar._
 
 private def tag(name: String) = NodeData.StringData(name)
 
-private def token(kind: String, text: String): Parser =
-  tokWhere(kind)(_.text == text)(t => NodeData.StringData(t.kind))
+private def tokenText(kind: String, text: String): Parser =
+  tokenWhere(kind)(_.text == text)(t => NodeData.StringData(t.kind))
 
-private def single(text: String) = token("single", text)
+private def single(text: String) = tokenText("single", text)
 
-private val meansKeyword = choice(token("word", "means"), token("symbol", "=>"))
-private val whereKeyword = token("word", "where")
-private val colon = token("symbol", ":")
+private val meansKeyword =
+  choice(tokenText("word", "means"), tokenText("symbol", "=>"))
+private val whereKeyword = tokenText("word", "where")
+private val colon = tokenText("symbol", ":")
 
 private def tokenExcept(stop: Parser): Parser =
-  seq(notFollowedBy(stop), anyToken)((_, t) => t)
+  andThen(notFollowedBy(stop), anyToken)((_, t) => t)
 
 private val topEnd = choice(whereKeyword, endOfInput)
 private val argumentEnd = choice(single(","), single(")"))
 
 private def meaning(end: Parser): Parser = choice(
   sequence(tag("build"))(
-    tok("word")(t => NodeData.StringData(t.kind)), single("("),
+    token("word")(t => NodeData.StringData(t.kind)), single("("),
     optional(arguments), single(")"), followedBy(end)),
   sequence(tag("use"))(
-    tokWhere("word")(t => isPlaceholderWord(t.text))(t => NodeData.StringData(t.kind)),
+    tokenWhere("word")(t => isPlaceholderWord(t.text))(t => NodeData.StringData(t.kind)),
     followedBy(end)),
   sequence(tag("phrase"))(balanced(end), many(tag("rest"))(balanced(end))))
 

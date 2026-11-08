@@ -11,7 +11,7 @@ import opelan.foundation.document._
 // How `a op b op c` groups at one binding level: `a ^ b ^ c` wants
 // Right, `a ~ b ~ c` is a Non-associative mistake (left unparsed —
 // the caller's recovery places it).
-enum Assoc { case Left, Right, Non }
+enum Associativity { case Left, Right, NonAssociative }
 
 // Where an operator's operands sit relative to its literals:
 //   Prefix   -a        literals lead, one operand follows
@@ -28,8 +28,8 @@ case class Operator(
     name: String,
     shape: OperatorShape,
     literals: List[String],
-    assoc: Assoc = Assoc.Left,
-    build: (List[PTree], In, Int, Int) => PTree)
+    assoc: Associativity = Associativity.Left,
+    build: (List[ParseTree], ParseInput, Int, Int) => ParseTree)
 
 // `tiers` is the binding list, tightest first; the result parses at
 // the loosest level. `atom` — by name, so it may refer back to the
@@ -43,7 +43,7 @@ def operatorTable(atom: => Parser, tiers: List[List[Operator]]): Parser = {
   // operand is itself a level-i operand (so `--a` nests), or the
   // next tighter level — bottoming out at `atom`.
   def operand(i: Int): Parser = (in, pos) => {
-    var out: Option[POut] = None
+    var out: Option[ParseResult] = None
     var seen = pos
     val prefixes = table(i).iterator.filter(_.shape == OperatorShape.Prefix)
     while (out.isEmpty && prefixes.hasNext) {
@@ -53,7 +53,7 @@ def operatorTable(atom: => Parser, tiers: List[List[Operator]]): Parser = {
           seen = seen.max(s)
           val r = operand(i)(in, cur)
           seen = seen.max(r.examined)
-          out = Some(POut(r.pos,
+          out = Some(ParseResult(r.position,
             op.build(List(r.tree), in, start, r.tree.to.max(cur)),
             ok = true, seen))
         case (None, s) => seen = seen.max(s)
@@ -74,7 +74,7 @@ def operatorTable(atom: => Parser, tiers: List[List[Operator]]): Parser = {
     if (!first.ok) first
     else {
       var acc = first.tree
-      var cur = first.pos
+      var cur = first.position
       var seen = first.examined
       var more = true
       while (more) {
@@ -88,26 +88,26 @@ def operatorTable(atom: => Parser, tiers: List[List[Operator]]): Parser = {
               case OperatorShape.Postfix =>
                 acc = op.build(List(acc), in, acc.from, litEnd)
                 cur = litEnd
-                more = op.assoc != Assoc.Non
+                more = op.assoc != Associativity.NonAssociative
               case OperatorShape.Infix =>
-                val rhs = (if (op.assoc == Assoc.Right) level(i)
+                val rhs = (if (op.assoc == Associativity.Right) level(i)
                            else operand(i))(in, litEnd)
                 seen = seen.max(rhs.examined)
                 // An operator with no literals (juxtaposition, `n x`)
                 // applies only when an operand genuinely follows.
-                if (op.literals.isEmpty && rhs.pos <= litEnd) more = false
+                if (op.literals.isEmpty && rhs.position <= litEnd) more = false
                 else {
                   acc = op.build(
                     List(acc, rhs.tree), in, acc.from, rhs.tree.to)
-                  cur = rhs.pos
-                  more = rhs.ok && op.assoc != Assoc.Non
+                  cur = rhs.position
+                  more = rhs.ok && op.assoc != Associativity.NonAssociative
                 }
               case _ => ()
             }
           case None => more = false
         }
       }
-      POut(cur, acc, ok = true, seen)
+      ParseResult(cur, acc, ok = true, seen)
     }
   }
 
@@ -115,7 +115,7 @@ def operatorTable(atom: => Parser, tiers: List[List[Operator]]): Parser = {
   // `cur`, with its end position — plus how far deciding read,
   // whether one matched or not.
   def matchOperator(
-      i: Int, in: In, cur: Int): (Option[(Operator, Int)], Int) = {
+      i: Int, in: ParseInput, cur: Int): (Option[(Operator, Int)], Int) = {
     var seen = cur
     var found: Option[(Operator, Int)] = None
     val ops = table(i).iterator.filter(_.shape != OperatorShape.Prefix)
@@ -136,7 +136,7 @@ def operatorTable(atom: => Parser, tiers: List[List[Operator]]): Parser = {
 // guidance, not a match constraint). Result: the end position and
 // the first literal's start, plus how far matching read.
 private def matchLiterals(
-    literals: List[String], in: In, pos: Int): (Option[(Int, Int)], Int) = {
+    literals: List[String], in: ParseInput, pos: Int): (Option[(Int, Int)], Int) = {
   var cur = pos
   var seen = pos
   var start = -1

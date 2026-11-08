@@ -9,14 +9,14 @@ import opelan.foundation.means.text._
 // back (foundation/means/DESIGN.md, *The meaning side*): every construct-meaning
 // rule is a template whose literals print verbatim and whose
 // placeholders print their argument trees, and the binding list
-// supplies the parentheses — the same minimal-parens dance Expr.print
+// supplies the parentheses — the same minimal-parentheses dance Expr.print
 // encodes by hand, derived instead.
 //
 // An operator rule prints each edge operand in the context the parser
 // gave it: left-associative infix keeps its left operand at its own
 // level and asks one tighter of the right; a postfix applies to the
 // whole level's result; a prefix asks one tighter — except a same-tier
-// prefix, which nests without parens (`- -a`). Non-operator constructs
+// prefix, which nests without parentheses (`- -a`). Non-operator constructs
 // print placeholders unparenthesized — their literals delimit the
 // content — and leaves and construct nodes no rule claims print through
 // `leaf` / as `?` (Never Broken).

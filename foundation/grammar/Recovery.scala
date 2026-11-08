@@ -49,12 +49,12 @@ def restGap: Parser = (in, pos) => {
 def phrase(p: Parser, stops: Set[String]): Parser =
   (in, pos) => {
     val r = p(in, pos)
-    var next = scanAt(in, r.pos)
+    var next = scanAt(in, r.position)
     var seen = r.examined.max(next.examined)
     def atBoundary = next.token.forall(t => stops(t.kind))
     if (atBoundary) r.copy(examined = seen)
     else {
-      var end = r.pos
+      var end = r.position
       while (!atBoundary) {
         end = next.token.get.to
         next = scanAt(in, end)
@@ -91,14 +91,14 @@ def signum: Parser =
                   NodeData.FloatData(if (negative) -v else v)
                 case d => d
               }
-            POut(num.to, PTree(data, in.input.substring(op.from, num.to),
+            ParseResult(num.to, ParseTree(data, in.input.substring(op.from, num.to),
               op.from, num.to - op.from), ok = true, seen)
           }
       }
   }
 
 private[grammar] def gap(
-    in: In, from: Int, to: Int, pos: Int, ok: Boolean, examined: Int): POut = {
+    in: ParseInput, from: Int, to: Int, pos: Int, ok: Boolean, examined: Int): ParseResult = {
   val text = in.input.substring(from, to)
-  POut(pos, PTree(NodeData.GapData(text), text, from, to - from), ok, examined)
+  ParseResult(pos, ParseTree(NodeData.GapData(text), text, from, to - from), ok, examined)
 }

@@ -1,7 +1,7 @@
 package opelan.foundation.means.engine
 
 import opelan.foundation.document._
-import opelan.foundation.grammar.Assoc
+import opelan.foundation.grammar.Associativity
 import opelan.foundation.means._
 
 // The rule-derived lookup both printers share (`printWith` over
@@ -10,7 +10,7 @@ import opelan.foundation.means._
 // when the meaning names none — each operator pattern's print level
 // from the binding list, and the precedence context a placeholder's
 // operand prints under. Extracted so the string emitter and the
-// view-tree emitter make the same minimal-parens decisions.
+// view-tree emitter make the same minimal-parentheses decisions.
 private[means] case class PrintIndex(
     set: RuleSet, termTag: String => NodeData) {
   val tiers: List[List[Rule]] = orderedOperatorRules(set)
@@ -34,7 +34,7 @@ private[means] case class PrintIndex(
   // Each infix rule's associativity as the worked examples derive
   // it — the operand the chain continues prints at the rule's own
   // level, the regrouping one tighter.
-  private val assocs: Map[List[String], Assoc] =
+  private val assocs: Map[List[String], Associativity] =
     set.rules.map(r => r.pattern.key -> operatorAssoc(set, r)).toMap
 
   // The ctx a pattern placeholder's tree prints under. Edge
@@ -45,10 +45,10 @@ private[means] case class PrintIndex(
     val pl = levels.getOrElse(rule.pattern.key, 0)
     rule.shape match {
       case Shape.Infix =>
-        assocs.getOrElse(rule.pattern.key, Assoc.Left) match {
-          case Assoc.Left  => if (pieceIndex == 0) pl else pl + 1
-          case Assoc.Right => if (pieceIndex == 0) pl + 1 else pl
-          case Assoc.Non   => pl + 1
+        assocs.getOrElse(rule.pattern.key, Associativity.Left) match {
+          case Associativity.Left  => if (pieceIndex == 0) pl else pl + 1
+          case Associativity.Right => if (pieceIndex == 0) pl + 1 else pl
+          case Associativity.NonAssociative   => pl + 1
         }
       case Shape.Postfix => pl
       case Shape.Prefix  => if (isTierPrefix(child, pl)) pl else pl + 1
@@ -56,7 +56,7 @@ private[means] case class PrintIndex(
     }
   }
 
-  // A same-tier prefix operand nests without parens — the operand slot
+  // A same-tier prefix operand nests without parentheses — the operand slot
   // a prefix operator parses is the level's operand, which accepts
   // tier-i prefixes.
   private def isTierPrefix(child: NodeData, pl: Int): Boolean =

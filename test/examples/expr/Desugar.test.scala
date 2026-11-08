@@ -29,8 +29,8 @@ class DesugarSuite extends munit.FunSuite {
     phrase(compileRules(set, atom, exprTag, "expr",
       lexicals), Set.empty)
 
-  private def parse(g: Parser, input: String): PTree =
-    g(In(input, exprLexicon), 0).tree
+  private def parse(g: Parser, input: String): ParseTree =
+    g(ParseInput(input, exprLexicon), 0).tree
 
   private val set = exprRules.copy(rules = exprRules.rules :+ percent)
 

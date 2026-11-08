@@ -18,15 +18,15 @@ class ParseSessionSuite extends FunSuite {
     "rpar" -> exactly(")")))
 
   private def tag(s: String) = NodeData.StringData(s)
-  private val int = tok("int")(t => NodeData.IntData(t.text.toInt))
-  private val word = tok("word")(t => NodeData.StringData(t.text))
-  private val semi = tok("semi")(_ => tag(";"))
+  private val int = token("int")(t => NodeData.IntData(t.text.toInt))
+  private val word = token("word")(t => NodeData.StringData(t.text))
+  private val semi = token("semi")(_ => tag(";"))
 
   // program := statement*;  statement := (sum | words) ";"?
   private def grammar(wordsBody: => Parser): Parser = {
     lazy val sum: Parser = rule("sum")(chainLeft(Map("+" -> tag("add")))(term))
     lazy val term: Parser = rule("term")(chainLeft(Map("*" -> tag("mul")))(
-      choice(int, parens(sum))))
+      choice(int, parentheses(sum))))
     val words = rule("words")(wordsBody)
     val statement = rule("statement")(
       sequence(tag("statement"))(choice(sum, words), optional(semi)))
@@ -38,15 +38,15 @@ class ParseSessionSuite extends FunSuite {
   // A changed `words` rule: words may now be separated by "+".
   private val g2 = grammar(chainLeft(Map("+" -> tag("and")))(word))
 
-  private def normal(r: POut) = (r.pos, r.ok, r.examined, r.tree)
+  private def normal(r: ParseResult) = (r.position, r.ok, r.examined, r.tree)
   // A marking table so the oracle's trees carry the same ParseMarks a
   // session's do — marks are deterministic bookkeeping, not content.
   private def full(g: Parser, text: String) =
-    normal(g(In(text, lexicon, MemoTable(marking = true)), 0))
+    normal(g(ParseInput(text, lexicon, MemoTable(marking = true)), 0))
 
   // Two statement nodes hold the same subtree: their child lists are the
   // same object (memoized results share their graphs when reused).
-  private def sameSubtree(a: PTree, b: PTree): Boolean =
+  private def sameSubtree(a: ParseTree, b: ParseTree): Boolean =
     a.children.nonEmpty && (a.children eq b.children)
 
   test("a fresh session equals a plain parse") {

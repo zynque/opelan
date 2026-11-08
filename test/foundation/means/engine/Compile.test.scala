@@ -16,7 +16,7 @@ class CompileSuite extends FunSuite {
     "sym"  -> runOf(1)(c => "+-*/%!".contains(c))))
 
   private val atom: Parser = choice(
-    tok("int")(t => NodeData.IntData(t.text.toInt)),
+    token("int")(t => NodeData.IntData(t.text.toInt)),
     unrecognized(Set("sym", "word"), Set("int", "word", "sym")))
 
   // The resolver is silenced here — these tests exercise the combinator
@@ -41,7 +41,7 @@ class CompileSuite extends FunSuite {
       lexicals: Map[String, LexicalTerm] = Map.empty): DetachedNode[NodeData] =
     toDetached(
       compileRules(set, atom, NodeData.StringData(_), "e",
-        lexicals)(In(text, lex), 0).tree)
+        lexicals)(ParseInput(text, lex), 0).tree)
 
   private def node(name: String, children: DetachedNode[NodeData]*) =
     DetachedNode(NodeData.StringData(name), children.toList)
@@ -128,7 +128,7 @@ class CompileSuite extends FunSuite {
   // on the def side; a plain term map here at the engine level.
   private val lexicals = Map(
     "number" -> LexicalTerm(
-      parser = Some(tok("int")(t => NodeData.IntData(t.text.toInt))),
+      parser = Some(token("int")(t => NodeData.IntData(t.text.toInt))),
       check = _.isInstanceOf[NodeData.IntData]))
 
   // A token-reading term whose data is a ref, and `value` — a
@@ -136,7 +136,7 @@ class CompileSuite extends FunSuite {
   // ref, the way the workbench's `value` excludes InternalNodeRef.
   private val cellLexicals = Map(
     "cell" -> LexicalTerm(
-      parser = Some(tok("word")(_ => NodeData.InternalNodeRef(1))),
+      parser = Some(token("word")(_ => NodeData.InternalNodeRef(1))),
       check = _.isInstanceOf[NodeData.InternalNodeRef]),
     "value" -> LexicalTerm(
       parser = None,
@@ -188,7 +188,7 @@ class CompileSuite extends FunSuite {
       tiers = List(Tier(List(readPattern("a + b")))))
     assertEquals(parse(set, "5 + 6", lexicals),
       node("add", lit(5), lit(6)))
-    // A grown operand keeps its leaf data — parens don't hide it.
+    // A grown operand keeps its leaf data — parentheses don't hide it.
     assertEquals(parse(set, "(5) + 6", lexicals),
       node("add", lit(5), lit(6)))
     // A bound gap violates the constraint — the whole application

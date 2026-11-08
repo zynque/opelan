@@ -19,7 +19,7 @@ class AssociativitySuite extends FunSuite {
     "sym"  -> runOf(1)(c => "+-*/^~".contains(c))))
 
   private val atom: Parser = choice(
-    tok("int")(t => NodeData.IntData(t.text.toInt)),
+    token("int")(t => NodeData.IntData(t.text.toInt)),
     unrecognized(Set("sym"), Set("int", "sym")))
 
   private def aRule(text: String): Rule =
@@ -28,7 +28,7 @@ class AssociativitySuite extends FunSuite {
   private def parse(set: RuleSet, text: String): DetachedNode[NodeData] =
     toDetached(
       compileRules(set, atom, NodeData.StringData(_), "e",
-        Map.empty)(In(text, lex), 0).tree)
+        Map.empty)(ParseInput(text, lex), 0).tree)
 
   private def node(name: String, children: DetachedNode[NodeData]*) =
     DetachedNode(NodeData.StringData(name), children.toList)
@@ -85,7 +85,7 @@ class AssociativitySuite extends FunSuite {
       case other               => other.toString
     })
     // The continued operand prints bare, the regrouping one keeps
-    // parens — minimal for right-associative `^`.
+    // parentheses — minimal for right-associative `^`.
     assertEquals(print(node("pow", lit(2), node("pow", lit(3), lit(4)))),
       "2 ^ 3 ^ 4")
     assertEquals(print(node("pow", node("pow", lit(2), lit(3)), lit(4))),

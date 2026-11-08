@@ -13,7 +13,7 @@ import opelan.foundation.document._
 // each step builds tag(l, r) spanning both operands. An operand that
 // doesn't apply (an op or ")" or the end where a value was expected)
 // still folds as its empty gap — then the level ends and the caller's
-// `phrase`/`parens` handles the boundary.
+// `phrase`/`parentheses` handles the boundary.
 def chainLeft(
     ops: Map[String, NodeData],
     opKind: String = "op")(atom: Parser): Parser =
@@ -22,7 +22,7 @@ def chainLeft(
     if (!first.ok) first
     else {
       var acc = first.tree
-      var cur = first.pos
+      var cur = first.position
       var seen = first.examined
       var more = true
       while (more) {
@@ -32,17 +32,17 @@ def chainLeft(
           case Some(op) if op.kind == opKind && ops.contains(op.text) =>
             val r = atom(in, op.to)
             seen = seen.max(r.examined)
-            acc = PTree(
+            acc = ParseTree(
               ops(op.text),
               in.input.substring(acc.from, r.tree.to),
               acc.from, r.tree.to - acc.from,
               List(adopted(acc, acc.from), adopted(r.tree, acc.from)))
-            cur = r.pos
+            cur = r.position
             more = r.ok
           case _ => more = false
         }
       }
-      POut(cur, acc, ok = true, seen)
+      ParseResult(cur, acc, ok = true, seen)
     }
   }
 
@@ -57,27 +57,27 @@ def precedenceTable(
 
 // "(" inner ")" with recovery: a missing ")" closes the group at the end
 // of input, and an inner that degenerated to a gap extends the gap's
-// text over the parens ("(1 2)" stays "(1 2)", not "1 2").
-def parens(inner: => Parser): Parser =
+// text over the parentheses ("(1 2)" stays "(1 2)", not "1 2").
+def parentheses(inner: => Parser): Parser =
   (in, pos) => {
     val open = scanAt(in, pos)
     open.token match {
       case Some(t) if t.kind == "lpar" =>
         val r = phrase(inner, Set("rpar"))(in, t.to)
-        val after = scanAt(in, r.pos)
+        val after = scanAt(in, r.position)
         val seen = open.examined.max(r.examined).max(after.examined)
         val close = after.token.filter(_.kind == "rpar")
         val end = close.map(_.to).getOrElse(in.input.length)
-        val endPos = close.map(_.to).getOrElse(r.pos)
+        val endPos = close.map(_.to).getOrElse(r.position)
         r.tree.data match {
           case NodeData.GapData(_) =>
             gap(in, t.from, end, endPos, ok = true, seen)
           case _ =>
             val text = in.input.substring(t.from, end)
-            // The node grows to cover the parens: its start moves back
+            // The node grows to cover the parentheses: its start moves back
             // to "(", so its children's relative offsets grow by that much.
             val shift = r.tree.from - t.from
-            POut(endPos, r.tree.copy(text = text, from = t.from,
+            ParseResult(endPos, r.tree.copy(text = text, from = t.from,
               length = end - t.from,
               children = r.tree.children.map(k => k.copy(from = k.from + shift))),
               ok = true, seen)

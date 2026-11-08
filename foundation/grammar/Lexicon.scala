@@ -43,7 +43,7 @@ def skipSpace(input: String, pos: Int): Int = {
 // that read. None only at the end of input.
 case class Scanned(token: Option[Token], examined: Int)
 
-def scanAt(in: In, pos: Int): Scanned = {
+def scanAt(in: ParseInput, pos: Int): Scanned = {
   val text = in.input
   val start = skipSpace(text, pos)
   if (start >= text.length) Scanned(None, text.length + 1)

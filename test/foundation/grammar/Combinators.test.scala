@@ -4,7 +4,7 @@ import opelan.foundation.document._
 import munit.FunSuite
 
 // Direct tests of the scannerless combinator layer: parsing produces
-// PTree nodes whose data is checked structurally (IntData / StringData
+// ParseTree nodes whose data is checked structurally (IntData / StringData
 // tag / GapData), plus totality, spans, and examined extents.
 class CombinatorSuite extends FunSuite {
 
@@ -15,24 +15,24 @@ class CombinatorSuite extends FunSuite {
     "rpar" -> exactly(")"),
     "unrecognized" -> runOf(1)(c => c.isLetter)))
 
-  private def in(text: String) = In(text, lexicon)
+  private def in(text: String) = ParseInput(text, lexicon)
 
-  private val int = tok("int")(t => NodeData.IntData(t.text.toInt))
+  private val int = token("int")(t => NodeData.IntData(t.text.toInt))
 
   private def tag(s: String) = NodeData.StringData(s)
 
-  test("tok applies on its kind and fails elsewhere without consuming") {
+  test("token applies on its kind and fails elsewhere without consuming") {
     val i = in("1+")
     assertEquals(int(i, 0).tree.data, NodeData.IntData(1))
     val miss = int(i, 1)
     assertEquals(miss.ok, false)
-    assertEquals(miss.pos, 1) // nothing consumed
+    assertEquals(miss.position, 1) // nothing consumed
     assertEquals(miss.tree.data, NodeData.GapData(""))
   }
 
   test("tokens skip leading whitespace; positions are characters") {
     val r = int(in("  42 "), 0)
-    assertEquals((r.tree.from, r.tree.to, r.pos), (2, 4, 4))
+    assertEquals((r.tree.from, r.tree.to, r.position), (2, 4, 4))
   }
 
   test("an unlexable character is still a token, so no text is lost") {
@@ -42,7 +42,7 @@ class CombinatorSuite extends FunSuite {
 
   test("chainLeft folds left-associatively") {
     val r = chainLeft(Map("-" -> tag("sub")))(int)(in("1 - 2 - 3"), 0)
-    assertEquals(r.pos, 9)
+    assertEquals(r.position, 9)
     assertEquals(r.tree.data, tag("sub"))
     assertEquals(r.tree.children(0).data, tag("sub"))
     assertEquals(r.tree.children(1).data, NodeData.IntData(3))
@@ -53,19 +53,19 @@ class CombinatorSuite extends FunSuite {
       Map("*" -> tag("mul")),
       Map("+" -> tag("add"))))
     val r = p(in("1+2*3"), 0)
-    assertEquals(r.pos, 5)
+    assertEquals(r.position, 5)
     assertEquals(r.tree.data, tag("add"))
     assertEquals(r.tree.children(1).data, tag("mul"))
   }
 
-  test("parens stops at ')' and a missing close is tolerated") {
-    val p = parens(int)
+  test("parentheses stops at ')' and a missing close is tolerated") {
+    val p = parentheses(int)
     val closed = p(in("(1)"), 0)
-    assertEquals(closed.pos, 3)
+    assertEquals(closed.position, 3)
     assertEquals(closed.tree.data, NodeData.IntData(1))
     assertEquals(closed.tree.text, "(1)")
     val open = p(in("(1"), 0)
-    assertEquals(open.pos, 2)
+    assertEquals(open.position, 2)
     assertEquals(open.tree.data, NodeData.IntData(1))
     assertEquals(open.tree.text, "(1")
   }
@@ -73,7 +73,7 @@ class CombinatorSuite extends FunSuite {
   test("phrase merges unplaced leftovers into one gap") {
     val r = phrase(int, Set.empty)(in("1x"), 0)
     assertEquals(r.tree.data, NodeData.GapData("1x"))
-    assertEquals(r.pos, 2)
+    assertEquals(r.position, 2)
   }
 
   test("examined covers the lookahead that decided a result") {
@@ -86,7 +86,7 @@ class CombinatorSuite extends FunSuite {
     // appending to the text could change this result.
     val p = chainLeft(Map("+" -> tag("add")))(int)
     assertEquals(p(in("1+2 x"), 0).examined, 6)
-    assertEquals(p(in("1+2 x"), 0).pos, 3)
+    assertEquals(p(in("1+2 x"), 0).position, 3)
   }
 
   test("spansOf maps every node path to its source range") {
