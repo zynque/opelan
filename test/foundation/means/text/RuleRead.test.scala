@@ -4,16 +4,35 @@ import munit.FunSuite
 import opelan.foundation.means._
 import opelan.foundation.means.Piece._
 import opelan.foundation.means.Meaning._
+import opelan.foundation.means.engine.foundationRefs
 
 class RuleReadSuite extends FunSuite {
 
-  private def read(t: String): Rule = readRule(t).fold(e => fail(e), identity)
+  // Resolver silenced — these tests assert the read's shape, not the
+  // bound references (see the binding test below).
+  private def read(t: String): Rule =
+    readRule(t, resolve = _ => None).fold(e => fail(e), identity)
 
   test("infix rule with a constructor meaning") {
     val r = read("a + b means add(a, b)")
     assertEquals(r.pattern.pieces, List(Placeholder("a"), Literal("+"), Placeholder("b")))
     assertEquals(r.meaning, construct("add", List(use("a"), use("b"))))
     assertEquals(r.where, Nil)
+  }
+
+  test("a construct meaning binds its foundational reference on read") {
+    // `div` resolves to the foundational definition immediately —
+    // the stored meaning never holds a bare name.
+    val r = readRule("a / b means div(a, b)").toOption.get
+    assertEquals(r.meaning.reference, Some(foundationRefs("div")))
+  }
+
+  test("an unknown construct keeps its name, unresolved") {
+    // `mystery` names no foundational definition and nothing in the
+    // local vocabulary — the name survives for the gap/later binding.
+    val r = readRule("a ? b means mystery(a, b)").toOption.get
+    assertEquals(r.meaning.tag, "mystery")
+    assertEquals(r.meaning.reference, None)
   }
 
   test("=> is the terse spelling of means") {

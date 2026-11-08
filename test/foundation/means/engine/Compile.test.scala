@@ -19,8 +19,10 @@ class CompileSuite extends FunSuite {
     tok("int")(t => NodeData.IntData(t.text.toInt)),
     unrecognized(Set("sym", "word"), Set("int", "word", "sym")))
 
+  // The resolver is silenced here — these tests exercise the combinator
+  // compile, not reference binding, so meanings keep bare tags.
   private def aRule(text: String): Rule =
-    readRule(text).fold(e => fail(e), identity)
+    readRule(text, resolve = _ => None).fold(e => fail(e), identity)
 
   private val arithmetic = RuleSet(
     rules = List(

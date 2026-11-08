@@ -7,7 +7,7 @@ import opelan.foundation.langdef.syntax._
 import opelan.foundation.langdef.doc.termRefs
 import opelan.foundation.langdef.LeafKind._
 import opelan.foundation.means._
-import opelan.foundation.means.engine.{evalView, printViewWith, semanticsOf}
+import opelan.foundation.means.engine.{evalView, foundationRefs, printViewWith, semanticsOf}
 import opelan.foundation.means.text._
 
 // The expression language's definition as data — what its `lang:`
@@ -27,10 +27,11 @@ val exprDef = LanguageDef(
   title = "lang: expression",
   name = "Expressions",
   description = "the arithmetic-expression language",
-  // Fully derived: where-bound leaf terms plus the construct terms
-  // of construct meanings (DeriveVocabulary.scala). The encoded def
-  // carries no vocabulary section — each construct's first meaning
-  // occurrence is its declaration.
+  // Fully derived: where-bound leaf terms plus construct-application
+  // pattern declarations (DeriveVocabulary.scala). The arithmetic
+  // constructs are foundational definitions — references, not this
+  // def's terms — so the encoded def carries no vocabulary section
+  // for them.
   vocabulary = vocabularyFrom(exprRules),
   // The rules carry the syntax; the operand fallback they compile
   // over is the lexicon's recovering unrecognized run
@@ -85,7 +86,10 @@ val exprImpls = Impls(
 // store the entry's ref, and readers match on it — so a construct
 // renamed in its lang: document keeps working (node ids are never
 // reused).
-lazy val exprTerms: Map[String, ExternalNodeReference] = termRefs(exprDef)
+// The arithmetic constructs resolve to foundational definitions by
+// reference — expr's own terms are only its leaf vocabulary.
+lazy val exprTerms: Map[String, ExternalNodeReference] =
+  termRefs(exprDef) ++ foundationRefs
 
 // Node data applying a construct, inline — a document imports it when
 // the tree is inserted (see makeTyped / internalizeRefs).

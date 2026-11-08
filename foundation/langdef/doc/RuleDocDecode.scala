@@ -5,6 +5,7 @@ import opelan.foundation.document.store._
 import opelan.foundation.document.typed._
 import opelan.foundation.grammar.PTree
 import opelan.foundation.means._
+import opelan.foundation.means.engine.foundationalOf
 import opelan.foundation.means.text._
 
 // A `rule` node read back to a `Rule` — the inverse of RuleEncode. A
@@ -99,7 +100,10 @@ private def kindName(
     doc: Document[NodeData], url: String,
     version: Int, termIds: Map[String, Int], id: Int): String =
   kindRef(doc, url, version, termIds, id) match {
-    case Some(r) => definitionName(doc, r.nodeId).getOrElse("")
+    // A foundational reference names itself — it has no local entry.
+    case Some(r) =>
+      foundationalOf(r).map(_.name)
+        .orElse(definitionName(doc, r.nodeId)).getOrElse("")
     case None    => strOf(doc, id).getOrElse("")
   }
 

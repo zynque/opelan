@@ -1,7 +1,8 @@
 package opelan.foundation.means.text
 
-import opelan.foundation.document.NodeData
+import opelan.foundation.document.{ExternalNodeReference, NodeData}
 import opelan.foundation.means._
+import opelan.foundation.means.engine.foundationRefs
 import opelan.foundation.grammar._
 
 // Read one rule from text:
@@ -20,7 +21,8 @@ import opelan.foundation.grammar._
 // keeps the text as a quoted gap, the context-free reading.
 def readRule(
     text: String,
-    phrase: (Set[String], String) => Meaning = noLanguage)
+    phrase: (Set[String], String) => Meaning = noLanguage,
+    resolve: String => Option[ExternalNodeReference] = foundationRefs.get)
     : Either[String, Rule] = {
   val parts = ruleGrammar(In(text, ruleLexicon), 0).tree.children
   val (pattern, keyword, meaning, where) = (parts(0), parts(1), parts(2), parts(3))
@@ -31,8 +33,8 @@ def readRule(
     constraints <- if (isTagged(where)) readWhere(where) else Right(Nil)
   } yield {
     val p = Pattern(pieces(tokensIn(pattern)))
-    Rule(p, readMeaning(meaning, s => phrase(p.placeholders.toSet, s)),
-      constraints)
+    Rule(p, readMeaning(meaning, s => phrase(p.placeholders.toSet, s),
+      resolve), constraints)
   }
 }
 
@@ -49,8 +51,10 @@ val noLanguage: (Set[String], String) => Meaning =
 // mistake shows up in checking rather than disappearing.
 def readRuleOrGap(
     text: String,
-    phrase: (Set[String], String) => Meaning): Rule =
-  readRule(text, phrase).getOrElse(gapRule)
+    phrase: (Set[String], String) => Meaning,
+    resolve: String => Option[ExternalNodeReference] = foundationRefs.get)
+    : Rule =
+  readRule(text, phrase, resolve).getOrElse(gapRule)
 
 // The context-free read — phrases land as quoted gaps.
 def readRuleOrGap(text: String): Rule =
@@ -63,9 +67,12 @@ val gapRule: Rule = Rule(Pattern(Nil), Meaning.gap(""))
 // terms — the rest is phrase text for the caller's language-aware
 // reader (None here). Nested arguments that are themselves phrases go
 // through the same `phrase`.
-def readMeaningText(text: String, phrase: String => Meaning): Option[Meaning] =
+def readMeaningText(text: String, phrase: String => Meaning,
+    resolve: String => Option[ExternalNodeReference] = foundationRefs.get)
+    : Option[Meaning] =
   meaningText(In(text, ruleLexicon), 0).tree match {
-    case t if Set("build", "use")(tagOf(t)) => Some(readMeaning(t, phrase))
+    case t if Set("build", "use")(tagOf(t)) =>
+      Some(readMeaning(t, phrase, resolve))
     case _ => None
   }
 
@@ -122,7 +129,8 @@ private def pieces(tokens: List[(Int, PTree)]): List[Piece] =
     }
   }
 
-private def readMeaning(t: PTree, phrase: String => Meaning): Meaning =
+private def readMeaning(t: PTree, phrase: String => Meaning,
+    resolve: String => Option[ExternalNodeReference]): Meaning =
   tagOf(t) match {
     case "build" =>
       val arguments = t.children(2)
@@ -131,19 +139,24 @@ private def readMeaning(t: PTree, phrase: String => Meaning): Meaning =
         else arguments.children(0) :: arguments.children(1).children.map(_.children(1))
       val tag = t.children(0).text
       // A meaning-language builtin spelled like a construct — `source(a)`
-      // — takes name-leaf operands; a construct takes meaning terms.
+      // — takes name-leaf operands; a construct takes meaning terms and
+      // binds its term's reference on read: meanings only ever
+      // reference, they never declare.
       if (Meaning.builtins(tag))
-        Meaning(tag, list.map(a => nameTermOf(a, phrase)))
-      else Meaning(tag, list.map(a => readMeaning(a, phrase)))
+        Meaning(tag, list.map(a => nameTermOf(a, phrase, resolve)))
+      else Meaning(tag, list.map(a => readMeaning(a, phrase, resolve)),
+        reference = resolve(tag))
     case "use" => Meaning.use(t.children(0).text)
     case _     => phrase(t.text)
   }
 
 // A builtin's operand as a name term — `source(a)` binds `a`'s name,
-// not its meaning.
-private def nameTermOf(t: PTree, phrase: String => Meaning): Meaning =
+// not its meaning; `builtin`'s operand names a foundational
+// definition, so it binds the ref on read too.
+private def nameTermOf(t: PTree, phrase: String => Meaning,
+    resolve: String => Option[ExternalNodeReference]): Meaning =
   if (tagOf(t) == "use") Meaning.nameTerm(t.children(0).text)
-  else readMeaning(t, phrase)
+  else readMeaning(t, phrase, resolve)
 
 // `a, b: number; c: whole number` — one constraint per group.
 private def readWhere(t: PTree): Either[String, List[Constraint]] = {

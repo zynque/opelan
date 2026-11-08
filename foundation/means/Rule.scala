@@ -27,6 +27,26 @@ case class Pattern(pieces: List[Piece]) {
 
   def placeholders: List[String] =
     pieces.collect { case Piece.Placeholder(name, _) => name }
+
+  // A construct-application pattern — `square(a, b)` — the token-spine
+  // spelling of a tree pattern matching that construct: it declares
+  // `square` and binds its children to the placeholders positionally.
+  // `ref:c,r` is not one (`ref:` isn't followed by `(`).
+  def constructForm: Option[(String, List[String])] = pieces match {
+    case Piece.Literal(name, _) :: Piece.Literal("(", _) :: rest =>
+      formArgs(rest).map(name -> _)
+    case _ => None
+  }
+
+  private def formArgs(rest: List[Piece]): Option[List[String]] =
+    rest match {
+      case Piece.Literal(")", _) :: Nil => Some(Nil)
+      case Piece.Placeholder(name, _) :: Piece.Literal(")", _) :: Nil =>
+        Some(List(name))
+      case Piece.Placeholder(name, _) :: Piece.Literal(",", _) :: tail =>
+        formArgs(tail).map(name :: _)
+      case _ => None
+    }
 }
 
 // What a pattern stands for — a term, evaluated

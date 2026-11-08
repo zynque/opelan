@@ -38,8 +38,10 @@ private[langdef] def encodeDef(
     NodeData.StringData(d.title),
     DetachedNode.leaf(pending("definition")))
   val cid = contentId(doc0).getOrElse(doc0.rootId)
-  // A def that carries rules declares its terms by their first
-  // occurrence in the rules' meanings — no vocabulary section.
+  // A def that carries rules declares its terms in them — leaf
+  // terms through `where` bindings, constructs through
+  // construct-application patterns — so no vocabulary section.
+  // Meanings only ever reference terms, never declare them.
   // Defs without rules (lang: language itself, the sheet) still
   // write theirs: it's authored declaration content, and its term
   // entries anchor the refs stored docs point at.

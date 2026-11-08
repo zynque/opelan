@@ -60,18 +60,29 @@ class GapRetrySuite extends FunSuite {
 
   test("a def version bump re-pins term tags without touching rules") {
     import opelan.foundation.langdef.doc.{langDefDoc, langDefFromDocument}
-    val doc = langDefDoc(exprDef)
+    import opelan.foundation.langdef.{NodeShape, NodeTerm}
+    import opelan.foundation.means.text.readRuleOrGap
+    // `pair` is a locally-declared construct — the arithmetic terms are
+    // foundational references that never re-pin — so the bump's re-pin
+    // shows on the local term.
+    val localRules = exprRules.copy(rules =
+      exprRules.rules :+ readRuleOrGap("pair(a, b) means pair(a, b)"))
+    val local = exprDef.copy(
+      vocabulary = exprDef.vocabulary :+
+        NodeTerm("pair", NodeShape.Fixed(2)),
+      syntax = exprDef.syntax.map(s => s.copy(rules = Some(localRules))))
+    val doc = langDefDoc(local)
     val url = exprDef.typeRef.documentUrl
     val s0 = languageFromDef(langDefFromDocument(url, doc, 0)).textSyntax.get
     val s1 = languageFromDef(langDefFromDocument(url, doc, 1)).textSyntax.get
     val ch = s1.changedSince(s0).get
     assertEquals(ch.rules, Set.empty[String])
     // Content parsed under v0 re-pins its construct refs on reuse.
-    val (c0, r0) = GapRetry().parse(s0, "1 + 2")
-    val (c1, _) = r0.parse(s1, "1 + 2")
+    val (c0, r0) = GapRetry().parse(s0, "pair(1, 2)")
+    val (c1, _) = r0.parse(s1, "pair(1, 2)")
     assertNotEquals(c1, c0)
     assertEquals(Some(c1),
-      languageFromDef(langDefFromDocument(url, doc, 1)).parse("1 + 2"))
+      languageFromDef(langDefFromDocument(url, doc, 1)).parse("pair(1, 2)"))
   }
 
   test("remembered gaps follow the document's gap texts") {

@@ -7,7 +7,7 @@ import opelan.foundation.langdef.doc._
 import opelan.foundation.langdef.syntax._
 import opelan.foundation.language.InputSessions
 import opelan.foundation.means.{Meaning, Pattern, Rule}
-import opelan.foundation.means.engine.{hasGap, gapQuoteText, phraseMeaning}
+import opelan.foundation.means.engine.{foundationRefs, hasGap, gapQuoteText, phraseMeaning}
 import opelan.foundation.means.text.{
   readConstraintsText, readPattern, readRuleOrGap}
 
@@ -86,9 +86,17 @@ private def ruleIndex(doc: Document[NodeData], id: Int): Option[Int] =
     i = rules.indexOf(id) if i >= 0
   } yield i
 
-// Term name → the decoded construct's ref (or a gap — Never Broken).
+// Term name → the construct's ref at commit: a foundational
+// definition's own ref first, else the def's local entry, else a gap
+// holding the name (meanings reference, they never declare — an
+// unmatched word can't land as content).
 private[langdef] def termTagOf(d: LanguageDef): String => NodeData = {
   val refs = termRefs(d)
-  name => refs.get(name).map(NodeData.ExternalNodeRef(_))
+  val url = d.typeRef.documentUrl
+  name => foundationRefs.get(name).orElse(refs.get(name)).map(r =>
+    // A same-doc term links to its entry — an ExternalNodeRef would
+    // freeze the version the entry's decode re-pins.
+    if (r.documentUrl == url) NodeData.InternalNodeRef(r.nodeId)
+    else NodeData.ExternalNodeRef(r))
     .getOrElse(NodeData.GapData(name))
 }

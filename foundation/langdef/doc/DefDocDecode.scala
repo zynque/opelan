@@ -34,9 +34,9 @@ def langDefFromDocument(
     description = r.section("description").flatMap(r.childStr(_, 0)).getOrElse(""),
     // A stored `vocabulary` section is read as written (bootstrap
     // defs declare terms there); without one the vocabulary derives
-    // from the rules — construct terms from first meaning
-    // occurrences (each meaning's `reference` already names its
-    // declaration node), leaf terms from `where`-bound names.
+    // from the rules — `where`-bound leaf terms and
+    // construct-application pattern declarations — each entry's ref
+    // its declaration node's id through termIds.
     vocabulary = r.section("vocabulary").map { sid =>
       r.entries(sid, "term").map(k => NodeTerm(
         r.childStr(k, 0).getOrElse(""),
@@ -45,7 +45,10 @@ def langDefFromDocument(
     }.getOrElse(
       r.section("syntax").toList
         .flatMap(sid => r.entries(sid, "rules"))
-        .headOption.toList.flatMap(rs => vocabularyFrom(r.ruleSetFrom(rs)))),
+        .headOption.toList.flatMap(rs =>
+        vocabularyFrom(r.ruleSetFrom(rs)).map(t =>
+          t.copy(ref = t.ref.orElse(r.termIds.get(t.name)
+            .map(ExternalNodeReference(url, version, _))))))),
     syntax = r.section("syntax").map { sid =>
       SyntaxDef(
         r.childStr(sid, 0).getOrElse(""),

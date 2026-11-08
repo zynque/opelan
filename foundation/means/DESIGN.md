@@ -75,8 +75,9 @@ As in Scheme, the machinery is a pattern and a template over trees;
 identity-by-node-id replaces hygienic renaming, and one rule yields both
 matcher and renderer.
 
-Read left to right, a rule is a production; its meaning names a node
-term and its arity (the vocabulary); read right to left, a constructor
+Read left to right, a rule is a production; its meaning references an
+existing term — foundational definition or declared construct — and
+its arity; read right to left, a constructor
 meaning is the printer — minimal-parenthesis printing follows from the
 binding list, replacing hand-written `Expr.pp`. Several surfaces may
 mean the same tree (`a × b`, `a times b`, `product of a, b` all `means

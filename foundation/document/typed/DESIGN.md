@@ -33,7 +33,9 @@ References *within* a definition are plain internal refs to the
 declaring node, for example a meaning's second `mul` to the first, an
 operator to the term it builds, or a `use` operand to its pattern piece.
 Def documents carry no `vocabulary` section once rules can declare the
-terms — the section persists only for rules-less defs (`lang: language`
+terms — constructs via construct-application patterns, leaf terms via
+`where` bindings, and meanings only ever reference, never declare. The
+section persists only for rules-less defs (`lang: language`
 itself, the sheet), where it is authored declaration content, not a
 redundant listing. Only a definition's own names, literal syntax
 (`"*"`), builtin names, and user data remain strings. The type and

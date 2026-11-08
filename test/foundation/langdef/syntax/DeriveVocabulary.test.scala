@@ -2,11 +2,15 @@ package opelan.foundation.langdef.syntax
 
 import munit.FunSuite
 import opelan.foundation.document.NodeData
-import opelan.foundation.langdef._
 import opelan.foundation.langdef.LeafKind._
+import opelan.foundation.langdef._
 import opelan.foundation.means._
-import opelan.foundation.means.text._
+import opelan.foundation.means.text.readRuleOrGap
 
+// vocabularyFrom derives a def's declared terms: leaf terms the
+// `where` clauses bind, plus constructs declared by
+// construct-application patterns (`square(a)`). Meanings only
+// reference — they declare nothing.
 class DeriveVocabularySuite extends FunSuite {
 
   private def rules(lines: String*): RuleSet =
@@ -15,17 +19,39 @@ class DeriveVocabularySuite extends FunSuite {
   private def names(terms: List[NodeTerm]): List[(String, NodeShape)] =
     terms.map(t => (t.name, t.shape))
 
-  test("every construct meaning declares a term, in rule order") {
+  test("construct meanings never declare — they reference") {
     val set = rules(
       "(a) means a",
       "a * b means mul(a, b)",
       "a + b means add(a, b)")
-    assertEquals(names(vocabularyFrom(set)), List(
-      "mul" -> NodeShape.Fixed(2),
-      "add" -> NodeShape.Fixed(2)))
+    assertEquals(vocabularyFrom(set), Nil)
   }
 
-  test("non-construct meanings declare nothing") {
+  test("a construct-application pattern declares its construct") {
+    val set = rules(
+      "square(a) means mul(a, a)",
+      "pair(a, b) means wrap(a, b)")
+    assertEquals(names(vocabularyFrom(set)), List(
+      "square" -> NodeShape.Fixed(1),
+      "pair"   -> NodeShape.Fixed(2)))
+  }
+
+  test("a repeated construct declaration keeps the first") {
+    val set = rules(
+      "pair(a, b) means wrap(a, b)",
+      "pair(a, b) means bundle(a, b)")
+    assertEquals(vocabularyFrom(set).length, 1)
+  }
+
+  test("a gap rule declares nothing and breaks nothing") {
+    val set = rules(
+      "square(a) means mul(a, a)",
+      "means only")
+    assertEquals(names(vocabularyFrom(set)),
+      List("square" -> NodeShape.Fixed(1)))
+  }
+
+  test("token-spine patterns declare notations, not constructs") {
     val set = rules(
       "(a) means a",
       "a % means a / 100",
@@ -34,46 +60,14 @@ class DeriveVocabularySuite extends FunSuite {
     assertEquals(vocabularyFrom(set), Nil)
   }
 
-  test("a builtin's name operands declare nothing") {
-    val set = RuleSet(List(Rule(Pattern(List(Piece.Placeholder("a"))),
-      Meaning("builtin", List(Meaning.nameTerm("run"))))))
-    assertEquals(vocabularyFrom(set), Nil)
-  }
-
-  test("nested constructs declare their own terms") {
-    val set = rules("a ~ b means wrap(pair(a, b))")
-    assertEquals(names(vocabularyFrom(set)), List(
-      "wrap" -> NodeShape.Fixed(1),
-      "pair" -> NodeShape.Fixed(2)))
-  }
-
-  test("a repeated tag keeps its first declaration") {
-    val set = rules(
-      "a , b means pair(a, b)",
-      "a .. b means pair(a, b)")
-    assertEquals(vocabularyFrom(set).length, 1)
-  }
-
-  test("a gap rule declares nothing and breaks nothing") {
-    val set = rules(
-      "a + b means add(a, b)",
-      "means only")
-    assertEquals(names(vocabularyFrom(set)),
-      List("add" -> NodeShape.Fixed(2)))
-  }
-
   test("where-bound terms join the vocabulary as leaf terms") {
-    // The lexical vocabulary the rules name: every term a `where`
-    // clause binds, sorted, then constructs in rule order.
     val set = rules(
       "-n means literal(neg(n)) where n: number",
       "a + b means add(a, b)",
       "ref:c,r means cell(c, r) where c, r: whole number")
     assertEquals(names(vocabularyFrom(set)), List(
       "number"       -> NodeShape.Leaf,
-      "whole number" -> NodeShape.Leaf,
-      "add"          -> NodeShape.Fixed(2),
-      "cell"         -> NodeShape.Fixed(2)))
+      "whole number" -> NodeShape.Leaf))
   }
 
   test("every impls leaf names a lexical term, bound or not") {
@@ -88,18 +82,5 @@ class DeriveVocabularySuite extends FunSuite {
     assert(terms("number").check(NodeData.IntData(3)))
     assert(terms("number").check(NodeData.FloatData(1.5)))
     assert(!terms("number").check(NodeData.InternalNodeRef(1)))
-    assert(terms("ref").check(NodeData.InternalNodeRef(1)))
-    // `gap` is the foundation's operand term: the gap token reads as a
-    // gap in every language, no authored rule required.
-    assert(terms("gap").operand)
-    assert(terms("gap").parser.isDefined)
-    assert(terms("gap").check(NodeData.GapData("x")))
-    assert(!terms("gap").check(NodeData.IntData(3)))
-    // `value` is the workbench's check-only term: no token production,
-    // refs excluded, gaps provisionally satisfied.
-    assert(terms("value").parser.isEmpty)
-    assert(!terms("value").check(NodeData.InternalNodeRef(1)))
-    assert(terms("value").check(NodeData.GapData("x")))
-    assert(terms("value").check(NodeData.IntData(3)))
   }
 }

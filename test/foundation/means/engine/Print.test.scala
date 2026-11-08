@@ -11,8 +11,9 @@ import opelan.foundation.means.text._
 // parses operands under.
 class PrintSuite extends FunSuite {
 
+  // Resolver silenced — printing mechanics, not reference binding.
   private def aRule(text: String): Rule =
-    readRule(text).fold(e => fail(e), identity)
+    readRule(text, resolve = _ => None).fold(e => fail(e), identity)
 
   private val set = RuleSet(
     rules = List(

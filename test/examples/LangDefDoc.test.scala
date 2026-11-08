@@ -11,7 +11,8 @@ import opelan.foundation.langdef.syntax._
 import opelan.foundation.langdef.view._
 import opelan.foundation.language.{InputSessions, TextSession}
 import opelan.foundation.means.Meaning
-import opelan.foundation.means.text.{printPattern, printRule}
+import opelan.foundation.means.engine.foundationRefs
+import opelan.foundation.means.text.{printPattern, printRule, readRuleOrGap}
 import opelan.foundation.document.Detached._
 import munit.FunSuite
 
@@ -37,7 +38,8 @@ class LangDefDocSuite extends FunSuite {
     // Every meta construct use goes through the imports section.
     val imported = importEntries(doc).map(_._2)
     assert(imported.contains(metaRef("rule").get))
-    assert(imported.forall(_.documentUrl == langDefTypeRef.documentUrl))
+    assert(imported.forall(r => Set(langDefTypeRef.documentUrl,
+      "opelan:foundation/arithmetic")(r.documentUrl)))
   }
 
   test("means rules encode as structure and decode back") {
@@ -57,27 +59,36 @@ class LangDefDocSuite extends FunSuite {
       withTermRefs(exprDef).syntax.get.rules)
   }
 
-  test("rule meanings reference their vocabulary entries by node identity") {
+  test("rule meanings reference their definitions by node identity") {
     // `a / b means div(a, b)` decodes to a construct whose reference
-    // is the `div` term entry's node — the by-reference encoding.
+    // is the foundational `div` entry — the by-reference encoding.
     val doc = langDefDoc(exprDef)
     val d = langDefFromDocument(exprDef.typeRef.documentUrl, doc)
     val div = d.syntax.get.rules.get.rules
       .find(_.meaning.tag == "div").get.meaning
-    assertEquals(div.reference,
-      Some(termRefs(withTermRefs(exprDef))("div")))
+    assertEquals(div.reference, Some(foundationRefs("div")))
     assertEquals(div.arguments.map(_.tag), List("use", "use"))
   }
 
   test("renaming a term entry renames the meanings that use it") {
     // The meaning's data is the entry's ref, never the name — so the
     // decoded tag follows a rename (same healing as document uses).
-    val doc = langDefDoc(exprDef)
-    val divId = termRefs(withTermRefs(exprDef))("div").nodeId
-    val renamed = updateNodeData(divId, s("quotient"), doc).toOption.get
-    val d = langDefFromDocument(exprDef.typeRef.documentUrl, renamed)
+    // `pair` is locally declared (its pattern is a construct
+    // application), so it has a renameable local entry — the
+    // arithmetic terms are foundational references, not local terms.
+    val localRules = exprRules.copy(rules =
+      exprRules.rules :+ readRuleOrGap("pair(a, b) means pair(a, b)"))
+    val local = exprDef.copy(
+      vocabulary = exprDef.vocabulary :+
+        NodeTerm("pair", NodeShape.Fixed(2)),
+      syntax = exprDef.syntax.map(s => s.copy(rules = Some(localRules))))
+    val doc = langDefDoc(local)
+    val pairId = termRefs(withTermRefs(local))("pair").nodeId
+    val renamed = updateNodeData(pairId, s("couple"), doc).toOption.get
+    val d = langDefFromDocument(
+      exprDef.typeRef.documentUrl, renamed)
     assert(d.syntax.get.rules.get.rules
-      .exists(_.meaning.tag == "quotient"))
+      .exists(_.meaning.tag == "couple"))
   }
 
   test("renaming a pattern placeholder renames its meaning uses") {
@@ -158,12 +169,12 @@ class LangDefDocSuite extends FunSuite {
     // And the edited language really parses with the new rule.
     val parsed = languageFromDef(d).parse("6 % 4").get
     assertEquals(parsed.data, NodeData.ExternalNodeRef(
-      termRefs(withTermRefs(d))("add")))
-    // The construct commits by name — the declaration lives at the
-    // first `add` occurrence, so a later use stores its name string.
+      foundationRefs("add")))
+    // The committed construct stores its foundational reference —
+    // meanings never hold bare names.
     assert(updated.subtreeIds(ruleId).exists(k =>
       updated.getNode(k).exists(
-        _.data == NodeData.StringData("add"))))
+        _.data == NodeData.ExternalNodeRef(foundationRefs("add")))))
     // And `use` operands point at the pattern's piece nodes — the
     // `a` placeholder's node kept its id through the commit.
     val aLeaf = updated.subtreeIds(ruleId).find(k =>
@@ -205,7 +216,7 @@ class LangDefDocSuite extends FunSuite {
     val parsed = languageFromDef(
       langDefFromDocument(url, updated)).parse("5 - 3").get
     assertEquals(parsed.data,
-      NodeData.ExternalNodeRef(termRefs(exprDef)("div")))
+      NodeData.ExternalNodeRef(foundationRefs("div")))
   }
 
   test("a meaning field re-edit reparses through its input session") {
@@ -284,7 +295,7 @@ class LangDefDocSuite extends FunSuite {
     val d2 = langDefFromDocument(url, withDiv)
     val parsed = languageFromDef(d2).parse("5 %").get
     assertEquals(parsed.data,
-      NodeData.ExternalNodeRef(termRefs(d2)("div")))
+      NodeData.ExternalNodeRef(foundationRefs("div")))
     assertEquals(parsed.children.map(_.data),
       List(NodeData.IntData(5), NodeData.IntData(100)))
   }

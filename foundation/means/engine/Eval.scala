@@ -41,27 +41,11 @@ def semanticsOf(set: RuleSet): Semantics = {
   Semantics(rules, layers.toMap, cyclic.toSet)
 }
 
-// The pattern of a semantics rule: a construct application spelled
-// `name(p1, p2, …)` — the token-spine spelling of a tree pattern
-// matching that construct, placeholders binding its children
-// positionally. `ref:c,r` is not one (`ref:` isn't followed by `(`).
+// `constructForm` — the construct-application pattern of a semantics
+// rule — lives on Pattern (Rule.scala), shared with vocabulary
+// derivation.
 private def constructForm(p: Pattern): Option[(String, List[String])] =
-  p.pieces match {
-    case Piece.Literal(name, _) :: Piece.Literal("(", _) :: rest =>
-      argsOf(rest).map(name -> _)
-    case _ => None
-  }
-
-// `a, b)` — placeholder names alternating with commas, closed by `)`.
-private def argsOf(pieces: List[Piece]): Option[List[String]] =
-  pieces match {
-    case Piece.Literal(")", _) :: Nil => Some(Nil)
-    case Piece.Placeholder(name, _) :: Piece.Literal(")", _) :: Nil =>
-      Some(List(name))
-    case Piece.Placeholder(name, _) :: Piece.Literal(",", _) :: rest =>
-      argsOf(rest).map(name :: _)
-    case _ => None
-  }
+  p.constructForm
 
 // The construct tags a meaning's evaluation may consult — every
 // non-builtin tag, transitively. A `quote` holds concrete content,
