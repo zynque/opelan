@@ -178,8 +178,13 @@ steps*, item 1).
      - **Authored leaf productions.** User-defined leaf kinds —
        dates, currency literals, unit suffixes — as document rules
        (`n means number(n) where n: digits`), once `where` narrowing
-       grows past builtin token kinds (the opaque-type question).
-       Deferred past the means series, like the lexicons they name.
+       grows past builtin token kinds (the opaque-type question —
+       `TokenKind`/`RuleName` value classes now mark the seam). When
+       lexing moves into documents, a token kind ids by the leaf's
+       node — rename-stable like `means:#N` for grammar rules — and
+       `token`, `unrecognized`, `where` terms, and a lexicon's
+       `gapStart`/`gapRun` refer by it. Deferred past the means
+       series, like the lexicons they name.
 2. **Pins, pending updates, change proposals, auto-update**
    (`foundation/document/store/DESIGN.md`, *Pins select behavior*).
    The demo's healing moment (`DEMO.md`, step 7) needs the first three

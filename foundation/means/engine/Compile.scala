@@ -56,7 +56,7 @@ def compileRules(
     set: RuleSet,
     atom: Parser,
     tag: String => NodeData,
-    name: String,
+    name: RuleName,
     lexicals: Map[String, LexicalTerm] = Map.empty): Parser = {
   // `self` is the parser placeholders recurse through — a `rule`-named
   // parser, so recursion memoizes and records the call for invalidation.

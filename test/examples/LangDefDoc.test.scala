@@ -3,6 +3,7 @@ package opelan.examples
 import opelan.examples.sheet.{SheetLanguage, sheetDef}
 import opelan.examples.expr.{ExprLanguage, demoExprDef, exprDef, exprImpls, exprRules}
 import opelan.foundation.document._
+import opelan.foundation.grammar.RuleName
 import opelan.foundation.document.store._
 import opelan.foundation.document.typed._
 import opelan.foundation.langdef._
@@ -131,7 +132,7 @@ class LangDefDocSuite extends FunSuite {
     // Same node id, consistently renamed content — the compiled
     // parser is identical, so nothing invalidates.
     assertEquals(syntaxChanges(d0.syntax.get, d1.syntax.get),
-      Set.empty[String])
+      Set.empty[RuleName])
     val text = "(7 + 2)"
     val s0 = TextSession.start(languageFromDef(d0).textSyntax.get, text)
     val s1 = s0.retext(languageFromDef(d1).textSyntax.get, text)

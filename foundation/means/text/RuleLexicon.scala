@@ -26,7 +26,8 @@ val ruleLexicon = Lexicon(List(
   "single" -> oneOf(singleCharacterSymbols),
   "symbol" -> runOf(1)(isSymbolCharacter)))
 
-val ruleTokenKinds = Set("number", "word", "quoted", "single", "symbol")
+val ruleTokenKinds: Set[TokenKind] =
+  Set("number", "word", "quoted", "single", "symbol")
 
 // Words with a role in rule text; as literals they must be quoted.
 val ruleKeywords = Set("means", "=>", "where")

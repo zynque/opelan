@@ -56,7 +56,7 @@ private[text] def pieceSpans(pieces: List[Piece]): List[Styled] =
 // be exactly one unquoted token, and neither a placeholder nor a keyword.
 private def quoteIfNeeded(text: String): String = {
   val scanned = scanAt(ParseInput(text, ruleLexicon), 0).token
-  val plain = scanned.exists(t => t.from == 0 && t.to == text.length && t.kind != "quoted") &&
+  val plain = scanned.exists(t => t.from == 0 && t.to == text.length && t.kind.id != "quoted") &&
     !isPlaceholderWord(text) && !ruleKeywords(text)
   if (plain) text else s"'$text'"
 }

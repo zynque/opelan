@@ -56,11 +56,12 @@ private[grammar] def emptyGap(in: ParseInput, pos: Int, examined: Int): ParseRes
 }
 
 // A single token of `kind`, mapped to node data.
-def token(kind: String)(f: Token => NodeData): Parser =
+def token(kind: TokenKind)(f: Token => NodeData): Parser =
   tokenWhere(kind)(_ => true)(f)
 
 // A token of `kind` satisfying `accept`.
-def tokenWhere(kind: String)(accept: Token => Boolean)(f: Token => NodeData): Parser =
+def tokenWhere(
+    kind: TokenKind)(accept: Token => Boolean)(f: Token => NodeData): Parser =
   (in, pos) => {
     val scanned = scanAt(in, pos)
     scanned.token match {

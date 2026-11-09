@@ -3,7 +3,7 @@ package opelan.examples.expr
 import opelan.examples.languageFromDef
 import scala.util.Random
 import opelan.foundation.document._
-import opelan.foundation.grammar.Edit
+import opelan.foundation.grammar.{Edit, RuleName}
 import opelan.foundation.language.{Language, TextSession, textEdit}
 import munit.FunSuite
 
@@ -62,7 +62,7 @@ class TextSessionSuite extends FunSuite {
     val withDiv = languageFromDef(exprDef)
     val s1 = s0.retext(withDiv.textSyntax.get, text)
     assertEquals(withDiv.textSyntax.get.changedSince(s0.syntax).map(_.rules),
-      Some(Set("expr")))
+      Some(Set(RuleName("expr"))))
     assertEquals(Some(s1.content), withDiv.parse(text))
   }
 

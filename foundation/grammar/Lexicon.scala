@@ -7,8 +7,19 @@ package opelan.foundation.grammar
 // `int`, `ref` before `unrecognized`). A grammar's token kinds ("int", "rpar")
 // are the names of these rules.
 
+// A token kind: the name of the lexical rule that matched — a value
+// class so kinds can't silently mix with the other strings a parse
+// carries (rule names, pattern keys, literal text). Strings convert,
+// so kinds still read and write as literals; a document-authored
+// lexical rule will someday id by its node instead (PLAN, *Authored
+// leaf productions*).
+case class TokenKind(id: String) extends AnyVal
+
+object TokenKind:
+  given Conversion[String, TokenKind] = TokenKind(_)
+
 // A lexical match at a position: the rule that matched and its range.
-case class Token(kind: String, text: String, from: Int, to: Int)
+case class Token(kind: TokenKind, text: String, from: Int, to: Int)
 
 // A node's source span in the input text.
 case class Span(from: Int, to: Int)
@@ -25,13 +36,15 @@ type LexicalRule = (String, Int) => Scan
 // rules-based def stores no operand fallback: the lexicon, which owns
 // the kinds, supplies the recovery.
 case class Lexicon(
+    // Rule names are the spelled-out token kinds — `TokenKind` wraps
+    // them where a token is produced or a kind is referenced.
     rules: List[(String, LexicalRule)],
-    gapStart: Set[String] = Set.empty,
-    gapRun: Set[String] = Set.empty)
+    gapStart: Set[TokenKind] = Set.empty,
+    gapRun: Set[TokenKind] = Set.empty)
 
 // The kind of a character no lexical rule accepts: it still forms a
 // one-character token, so text is never lost and recovery can place it.
-val UnknownKind = ""
+val UnknownKind = TokenKind("")
 
 def skipSpace(input: String, pos: Int): Int = {
   var i = pos
@@ -52,7 +65,7 @@ def scanAt(in: ParseInput, pos: Int): Scanned = {
     val hit = in.lexicon.rules.iterator.map { case (kind, rule) =>
       val scan = rule(text, start)
       seen = seen.max(scan.examined)
-      (kind, scan.end)
+      (TokenKind(kind), scan.end)
     }.find(_._2 > start)
     val (kind, end) = hit.getOrElse((UnknownKind, start + 1))
     Scanned(Some(Token(kind, text.substring(start, end), start, end)), seen)

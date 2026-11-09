@@ -21,11 +21,13 @@ class GrammarChangesSuite extends FunSuite {
     readRule(text).fold(e => fail(e), identity).copy(id = Some(id))
   private def codeRule(text: String): Rule =
     readRule(text).fold(e => fail(e), identity)
+  private def names(xs: String*): Set[RuleName] =
+    xs.map(RuleName(_)).toSet
 
   test("identical sets report nothing") {
     val set = RuleSet(List(
       rule("(a) means a", 3), rule("a + b means add(a, b)", 5)))
-    assertEquals(syntaxChanges(syntax(set), syntax(set)), Set.empty[String])
+    assertEquals(syntaxChanges(syntax(set), syntax(set)), names())
   }
 
   test("a placeholder rename is no change — node ids keep the memo key") {
@@ -38,7 +40,7 @@ class GrammarChangesSuite extends FunSuite {
       rule("x + y means add(x, y)", 5),
       rule("x - y means sub(x, y)", 7)))
     assertEquals(
-      syntaxChanges(syntax(before), syntax(after)), Set.empty[String])
+      syntaxChanges(syntax(before), syntax(after)), names())
   }
 
   test("a consistent rename — rule and binding both — changes nothing") {
@@ -49,7 +51,7 @@ class GrammarChangesSuite extends FunSuite {
       rules = List(rule("x + y means add(x, y)", 5)),
       tiers = List(Tier(List(readPattern("x + y")))))
     assertEquals(
-      syntaxChanges(syntax(before), syntax(after)), Set.empty[String])
+      syntaxChanges(syntax(before), syntax(after)), names())
   }
 
   test("a rename the binding list doesn't follow is a real change") {
@@ -62,7 +64,7 @@ class GrammarChangesSuite extends FunSuite {
       rules = List(rule("x + y means add(x, y)", 5)),
       tiers = List(Tier(List(readPattern("a + b")))))
     assertEquals(
-      syntaxChanges(syntax(before), syntax(after)), Set("expr"))
+      syntaxChanges(syntax(before), syntax(after)), names("expr"))
   }
 
   test("a changed sequence rule reports its node-id memo name") {
@@ -70,7 +72,7 @@ class GrammarChangesSuite extends FunSuite {
     val after = RuleSet(List(rule("[a] means a", 3)))
     assertEquals(
       syntaxChanges(syntax(before), syntax(after)),
-      Set("expr", "means:#3"))
+      names("expr", "means:#3"))
   }
 
   test("a swapped use binding is a real change") {
@@ -78,7 +80,7 @@ class GrammarChangesSuite extends FunSuite {
     val after = RuleSet(List(rule("pick a and b means pair(b, a)", 3)))
     assertEquals(
       syntaxChanges(syntax(before), syntax(after)),
-      Set("expr", "means:#3"))
+      names("expr", "means:#3"))
   }
 
   test("added and removed rules name themselves") {
@@ -86,10 +88,10 @@ class GrammarChangesSuite extends FunSuite {
     val both = RuleSet(List(rule("(a) means a", 3), rule("|a| means a", 7)))
     assertEquals(
       syntaxChanges(syntax(before), syntax(both)),
-      Set("expr", "means:#7"))
+      names("expr", "means:#7"))
     assertEquals(
       syntaxChanges(syntax(both), syntax(before)),
-      Set("expr", "means:#7"))
+      names("expr", "means:#7"))
   }
 
   test("a re-created rule — new node, identical content — reports both names") {
@@ -99,7 +101,7 @@ class GrammarChangesSuite extends FunSuite {
     val after = RuleSet(List(rule("(a) means a", 9)))
     assertEquals(
       syntaxChanges(syntax(before), syntax(after)),
-      Set("expr", "means:#3", "means:#9"))
+      names("expr", "means:#3", "means:#9"))
   }
 
   test("code-written rules name by pattern key") {
@@ -107,7 +109,7 @@ class GrammarChangesSuite extends FunSuite {
     val after = RuleSet(List(codeRule("[a] means a")))
     assertEquals(
       syntaxChanges(syntax(before), syntax(after)),
-      Set("expr", "means:'( a ')", "means:'[ a ']"))
+      names("expr", "means:'( a ')", "means:'[ a ']"))
   }
 
   test("a code-side placeholder rename can't pair — both spellings report") {
@@ -115,7 +117,7 @@ class GrammarChangesSuite extends FunSuite {
     val after = RuleSet(List(codeRule("(x) means x")))
     assertEquals(
       syntaxChanges(syntax(before), syntax(after)),
-      Set("expr", "means:'( a ')", "means:'( x ')"))
+      names("expr", "means:'( a ')", "means:'( x ')"))
   }
 
   test("a doc rule memoizes under its node-id name") {

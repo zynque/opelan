@@ -102,7 +102,7 @@ class ParseSessionSuite extends FunSuite {
     // Result-tree nodes carry marks naming the rules that produced them.
     val marked = liveMarks(s.tree)
     assertEquals(marked.map(_._3.rule).toSet,
-      Set("sum", "term", "words", "statement"))
+      Set("sum", "term", "words", "statement").map(RuleName(_)))
     // What the marks claim, the side table doesn't repeat — it holds
     // only results the tree can't represent (rejected alternatives).
     val claimed = marked.map((pos, _, m) => (m.rule, pos)).toSet
@@ -110,7 +110,8 @@ class ParseSessionSuite extends FunSuite {
       column.keys.foreach(name => assert(!claimed((name, i)))) }
     // `consulted` still sees every applied rule — including `words`,
     // which failed at column 0 and so lives only in the side table.
-    assert(s.consulted == Set("sum", "term", "words", "statement"))
+    assert(s.consulted ==
+      Set("sum", "term", "words", "statement").map(RuleName(_)))
   }
 
   test("a rule change drops only results that depend on the changed rule") {

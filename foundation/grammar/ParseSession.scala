@@ -32,7 +32,7 @@ case class ParseSession(
     text: String,
     // Memo entries the result tree doesn't represent: one column per
     // position, holding the rejected and re-spanned results only.
-    side: Vector[Map[String, MemoEntry]],
+    side: Vector[Map[RuleName, MemoEntry]],
     result: ParseResult,
     // Rule bodies the last parse ran — the work the change cost.
     evaluations: Int) {
@@ -41,7 +41,7 @@ case class ParseSession(
 
   // Every rule the last parse applied — the marks on its result tree
   // plus whatever the side table still holds.
-  def consulted: Set[String] =
+  def consulted: Set[RuleName] =
     liveMarks(result.tree).map(_._3.rule).toSet ++
       side.iterator.flatMap(_.keySet)
 
@@ -59,7 +59,7 @@ case class ParseSession(
     val moved = side.take(from).zipWithIndex.map { case (column, i) =>
       column.filter { case (_, entry) =>
         i + entry.result.examined <= from }
-    } ++ Vector.fill(e.inserted.length)(Map.empty[String, MemoEntry]) ++
+    } ++ Vector.fill(e.inserted.length)(Map.empty[RuleName, MemoEntry]) ++
       side.drop(to)
     val seed = mergeMarks(moved, newText.length,
       liveMarks(result.tree).collect {
@@ -76,7 +76,7 @@ case class ParseSession(
   // are dropped; everything else is reused under the new grammar —
   // `migrate` rewrites node data a kept result carries (e.g. term tags
   // re-pinning to a newer definition version).
-  def changeRules(newGrammar: Parser, changed: Set[String],
+  def changeRules(newGrammar: Parser, changed: Set[RuleName],
       migrate: NodeData => NodeData = identity): ParseSession = {
     val keep = (pos: Int, mark: ParseMark) =>
       !changed(mark.rule) && !mark.calls.exists(changed)
@@ -95,7 +95,7 @@ case class ParseSession(
   // A node's mark claims the entry its rule stored — rebuilt exactly
   // as MemoTable.stored wrote it (stored.from = -appliedAt).
   private def markEntry(
-      pos: Int, node: ParseTree, mark: ParseMark): (String, Int, MemoEntry) =
+      pos: Int, node: ParseTree, mark: ParseMark): (RuleName, Int, MemoEntry) =
     (mark.rule, pos, MemoEntry(
       ParseResult(mark.consumed, node.copy(from = -mark.appliedAt),
         mark.applied, mark.examined),
@@ -103,13 +103,13 @@ case class ParseSession(
 
   // Fold mark-derived entries into the side-table columns.
   private def mergeMarks(
-      columns: Vector[Map[String, MemoEntry]],
+      columns: Vector[Map[RuleName, MemoEntry]],
       textLength: Int,
-      entries: Iterable[(String, Int, MemoEntry)]
-  ): Vector[Map[String, MemoEntry]] = {
+      entries: Iterable[(RuleName, Int, MemoEntry)]
+  ): Vector[Map[RuleName, MemoEntry]] = {
     val merged = Array.tabulate(textLength + 1)(i =>
       columns.lift(i).map(scala.collection.mutable.Map.from)
-        .getOrElse(scala.collection.mutable.Map.empty[String, MemoEntry]))
+        .getOrElse(scala.collection.mutable.Map.empty[RuleName, MemoEntry]))
     entries.foreach { case (name, pos, entry) =>
       if (pos >= 0 && pos <= textLength) merged(pos)(name) = entry }
     merged.iterator.map(_.toMap).toVector
@@ -122,7 +122,7 @@ object ParseSession {
 
   private def run(
       grammar: Parser, lexicon: Lexicon, text: String,
-      seed: Vector[Map[String, MemoEntry]]): ParseSession = {
+      seed: Vector[Map[RuleName, MemoEntry]]): ParseSession = {
     val table = MemoTable(seed, marking = true)
     val result = grammar(ParseInput(text, lexicon, table), 0)
     val claimed = liveMarks(result.tree).map((pos, _, mark) =>

@@ -2,6 +2,7 @@ package opelan.examples.expr
 
 import opelan.examples.languageFromDef
 import opelan.foundation.document._
+import opelan.foundation.grammar.RuleName
 import opelan.foundation.language.{GapRetry, SyntaxChange, TextSyntax}
 import opelan.foundation.langdef.rememberInputGaps
 import munit.FunSuite
@@ -76,7 +77,7 @@ class GapRetrySuite extends FunSuite {
     val s0 = languageFromDef(langDefFromDocument(url, doc, 0)).textSyntax.get
     val s1 = languageFromDef(langDefFromDocument(url, doc, 1)).textSyntax.get
     val ch = s1.changedSince(s0).get
-    assertEquals(ch.rules, Set.empty[String])
+    assertEquals(ch.rules, Set.empty[RuleName])
     // Content parsed under v0 re-pins its construct refs on reuse.
     val (c0, r0) = GapRetry().parse(s0, "pair(1, 2)")
     val (c1, _) = r0.parse(s1, "pair(1, 2)")

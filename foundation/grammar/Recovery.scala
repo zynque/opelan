@@ -10,7 +10,7 @@ import opelan.foundation.document._
 // begins a gap), then covers the maximal run of following tokens whose
 // kinds are in `run`. At the end of input it produces the empty gap —
 // "operand expected" — and still applies.
-def unrecognized(start: Set[String], run: Set[String]): Parser =
+def unrecognized(start: Set[TokenKind], run: Set[TokenKind]): Parser =
   (in, pos) => {
     val first = scanAt(in, pos)
     first.token match {
@@ -46,7 +46,7 @@ def restGap: Parser = (in, pos) => {
 // The level cleanup: if text remains that `p` did not place — and the
 // next token isn't a stop kind (")" inside a group) — the whole level
 // merges into one gap covering its text.
-def phrase(p: Parser, stops: Set[String]): Parser =
+def phrase(p: Parser, stops: Set[TokenKind]): Parser =
   (in, pos) => {
     val r = p(in, pos)
     var next = scanAt(in, r.position)
@@ -72,16 +72,16 @@ def signum: Parser =
   (in, pos) => {
     val first = scanAt(in, pos)
     first.token
-      .filter(t => t.kind == "op" && (t.text == "+" || t.text == "-"))
+      .filter(t => t.kind.id == "op" && (t.text == "+" || t.text == "-"))
       .fold(emptyGap(in, pos, first.examined)) { op =>
         val next = scanAt(in, op.to)
         val seen = first.examined.max(next.examined)
         next.token
           .filter(t => t.from == op.to &&
-            (t.kind == "int" || t.kind == "float"))
+            (t.kind.id == "int" || t.kind.id == "float"))
           .fold(emptyGap(in, pos, seen)) { num =>
             val negative = op.text == "-"
-            val data = (if (num.kind == "int")
+            val data = (if (num.kind.id == "int")
                           num.text.toIntOption.map(NodeData.IntData(_))
                         else num.text.toDoubleOption.map(NodeData.FloatData(_)))
               .getOrElse(NodeData.GapData(num.text)) match {

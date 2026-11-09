@@ -3,7 +3,7 @@ package opelan.foundation.langdef.syntax
 import opelan.foundation.document.{
   ExternalNodeReference, NodeData}
 import opelan.foundation.document.typed.sameNode
-import opelan.foundation.grammar.ParseTree
+import opelan.foundation.grammar.{ParseTree, RuleName}
 import opelan.foundation.langdef._
 import opelan.foundation.means._
 
@@ -14,14 +14,14 @@ import opelan.foundation.means._
 // covers operator changes and operand structure, each changed or
 // unpaired sequence rule adds its memo name — those are the only
 // entries that could survive the top name's fall.
-def syntaxChanges(before: SyntaxDef, after: SyntaxDef): Set[String] =
+def syntaxChanges(before: SyntaxDef, after: SyntaxDef): Set[RuleName] =
   if (before == after) Set.empty
   else (before.rules, after.rules) match {
     case (Some(b), Some(a)) =>
       if (namesSame(b, a) && sameCompiled(b, a, sameRule)) Set.empty
-      else Set(after.lexicon) ++ changedSequenceNames(b, a)
+      else Set(RuleName(after.lexicon)) ++ changedSequenceNames(b, a)
     case _ =>
-      Set(after.lexicon) ++
+      Set(RuleName(after.lexicon)) ++
         sequenceRuleNames(before.rules) ++ sequenceRuleNames(after.rules)
   }
 
@@ -38,11 +38,11 @@ private def namesSame(b: RuleSet, a: RuleSet): Boolean =
 // identity: node id once they live in a `lang:` document (a rename
 // keeps the pairing), pattern key for code-written rules. An unpaired
 // rule names itself — entries it was called from must drop.
-private def changedSequenceNames(b: RuleSet, a: RuleSet): Set[String] = {
+private def changedSequenceNames(b: RuleSet, a: RuleSet): Set[RuleName] = {
   def seqs(s: RuleSet) = s.rules.filter(r => isSequencePattern(r.pattern))
   val (bs, as) = (seqs(b), seqs(a).zipWithIndex)
   val claimed = scala.collection.mutable.Set.empty[Int]
-  val names = Set.newBuilder[String]
+  val names = Set.newBuilder[RuleName]
   bs.foreach { br =>
     as.find { case (ar, i) => !claimed(i) && sameIdentity(br, ar) } match {
       case Some((ar, i)) =>
@@ -108,7 +108,7 @@ private def sameData(a: NodeData, b: NodeData): Boolean = (a, b) match {
 
 // Every memo name a rule set compiles under — the conservative answer
 // when a change can't be described finer than "the rules differ".
-private def sequenceRuleNames(set: Option[RuleSet]): Set[String] =
+private def sequenceRuleNames(set: Option[RuleSet]): Set[RuleName] =
   set.toList.flatMap(_.rules).filter(r => isSequencePattern(r.pattern))
     .map(sequenceRuleName).toSet
 

@@ -1,11 +1,12 @@
 package opelan.foundation.language
 
 import opelan.foundation.document._
+import opelan.foundation.grammar.RuleName
 
 // A gap's last parse attempt: the syntax it ran under, every rule the
 // parse consulted, and the content it produced.
 case class GapAttempt(
-    syntax: TextSyntax, calls: Set[String], content: DetachedNode[NodeData])
+    syntax: TextSyntax, calls: Set[RuleName], content: DetachedNode[NodeData])
 
 // Retrying gaps when a language changes (*Incremental*): a gap's text
 // is reparsed only if its last attempt consulted a rule the change

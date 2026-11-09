@@ -38,7 +38,7 @@ class IncrementalParseSuite extends FunSuite {
     val staged = languageFromDef(demoExprDef).textSyntax.get
     val withDiv = languageFromDef(exprDef).textSyntax.get
     val names = withDiv.changedSince(staged).map(_.rules).get
-    assertEquals(names, Set("expr"))
+    assertEquals(names, Set(RuleName("expr")))
     val s0 = ParseSession.start(staged.parser, exprLexicon, "(7 / 7)")
     val s1 = s0.changeRules(withDiv.parser, names)
     assertEquals(normal(s1.result), full(withDiv.parser, s1.text))

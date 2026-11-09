@@ -20,8 +20,8 @@ import opelan.foundation.grammar._
 
 private def tag(name: String) = NodeData.StringData(name)
 
-private def tokenText(kind: String, text: String): Parser =
-  tokenWhere(kind)(_.text == text)(t => NodeData.StringData(t.kind))
+private def tokenText(kind: TokenKind, text: String): Parser =
+  tokenWhere(kind)(_.text == text)(t => NodeData.StringData(t.kind.id))
 
 private def single(text: String) = tokenText("single", text)
 
@@ -38,10 +38,10 @@ private val argumentEnd = choice(single(","), single(")"))
 
 private def meaning(end: Parser): Parser = choice(
   sequence(tag("build"))(
-    token("word")(t => NodeData.StringData(t.kind)), single("("),
+    token("word")(t => NodeData.StringData(t.kind.id)), single("("),
     optional(arguments), single(")"), followedBy(end)),
   sequence(tag("use"))(
-    tokenWhere("word")(t => isPlaceholderWord(t.text))(t => NodeData.StringData(t.kind)),
+    tokenWhere("word")(t => isPlaceholderWord(t.text))(t => NodeData.StringData(t.kind.id)),
     followedBy(end)),
   sequence(tag("phrase"))(balanced(end), many(tag("rest"))(balanced(end))))
 

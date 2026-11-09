@@ -14,7 +14,16 @@ import scala.collection.mutable
 // length, the tree's `from` an offset from the column) — so when an
 // edit moves a column, nothing inside its entries changes.
 
-case class MemoEntry(result: ParseResult, calls: Set[String])
+// A named rule's identity for memoization and change invalidation —
+// `means:#N` for document-authored rules, the lexicon's name or a
+// pattern key in code. A value class so memo names can't silently mix
+// with the other strings a parse carries (token kinds, pattern keys).
+case class RuleName(id: String) extends AnyVal
+
+object RuleName:
+  given Conversion[String, RuleName] = RuleName(_)
+
+case class MemoEntry(result: ParseResult, calls: Set[RuleName])
 
 // A memo entry that lives on the parse-tree node its rule produced.
 // Marks plus the session's side table are the whole memo (DESIGN.md,
@@ -33,8 +42,8 @@ case class MemoEntry(result: ParseResult, calls: Set[String])
 // keyed `(rule, A + appliedAt)`, reconstructible exactly:
 // `stored(pos, examined, tree.from)` = `(consumed, examined, -appliedAt)`.
 case class ParseMark(
-    rule: String, appliedAt: Int, consumed: Int, examined: Int,
-    applied: Boolean, span: Int, calls: Set[String])
+    rule: RuleName, appliedAt: Int, consumed: Int, examined: Int,
+    applied: Boolean, span: Int, calls: Set[RuleName])
 
 // The memo table of one parse. Mutable only within that parse: seeded
 // from a session's surviving columns, read back as an immutable
@@ -43,21 +52,22 @@ case class ParseMark(
 // result tree carries the memo; one-off parses (gaps, `reparse`
 // sub-parses) leave it off so no foreign marks leak in.
 final class MemoTable(
-    seed: Vector[Map[String, MemoEntry]] = Vector.empty,
+    seed: Vector[Map[RuleName, MemoEntry]] = Vector.empty,
     marking: Boolean = false) {
   private val columns =
     mutable.ArrayBuffer.from(seed.map(m => mutable.Map.from(m)))
-  private var callers = List.empty[mutable.Set[String]]
+  private var callers = List.empty[mutable.Set[RuleName]]
   private var evaluated = 0
 
-  def apply(name: String, pos: Int, body: => ParseResult): ParseResult =
+  def apply(
+      name: RuleName, pos: Int, body: => ParseResult): ParseResult =
     column(pos).get(name) match {
       case Some(entry) =>
         noteCall(name, entry.calls)
         relocated(entry.result, pos)
       case None =>
         evaluated += 1
-        val calls = mutable.Set.empty[String]
+        val calls = mutable.Set.empty[RuleName]
         callers = calls :: callers
         val r = try body finally callers = callers.tail
         val marked =
@@ -70,7 +80,7 @@ final class MemoTable(
         marked
     }
 
-  private def column(pos: Int): mutable.Map[String, MemoEntry] = {
+  private def column(pos: Int): mutable.Map[RuleName, MemoEntry] = {
     while (columns.length <= pos) columns += mutable.Map.empty
     columns(pos)
   }
@@ -86,10 +96,10 @@ final class MemoTable(
     position = base + r.position, examined = base + r.examined,
     tree = r.tree.copy(from = base + r.tree.from))
 
-  private def noteCall(name: String, calls: Set[String]): Unit =
+  private def noteCall(name: RuleName, calls: Set[RuleName]): Unit =
     callers.headOption.foreach { c => c += name; c ++= calls }
 
-  def snapshot: Vector[Map[String, MemoEntry]] =
+  def snapshot: Vector[Map[RuleName, MemoEntry]] =
     columns.iterator.map(_.toMap).toVector
   // How many rule bodies this parse actually ran (memo misses).
   def evaluations: Int = evaluated
@@ -97,7 +107,7 @@ final class MemoTable(
 
 // A named rule application: memoized by name and position. The name is
 // the rule's identity — a session invalidates by it when rules change.
-def rule(name: String)(body: => Parser): Parser = {
+def rule(name: RuleName)(body: => Parser): Parser = {
   lazy val parser = body
   (in, pos) => in.memo(name, pos, parser(in, pos))
 }

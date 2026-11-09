@@ -1,7 +1,7 @@
 package opelan.foundation.language
 
 import opelan.foundation.document._
-import opelan.foundation.grammar.{Lexicon, ParseSession, Parser, ParseTree, toDetached}
+import opelan.foundation.grammar.{Lexicon, ParseSession, Parser, ParseTree, RuleName, toDetached}
 import opelan.foundation.grammar.{Edit => TextEdit}
 
 // What changed between two syntaxes: the rules whose definitions
@@ -10,7 +10,7 @@ import opelan.foundation.grammar.{Edit => TextEdit}
 // an older definition version re-pin rather than reparse. `migrate`
 // maps node data; results that hold other data are untouched.
 case class SyntaxChange(
-    rules: Set[String],
+    rules: Set[RuleName],
     migrate: NodeData => NodeData = identity)
 
 // A language's text syntax as an incremental parser: the grammar, its

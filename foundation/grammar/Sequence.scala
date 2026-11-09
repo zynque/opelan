@@ -70,7 +70,7 @@ def anyToken: Parser = (in, pos) => {
   val scanned = scanAt(in, pos)
   scanned.token match {
     case Some(t) => ParseResult(t.to,
-      ParseTree(NodeData.StringData(t.kind), t.text, t.from, t.text.length),
+      ParseTree(NodeData.StringData(t.kind.id), t.text, t.from, t.text.length),
       applied = true, scanned.examined)
     case None => emptyGap(in, pos, scanned.examined)
   }

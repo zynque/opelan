@@ -16,7 +16,7 @@ import opelan.foundation.document._
 // `phrase`/`parentheses` handles the boundary.
 def chainLeft(
     ops: Map[String, NodeData],
-    opKind: String = "op")(atom: Parser): Parser =
+    opKind: TokenKind = "op")(atom: Parser): Parser =
   (in, pos) => {
     val first = atom(in, pos)
     if (!first.applied) first
@@ -52,7 +52,7 @@ def chainLeft(
 def precedenceTable(
     atom: Parser,
     levels: List[Map[String, NodeData]],
-    opKind: String = "op"): Parser =
+    opKind: TokenKind = "op"): Parser =
   levels.foldLeft(atom)((lower, ops) => chainLeft(ops, opKind)(lower))
 
 // "(" inner ")" with recovery: a missing ")" closes the group at the end
@@ -62,11 +62,11 @@ def parentheses(inner: => Parser): Parser =
   (in, pos) => {
     val open = scanAt(in, pos)
     open.token match {
-      case Some(t) if t.kind == "lpar" =>
+      case Some(t) if t.kind.id == "lpar" =>
         val r = phrase(inner, Set("rpar"))(in, t.to)
         val after = scanAt(in, r.position)
         val seen = open.examined.max(r.examined).max(after.examined)
-        val close = after.token.filter(_.kind == "rpar")
+        val close = after.token.filter(_.kind.id == "rpar")
         val end = close.map(_.to).getOrElse(in.input.length)
         val endPos = close.map(_.to).getOrElse(r.position)
         r.tree.data match {

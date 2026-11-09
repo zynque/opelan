@@ -1,5 +1,7 @@
 package opelan.foundation.means
 
+import opelan.foundation.grammar.RuleName
+
 // Rule identity for language-change diffing
 // (foundation/grammar/DESIGN.md, *Incremental parsing*): rules have
 // stable identities — their node ids in the
@@ -39,10 +41,10 @@ def canonicalRule(r: Rule): Rule = {
 // invalidation: the rule node's id once rules live in `lang:`
 // documents (a rename keeps it, so only real changes invalidate),
 // the pattern key for rules written in code.
-def sequenceRuleName(theRule: Rule): String =
+def sequenceRuleName(theRule: Rule): RuleName =
   theRule.id match {
-    case Some(id) => s"means:#$id"
-    case None     => s"means:${theRule.pattern.key.mkString(" ")}"
+    case Some(id) => RuleName(s"means:#$id")
+    case None     => RuleName(s"means:${theRule.pattern.key.mkString(" ")}")
   }
 
 // Do two sets compile to the same parser? The rules compare pairwise
