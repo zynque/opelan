@@ -5,6 +5,7 @@ I dream of a world where anyone can "look under the hood" of any program at the 
 This project is a step toward that vision — an experimental prototype exploring language workbench concepts (structured editing, polysyntactic views, typed gaps, and local-first documents) built with Scala.js and CodeMirror. It draws inspiration from prior language workbench and projectional editing systems — MPS, OMeta, and many others — as well as ideas I've gathered over more than 30 years of tinkering and pondering.
 
 <img width="1212" height="749" alt="Screenshot 2026-11-10 102033" src="https://github.com/user-attachments/assets/4a69060c-68bd-4244-abf1-53685e419dde" />
+<img width="1348" height="833" alt="Screenshot 2026-11-10 105137" src="https://github.com/user-attachments/assets/e97e2994-a956-4bb7-9efb-6f17306da890" />
 
 **This is a research prototype, not production software.** It exists to explore ideas from the [MANIFESTO](MANIFESTO.md); expect rough edges, incomplete features, and evolving design. See [PLAN.md](PLAN.md) for an honest accounting of what doesn't work yet and what comes next.
 
