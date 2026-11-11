@@ -244,3 +244,9 @@ notation may still be ambiguous.
 
 For what currently works, what's in progress, open questions, and next
 steps, see `PLAN.md`.
+
+## Future Directions
+
+- Compilation to WASM
+- Integration with AI coding assistants
+- Compilation to MLIR

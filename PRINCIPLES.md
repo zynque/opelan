@@ -9,12 +9,11 @@ art).
 ## Languages are applications
 
 Programming language theory has traditionally focused on grammars, parsers,
-and compilers. But a developer never interacts with a grammar — they interact
-with an application: Notepad, vim, VS Code, or whatever else. The experience
-that application provides shapes their productivity, and ultimately their
-impression of the language itself. Syntax is a large part of that experience,
-but the same syntax in Notepad and in VS Code is a very different language to
-work in.
+and compilers. But a developer interacts with an application:
+Notepad, vim, VS Code, etc. The experience
+that application provides shapes their productivity, and often colors their
+perception of the language itself. Syntax is a large part of that experience,
+but the same syntax in Notepad and in VS Code is very different experience.
 
 So we design from the user experience inward, not from the grammar outward.
 And since a language is always experienced *through* an application,

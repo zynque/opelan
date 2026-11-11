@@ -1,58 +1,45 @@
 package opelan.examples.sheet
 
 import opelan.examples.termOf
-import opelan.examples.expr.{evalLoc, readLocExpr, LocExpr, Num}
+import opelan.examples.expr.gapText
 import opelan.foundation.document._
+import opelan.foundation.document.typed._
 
 // Reading `ref` constructs in a sheet's grid: a `ref` node — `ref >
 // column("B"), row(3)` — resolves positionally at read time against the
-// live grid, never baked into a node id. `readGridExpr` rewrites a
-// cell's located expression so each ref reads as a reference to the
-// cell it names (a LocRef to the target's node — evaluation then
-// composes through the ordinary doc resolver machinery); a name
-// outside the grid reads as a gap showing the name.
+// live grid, never baked into a node id. `resolveGridRefs` projects the
+// document: each `ref` node under `rootId` becomes an
+// `InternalNodeRef` leaf naming the cell it resolves to — keeping its
+// id, so provenance survives — or a gap leaf showing the name it
+// spelled when the target sits outside the grid. The projected document
+// is what the derived views evaluate and print: `evalNode` follows the
+// internal refs, and its visiting set reports ref cycles as gaps.
 
-// A cell's expression with its `ref` constructs resolved to the cells
-// they name.
-def readGridExpr(doc: Document[NodeData], cellId: Int): LocExpr =
-  resolveRefs(doc, cellId, readLocExpr(doc, cellId))
-
-// The ref resolver for grid expressions — `docResolver` over grid
-// reads: a referenced cell's own expression, with its `ref` constructs
-// resolved, supplies the value; the visiting set reports cycles.
-def gridResolver(
-    doc: Document[NodeData],
-    visiting: Set[Int]): Int => Either[(String, Int), Num] =
-  target =>
-    if (visiting(target)) Left(("cycle", target))
-    else evalLoc(readGridExpr(doc, target),
-      gridResolver(doc, visiting + target))
-
-private def resolveRefs(
-    doc: Document[NodeData], cellId: Int, e: LocExpr): LocExpr =
-  e match {
-    case LocExpr.LocGap(id, text) =>
-      refCellTarget(doc, cellId, id) match {
-        case Some(target) => LocExpr.LocRef(id, target)
-        case None         => LocExpr.LocGap(id, refNodeName(doc, id).getOrElse(text))
+// The document with every `ref` construct under `rootId` rewritten to
+// the internal ref its position names.
+def resolveGridRefs(
+    doc: Document[NodeData], rootId: Int): Document[NodeData] =
+  doc.preorder(rootId).map(_._1).foldLeft(doc) { (d, id) =>
+    if (!termOf(sheetTerms, d, id).contains(RefTag)) d
+    else {
+      val content = refCellTarget(d, id) match {
+        case Some(target) =>
+          DetachedNode.leaf(NodeData.InternalNodeRef(target))
+        case None =>
+          DetachedNode.leaf(NodeData.GapData(refNodeName(d, id)
+            .getOrElse(d.getNode(id).map(n => gapText(n.data))
+              .getOrElse("ref"))))
       }
-    case LocExpr.LocAdd(id, l, r) =>
-      LocExpr.LocAdd(id, resolveRefs(doc, cellId, l), resolveRefs(doc, cellId, r))
-    case LocExpr.LocSub(id, l, r) =>
-      LocExpr.LocSub(id, resolveRefs(doc, cellId, l), resolveRefs(doc, cellId, r))
-    case LocExpr.LocMul(id, l, r) =>
-      LocExpr.LocMul(id, resolveRefs(doc, cellId, l), resolveRefs(doc, cellId, r))
-    case LocExpr.LocDiv(id, l, r) =>
-      LocExpr.LocDiv(id, resolveRefs(doc, cellId, l), resolveRefs(doc, cellId, r))
-    case _ => e
+      commitContent(id, content, d).getOrElse(d)
+    }
   }
 
-// The cell a `ref` node names, resolved in `cellId`'s grid.
+// The cell a `ref` node names, resolved in its enclosing sheet's grid.
 private def refCellTarget(
-    doc: Document[NodeData], cellId: Int, refId: Int): Option[Int] =
+    doc: Document[NodeData], refId: Int): Option[Int] =
   for {
     (row, col) <- refPosition(doc, refId)
-    sheetId    <- enclosingSheet(doc, cellId)
+    sheetId    <- enclosingSheet(doc, refId)
     target     <- cellAt(doc, sheetId, row, col)
   } yield target
 
@@ -81,7 +68,8 @@ private def leafString(
     .flatMap(id => doc.getNode(id).map(_.data))
     .collect { case NodeData.StringData(s) => s }
 
-private def leafInt(doc: Document[NodeData], fieldId: Int): Option[Int] =
+private def leafInt(
+    doc: Document[NodeData], fieldId: Int): Option[Int] =
   doc.childrenOf(fieldId).headOption
     .flatMap(id => doc.getNode(id).map(_.data))
     .collect { case NodeData.IntData(i) => i }

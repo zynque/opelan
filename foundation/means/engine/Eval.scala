@@ -221,8 +221,7 @@ private def evalArgs(
   }
 
 // The "eval" view derived: the value as text, or the gap evaluation is
-// waiting on tagged with the blocking node's id — the same tree
-// evalTree emitted, produced from rules rather than by hand.
+// waiting on tagged with the blocking node's id.
 def evalView(
     semantics: Semantics,
     terms: Map[String, ExternalNodeReference])(

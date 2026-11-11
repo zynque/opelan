@@ -5,6 +5,7 @@ import opelan.foundation.document._
 import opelan.foundation.document.typed._
 import opelan.foundation.document.Detached._
 import opelan.foundation.language.applyDocText
+import opelan.foundation.means.engine.{evalNode, semanticsOf}
 import opelan.foundation.view.ViewTree
 import Expr._
 
@@ -13,47 +14,40 @@ class ExprSuite extends munit.FunSuite {
   // (1 + 2) - (3 - 4)  ==  4
   val sample = Sub(Add(Lit(1), Lit(2)), Sub(Lit(3), Lit(4)))
 
-  // The live evaluator's contract stated against Expr trees: evalLoc
-  // over a located read (source ids are arbitrary — only ref targets
-  // and gap reports carry them).
-  private def eval(
-      e: Expr,
-      resolve: Int => Option[Num] = _ => None): Either[(String, Int), Num] =
-    evalLoc(loc(e), id => resolve(id).toRight(("unresolved", id)))
-
-  private def loc(e: Expr): LocExpr = e match {
-    case Lit(v)    => LocExpr.LocLit(0, v)
-    case FLit(v)   => LocExpr.LocFLit(0, v)
-    case Ref(id)   => LocExpr.LocRef(0, id)
-    case Gap(t)    => LocExpr.LocGap(0, t)
-    case Add(l, r) => LocExpr.LocAdd(0, loc(l), loc(r))
-    case Sub(l, r) => LocExpr.LocSub(0, loc(l), loc(r))
-    case Mul(l, r) => LocExpr.LocMul(0, loc(l), loc(r))
-    case Div(l, r) => LocExpr.LocDiv(0, loc(l), loc(r))
+  // The derived evaluator's contract stated against Expr trees:
+  // evalNode over the document the AST encodes to — a ref names a real
+  // node id in the same document.
+  private def eval(e: Expr): Either[(String, Int), NodeData] = {
+    val doc = buildDocument(exprToDetached(e))
+    evalNode(semanticsOf(exprRules), exprTerms,
+      doc, doc.rootId, Set(doc.rootId))
   }
 
   test("eval computes integer results") {
-    assertEquals(eval(sample), Right(Num.I(4)))
-    assertEquals(eval(Lit(-7)), Right(Num.I(-7)))
-    assertEquals(eval(Sub(Sub(Lit(1), Lit(2)), Lit(3))), Right(Num.I(-4)))
+    assertEquals(eval(sample), Right(NodeData.IntData(4)))
+    assertEquals(eval(Lit(-7)), Right(NodeData.IntData(-7)))
+    assertEquals(
+      eval(Sub(Sub(Lit(1), Lit(2)), Lit(3))), Right(NodeData.IntData(-4)))
   }
 
   test("eval keeps integers integral and floats decimal") {
-    assertEquals(eval(Mul(Lit(4), Lit(5))), Right(Num.I(20)))
-    assertEquals(eval(Mul(Lit(4), FLit(1.2))), Right(Num.F(4.8)))
-    assertEquals(eval(Add(Lit(1), FLit(0.5))), Right(Num.F(1.5)))
+    assertEquals(eval(Mul(Lit(4), Lit(5))), Right(NodeData.IntData(20)))
+    assertEquals(eval(Mul(Lit(4), FLit(1.2))), Right(NodeData.FloatData(4.8)))
+    assertEquals(eval(Add(Lit(1), FLit(0.5))), Right(NodeData.FloatData(1.5)))
   }
 
   test("division produces a float and fails at zero") {
-    assertEquals(eval(Div(Lit(8), Lit(2))), Right(Num.F(4.0)))
+    assertEquals(eval(Div(Lit(8), Lit(2))), Right(NodeData.FloatData(4.0)))
     assert(eval(Div(Lit(1), Lit(0))).isLeft)
   }
 
-  test("refs evaluate through a resolver") {
-    assertEquals(
-      eval(Add(Ref(7), Lit(1)), id => if (id == 7) Some(Num.I(10)) else None),
-      Right(Num.I(11)))
+  test("refs evaluate through the document") {
+    // add(ref, 1) — post-order ids: the ref leaf is id 0, the literal
+    // sibling id 1, the add root id 2. The ref evaluates the literal.
+    assertEquals(eval(Add(Ref(1), Lit(1))), Right(NodeData.IntData(2)))
     assert(eval(Ref(7)).isLeft)
+    // A ref to itself reports a cycle rather than diverging.
+    assert(eval(Ref(0)).isLeft)
   }
 
   test("eval is blocked by gaps") {
@@ -137,21 +131,28 @@ class ExprSuite extends munit.FunSuite {
       Right(ViewTree.from(gapId, ViewTree.gap("abc"))))
   }
 
-  test("the derived print view matches the hand-written print tree") {
-    // printTree over readLocExpr is the oracle printViewWith replaces:
-    // the derived printer must emit the identical provenance-tagged
-    // tree — pieces, parentheses, gaps, and src: ids alike.
-    val inputs = List(
-      "1 + 2 - 3", "(1 + 2) * 3", "1.5 * 2", "ref:3 + 1", "-4 + 5",
-      "1 - 2 - 3", "1 + (2 - 3)", "1 + abc", "1 +", "(1 2)", "abc",
-      "8 / 4 / 2")
-    inputs.foreach { t =>
+  test("the derived print view prints text the rules read back") {
+    // printViewWith derives minimal-parentheses printing from the rule
+    // set; each input's flattened view is its own respelling.
+    val expected = List(
+      "1 + 2 - 3"   -> "1 + 2 - 3",
+      "(1 + 2) * 3" -> "(1 + 2) * 3",
+      "1.5 * 2"     -> "1.5 * 2",
+      "ref:3 + 1"   -> "ref:3 + 1",
+      "-4 + 5"      -> "-4 + 5",
+      "1 - 2 - 3"   -> "1 - 2 - 3",
+      "1 + (2 - 3)" -> "1 + (2 - 3)",
+      "1 + abc"     -> "1 + abc",
+      "1 +"         -> "1 + ?",
+      "(1 2)"       -> "(1 2)",
+      "abc"         -> "abc",
+      "8 / 4 / 2"   -> "8 / 4 / 2")
+    expected.foreach { case (t, printed) =>
       val doc =
         applyDocText(ExprLanguage.sampleDoc, registryForDoc, t).toOption.get
-      val cid = contentId(doc).get
       assertEquals(
-        ExprLanguage.render("print", doc),
-        Right(printTree(readLocExpr(doc, cid))), s"print: $t")
+        ExprLanguage.render("print", doc).map(ViewTree.flatten),
+        Right(printed), s"print: $t")
     }
   }
 

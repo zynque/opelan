@@ -12,7 +12,7 @@ We are best served by software tools that openly share their source code, so tha
 
 ### Frictionless
 
-Making source code available is not enough. Software should be trivial to modify, from within itself — a full development environment built in, with no external tools to download or configure.
+Making source code available is not enough. Software should be trivial to modify, from within the application itself — a full development environment built in, with no external tools to download and configure.
 
 ### Transitive
 

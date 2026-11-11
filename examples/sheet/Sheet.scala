@@ -1,8 +1,9 @@
 package opelan.examples.sheet
 
 import opelan.examples.termOf
-import opelan.examples.expr.{Expr, ExprLanguage, Num, evalLoc, exprFromDetached, exprToDetached, printTree}
+import opelan.examples.expr.{Expr, ExprLanguage, exprFromDetached, exprRules, exprTag, exprTerms, exprToDetached, exprViewLeaf}
 import opelan.foundation.document._
+import opelan.foundation.means.engine.{evalNode, printViewWith, semanticsOf, valueText}
 import opelan.foundation.view.ViewTree
 import opelan.foundation.view.ViewTree._
 import opelan.foundation.langdef.ViewContext
@@ -37,7 +38,7 @@ val ColumnTag = "column"
 def sheetView(
     doc: Document[NodeData], sheetId: Int,
     ctx: ViewContext = ViewContext()): DetachedNode[NodeData] = {
-  val d = healGaps(doc, sheetId, ctx.parseInput)
+  val d = resolveGridRefs(healGaps(doc, sheetId, ctx.parseInput), sheetId)
   val currency = ctx.settings.get("currency")
   grid(d.childrenOf(sheetId).map(r => rowView(d, r, isHRow(d, r), currency))*)
 }
@@ -95,15 +96,24 @@ private def valueOf(
     case _ => evalCell(doc, cellId, currency)
   }
 
-// A computed value; with the view's `currency` setting, every computed
-// result shows as money ("$8.10", "$8.00") — literal inputs stay plain.
+// A computed value, evaluated by the derived evaluator over the
+// ref-resolved projection (`evalNode`, `resolveGridRefs`): a formula's
+// operators resolve to foundational definitions by reference, an
+// `InternalNodeRef` leaf evaluates the cell it names, and a blocked or
+// cyclic ref renders as a gap tagged to the blocking node. With the
+// view's `currency` setting, every computed result shows as money
+// ("$8.10", "$8.00") — literal inputs stay plain.
+private val sheetSemantics = semanticsOf(exprRules)
+
 private def evalCell(
     doc: Document[NodeData], cellId: Int,
     currency: Option[String]): DetachedNode[NodeData] =
-  evalLoc(readGridExpr(doc, cellId), gridResolver(doc, Set(cellId))) match {
-    case Right(n) if currency.isDefined =>
-      txt(currency.get + "%.2f".format(n.toDouble))
-    case Right(n)           => txt(Num.show(n))
+  evalNode(sheetSemantics, exprTerms, doc, cellId, Set(cellId)) match {
+    case Right(v) => (currency, v) match {
+      case (Some(c), NodeData.IntData(n))   => txt(c + "%.2f".format(n.toDouble))
+      case (Some(c), NodeData.FloatData(n)) => txt(c + "%.2f".format(n))
+      case _                                => txt(valueText(v))
+    }
     case Left((msg, srcId)) => from(srcId, gap(msg))
   }
 
@@ -117,13 +127,14 @@ def cellText(doc: Document[NodeData], cellId: Int): String =
     case Some(node) if node.childIds.isEmpty => node.data match {
       case NodeData.StringData(t)      => t
       case NodeData.IntData(i)         => i.toString
-      case NodeData.FloatData(f)       => Num.show(Num.F(f))
+      case NodeData.FloatData(f)       => valueText(NodeData.FloatData(f))
       case NodeData.GapData(t)         => s"?$t"
       case NodeData.InternalNodeRef(n) => refText(doc, cellId, n)
       case other                       => NodeDataText.show(other)
     }
     case _ => nameRefs(doc, cellId,
-      ViewTree.flatten(printTree(readGridExpr(doc, cellId))))
+      ViewTree.flatten(printViewWith(exprRules, exprTag, exprViewLeaf)(
+        resolveGridRefs(doc, cellId), cellId)))
   }
 
 // The sheet's input grammar (Language.parseInput): text committed in a

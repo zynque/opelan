@@ -121,9 +121,12 @@ steps*, item 1).
      foundational definition by reference (`Primitives.scala`), and
      `expr-eval` runs it. The semantics-rule DAG and derived layers
      are computed; a cycle renders as a gap at the closing edge.
-     Still ahead: def docs encoding foundational imports so a decoded
-     `add` is the foundational `add`, and retiring `evalTree`/`LocExpr`
-     once the sheet's eval path derives too.
+     The sheet's eval path derives too: `resolveGridRefs` projects a
+     sheet's `ref` constructs to `InternalNodeRef` leaves and
+     `evalNode`/`printViewWith` take it from there — `evalTree`,
+     `LocExpr`, and `Num` are retired. Still ahead: def docs
+     encoding foundational imports so a decoded `add` is the
+     foundational `add`.
    - *Beyond parity:*
      - **Structural rules.** The general rule form of which textual
        `means` is the token-spine projection: a tree pattern — the

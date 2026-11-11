@@ -19,18 +19,18 @@ an old store with untyped `lang:` docs falls back to the registry.
 ## Expression language (`expr/`)
 
 `ExprLanguage`, `Expr`/`ExprDoc`, `ExprLexicon`, `ExprView`
-— the demonstration language. It has int and float literals (`Num`:
-integer arithmetic stays integral, division and floats are decimal,
-`Num.show` rounds away float noise for display); `+`, `-`, `*`, `/` with
-precedence-aware printing; `ref:N` references stored as
+— the demonstration language. It has int and float literals (integer
+arithmetic stays integral, division and floats are decimal, and
+displayed values drop float noise — `valueText`'s rule); `+`, `-`,
+`*`, `/` with precedence-aware printing; `ref:N` references stored as
 `InternalNodeRef` (so "go to definition" is the ordinary ref jump); and
 grouping by tree structure. It provides `print` and `eval` views and a
-total, recovering parser. Views render through `LocExpr`, a located read
-that keeps each node's id, so every piece of the view tree carries its
-source id. Evaluation resolves refs through the enclosing document — a
-referenced cell's own subtree is evaluated, so formulas compose — and a
-visiting set reports ref cycles as gaps instead of diverging.
-`Expr.print` round-trips gaps.
+total, recovering parser. Both views are derived from the rule set —
+`printViewWith` and `evalView` (`foundation/means/engine`) — and every
+piece of the view tree carries its source id. Evaluation resolves refs
+through the enclosing document — a referenced cell's own subtree is
+evaluated, so formulas compose — and a visiting set reports ref cycles
+as gaps instead of diverging. `Expr.print` round-trips gaps.
 
 `ExprRules`/`ExprDef` define the language as `means` rules and a def —
 `ExprLanguage` IS `DefLanguage(exprDef)`. The 28-input battery holding
@@ -48,8 +48,12 @@ pass through; every other cell is read as an expression and evaluated.
 Cells name each other A1-style (`D5` = column D, row 5), and the
 document fully reflects the semantics: a cell ref is a `ref` construct
 holding its fields — `ref > column("B"), row(3)` — resolved
-positionally against the live grid at read time (`GridExpr`), never a
-baked-in node id. A typed name commits as a gap or label leaf — the
+positionally against the live grid at read time, never a baked-in
+node id: `resolveGridRefs` (`GridExpr`) projects the document for the
+views, rewriting each `ref` node — id kept — into the `InternalNodeRef`
+leaf naming the cell it resolves to, so the derived evaluator follows
+it like any other reference; an out-of-grid name reads back as a gap.
+A typed name commits as a gap or label leaf — the
 structure text can't carry — and `linkCellRefs`, the sheet's
 `commitLink`, materializes the `ref` subtree (`Language.linkCommitted`
 runs on input commits as it does on text-surface ones). Refs print
