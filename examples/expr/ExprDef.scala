@@ -7,7 +7,7 @@ import opelan.foundation.langdef.syntax._
 import opelan.foundation.langdef.doc.termRefs
 import opelan.foundation.langdef.LeafKind._
 import opelan.foundation.means._
-import opelan.foundation.means.engine.{evalView, foundationRefs, printViewWith, semanticsOf}
+import opelan.foundation.means.engine.{evalView, foundationDefs, printViewWith, semanticsOf}
 import opelan.foundation.means.text._
 
 // The expression language's definition as data — what its `lang:`
@@ -27,12 +27,14 @@ val exprDef = LanguageDef(
   title = "lang: expression",
   name = "Expressions",
   description = "the arithmetic-expression language",
-  // Fully derived: where-bound leaf terms plus construct-application
-  // pattern declarations (DeriveVocabulary.scala). The arithmetic
-  // constructs are foundational definitions — references, not this
-  // def's terms — so the encoded def carries no vocabulary section
-  // for them.
-  vocabulary = vocabularyFrom(exprRules),
+  // Declared terms derive: where-bound leaf terms plus
+  // construct-application pattern declarations (DeriveVocabulary.scala).
+  // The arithmetic constructs the rules use are foundational
+  // definitions — declared as imports: entries whose ref IS the
+  // foundation's own, so the encoded def doc points `add` at the
+  // foundational `add` and a decoded def needs no code-side table.
+  vocabulary = vocabularyFrom(exprRules) ++ foundationDefs.map(d =>
+    NodeTerm(d.name, NodeShape.Fixed(d.arity), Some(d.ref))),
   // The rules carry the syntax; the operand fallback they compile
   // over is the lexicon's recovering unrecognized run
   // (ExprLexicon's gap kinds).
@@ -86,10 +88,10 @@ val exprImpls = Impls(
 // store the entry's ref, and readers match on it — so a construct
 // renamed in its lang: document keeps working (node ids are never
 // reused).
-// The arithmetic constructs resolve to foundational definitions by
-// reference — expr's own terms are only its leaf vocabulary.
+// The arithmetic constructs resolve to foundational definitions
+// through the def's imports — their refs ARE the foundation's.
 lazy val exprTerms: Map[String, ExternalNodeReference] =
-  termRefs(exprDef) ++ foundationRefs
+  termRefs(exprDef)
 
 // Node data applying a construct, inline — a document imports it when
 // the tree is inserted (see makeTyped / internalizeRefs).

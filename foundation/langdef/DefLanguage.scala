@@ -118,7 +118,8 @@ class DefLanguage(
   override def linkCommitted(
       doc: Document[NodeData], rootId: Int): Document[NodeData] =
     if (isDocLanguage)
-      linkTerms(linkRuleUses(doc, rootId), rootId, deriveTermIds(doc, rootId))
+      linkTerms(linkRuleUses(doc, rootId), rootId,
+        deriveTermIds(doc, rootId), termImports(doc, rootId))
     else doc
 
   // The compiled rules as an incremental parser. Its key is the

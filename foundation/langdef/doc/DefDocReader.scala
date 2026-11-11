@@ -32,6 +32,15 @@ private class DefDocReader(
 
   def entries(id: Int, name: String): List[Int] = children(id).filter(cons(_).contains(name))
 
+  // A `term` entry: name and shape children, then — for an imported
+  // term — the ref it names. An entry with no ref child declares the
+  // term here, so its ref anchors to the entry's own node.
+  def termEntry(k: Int): NodeTerm = NodeTerm(
+    childStr(k, 0).getOrElse(""),
+    shapeFrom(children(k).lift(1)),
+    children(k).drop(2).flatMap(externalRefOf(doc, _)).headOption
+      .orElse(Some(ExternalNodeReference(url, version, k))))
+
   def shapeFrom(id: Option[Int]): NodeShape = id.flatMap(cons) match {
     case Some("leaf")  => NodeShape.Leaf
     case Some("fixed") => id.flatMap(i => children(i).headOption).flatMap(data) match {

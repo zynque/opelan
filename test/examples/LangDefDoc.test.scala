@@ -60,6 +60,34 @@ class LangDefDocSuite extends FunSuite {
       withTermRefs(exprDef).syntax.get.rules)
   }
 
+  test("foundational imports are declared and decode to the foundation's refs") {
+    // The def doc's vocabulary section carries the imported terms —
+    // each entry naming the ref it stands for — so a decoded `add`
+    // IS the foundational `add`, no code-side table involved.
+    val doc = langDefDoc(exprDef)
+    val d = langDefFromDocument(exprDef.typeRef.documentUrl, doc)
+    assertEquals(
+      d.vocabulary.filter(_.name == "add").flatMap(_.ref),
+      List(foundationRefs("add")))
+  }
+
+  test("a committed construct name heals to the def's import") {
+    // A meaning landing as a bare `add` — written without its
+    // reference — relinks to the vocabulary's imported term, the
+    // link `linkCommitted` applies after a text-surface commit.
+    val doc = langDefDoc(exprDef)
+    val cid = contentId(doc).get
+    val addUse = doc.subtreeIds(cid)
+      .filter(id => metaConsOf(doc, id).contains("meaning"))
+      .flatMap(doc.childrenOf)
+      .find(id => externalRefOf(doc, id)
+        .contains(foundationRefs("add"))).get
+    val named = updateNodeData(addUse, s("add"), doc).toOption.get
+    val healed = DocLanguage.linkCommitted(named, cid)
+    assertEquals(healed.getNode(addUse).map(_.data),
+      Some(NodeData.ExternalNodeRef(foundationRefs("add"))))
+  }
+
   test("rule meanings reference their definitions by node identity") {
     // `a / b means div(a, b)` decodes to a construct whose reference
     // is the foundational `div` entry — the by-reference encoding.

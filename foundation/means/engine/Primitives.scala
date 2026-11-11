@@ -12,6 +12,7 @@ import opelan.foundation.document.typed.sameNode
 // randomness, rendering) join it as the substrate shrinks toward them.
 case class FoundationalDef(
     name: String,
+    arity: Int,
     ref: ExternalNodeReference,
     eval: List[NodeData] => Either[String, NodeData])
 
@@ -19,11 +20,11 @@ private def foundationRef(nodeId: Int) =
   ExternalNodeReference("opelan:foundation/arithmetic", 0, nodeId)
 
 val foundationDefs: List[FoundationalDef] = List(
-  FoundationalDef("add", foundationRef(1), num2(_ + _, _ + _)),
-  FoundationalDef("sub", foundationRef(2), num2(_ - _, _ - _)),
-  FoundationalDef("mul", foundationRef(3), num2(_ * _, _ * _)),
-  FoundationalDef("div", foundationRef(4), numDiv),
-  FoundationalDef("neg", foundationRef(5), {
+  FoundationalDef("add", 2, foundationRef(1), num2(_ + _, _ + _)),
+  FoundationalDef("sub", 2, foundationRef(2), num2(_ - _, _ - _)),
+  FoundationalDef("mul", 2, foundationRef(3), num2(_ * _, _ * _)),
+  FoundationalDef("div", 2, foundationRef(4), numDiv),
+  FoundationalDef("neg", 1, foundationRef(5), {
     case List(NodeData.IntData(v))   => Right(NodeData.IntData(-v))
     case List(NodeData.FloatData(v)) => Right(NodeData.FloatData(-v))
     case _                           => Left("neg expects a number")
@@ -34,8 +35,9 @@ val foundationDefs: List[FoundationalDef] = List(
 def foundationalOf(ref: ExternalNodeReference): Option[FoundationalDef] =
   foundationDefs.find(d => sameNode(d.ref, ref))
 
-// name → ref — a def's terms table overrides local names with the
-// foundational entry (see exprTerms).
+// name → ref — the recovery floor for content carrying bare names;
+// a def doc that uses a foundational term declares it as an import
+// instead (DefDocEncode's vocabulary section).
 val foundationRefs: Map[String, ExternalNodeReference] =
   foundationDefs.map(d => d.name -> d.ref).toMap
 

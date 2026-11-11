@@ -40,8 +40,10 @@ definition machinery (see
 nodes (`glued` marking unspaced adjacency), the meaning as its term
 subtree (`doc/RuleEncode`, `doc/RuleDocDecode`, `doc/RuleLink`). Like
 every construct use, a meaning names its constructor by reference:
-`add(a, b)` is a node whose data refers to `add`'s declaration — the
-first meaning node to build it — and `a` spells `use(a)` — an operand
+`add(a, b)` is a node whose data refers to `add`'s term entry — a
+declared term's first meaning occurrence, or for an imported term
+the ref the `vocabulary` section's `term` entry carries (a decoded
+`add` is the foundational `add`) — and `a` spells `use(a)` — an operand
 ref to the pattern's placeholder node — so a rule survives renames on
 either side. Rules compile to the recovering combinators of
 [`foundation/grammar`](../grammar/DESIGN.md) — the implementation layer

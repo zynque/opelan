@@ -113,20 +113,14 @@ steps*, item 1).
    — `means` emphasized, placeholders italic — on read-only lines and
    inside the editable fields' displays
    (`foundation/means/text/DESIGN.md`, `foundation/view/DESIGN.md`).
-   Remaining steps, in order:
+   Meaning layers are done — eval is derived (`means/engine/Eval.scala`)
+   on both the expression language and the sheet (`resolveGridRefs`
+   projects `ref` constructs to `InternalNodeRef` leaves; `evalTree`,
+   `LocExpr`, and `Num` are retired), a cycle renders as a gap at the
+   closing edge, and def docs encode foundational imports in their
+   vocabulary sections so a decoded `add` is the foundational `add`.
+   Remaining:
 
-   - *Meaning layers:* eval is derived (`means/engine/Eval.scala`):
-     a node's construct resolves to an authored semantics rule — a
-     pattern spelled `square(a) means mul(a, a)` — else to a
-     foundational definition by reference (`Primitives.scala`), and
-     `expr-eval` runs it. The semantics-rule DAG and derived layers
-     are computed; a cycle renders as a gap at the closing edge.
-     The sheet's eval path derives too: `resolveGridRefs` projects a
-     sheet's `ref` constructs to `InternalNodeRef` leaves and
-     `evalNode`/`printViewWith` take it from there — `evalTree`,
-     `LocExpr`, and `Num` are retired. Still ahead: def docs
-     encoding foundational imports so a decoded `add` is the
-     foundational `add`.
    - *Beyond parity:*
      - **Structural rules.** The general rule form of which textual
        `means` is the token-spine projection: a tree pattern — the

@@ -32,23 +32,24 @@ def langDefFromDocument(
     title = title,
     name = r.section("name").flatMap(r.childStr(_, 0)).getOrElse(title),
     description = r.section("description").flatMap(r.childStr(_, 0)).getOrElse(""),
-    // A stored `vocabulary` section is read as written (bootstrap
-    // defs declare terms there); without one the vocabulary derives
-    // from the rules — `where`-bound leaf terms and
-    // construct-application pattern declarations — each entry's ref
-    // its declaration node's id through termIds.
-    vocabulary = r.section("vocabulary").map { sid =>
-      r.entries(sid, "term").map(k => NodeTerm(
-        r.childStr(k, 0).getOrElse(""),
-        r.shapeFrom(r.children(k).lift(1)),
-        Some(ExternalNodeReference(url, version, k))))
-    }.getOrElse(
-      r.section("syntax").toList
+    // The vocabulary: terms the rules declare — `where`-bound leaf
+    // terms and construct-application pattern declarations, each
+    // entry's ref its declaration node's id through termIds — plus
+    // the `vocabulary` section's entries: a rule-less def's declared
+    // terms, or a rule-bearing def's imports — term entries carrying
+    // the ref they name, so a decoded `add` is the foundational
+    // `add`.
+    vocabulary = {
+      val derived = r.section("syntax").toList
         .flatMap(sid => r.entries(sid, "rules"))
         .headOption.toList.flatMap(rs =>
-        vocabularyFrom(r.ruleSetFrom(rs)).map(t =>
-          t.copy(ref = t.ref.orElse(r.termIds.get(t.name)
-            .map(ExternalNodeReference(url, version, _))))))),
+          vocabularyFrom(r.ruleSetFrom(rs)).map(t =>
+            t.copy(ref = t.ref.orElse(r.termIds.get(t.name)
+              .map(ExternalNodeReference(url, version, _))))))
+      val section = r.section("vocabulary").toList
+        .flatMap(sid => r.entries(sid, "term").map(r.termEntry))
+      derived ++ section.filterNot(t => derived.exists(_.name == t.name))
+    },
     syntax = r.section("syntax").map { sid =>
       SyntaxDef(
         r.childStr(sid, 0).getOrElse(""),
@@ -76,7 +77,9 @@ def withTermRefs(d: LanguageDef): LanguageDef = {
     if (d.vocabulary.forall(t =>
         t.shape == NodeShape.Leaf || t.ref.isDefined)) d.vocabulary
     else langDefFromDocument(url, doc).vocabulary
-  val ids = vocabulary.flatMap(t => t.ref.map(t.name -> _.nodeId)).toMap
+  // Term name → its full ref — an imported term names a node of
+  // another document, so the ref is kept whole, not re-anchored here.
+  val ids = vocabulary.flatMap(t => t.ref.map(t.name -> _)).toMap
   // The encoding's piece ids, per rule — the `use` operands' link
   // targets.
   val ruleIds = contentId(doc).toList.flatMap(cid =>
@@ -96,8 +99,7 @@ def withTermRefs(d: LanguageDef): LanguageDef = {
         }))
     else if (!Meaning.isConstruct(m)) m
     else m.copy(
-      reference = ids.get(m.tag).map(ExternalNodeReference(url, 0, _))
-        .orElse(m.reference),
+      reference = ids.get(m.tag).orElse(m.reference),
       arguments = m.arguments.map(refify(pieces)))
   d.copy(
     vocabulary = vocabulary,

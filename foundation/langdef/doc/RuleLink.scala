@@ -1,6 +1,7 @@
 package opelan.foundation.langdef.doc
 
 import opelan.foundation.document._
+import opelan.foundation.document.typed._
 
 // Point each meaning's `use`/`source`/`builtin`/`literal` operand at
 // the placeholder piece node it names. The operand decodes through the piece's
@@ -53,6 +54,29 @@ private[langdef] def metaTag(doc: Document[NodeData], id: Int): Option[String] =
   doc.getNode(id).map(_.data).flatMap(pendingName)
     .orElse(metaConsOf(doc, id))
 
+// The def's imported terms as written in its `vocabulary` section —
+// `term` entries carrying an external ref: name → the imported ref.
+// A committed rule's construct names heal against these first, so an
+// imported name never becomes a local declaration.
+private[langdef] def termImports(
+    doc: Document[NodeData], cid: Int): Map[String, ExternalNodeReference] =
+  doc.childrenOf(cid)
+    .filter(id => metaTag(doc, id).contains("vocabulary"))
+    .flatMap(doc.childrenOf)
+    .filter(id => metaTag(doc, id).contains("term"))
+    .flatMap { k =>
+      // A term's own leaves: name (string) plus the optional imported
+      // ref — the shape child is a meta construct, so both sit in the
+      // non-meta children.
+      val own = doc.childrenOf(k).filter(id => metaTag(doc, id).isEmpty)
+      (for {
+        name <- own.headOption.flatMap(id => doc.getNode(id).map(_.data))
+          .collect { case NodeData.StringData(s) => s }
+        ref  <- own.tail.flatMap(externalRefOf(doc, _)).headOption
+      } yield name -> ref)
+    }
+    .toMap
+
 // Term name → its declaration node's id: the first meaning-position
 // node carrying that name, in doc order. Meaning positions are
 // `meaning` children and construct arguments; meta constructs
@@ -82,8 +106,11 @@ private[langdef] def deriveTermIds(
 // it IS the declaration.
 private[langdef] def linkTerms(
     doc: Document[NodeData], root: Int,
-    ids: Map[String, Int]): Document[NodeData] = {
-  val decls = ids.values.toSet
+    ids: Map[String, Int],
+    imports: Map[String, ExternalNodeReference] = Map.empty): Document[NodeData] = {
+  // An imported name declares nothing here — its occurrences are all
+  // uses of the import.
+  val decls = (ids -- imports.keySet).values.toSet
   // Non-declaration term positions — meaning children and nested
   // construct arguments — walked like deriveTermIds: meta-tagged
   // subtrees (use/literal/reparse/quote/…) don't declare or use, so
@@ -103,9 +130,10 @@ private[langdef] def linkTerms(
   uses.foldLeft(doc) { (d, id) =>
     doc.getNode(id).map(_.data) match {
       case Some(NodeData.StringData(name)) =>
-        ids.get(name).flatMap(t =>
-          updateNodeData(id, NodeData.InternalNodeRef(t), d)
-            .toOption).getOrElse(d)
+        imports.get(name).map(r => NodeData.ExternalNodeRef(r))
+          .orElse(ids.get(name).map(t => NodeData.InternalNodeRef(t)))
+          .flatMap(data => updateNodeData(id, data, d).toOption)
+          .getOrElse(d)
       case _ => d
     }
   }
