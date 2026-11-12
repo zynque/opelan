@@ -488,7 +488,7 @@ class LangDefDocSuite extends FunSuite {
     def kindOf(prefix: String) =
       byLine.collectFirst {
         case (l, m) if l.trim.startsWith(prefix) => m.kind }
-    assertEquals(kindOf("definition"), Some("cm-meta"))
+    assertEquals(kindOf("dialect"), Some("cm-meta"))
     assertEquals(kindOf("syntax"), Some("cm-meta"))
     assertEquals(kindOf("\"expr\""), Some("cm-string"))
     assertEquals(kindOf("a + b"), Some("cm-rule"))
@@ -501,7 +501,7 @@ class LangDefDocSuite extends FunSuite {
   }
 
   test("failing rule lines and bare words mark as gap and unmatched") {
-    val text = "definition\n  syntax\n    \"expr\"\n    rules\n" +
+    val text = "dialect\n  syntax\n    \"expr\"\n    rules\n" +
       "      a + b means add(a, b)\n      total garbage here\n"
     val marks = defDocLineMarks(text)
     assertEquals(marks(4).kind, "cm-rule")
@@ -510,7 +510,7 @@ class LangDefDocSuite extends FunSuite {
     // paints as unmatched (it commits as a string — not a pattern), a
     // meta word as a construct line, a `ref:` payload as a reference.
     val outside = defDocLineMarks(
-      "definition\n  vocabulary\n    ref:opelan:foundation/arithmetic@0#1\n    bogusword\n")
+      "dialect\n  vocabulary\n    ref:opelan:foundation/arithmetic@0#1\n    bogusword\n")
     assertEquals(outside(1).kind, "cm-meta")
     assertEquals(outside(2).kind, "cm-ref")
     assertEquals(outside(3).kind, "cm-unmatched")
@@ -525,7 +525,7 @@ class LangDefDocSuite extends FunSuite {
   test("a damaged def doc still decodes — unknown grammar nodes become gaps") {
     val doc = makeTyped(langDefTypeRef, er(docTitleRef), er(docImportsRef),
       s("lang: broken"),
-      n(meta("definition"),
+      n(meta("dialect"),
         n(meta("description"), sl("a half-typed def")),
         n(meta("syntax"), sl("expr"), sl("flibble"))))
     // The damaged doc claims the expression language's URL, so it

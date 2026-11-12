@@ -18,7 +18,7 @@ class DefDocTextSuite extends FunSuite {
 
   test("the text surface spells meta constructs by name and rules as means lines") {
     val text = textOf(langDefDoc(exprDef))
-    assert(text.contains("definition"), text)
+    assert(text.contains("dialect"), text)
     assert(text.contains("rules"), text)
     assert(text.contains("a + b means add(a, b)"), text)
     assert(text.contains("+n means literal(n) where n: number"), text)

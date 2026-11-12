@@ -13,7 +13,7 @@ import opelan.foundation.means.text.{printPattern, readRuleOrGap}
 // `means` line — the surface reads and writes rules, never the
 // encoding's leaf strings:
 //
-//   definition
+//   dialect
 //     description "the arithmetic-expression language"
 //     name "Expressions"
 //     syntax
@@ -83,7 +83,7 @@ def defDocParse(text: String): DetachedNode[NodeData] = {
       (indent, dataOf(line.trim))
     }
   entries match {
-    case Nil          => DetachedNode.leaf(externalMeta("definition"))
+    case Nil          => DetachedNode.leaf(externalMeta("dialect"))
     case head :: rest => structured(DetachedNode(head._2, block(rest)))
   }
 }

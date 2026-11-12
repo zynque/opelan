@@ -22,7 +22,7 @@ val langDefTypeRef =
 private[langdef] val metaTerms: List[NodeTerm] = List(
   NodeTerm("title", Fixed(1)),     // document-structure: title's text
   NodeTerm("imports", Any),        // document-structure: the dependencies
-  NodeTerm("definition", Any),     // content root: the sections below
+  NodeTerm("dialect", Any),        // content root: the sections below
   NodeTerm("description", Fixed(1)),
   NodeTerm("name", Fixed(1)),
   NodeTerm("vocabulary", Any),

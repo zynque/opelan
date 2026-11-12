@@ -18,7 +18,7 @@ import opelan.foundation.langdef._
 //   ext: lang: language              type ref on the root's data
 //     ext: imports-declaration       the dependencies (title, term, …)
 //     &imports(title) "lang: expression"   title construct + text
-//     definition
+//     dialect
 //       description  "the arithmetic-expression language"
 //       name         "Expressions"
 //       syntax       "expr"  rules(…)   — the operand fallback is the
@@ -43,7 +43,7 @@ private[langdef] def encodeDef(
     d: LanguageDef): (Document[NodeData], Map[String, Int]) = {
   val doc0 = beginTyped(langDefTypeRef, pending("title"), pending("imports"),
     NodeData.StringData(d.title),
-    DetachedNode.leaf(pending("definition")))
+    DetachedNode.leaf(pending("dialect")))
   val cid = contentId(doc0).getOrElse(doc0.rootId)
   val hasRules = d.syntax.flatMap(_.rules).isDefined
   val (doc1, _) = add(doc0, cid,
