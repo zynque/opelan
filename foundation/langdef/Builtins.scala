@@ -11,7 +11,7 @@ import opelan.foundation.langdef.view._
 // in code while the demo bootstraps — and each language carries an
 // Impls bundle holding its own implementations (see the examples
 // package for the concrete bundles). docImpls is the meta-language's:
-// the "def" view that renders a decoded definition.
+// the "edit" and "summary" views that render a decoded definition.
 
 type BuiltinView =
   (Document[NodeData], Int, ViewContext) => DetachedNode[NodeData]
@@ -36,7 +36,7 @@ case class Impls(
 // settings as written in the def doc, the language's current input
 // grammar — so a view can retry gaps against it (a gap whose text
 // now parses renders healed) — and `interpretDef`, a way to run a
-// decoded definition as a live language (the "def" view checks worked
+// decoded definition as a live language (the "edit" view checks worked
 // examples through it; absent where no resolution context exists).
 case class ViewContext(
     settings: Map[String, String] = Map.empty,
@@ -49,7 +49,9 @@ case class ViewContext(
     docUrl: Option[String] = None)
 
 val docImpls = Impls(
-  views = Map("def-view" -> ((doc, id, ctx) => defView(doc, id, ctx))),
+  views = Map(
+    "def-view"     -> ((doc, id, ctx) => defView(doc, id, ctx)),
+    "summary-view" -> ((doc, id, ctx) => defSummary(doc, id, ctx))),
   // "text": the committed string becomes the node's StringData — how a
   // def doc's projected inputs (rule lines and friends) write back.
   inputParsers = Map("text" -> (t => sl(t))))

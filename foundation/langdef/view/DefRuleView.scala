@@ -9,7 +9,7 @@ import opelan.foundation.means.text.{
   meaningView, patternView, printMeaning, readPattern, ruleView, whereView}
 import opelan.foundation.view.ViewTree._
 
-// The rules section of the "def" view, rendered as projected inputs:
+// The rules section of the "edit" view, rendered as projected inputs:
 // a structured rule line is its fields — `pattern`, `meaning`, and
 // `where` inputs bound to their own nodes, so the meaning field
 // commits through the defined language's rules (commitMetaInput) —

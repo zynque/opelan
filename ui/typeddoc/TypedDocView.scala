@@ -38,8 +38,9 @@ private def textPane(m: TypedDocModel): View[TypedDocInput] =
     })
 
 // A derived view fills the pane — the app surface alone, no editor.
-// The bar carries the two navigations out: Raw shows this document's
-// own representation (the structural editor); Definition (F12) follows
+// The bar carries the two navigations out: Raw tree shows this
+// document's own representation (the structural editor); Definition
+// (F12) follows
 // the type ref to the language document. The pane is focusable so F12
 // works anywhere; a click that didn't land inside an editor focuses it.
 private def derivedPane(m: TypedDocModel): View[TypedDocInput] = {
@@ -82,7 +83,7 @@ private def derivedBar(name: String): View[TypedDocInput] =
     Vector(
       el("span", style("color: #666; margin-right: 12px;"))(text(s"view: $name")),
       barButton("Definition (F12)", TypedDocInput.GoToDefinition),
-      barButton("Raw", TypedDocInput.SwitchView(DocView.Editor))))
+      barButton("Raw tree", TypedDocInput.SwitchView(DocView.Editor))))
 
 private def barButton(label: String, in: TypedDocInput): View[TypedDocInput] =
   el("button",
@@ -102,8 +103,8 @@ private def toolbar(m: TypedDocModel): View[TypedDocInput] =
     style("padding: 6px 10px; border-bottom: 1px solid #ddd; background: #f9f9f9; " +
       "font-family: Arial, sans-serif; font-size: 12px;"))(
     Vector(
-      viewButton("editor", DocView.Editor, m),
-      viewButton("text", DocView.Text, m)) ++
+      viewButton("raw tree", DocView.Editor, m),
+      viewButton("raw text", DocView.Text, m)) ++
       languageForDoc(m.doc, m.store).toList.flatMap(l =>
         l.views.map(v => viewButton(v, DocView.Derived(v), m))) ++
       Vector(

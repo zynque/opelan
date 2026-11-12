@@ -47,11 +47,11 @@ class TypedDocSuite extends munit.FunSuite {
   test("Load falls back to the new language's default view") {
     // On a derived view, jump to a doc whose language lacks it — the
     // go-to-definition path: "sheet" doesn't exist on DocLanguage, so
-    // the pane lands on its default "def" view instead of an error.
+    // the pane lands on its default "edit" view instead of an error.
     val m = typedDocUpdate(
       init, TypedDocInput.SwitchView(DocView.Derived("sheet"))).state
     val u = typedDocUpdate(m, TypedDocInput.Load(langDefDoc(sheetDef)))
-    assertEquals(u.state.view, DocView.Derived("def"))
+    assertEquals(u.state.view, DocView.Derived("edit"))
   }
 
   test("Load onto an untyped doc leaves a derived view for the editor") {

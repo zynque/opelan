@@ -170,7 +170,7 @@ class LangDefDocSuite extends FunSuite {
     assertEquals(Some(s1.content), languageFromDef(d1).parse(text))
   }
 
-  test("the def view projects rule fields as inputs bound to their nodes") {
+  test("the edit view projects rule fields as inputs bound to their nodes") {
     val doc = langDefDoc(exprDef)
     val bound = inputSourceIds(defView(doc, contentId(doc).get)).toSet
     // A structured rule binds pattern and meaning inputs to their own
@@ -293,7 +293,7 @@ class LangDefDocSuite extends FunSuite {
     // the stored meaning is the desugared term tree.
     assertEquals(rule.meaning.tag, "div")
     assertEquals(rule.meaning.arguments.map(_.tag), List("use", "quote"))
-    // And the def view projects the authored spelling back through
+    // And the edit view projects the authored spelling back through
     // the language's own printer, not the constructor's.
     val view = defView(updated, contentId(updated).get)
     val text = opelan.foundation.view.ViewTree.flatten(view)

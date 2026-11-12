@@ -118,7 +118,7 @@ private def isMeta(data: NodeData, name: String): Boolean = data match {
   case _                           => false
 }
 
-// The rule's `means` line — the def view's field composition as one
+// The rule's `means` line — the edit view's field composition as one
 // text (`where` carries its keyword here).
 private def ruleLineText(d: LanguageDef, r: Rule): String =
   printPattern(r.pattern) + " means " + meaningFieldText(d, r) +

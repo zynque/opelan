@@ -33,17 +33,35 @@ class DefLanguage(
   def name = languageDef.name
 
   // lang: language's own surfaces are bootstrap scaffolding: a def doc
-  // interpreted as the meta language gets `print` whether the stored
-  // document advertises it or not, so a store seeded before the
-  // surface existed still reads and writes rules as `means` lines
-  // (doc/DefDocText.scala).
+  // interpreted as the meta language gets `edit` and `summary` whether
+  // the stored document advertises them or not — a store seeded before
+  // the rename still says `def`/`print` — so an old store's menu reads
+  // like a fresh one's.
   private def isDocLanguage =
     languageDef.typeRef.documentUrl == langDefTypeRef.documentUrl &&
       languageDef.typeRef.nodeId == langDefTypeRef.nodeId
 
+  // A stored meta doc's view entries under their current names: `def`
+  // reads as `edit` (keeping the stored builtin); `print` is dropped —
+  // `summary` supersedes it and comes from the code bindings below.
+  private def docViewBinding(v: ViewBinding): Option[ViewBinding] =
+    v.name match {
+      case "def"   => Some(v.copy(name = "edit"))
+      case "print" => None
+      case _       => Some(v)
+    }
+
+  // The view bindings the meta language presents: decoded ones
+  // renamed, then any bootstrap binding the stored doc lacks — so the
+  // menu and the renders agree.
+  private lazy val docViewBindings: List[ViewBinding] = {
+    val renamed = languageDef.views.flatMap(docViewBinding)
+    renamed ++ docLanguageDef.views.filterNot(b =>
+      renamed.exists(_.name == b.name))
+  }
+
   def views =
-    if (isDocLanguage && !languageDef.views.exists(_.name == "print"))
-      languageDef.views.map(_.name) :+ "print"
+    if (isDocLanguage) docViewBindings.map(_.name)
     else languageDef.views.map(_.name)
 
   // The def's document is its encoding — the same bytes a lang: doc
@@ -89,18 +107,24 @@ class DefLanguage(
       view: String, doc: Document[NodeData], retry: GapRetry,
       docUrl: Option[String] = None)
       : Either[String, DetachedNode[NodeData]] =
+    // "print" isn't a listed view — it's the lang: doc's text surface
+    // (docText): the content as an outline of `means` lines.
     if (isDocLanguage && view == "print")
       contentId(doc).toRight(s"$name: typed document has no content")
         .map(id => ViewTree.block(defDocLines(
           doc, docUrl.getOrElse(""), id).map(ViewTree.txt)*))
-    else languageDef.views.find(_.name == view) match {
-      case None => Left(s"$name has no '$view' view")
-      case Some(vb) => impls.views.get(vb.builtin) match {
-        case None => Left(s"$name: unknown builtin view '${vb.builtin}'")
-        case Some(b) => contentId(doc)
-          .toRight(s"$name: typed document has no content")
-          .map(id => b(doc, id, ViewContext(
-            vb.settings, inputs.parse(retry), interpretDef, docUrl)))
+    else {
+      val bindings =
+        if (isDocLanguage) docViewBindings else languageDef.views
+      bindings.find(_.name == view) match {
+        case None => Left(s"$name has no '$view' view")
+        case Some(vb) => impls.views.get(vb.builtin) match {
+          case None => Left(s"$name: unknown builtin view '${vb.builtin}'")
+          case Some(b) => contentId(doc)
+            .toRight(s"$name: typed document has no content")
+            .map(id => b(doc, id, ViewContext(
+              vb.settings, inputs.parse(retry), interpretDef, docUrl)))
+        }
       }
     }
 

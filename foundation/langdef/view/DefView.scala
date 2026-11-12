@@ -6,7 +6,7 @@ import opelan.foundation.langdef.doc._
 import opelan.foundation.view.ViewTree
 import opelan.foundation.view.ViewTree._
 
-// The "def" view of a language-definition document: decode the doc and
+// The "edit" view of a language-definition document: decode the doc and
 // lay the definition out readably — title, description, the means
 // rules as editable lines, view bindings, and the input grammar's
 // target. The
@@ -46,12 +46,12 @@ private[langdef] def leafText(doc: Document[NodeData], id: Int): String =
     .getOrElse("")
 
 // One item per line: each entry is its own block.
-private def section(
+private[langdef] def section(
     name: String, items: List[DetachedNode[NodeData]])
     : DetachedNode[NodeData] =
   block(heading(txt(name)) +: items.map(block(_))*)
 
-private def settingsText(settings: Map[String, String]): String =
+private[langdef] def settingsText(settings: Map[String, String]): String =
   if (settings.isEmpty) ""
   else settings.toList.sorted.map((k, v) => s"$k: $v").mkString(" (", ", ", ")")
 

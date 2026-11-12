@@ -14,8 +14,13 @@ def docText(
     doc: Document[NodeData],
     languageFor: Document[NodeData] => Option[Language]): String =
   languageFor(doc) match {
-    case Some(lang) if lang.views.contains("print") =>
-      lang.render("print", doc).map(ViewTree.flatten).getOrElse(contentOutline(doc))
+    // `print` is the text-projection convention — a language may keep
+    // it renderable without listing it in `views` (the lang: doc's
+    // `means`-line outline). No print render falls back to the
+    // structural outline.
+    case Some(lang) =>
+      lang.render("print", doc).map(ViewTree.flatten)
+        .getOrElse(contentOutline(doc))
     case _ => contentOutline(doc)
   }
 

@@ -5,7 +5,7 @@ import opelan.examples.expr.{ExprLanguage, demoExprDef, exprDef}
 import opelan.foundation.document._
 import opelan.foundation.document.store._
 import opelan.foundation.langdef.{
-  DocLanguage, docLanguageDef, langDefTypeRef}
+  DocLanguage, docLanguageDef, langDefTypeRef, ViewBinding}
 import opelan.foundation.langdef.doc.{
   langDefDoc, langDefFromDocument, withTermRefs}
 import munit.FunSuite
@@ -69,10 +69,22 @@ class ResolveSuite extends FunSuite {
     val d = SheetLanguage.langDoc
     val l = languageForDoc(d, seededStore)
     assert(l.isDefined)
-    // "print" is the code-supplied text surface — the stored
-    // lang: language doc needn't declare it (DefLanguage.isDocLanguage).
-    assertEquals(l.get.views, List("def", "print"))
-    assert(l.get.render("def", d).isRight)
+    // `edit` and `summary` are the code-supplied meta surfaces — a
+    // stored lang: language doc needn't declare them
+    // (DefLanguage.isDocLanguage).
+    assertEquals(l.get.views, List("edit", "summary"))
+    assert(l.get.render("edit", d).isRight)
+    assert(l.get.render("summary", d).isRight)
+  }
+
+  test("a meta doc stored under the old view names reads as the new") {
+    val legacy = langDefDoc(docLanguageDef.copy(
+      views = List(ViewBinding("def", "def-view"))))
+    val store = Store.empty.put(langDefTypeRef.documentUrl, legacy)._1
+    val l = languageForRef(langDefTypeRef, store).get
+    assertEquals(l.views, List("edit", "summary"))
+    assert(l.render("edit", legacy).isRight)
+    assert(l.render("summary", legacy).isRight)
   }
 
   test("DocLanguage is itself described by a lang: doc") {

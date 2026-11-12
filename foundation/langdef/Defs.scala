@@ -6,7 +6,7 @@ import opelan.foundation.language.Language
 // The meta-language definition: the type all `lang:` documents carry.
 // Its syntax isn't a rule set — the def-doc format IS
 // code (DefDocEncode/Decode) — so DocLanguage is a code-resident
-// Language whose "def" view decodes the doc and prints the definition.
+// Language whose "edit" view decodes the doc and prints the definition.
 // Its own langDoc is a def doc describing that format: self-describing,
 // and the regress stops here — its vocabulary entries are the constructs
 // every def doc (itself included) imports. Concrete languages (the
@@ -68,7 +68,9 @@ val docLanguageDef = LanguageDef(
   description = "the language in which lang: documents are written",
   vocabulary = metaTerms,
   syntax = None,
-  views = List(ViewBinding("def", "def-view")),
+  views = List(
+    ViewBinding("edit", "def-view"),
+    ViewBinding("summary", "summary-view")),
   // Projected inputs in a def doc — rule lines, binding patterns,
   // example lines — commit their text as a plain string leaf; the
   // recovering decode (readRuleOrGap & co.) turns it back into content.

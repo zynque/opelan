@@ -4,11 +4,14 @@ The derived views of a `lang:` document — what an author sees instead of
 the raw tree (see [`../DESIGN.md`](../DESIGN.md)). Each emits a
 [view tree](../../view/DESIGN.md), never DOM.
 
-- **`DefView`** — the `def` view: decodes the doc and lays the
+- **`DefView`** — the `edit` view: decodes the doc and lays the
   definition out readably — title, description, the means rules as
   editable lines, view bindings, and the input grammar's target.
-- **`DefRuleView`** — the per-rule projection inside the def view:
+- **`DefRuleView`** — the per-rule projection inside the edit view:
   pattern, meaning, `where`, and the rule's worked examples.
+- **`SummaryView`** — the `summary` view: the language at a glance —
+  description, worked examples, and view bindings — read-only, with
+  the rule lines' role styling.
 - **`ExampleCheck`** — a worked example's check: `input means expected`
   — both texts read with the definition's own rules must produce the
   same tree. The marker text tells what the input actually read as (the
