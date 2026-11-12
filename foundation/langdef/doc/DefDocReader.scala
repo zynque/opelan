@@ -13,7 +13,8 @@ import opelan.foundation.means.text._
 // outline. `cons` names the meta construct a node applies, by identity.
 private class DefDocReader(
     doc: Document[NodeData], root: Int,
-    url: String = "", version: Int = 0) {
+    url: String = "", version: Int = 0,
+    resolve: ExternalNodeReference => Option[LanguageDef] = _ => None) {
 
   // Term name → its declaration node's id: the first meaning-position
   // node carrying that name (the def's derived vocabulary anchors).
@@ -54,7 +55,8 @@ private class DefDocReader(
   // (RuleDocDecode — a malformed rule becomes a gap rule), `binding`
   // tiers as pattern texts, `example` pairs.
   def ruleSetFrom(id: Int): RuleSet = RuleSet(
-    rules = entries(id, "rule").map(ruleFromDoc(doc, url, version, termIds, _)),
+    rules = entries(id, "rule").map(
+      ruleFromDoc(doc, url, version, termIds, resolve, _)),
     tiers = entries(id, "binding").flatMap(b =>
       entries(b, "tier").map(t =>
         Tier(children(t).flatMap(str).map(readPattern)))),

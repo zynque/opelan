@@ -58,7 +58,7 @@ private def ruleLine(
           (section("pattern"), section("meaning")) match {
             case (Some(p), Some(m)) =>
               val r = ruleFromDoc(doc, "", 0,
-                deriveTermIds(doc, doc.rootId), id)
+                deriveTermIds(doc, doc.rootId), _ => None, id)
               val fields = List(
                 input(p, patternView(r.pattern)*),
                 styled("keyword", txt(" means ")),

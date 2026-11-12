@@ -48,8 +48,10 @@ def registryForDoc(doc: Document[NodeData]): Option[Language] =
 // version isn't stored. A URL with no def-typed doc falls through to
 // the registry, which is also where DocLanguage itself bottoms out.
 def languageForRef(
-    ref: ExternalNodeReference, store: Store): Option[Language] =
-  storedLanguage(ref, store).orElse(registryForRef(ref))
+    ref: ExternalNodeReference, store: Store,
+    seen: Set[String] = Set.empty): Option[Language] =
+  if (seen(ref.documentUrl)) registryForRef(ref)
+  else storedLanguage(ref, store, seen).orElse(registryForRef(ref))
 
 // The language of a typed document, resolved through the store first.
 def languageForDoc(
@@ -61,16 +63,23 @@ def languageForDoc(
 // input grammar's) resolve through the same store — pinned, so a
 // referred language's new version reaches dependents only when their
 // refs bump to it.
-def languageFromDef(d: LanguageDef, store: Store = Store.empty): Language =
-  new DefLanguage(d, implsFor(d), ref => languageForRef(ref, store),
-    dd => Some(languageFromDef(dd, store)))
+def languageFromDef(
+    d: LanguageDef, store: Store = Store.empty,
+    seen: Set[String] = Set.empty): Language =
+  new DefLanguage(d, implsFor(d),
+    ref => languageForRef(ref, store, seen + d.typeRef.documentUrl),
+    dd => Some(languageFromDef(dd, store, seen + d.typeRef.documentUrl)))
 
 private def storedLanguage(
-    ref: ExternalNodeReference, store: Store): Option[Language] =
+    ref: ExternalNodeReference, store: Store,
+    seen: Set[String]): Option[Language] =
   for {
     (v, doc) <- pinnedOrHead(ref, store)
     if typeRefOf(doc).contains(langDefTypeRef)
-  } yield languageFromDef(langDefFromDocument(ref.documentUrl, doc, v), store)
+  } yield languageFromDef(langDefFromDocument(ref.documentUrl, doc, v,
+    r => languageForRef(r, store, seen + ref.documentUrl).collect {
+      case d: DefLanguage => d.languageDef
+    }), store, seen + ref.documentUrl)
 
 // The pinned version, falling back to head when the pin isn't stored
 // (an older or pruned store) — the URL still names a def-typed doc.

@@ -46,13 +46,16 @@ import opelan.foundation.means.text.{printPattern, readRuleOrGap}
 // import-entry refs resolved to their external spelling so the id they
 // hold doesn't matter.
 def defDocLines(
-    doc: Document[NodeData], url: String, rootId: Int): List[String] = {
-  val d = langDefFromDocument(url, doc)
+    doc: Document[NodeData], url: String, rootId: Int,
+    resolve: ExternalNodeReference => Option[LanguageDef] = _ => None
+    ): List[String] = {
+  val d = langDefFromDocument(url, doc, 0, resolve)
   val termIds = deriveTermIds(doc, rootId)
   def lines(id: Int, depth: Int): List[String] =
     metaConsOf(doc, id) match {
       case Some("rule") =>
-        List("  " * depth + ruleLineText(d, ruleFromDoc(doc, url, 0, termIds, id)))
+        List("  " * depth + ruleLineText(
+          d, ruleFromDoc(doc, url, 0, termIds, resolve, id)))
       case Some(name) =>
         ("  " * depth + name) :: doc.childrenOf(id).flatMap(lines(_, depth + 1))
       case None =>

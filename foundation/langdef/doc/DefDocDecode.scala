@@ -6,7 +6,6 @@ import opelan.foundation.document.typed._
 import opelan.foundation.langdef._
 import opelan.foundation.langdef.syntax.vocabularyFrom
 import opelan.foundation.means.Meaning
-import opelan.foundation.means.engine.foundationDefs
 
 // The recovering read of a `lang:` document — the inverse of
 // DefDocEncode. Constructs are recognized by identity (which
@@ -19,13 +18,20 @@ import opelan.foundation.means.engine.foundationDefs
 //
 // `version` is the version of `url` being read: terms' refs pin it, so
 // a construct added in a later version is addressable.
+//
+// `resolve` names non-ambient construct refs: given a ref into another
+// definition's document it returns that definition, so a stored ref's
+// declared name prints. Ambient refs (foundation + placeholders) name
+// themselves and need no resolver.
 def langDefFromDocument(
-    url: String, doc: Document[NodeData], version: Int = 0): LanguageDef = {
+    url: String, doc: Document[NodeData], version: Int = 0,
+    resolve: ExternalNodeReference => Option[LanguageDef] = _ => None
+    ): LanguageDef = {
   // A seeded def doc is typed (type ref, imports, content); a hand-built
   // or damaged one may be a bare outline — read either.
   val root = if (isTyped(doc)) contentId(doc).getOrElse(doc.rootId)
     else doc.rootId
-  val r = new DefDocReader(doc, root, url, version)
+  val r = new DefDocReader(doc, root, url, version, resolve)
   val title = Store.labelOf(doc).getOrElse(url)
 
   LanguageDef(
@@ -33,14 +39,14 @@ def langDefFromDocument(
     title = title,
     name = r.section("name").flatMap(r.childStr(_, 0)).getOrElse(title),
     description = r.section("description").flatMap(r.childStr(_, 0)).getOrElse(""),
-    // The vocabulary: terms the rules declare — `where`-bound leaf
-    // terms and construct-application pattern declarations, each
-    // entry's ref its declaration node's id through termIds — plus
-    // the `vocabulary` section's entries (a rule-less def's declared
-    // terms, or non-foundational imports), and — for a rule-bearing
-    // def — the ambient foundation: foundational terms resolve by
-    // name without a stored entry, so a decoded `add` is the
-    // foundational `add`.
+    // The vocabulary the document declares: terms the rules declare
+    // — `where`-bound leaf terms and construct-application pattern
+    // declarations, each entry's ref its declaration node's id
+    // through termIds — plus the `vocabulary` section's entries
+    // (non-ambient imports or non-ambient declared terms). Ambient
+    // terms — foundation primitives and placeholders — never appear:
+    // they resolve through `ambientRefs`/`ambientTermOf` at the
+    // consumers instead of being listed here.
     vocabulary = {
       val derived = r.section("syntax").toList
         .flatMap(sid => r.entries(sid, "rules"))
@@ -50,13 +56,7 @@ def langDefFromDocument(
               .map(ExternalNodeReference(url, version, _))))))
       val section = r.section("vocabulary").toList
         .flatMap(sid => r.entries(sid, "term").map(r.termEntry))
-      val named = (derived ++ section).map(_.name).toSet
-      val floor =
-        if (derived.isEmpty) Nil
-        else foundationDefs.map(d => NodeTerm(
-          d.name, NodeShape.Fixed(d.arity), Some(d.ref)))
-          .filterNot(t => named(t.name))
-      derived ++ section.filterNot(t => derived.exists(_.name == t.name)) ++ floor
+      derived ++ section.filterNot(t => derived.exists(_.name == t.name))
     },
     syntax = r.section("syntax").map { sid =>
       SyntaxDef(

@@ -12,7 +12,7 @@ import opelan.foundation.langdef.syntax._
 import opelan.foundation.langdef.view._
 import opelan.foundation.language.{InputSessions, TextSession}
 import opelan.foundation.means.Meaning
-import opelan.foundation.means.engine.foundationRefs
+import opelan.foundation.means.engine.{foundationRefs, foundationalOf}
 import opelan.foundation.means.text.{printPattern, printRule, readRuleOrGap}
 import opelan.foundation.document.Detached._
 import munit.FunSuite
@@ -40,7 +40,8 @@ class LangDefDocSuite extends FunSuite {
     val imported = importEntries(doc).map(_._2)
     assert(imported.contains(metaRef("rule").get))
     assert(imported.forall(r => Set(langDefTypeRef.documentUrl,
-      "opelan:foundation/arithmetic")(r.documentUrl)))
+      "opelan:foundation/arithmetic",
+      "opelan:foundation/placeholders")(r.documentUrl)))
   }
 
   test("means rules encode as structure and decode back") {
@@ -62,21 +63,25 @@ class LangDefDocSuite extends FunSuite {
 
   test("foundational imports decode to the foundation's refs without a section") {
     // A rule-bearing def writes no `vocabulary` section for the
-    // terms the foundation already names — they resolve through the
-    // ambient floor, so a decoded `add` IS the foundational `add`,
-    // no stored entries involved.
+    // terms the ambient layer already names — they resolve through
+    // ambientRefs/ambientTermOf, so a decoded `add` IS the
+    // foundational `add`, no stored entries involved.
     val doc = langDefDoc(exprDef)
     assert(
       !doc.nodes.indices.exists(metaConsOf(doc, _).contains("vocabulary")))
     val d = langDefFromDocument(exprDef.typeRef.documentUrl, doc)
+    // Ambient refs never appear in the decoded vocabulary — the
+    // rules' meanings still decode to the foundational tags.
+    assert(d.vocabulary.flatMap(_.ref)
+      .forall(r => foundationalOf(r).isEmpty))
     assertEquals(
-      d.vocabulary.filter(_.name == "add").flatMap(_.ref),
-      List(foundationRefs("add")))
+      d.syntax.get.rules.get.rules
+        .filter(_.meaning.tag == "add").map(_.meaning.reference),
+      List(Some(foundationRefs("add"))))
     // The unused `div` stays referenceable — the audience can add
-    // `a / b means div(a, b)` and the name resolves to the floor.
-    assertEquals(
-      d.vocabulary.filter(_.name == "div").flatMap(_.ref),
-      List(foundationRefs("div")))
+    // `a / b means div(a, b)` and the name resolves through the
+    // ambient registry.
+    assertEquals(ambientRefs("div"), foundationRefs("div"))
   }
 
   test("a committed construct name heals to the def's import") {
@@ -413,19 +418,17 @@ class LangDefDocSuite extends FunSuite {
       .contains("a / b means div(a, b)"))
   }
 
-  test("renaming a construct's definition renames its uses, decoding unaffected") {
-    // Rename the meta `rule` entry in lang: language. Def docs use the
-    // entry by id, so decoding ignores the rename and the projected
-    // name of every use follows it.
-    val ruleEntry = metaRef("rule").get.nodeId
-    val metaDoc = DocLanguage.langDoc
-    val nameLeaf = metaDoc.childrenOf(ruleEntry).head
-    val renamed = updateNodeData(nameLeaf, s("construct"), metaDoc).toOption.get
-    val store = Store.empty.put(langDefTypeRef.documentUrl, renamed)._1
+  test("meta constructs are placeholders — refs name themselves") {
+    // `rule`/`meaning`/… are placeholder terms (PlaceholderTerms):
+    // a def doc stores their placeholder refs, and both directions —
+    // metaNameOf at decode, ambientRefs at commit — run through the
+    // registry, not through a stored vocabulary entry.
     val doc = langDefDoc(exprDef)
-    val termUse = doc.nodes.indices.find(id =>
-      !isImportEntry(doc, id) && externalRefOf(doc, id).contains(metaRef("rule").get)).get
-    assertEquals(refName(store, doc, termUse), Some("construct"))
+    val ruleIds = doc.nodes.indices.filter(id =>
+      !isImportEntry(doc, id) &&
+      externalRefOf(doc, id).contains(metaRef("rule").get))
+    assert(ruleIds.nonEmpty)
+    assert(ruleIds.forall(id => metaConsOf(doc, id).contains("rule")))
     assertEquals(
       langDefFromDocument(exprDef.typeRef.documentUrl, doc).vocabulary.map(_.name),
       exprDef.vocabulary.map(_.name))
@@ -435,7 +438,12 @@ class LangDefDocSuite extends FunSuite {
     val url = sheetDef.typeRef.documentUrl
     val doc = langDefDoc(sheetDef)
     val back = langDefFromDocument(url, doc)
-    assertEquals(back, withTermRefs(sheetDef))
+    // The grid terms are ambient placeholders — they write no section,
+    // so the decoded vocabulary holds only `literal` and `ref`, the
+    // sheet terms shadowed by meta placeholders of the same names.
+    val shadowed = sheetDef.vocabulary
+      .filter(t => metaPlaceholderRefs.contains(t.name))
+    assertEquals(back, withTermRefs(sheetDef).copy(vocabulary = shadowed))
     // The input grammar really does name the expression language.
     assertEquals(
       back.inputParser,
@@ -451,7 +459,9 @@ class LangDefDocSuite extends FunSuite {
     assertEquals(
       langDefFromDocument("opelan:languages/sheet",
         SheetLanguage.langDoc),
-      withTermRefs(sheetDef))
+      withTermRefs(sheetDef).copy(vocabulary =
+        sheetDef.vocabulary
+          .filter(t => metaPlaceholderRefs.contains(t.name))))
   }
 
   test("the def text surface's line marks paint what each line read as") {

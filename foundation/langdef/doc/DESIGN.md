@@ -7,6 +7,10 @@ The `lang:` document format for a `LanguageDef`/rule set
   a typed `lang:` document and read it back recoveringly; sets are
   sorted so encoding is deterministic. Readers match
   constructs by node identity (`DefDocReader.cons`), never on a string.
+  The `vocabulary` section encodes only what the ambient layer can't
+  name (a non-ambient import or a term shadowing a placeholder name);
+  at decode, a non-ambient ref's name comes through `resolve` — the
+  referenced def's own vocabulary — instead of a stored entry.
 - **`RuleEncode` / `RuleDocDecode`** — a rule set as document nodes:
   each `rule` holds `pattern` + `meaning` (+ `where`) sections; pattern
   pieces are `placeholder`/`literal` nodes with a `glued` marker when
@@ -28,9 +32,10 @@ The `lang:` document format for a `LanguageDef`/rule set
   read as (meta construct, parsed rule, gap rule, payload kind,
   unmatched word) plus inline spans for `means`/`where` keywords and
   placeholder names. Read-only: it classifies, `DefDocText` commits.
-- **`Meta`** — `metaTermIds`: the node ids of `lang: language`'s own
-  constructs, taken from encoding `docLanguageDef`, so code can know a
-  meta construct by identity.
+- **`Meta`** — `metaRef`/`metaNameOf`/`metaConsOf`: meta constructs by
+  placeholder ref — `lang: language`'s vocabulary is anchored in the
+  placeholder registry (`../PlaceholderTerms.scala`), so code knows a
+  meta construct by identity without a stored entry.
 
 *Everything by reference* is the convention the format embodies —
 constructs are `InternalNodeRef`s to import entries, never names:

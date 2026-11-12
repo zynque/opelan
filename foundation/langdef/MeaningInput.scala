@@ -56,7 +56,8 @@ private def meaningSyntax(
     val atom = unrecognized(lexicon.gapStart, lexicon.gapRun)
     val lexicals = lexicalTerms(impls)
     val placeholders = ruleFromDoc(doc, docUrl, 0,
-      deriveTermIds(doc, contentId(doc).getOrElse(doc.rootId)), ruleId)
+      deriveTermIds(doc, contentId(doc).getOrElse(doc.rootId)),
+      _ => None, ruleId)
       .pattern.placeholders.toSet
     val pieceIds = pieceIdsFor(doc, ruleId)
     val names = namesByData(set, tag)

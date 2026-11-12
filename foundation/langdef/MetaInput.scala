@@ -31,7 +31,7 @@ def commitMetaInput(
     case Some("rule") =>
       // Constructs bind through the def's own vocabulary — its
       // imports and declarations, not a code-side name table.
-      val refs = termRefs(langDefFromDocument(docUrl, doc))
+      val refs = ambientRefs ++ termRefs(langDefFromDocument(docUrl, doc))
       Some((ruleNode(desugarCommitted(doc, docUrl, id,
           readRuleOrGap(text, noLanguage, refs.get), impls),
         docUrl, pieceIdsFor(doc, id), externalMeta), inputs))
@@ -94,7 +94,7 @@ private def ruleIndex(doc: Document[NodeData], id: Int): Option[Int] =
 // (meanings reference, they never declare — an unmatched word can't
 // land as content).
 private[langdef] def termTagOf(d: LanguageDef): String => NodeData = {
-  val refs = termRefs(d)
+  val refs = ambientRefs ++ termRefs(d)
   val url = d.typeRef.documentUrl
   name => refs.get(name).map(r =>
     // A same-doc term links to its entry — an ExternalNodeRef would

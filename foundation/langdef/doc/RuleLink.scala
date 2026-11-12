@@ -2,7 +2,7 @@ package opelan.foundation.langdef.doc
 
 import opelan.foundation.document._
 import opelan.foundation.document.typed._
-import opelan.foundation.means.engine.foundationRefs
+import opelan.foundation.langdef.{ambientRefs, LanguageDef}
 
 // Point each meaning's `use`/`source`/`builtin`/`literal` operand at
 // the placeholder piece node it names. The operand decodes through the piece's
@@ -55,14 +55,25 @@ private[langdef] def metaTag(doc: Document[NodeData], id: Int): Option[String] =
   doc.getNode(id).map(_.data).flatMap(pendingName)
     .orElse(metaConsOf(doc, id))
 
-// The def's imported terms: `term` entries carrying an external ref
-// in its `vocabulary` section — name → the imported ref — over the
-// ambient foundation floor, so a foundational name resolves without a
-// stored entry. A committed rule's construct names heal against these
-// first, so an imported name never becomes a local declaration.
+// The names a def's construct uses resolve against: the ambient
+// registry (foundation primitives + placeholders), then the terms of
+// the definition documents the doc already imports — each resolved
+// through `resolve` — then the `vocabulary` section's `term` entries
+// carrying an external ref. A committed rule's construct names heal
+// against these first, so an imported or ambient name never becomes a
+// local declaration.
 private[langdef] def termImports(
-    doc: Document[NodeData], cid: Int): Map[String, ExternalNodeReference] =
-  foundationRefs ++ doc.childrenOf(cid)
+    doc: Document[NodeData], cid: Int,
+    resolve: ExternalNodeReference => Option[LanguageDef] = _ => None
+    ): Map[String, ExternalNodeReference] = {
+  // The vocabularies of the def documents this doc imports — a name in
+  // a means body resolves to the ref its definition declares. (The
+  // ambient layer is name-only: it needs no document.)
+  val imported = importEntries(doc).map(_._2.documentUrl).distinct
+    .flatMap(u => resolve(ExternalNodeReference(u, 0, 0)).toList
+      .flatMap(d => d.vocabulary.flatMap(t => t.ref.map(t.name -> _))))
+    .toMap
+  ambientRefs ++ imported ++ doc.childrenOf(cid)
     .filter(id => metaTag(doc, id).contains("vocabulary"))
     .flatMap(doc.childrenOf)
     .filter(id => metaTag(doc, id).contains("term"))
@@ -78,6 +89,7 @@ private[langdef] def termImports(
       } yield name -> ref)
     }
     .toMap
+}
 
 // Term name → its declaration node's id: the first meaning-position
 // node carrying that name, in doc order. Meaning positions are

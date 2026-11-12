@@ -5,7 +5,7 @@ import opelan.foundation.document.store._
 import opelan.foundation.document.typed._
 import opelan.foundation.grammar.ParseTree
 import opelan.foundation.means._
-import opelan.foundation.means.engine.foundationalOf
+import opelan.foundation.langdef.{ambientTermOf, LanguageDef}
 import opelan.foundation.means.text._
 
 // A `rule` node read back to a `Rule` — the inverse of RuleEncode. A
@@ -17,7 +17,8 @@ import opelan.foundation.means.text._
 // Every read is total: missing or malformed parts become gaps.
 private[langdef] def ruleFromDoc(
     doc: Document[NodeData], url: String,
-    version: Int, termIds: Map[String, Int], id: Int): Rule =
+    version: Int, termIds: Map[String, Int],
+    resolve: ExternalNodeReference => Option[LanguageDef], id: Int): Rule =
   doc.childrenOf(id).headOption.flatMap(i => strOf(doc, i))
     .map(t => readRuleOrGap(t).copy(id = Some(id))).getOrElse(Rule(
       entriesOf(doc, id, "pattern").headOption
@@ -25,7 +26,7 @@ private[langdef] def ruleFromDoc(
         .getOrElse(Pattern(Nil)),
       entriesOf(doc, id, "meaning").headOption
         .flatMap(m => doc.childrenOf(m).headOption)
-        .map(meaningFromDoc(doc, url, version, termIds, _))
+        .map(meaningFromDoc(doc, url, version, termIds, resolve, _))
         .getOrElse(Meaning.gap("")),
       entriesOf(doc, id, "where").headOption.toList.flatMap(w =>
         entriesOf(doc, w, "constraint")
@@ -48,7 +49,8 @@ private def pieceFrom(doc: Document[NodeData], id: Int): Piece = {
 // defined language, named and referenced through its term entry.
 private def meaningFromDoc(
     doc: Document[NodeData], url: String,
-    version: Int, termIds: Map[String, Int], id: Int): Meaning =
+    version: Int, termIds: Map[String, Int],
+    resolve: ExternalNodeReference => Option[LanguageDef], id: Int): Meaning =
   metaConsOf(doc, id) match {
   case Some(tag @ ("use" | "source" | "builtin")) =>
     Meaning(tag, doc.childrenOf(id).map(operandFrom(doc, url, version, _)))
@@ -56,13 +58,15 @@ private def meaningFromDoc(
   // carries the piece ref) and construct subtrees alike.
   case Some("literal") =>
     Meaning("literal",
-      doc.childrenOf(id).map(meaningFromDoc(doc, url, version, termIds, _)))
+      doc.childrenOf(id)
+        .map(meaningFromDoc(doc, url, version, termIds, resolve, _)))
   case Some("quote") =>
     Meaning("quote", quoted =
       doc.childrenOf(id).headOption.map(treeFrom(doc, _)))
   case _ =>
-    Meaning(kindName(doc, url, version, termIds, id),
-      doc.childrenOf(id).map(meaningFromDoc(doc, url, version, termIds, _)),
+    Meaning(kindName(doc, url, version, termIds, resolve, id),
+      doc.childrenOf(id)
+        .map(meaningFromDoc(doc, url, version, termIds, resolve, _)),
       kindRef(doc, url, version, termIds, id))
 }
 
@@ -98,11 +102,18 @@ private def kindRef(
 
 private def kindName(
     doc: Document[NodeData], url: String,
-    version: Int, termIds: Map[String, Int], id: Int): String =
+    version: Int, termIds: Map[String, Int],
+    resolve: ExternalNodeReference => Option[LanguageDef],
+    id: Int): String =
   kindRef(doc, url, version, termIds, id) match {
-    // A foundational reference names itself — it has no local entry.
+    // An ambient reference names itself (foundation primitive or
+    // placeholder); a ref into another def's document names itself
+    // through that definition's vocabulary via `resolve`; else the
+    // local term entry.
     case Some(r) =>
-      foundationalOf(r).map(_.name)
+      ambientTermOf(r).map(_.name)
+        .orElse(resolve(r).flatMap(d => d.vocabulary
+          .find(t => t.ref.exists(sameNode(_, r))).map(_.name)))
         .orElse(definitionName(doc, r.nodeId)).getOrElse("")
     case None    => strOf(doc, id).getOrElse("")
   }

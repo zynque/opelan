@@ -75,8 +75,18 @@ class DefLanguage(
   def termTag(term: String): NodeData =
     termTags.getOrElse(term, NodeData.GapData(term))
 
+  // The ambient registry under the def's declared vocabulary — a
+  // declared term wins over a placeholder or foundation name.
   private lazy val termTags: Map[String, NodeData] =
-    termRefs(languageDef).view.mapValues(NodeData.ExternalNodeRef(_)).toMap
+    (ambientRefs ++ termRefs(languageDef))
+      .view.mapValues(NodeData.ExternalNodeRef(_)).toMap
+
+  // A ref into another definition document resolves to that
+  // definition — naming non-ambient refs at decode and binding their
+  // names at commit.
+  private def resolveDef(
+      r: ExternalNodeReference): Option[LanguageDef] =
+    resolve(r).collect { case d: DefLanguage => d.languageDef }
 
   private lazy val syntax: Option[(Lexicon, Parser)] =
     for {
@@ -112,7 +122,7 @@ class DefLanguage(
     if (isDocLanguage && view == "print")
       contentId(doc).toRight(s"$name: typed document has no content")
         .map(id => ViewTree.block(defDocLines(
-          doc, docUrl.getOrElse(""), id).map(ViewTree.txt)*))
+          doc, docUrl.getOrElse(""), id, resolveDef).map(ViewTree.txt)*))
     else {
       val bindings =
         if (isDocLanguage) docViewBindings else languageDef.views
@@ -143,7 +153,7 @@ class DefLanguage(
       doc: Document[NodeData], rootId: Int): Document[NodeData] =
     if (isDocLanguage)
       linkTerms(linkRuleUses(doc, rootId), rootId,
-        deriveTermIds(doc, rootId), termImports(doc, rootId))
+        deriveTermIds(doc, rootId), termImports(doc, rootId, resolveDef))
     else doc
 
   // The compiled rules as an incremental parser. Its key is the

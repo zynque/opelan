@@ -11,12 +11,18 @@ it back recoveringly; `compileRules` (in
 total parser over the lexicon's recovery; and `DefLanguage` turns a def
 into a live `Language`. A
 def doc's sections and rule nodes are constructs
-of `lang: language` (`metaTerms`), imported like any other construct.
-`lang: language` imports them from its own vocabulary, which is the
-bootstrap fixpoint. Code knows meta constructs by node id
-(`metaTermIds`, taken from encoding `docLanguageDef` — `Defs.scala`,
-where `DocLanguage` bottoms out as the code-resident language `lang:`
-documents are themselves typed by). It knows an example language's
+of `lang: language` (`metaTerms`) — *placeholders*: their vocabulary
+lives in the placeholder registry (`PlaceholderTerms.scala`), anchored
+in the seeded `opelan:foundation/placeholders` document until the def
+language can declare it in-document. That registry is the second
+category beside the truly foundational primitives: placeholders share
+the foundation's ambient implementation (name↔ref with no stored
+entry) but are marked as terms intended to move up out of the
+foundation layer once it is rich enough to define them — the sheet's
+grid terms (`ref`, `column`, `row`, …) are the other group.
+Code knows meta constructs by placeholder ref (`metaRef`/`metaNameOf`,
+`doc/Meta.scala`; `DocLanguage` bottoms out as the code-resident
+language `lang:` documents are themselves typed by — `Defs.scala`). It knows an example language's
 constructs by the ids its canonical encoding assigns (`termRefs`,
 `exprTerms`, `sheetTerms` — see [`examples/`](../../examples/DESIGN.md)).
 Each decoded `NodeTerm` carries its `ref`, and a def-interpreted parser
@@ -41,12 +47,16 @@ nodes (`glued` marking unspaced adjacency), the meaning as its term
 subtree (`doc/RuleEncode`, `doc/RuleDocDecode`, `doc/RuleLink`). Like
 every construct use, a meaning names its constructor by reference:
 `add(a, b)` is a node whose data refers to `add`'s term entry — a
-declared term's first meaning occurrence, or for an imported term
-the ref it names: foundational terms are ambient (`foundationalOf`/
-`foundationRefs` is the floor at decode and commit, so a rule-bearing
-def writes no `vocabulary` section for them — a decoded `add` is the
-foundational `add`); a non-foundational import's ref rides the
-`vocabulary` section's `term` entry — and `a` spells `use(a)` — an operand
+declared term's first meaning occurrence, or the ambient ref it
+names: foundation primitives and placeholders are ambient
+(`ambientRefs`/`ambientTermOf`, built on `foundationalOf` +
+`placeholderOf`), so a def writes no `vocabulary` section for them — a
+decoded `add` is the foundational `add`. A ref into another
+definition's document names itself through that definition's own
+vocabulary, resolved through the `resolve` parameter
+(`langDefFromDocument`, and `termImports` for name→ref at commit) —
+so the section is gone even for non-foundation imports — and `a`
+spells `use(a)` — an operand
 ref to the pattern's placeholder node — so a rule survives renames on
 either side. Rules compile to the recovering combinators of
 [`foundation/grammar`](../grammar/DESIGN.md) — the implementation layer

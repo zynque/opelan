@@ -53,6 +53,7 @@ class WorkbenchUpdateSuite extends munit.FunSuite {
     val st = u.state.workspace.store
     assertEquals(st.urls, List(
       "opelan:docs/household-budget",
+      "opelan:foundation/placeholders",
       "opelan:languages/int-expression",
       "opelan:languages/language",
       "opelan:languages/sheet"))
@@ -66,7 +67,7 @@ class WorkbenchUpdateSuite extends munit.FunSuite {
     assertEquals(
       st.resolve(SheetLanguage.typeRef).map(_._1), Some(SheetLanguage.langDoc))
     // every seed is queued for persistence at version 0
-    assertEquals(u.state.storageQ.length, 4)
+    assertEquals(u.state.storageQ.length, 5)
     assert(u.state.storageQ.forall {
       case StorageReq.Persist(_, _, 0, _, _) => true
       case _                              => false

@@ -4,7 +4,6 @@ import opelan.foundation.document._
 import opelan.foundation.document.typed._
 import opelan.foundation.document.Detached._
 import opelan.foundation.langdef._
-import opelan.foundation.means.engine.foundationalOf
 
 // A LanguageDef as a document: a typed document (type = the
 // language-definition language, langDefTypeRef) whose content carries
@@ -22,11 +21,12 @@ import opelan.foundation.means.engine.foundationalOf
 //     definition
 //       description  "the arithmetic-expression language"
 //       name         "Expressions"
-//       vocabulary   term(…) — only imports the foundation doesn't
-//                    already name; foundational terms are ambient,
-//                    referenced directly in meanings. Rule-less defs
-//                    write their whole vocabulary (it's declaration
-//                    content, no ref children)
+//       vocabulary   term(…) — only terms the ambient layer doesn't
+//                    already name: foundation primitives and
+//                    placeholders (lang: language's meta constructs,
+//                    the sheet's grid terms) are ambient, referenced
+//                    directly in meanings. A def whose every term is
+//                    ambient writes no vocabulary section at all
 //       syntax       "expr"  rules(…)   — the operand fallback is the
 //                              lexicon's recovery and stores nothing
 //       views        view("print", "expr-print") …
@@ -44,20 +44,21 @@ private[langdef] def encodeDef(
     DetachedNode.leaf(pending("definition")))
   val cid = contentId(doc0).getOrElse(doc0.rootId)
   val hasRules = d.syntax.flatMap(_.rules).isDefined
+  // A term the ambient layer already names — a foundation primitive
+  // (ref'd) or a placeholder (named by the registry, with or without
+  // a ref on the entry) — declares nothing in the document: it's
+  // referenced directly in meanings, so no vocabulary section is
+  // written for it.
+  def ambientEntry(t: NodeTerm): Boolean =
+    ambientRefs.get(t.name).exists(r => t.ref.forall(sameNode(r, _)))
   // A def that carries rules declares its terms in them — leaf
   // terms through `where` bindings, constructs through
-  // construct-application patterns — so it writes a vocabulary
-  // section only for imports the foundation doesn't already name:
-  // foundational terms resolve through the ambient floor
-  // (foundationalOf/foundationRefs), a decoded `add` IS the
-  // foundational `add` without a stored entry. Defs without rules
-  // (lang: language itself, the sheet) write their whole vocabulary:
-  // it's authored declaration content, and its term entries anchor
-  // the refs stored docs point at.
+  // construct-application patterns — so its section holds only
+  // non-ambient imports; a rule-less def's section is its declared
+  // terms, minus the placeholders the registry names for it.
+  val section = d.vocabulary.filter(t =>
+    (t.ref.isDefined || !hasRules) && !ambientEntry(t))
   val imported = d.vocabulary.filter(_.ref.isDefined)
-  val section = if (hasRules)
-    imported.filter(t => t.ref.forall(r => foundationalOf(r).isEmpty))
-  else d.vocabulary
   val (doc1, vocabularyId) =
     if (section.isEmpty) add(doc0, cid,
       n(pending("description"), sl(d.description)),
@@ -67,7 +68,7 @@ private[langdef] def encodeDef(
       n(pending("name"), sl(d.name)),
       n(pending("vocabulary"), section.map(termNode)*))
   val sectionIds =
-    if (hasRules) Map.empty[String, Int]
+    if (hasRules || section.isEmpty) Map.empty[String, Int]
     else section.map(_.name).zip(doc1.childrenOf(vocabularyId)).toMap
   val doc2 = add(doc1, cid, List(
     d.syntax.map(s => n(pending("syntax"),
@@ -78,13 +79,13 @@ private[langdef] def encodeDef(
   val linked = linkRuleUses(doc2, cid)
   val termIds =
     if (hasRules) deriveTermIds(linked, cid) else sectionIds
-  val metaIds =
-    if (d.typeRef.documentUrl == langDefTypeRef.documentUrl)
-      termIds else metaTermIds
+  // Bare construct names in meanings bind to the ambient registry
+  // first (foundation + placeholders), then to non-ambient imports.
+  val imports = ambientRefs ++
+    imported.flatMap(t => t.ref.map(t.name -> _)).toMap
   val doc3 = resolvePending(
-    linkTerms(linked, cid, termIds,
-      imported.flatMap(t => t.ref.map(t.name -> _)).toMap), name =>
-    metaRefIn(metaIds, name).map(NodeData.ExternalNodeRef(_))
+    linkTerms(linked, cid, termIds, imports), name =>
+    metaRef(name).map(NodeData.ExternalNodeRef(_))
       .getOrElse(NodeData.GapData(name)))
   (internalizeStandard(doc3), termIds)
 }

@@ -12,7 +12,6 @@ import opelan.foundation.langdef.doc.termRefs
 // machinery. `langDefDoc` must round-trip it through
 // `langDefFromDocument`. The def is paired with `sheetImpls`, the Impls
 // bundle holding the code-side semantics it names.
-import NodeShape._
 
 // The language's identity ref — the URL its `lang:` document lives at.
 val sheetTypeRef = ExternalNodeReference("opelan:languages/sheet", 0, 0)
@@ -22,18 +21,15 @@ val sheetDef = LanguageDef(
   title = "lang: sheet",
   name = "Sheet",
   description = "the spreadsheet language — a grid of cells",
-  vocabulary = List(
-    NodeTerm("sheet", Any),
-    NodeTerm("hrow", Any),
-    NodeTerm("row", Any),
-    NodeTerm("label", Leaf),
-    NodeTerm("literal", Leaf),
-    // A cell reference, fully structured: `ref(column("B"), row(3))` —
-    // `column` a field node, `row` the field's number (reusing the
-    // grid's `row` term).
-    NodeTerm("ref", Fixed(2)),
-    NodeTerm("column", Fixed(1)),
-    NodeTerm("formula", Any)),
+  // The grid's structural terms are placeholders — the def language
+  // can't yet declare them in-document, so the registry
+  // (foundation/langdef/PlaceholderTerms.scala) anchors each at the
+  // opelan:languages/sheet url where its real definition will live.
+  // Listed here so the def's declared names resolve to their
+  // placeholder refs; they encode as no `vocabulary` section — the
+  // ambient layer names them already.
+  vocabulary = structuralPlaceholders.map(t =>
+    NodeTerm(t.name, t.shape, Some(t.ref))),
   syntax = None,
   views = List(
     ViewBinding("sheet", "sheet-grid", Map("currency" -> "$")),

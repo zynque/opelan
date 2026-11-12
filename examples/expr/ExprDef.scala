@@ -7,7 +7,7 @@ import opelan.foundation.langdef.syntax._
 import opelan.foundation.langdef.doc.termRefs
 import opelan.foundation.langdef.LeafKind._
 import opelan.foundation.means._
-import opelan.foundation.means.engine.{evalView, foundationDefs, printViewWith, semanticsOf}
+import opelan.foundation.means.engine.{evalView, printViewWith, semanticsOf}
 import opelan.foundation.means.text._
 
 // The expression language's definition as data — what its `lang:`
@@ -29,13 +29,11 @@ val exprDef = LanguageDef(
   description = "the arithmetic-expression language",
   // Declared terms derive: where-bound leaf terms plus
   // construct-application pattern declarations (DeriveVocabulary.scala).
-  // The arithmetic constructs the rules use are foundational
-  // definitions — declared as imports: entries whose ref IS the
-  // foundation's own. They encode as no `vocabulary` section at all —
-  // meanings point `add` at the foundational `add` and decode through
-  // the ambient floor, so a decoded def needs no code-side table.
-  vocabulary = vocabularyFrom(exprRules) ++ foundationDefs.map(d =>
-    NodeTerm(d.name, NodeShape.Fixed(d.arity), Some(d.ref))),
+  // The arithmetic constructs the rules use are ambient foundation
+  // definitions — `add`/`mul`/… resolve by name through ambientRefs
+  // with no vocabulary entry at all, so a decoded def needs no
+  // code-side table.
+  vocabulary = vocabularyFrom(exprRules),
   // The rules carry the syntax; the operand fallback they compile
   // over is the lexicon's recovering unrecognized run
   // (ExprLexicon's gap kinds).
@@ -90,9 +88,9 @@ val exprImpls = Impls(
 // renamed in its lang: document keeps working (node ids are never
 // reused).
 // The arithmetic constructs resolve to foundational definitions
-// through the def's imports — their refs ARE the foundation's.
+// through the ambient registry — their refs ARE the foundation's.
 lazy val exprTerms: Map[String, ExternalNodeReference] =
-  termRefs(exprDef)
+  ambientRefs ++ termRefs(exprDef)
 
 // Node data applying a construct, inline — a document imports it when
 // the tree is inserted (see makeTyped / internalizeRefs).
