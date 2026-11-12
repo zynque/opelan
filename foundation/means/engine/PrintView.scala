@@ -17,9 +17,10 @@ import opelan.foundation.view.ViewTree._
 def printViewWith(
     set: RuleSet,
     termTag: String => NodeData,
-    leaf: NodeData => DetachedNode[NodeData])(
+    leaf: NodeData => DetachedNode[NodeData],
+    nameOf: ExternalNodeReference => Option[String] = (_ => None))(
     doc: Document[NodeData], rootId: Int): DetachedNode[NodeData] = {
-  val index = PrintIndex(set, termTag)
+  val index = PrintIndex(set, termTag, nameOf)
   import index._
 
   // A node's construct tag, resolved: committed documents internalize
@@ -39,7 +40,7 @@ def printViewWith(
   def emit(id: Int): (DetachedNode[NodeData], Int) =
     doc.getNode(id) match {
       case None => (from(id, gap("missing")), Int.MaxValue)
-      case Some(node) => builders.get(resolved(id)) match {
+      case Some(node) => builderFor(resolved(id), node.childIds.length) match {
         case Some(rule) if isOperatorPattern(rule.pattern) =>
           (flow(src(id) +: walk(node, rule, operandCtx(rule, _, _))*),
            levels.getOrElse(rule.pattern.key, Int.MaxValue))

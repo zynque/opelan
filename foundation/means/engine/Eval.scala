@@ -22,14 +22,16 @@ import opelan.foundation.view.ViewTree._
 // they evaluate, the derived layers, and the rules whose evaluation
 // would revisit themselves — the closing edges.
 case class Semantics(
-    rules: Map[String, Rule],
+    rules: Map[String, List[Rule]],
     layers: Map[String, Int],
     cyclic: Set[String])
 
 def semanticsOf(set: RuleSet): Semantics = {
   val rules = set.rules.flatMap(r =>
-    constructForm(r.pattern).map(_._1 -> r)).toMap
-  val deps = rules.view.mapValues(r => meaningConstructs(r.meaning)).toMap
+    constructForm(r.pattern).map(_._1 -> r))
+    .groupBy(_._1).map { case (t, rs) => t -> rs.map(_._2) }
+  val deps = rules.view.mapValues(rs =>
+    rs.flatMap(r => meaningConstructs(r.meaning)).toSet).toMap
   val layers = scala.collection.mutable.Map.empty[String, Int]
   val cyclic = scala.collection.mutable.Set.empty[String]
   def layer(tag: String, path: List[String]): Int =
@@ -56,12 +58,16 @@ private def meaningConstructs(m: Meaning): Set[String] =
 
 // The tag a node applies — its construct's term name through the
 // import entry (examples/Terms.termOf, kept local so the engine stays
-// in foundation).
+// in foundation). `nameOf` names refs the table misses — a construct
+// declared in another definition's document resolves through its own
+// vocabulary when the caller hands one down (ViewContext.termName).
 private def termOf(
     terms: Map[String, ExternalNodeReference],
+    nameOf: ExternalNodeReference => Option[String],
     doc: Document[NodeData], id: Int): Option[String] =
   externalRefOf(doc, id).flatMap(r =>
-    terms.collectFirst { case (t, tr) if sameNode(tr, r) => t })
+    terms.collectFirst { case (t, tr) if sameNode(tr, r) => t }
+      .orElse(nameOf(r)))
 
 // A node's value: a numeric leaf is itself; an `InternalNodeRef` leaf
 // evaluates the target's subtree (visiting catches ref cycles); a gap
@@ -73,7 +79,9 @@ def evalNode(
     semantics: Semantics,
     terms: Map[String, ExternalNodeReference],
     doc: Document[NodeData], id: Int,
-    visiting: Set[Int]): Either[(String, Int), NodeData] =
+    visiting: Set[Int],
+    nameOf: ExternalNodeReference => Option[String] =
+      (_ => None)): Either[(String, Int), NodeData] =
   doc.getNode(id) match {
     case None => Left(("missing", id))
     case Some(node) =>
@@ -82,17 +90,20 @@ def evalNode(
           Right(d)
         case NodeData.InternalNodeRef(target) =>
           if (visiting(target)) Left(("cycle", target))
-          else evalNode(semantics, terms, doc, target, visiting + target)
+          else evalNode(semantics, terms, doc, target, visiting + target, nameOf)
         case NodeData.GapData(text)   => Left((text, id))
         case NodeData.StringData(s)   => Left((s, id))
         case other                    => Left((NodeDataText.show(other), id))
       }
-      else termOf(terms, doc, id) match {
+      else termOf(terms, nameOf, doc, id) match {
         case Some(tag) if semantics.cyclic(tag) => Left(("cycle", id))
         case Some(tag) if semantics.rules.contains(tag) =>
-          semantics.rules.get(tag) match {
+          // A name may declare several arities (`+n` beside `a + b`):
+          // the node's child count selects the rule.
+          semantics.rules(tag).find(r => constructForm(r.pattern)
+            .exists(_._2.length == node.childIds.length)) match {
             case Some(rule) => evalRule(rule, tag, semantics,
-              terms, doc, id, visiting)
+              terms, doc, id, visiting, nameOf)
             case None       => Left((tag, id))
           }
         case Some(tag) =>
@@ -101,7 +112,7 @@ def evalNode(
           // entries can import the foundational entries directly).
           foundationRefs.get(tag).flatMap(foundationalOf) match {
             case Some(d) =>
-              evalChildren(semantics, terms, doc, node.childIds, visiting)
+              evalChildren(semantics, terms, doc, node.childIds, visiting, nameOf)
                 .flatMap(vs => d.eval(vs).left.map(_ -> id))
             case None => Left((tag, id))
           }
@@ -110,7 +121,7 @@ def evalNode(
           // documents authored against a def that imports the floor.
           externalRefOf(doc, id).flatMap(foundationalOf) match {
             case Some(d) =>
-              evalChildren(semantics, terms, doc, node.childIds, visiting)
+              evalChildren(semantics, terms, doc, node.childIds, visiting, nameOf)
                 .flatMap(vs => d.eval(vs).left.map(_ -> id))
             case None => Left((NodeDataText.show(node.data), id))
           }
@@ -125,14 +136,16 @@ private def evalRule(
     semantics: Semantics,
     terms: Map[String, ExternalNodeReference],
     doc: Document[NodeData], id: Int,
-    visiting: Set[Int]): Either[(String, Int), NodeData] =
+    visiting: Set[Int],
+    nameOf: ExternalNodeReference => Option[String])
+    : Either[(String, Int), NodeData] =
   doc.getNode(id) match {
     case Some(node) =>
       constructForm(rule.pattern) match {
         case Some((_, names)) if names.length == node.childIds.length =>
-          evalChildren(semantics, terms, doc, node.childIds, visiting)
+          evalChildren(semantics, terms, doc, node.childIds, visiting, nameOf)
             .flatMap(vs => evalTerm(semantics, terms,
-              rule.meaning, names.zip(vs).toMap, doc, id, visiting))
+              rule.meaning, names.zip(vs).toMap, doc, id, visiting, nameOf))
         case _ => Left((tag, id))
       }
     case None => Left(("missing", id))
@@ -149,7 +162,9 @@ private def evalTerm(
     terms: Map[String, ExternalNodeReference],
     m: Meaning, env: Map[String, NodeData],
     doc: Document[NodeData], at: Int,
-    visiting: Set[Int]): Either[(String, Int), NodeData] =
+    visiting: Set[Int],
+    nameOf: ExternalNodeReference => Option[String])
+    : Either[(String, Int), NodeData] =
   m.tag match {
     case "use" | "source" =>
       m.arguments.headOption.flatMap(Meaning.nameOf).flatMap(env.get)
@@ -157,14 +172,14 @@ private def evalTerm(
     case "literal" =>
       m.arguments.headOption
         .toRight(("literal", at))
-        .flatMap(evalTerm(semantics, terms, _, env, doc, at, visiting))
+        .flatMap(evalTerm(semantics, terms, _, env, doc, at, visiting, nameOf))
     case "builtin" =>
       m.arguments.headOption.flatMap(Meaning.nameOf)
         .flatMap(foundationRefs.get)
         .flatMap(foundationalOf)
         .toRight(("builtin", at))
         .flatMap(d => evalArgs(semantics, terms,
-          m.arguments.tail, env, doc, at, visiting)
+          m.arguments.tail, env, doc, at, visiting, nameOf)
           .flatMap(vs => d.eval(vs).left.map(_ -> at)))
     case "quote" =>
       m.quoted.map(_.data).filter(d =>
@@ -173,13 +188,16 @@ private def evalTerm(
         .toRight(("quote", at))
     case tag if Meaning.isBuiltin(tag) => Left((tag, at))
     case tag if semantics.cyclic(tag) => Left(("cycle", at))
-    case tag => semantics.rules.get(tag) match {
+    case tag => semantics.rules.getOrElse(tag, Nil).find(r =>
+      constructForm(r.pattern)
+        .exists(_._2.length == m.arguments.length)) match {
       case Some(rule) =>
-        evalArgs(semantics, terms, m.arguments, env, doc, at, visiting)
+        evalArgs(semantics, terms, m.arguments, env, doc, at, visiting, nameOf)
           .flatMap(vs => constructForm(rule.pattern) match {
-            case Some((_, names)) if names.length == vs.length =>
+            case Some((_, names)) =>
               evalTerm(semantics, terms,
-                rule.meaning, names.zip(vs).toMap, doc, at, visiting)
+                rule.meaning, names.zip(vs).toMap, doc, at, visiting,
+                nameOf)
             case _ => Left((tag, at))
           })
       case None =>
@@ -189,7 +207,8 @@ private def evalTerm(
         primitive match {
           case Some(d) =>
             evalArgs(semantics, terms, m.arguments, env, doc, at,
-              visiting).flatMap(vs => d.eval(vs).left.map(_ -> at))
+              visiting, nameOf).flatMap(vs =>
+                d.eval(vs).left.map(_ -> at))
           case None => Left((tag, at))
         }
     }
@@ -199,10 +218,12 @@ private def evalChildren(
     semantics: Semantics,
     terms: Map[String, ExternalNodeReference],
     doc: Document[NodeData], childIds: List[Int],
-    visiting: Set[Int]): Either[(String, Int), List[NodeData]] =
+    visiting: Set[Int],
+    nameOf: ExternalNodeReference => Option[String])
+    : Either[(String, Int), List[NodeData]] =
   childIds.foldRight[Either[(String, Int), List[NodeData]]](Right(Nil)) {
     (cid, acc) => for {
-      v <- evalNode(semantics, terms, doc, cid, visiting)
+      v <- evalNode(semantics, terms, doc, cid, visiting, nameOf)
       vs <- acc
     } yield v :: vs
   }
@@ -212,10 +233,12 @@ private def evalArgs(
     terms: Map[String, ExternalNodeReference],
     args: List[Meaning], env: Map[String, NodeData],
     doc: Document[NodeData], at: Int,
-    visiting: Set[Int]): Either[(String, Int), List[NodeData]] =
+    visiting: Set[Int],
+    nameOf: ExternalNodeReference => Option[String])
+    : Either[(String, Int), List[NodeData]] =
   args.foldRight[Either[(String, Int), List[NodeData]]](Right(Nil)) {
     (m, acc) => for {
-      v <- evalTerm(semantics, terms, m, env, doc, at, visiting)
+      v <- evalTerm(semantics, terms, m, env, doc, at, visiting, nameOf)
       vs <- acc
     } yield v :: vs
   }
@@ -224,9 +247,10 @@ private def evalArgs(
 // waiting on tagged with the blocking node's id.
 def evalView(
     semantics: Semantics,
-    terms: Map[String, ExternalNodeReference])(
+    terms: Map[String, ExternalNodeReference],
+    nameOf: ExternalNodeReference => Option[String] = (_ => None))(
     doc: Document[NodeData], id: Int): DetachedNode[NodeData] =
-  evalNode(semantics, terms, doc, id, Set(id)) match {
+  evalNode(semantics, terms, doc, id, Set(id), nameOf) match {
     case Right(v)         => from(id, txt(valueText(v)))
     case Left((msg, gid)) => from(gid, gap(msg))
   }

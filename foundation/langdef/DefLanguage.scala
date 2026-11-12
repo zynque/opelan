@@ -88,6 +88,15 @@ class DefLanguage(
       r: ExternalNodeReference): Option[LanguageDef] =
     resolve(r).collect { case d: DefLanguage => d.languageDef }
 
+  // The term name a construct ref stands for — the ambient registry,
+  // then the referenced definition's own vocabulary. ViewContext hands
+  // it to views so a stored `+` node evals through the rule declaring
+  // it, wherever its document lives.
+  private def termName(r: ExternalNodeReference): Option[String] =
+    ambientTermOf(r).map(_.name).orElse(
+      resolveDef(r).flatMap(d => termRefs(d).collectFirst {
+        case (n, tr) if sameNode(tr, r) => n }))
+
   private lazy val syntax: Option[(Lexicon, Parser)] =
     for {
       s <- languageDef.syntax
@@ -133,7 +142,8 @@ class DefLanguage(
           case Some(b) => contentId(doc)
             .toRight(s"$name: typed document has no content")
             .map(id => b(doc, id, ViewContext(
-              vb.settings, inputs.parse(retry), interpretDef, docUrl)))
+              vb.settings, inputs.parse(retry), interpretDef, docUrl,
+              termName)))
         }
       }
     }

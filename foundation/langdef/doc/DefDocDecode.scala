@@ -41,18 +41,44 @@ def langDefFromDocument(
     description = r.section("description").flatMap(r.childStr(_, 0)).getOrElse(""),
     // The vocabulary the document declares: the terms the rules
     // declare — `where`-bound leaf terms and construct-application
-    // pattern declarations, each entry's ref its declaration node's
-    // id through termIds. There is no vocabulary section: ambient
+    // pattern declarations. A term's ref is its declaration node:
+    // the first meaning-position occurrence (termIds) or, for an
+    // operator construct like `*`, the literal piece declaring it in
+    // its rule's pattern. There is no vocabulary section: ambient
     // terms (foundation primitives + placeholders) resolve through
     // `ambientRefs`/`ambientTermOf` at the consumers, imported terms
     // through `resolve` and the referenced def's own vocabulary.
-    vocabulary =
+    vocabulary = {
+      // Literal piece name → the piece's node id, under each rule's
+      // `pattern` — the operator constructs' declaration anchors
+      // (`a * b` declares `*` at its literal piece).
+      val patternTermIds: Map[String, Int] = {
+        var ids = Map.empty[String, Int]
+        r.section("syntax").toList
+          .flatMap(sid => r.entries(sid, "rules"))
+          .flatMap(doc.childrenOf)
+          .filter(id => metaConsOf(doc, id).contains("rule"))
+          .flatMap(doc.childrenOf)
+          .filter(id => metaConsOf(doc, id).contains("pattern"))
+          .flatMap(doc.childrenOf)
+          .filter(id => metaConsOf(doc, id).contains("literal"))
+          .foreach { lit =>
+            doc.childrenOf(lit).headOption
+              .flatMap(k => doc.getNode(k).map(_.data))
+              .collect { case NodeData.StringData(s) => s }
+              .foreach(name => if (!ids.contains(name))
+                ids = ids + (name -> lit))
+          }
+        ids
+      }
       r.section("syntax").toList
         .flatMap(sid => r.entries(sid, "rules"))
         .headOption.toList.flatMap(rs =>
           vocabularyFrom(r.ruleSetFrom(rs)).map(t =>
-            t.copy(ref = t.ref.orElse(r.termIds.get(t.name)
-              .map(ExternalNodeReference(url, version, _)))))),
+            t.copy(ref = t.ref.orElse(
+              r.termIds.get(t.name).orElse(patternTermIds.get(t.name))
+                .map(ExternalNodeReference(url, version, _))))))
+    },
     syntax = r.section("syntax").map { sid =>
       SyntaxDef(
         r.childStr(sid, 0).getOrElse(""),

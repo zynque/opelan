@@ -47,8 +47,8 @@ class DesugarSuite extends munit.FunSuite {
 
   test("a phrase meaning becomes construct/use/quote terms") {
     val meaning = desugared(set).rules.last.meaning
-    assertEquals(meaning.tag, "div")
-    assertEquals(meaning.reference, Some(exprTerms("div")))
+    assertEquals(meaning.tag, "/")
+    assertEquals(meaning.reference, Some(exprTerms("/")))
     assertEquals(meaning.arguments.map(_.tag), List("use", "quote"))
     assertEquals(
       meaning.arguments(0).arguments.flatMap(Meaning.nameOf), List("a"))
@@ -58,21 +58,22 @@ class DesugarSuite extends munit.FunSuite {
 
   test("a phrase may use a rule the set lists later") {
     val reordered = exprRules.copy(rules = percent :: exprRules.rules)
-    assertEquals(desugared(reordered).rules.head.meaning.tag, "div")
+    assertEquals(desugared(reordered).rules.head.meaning.tag, "/")
   }
 
   test("the desugared meaning splices the bound tree itself") {
     val g = grammarFor(desugared(set))
     val tree = parse(g, "5 %")
     assertEquals(toDetached(tree),
-      n(exprTag("div"), il(5), il(100)))
+      n(NodeData.GapData("%"), il(5)))
     // The `5` is the bound node — its real source span, not a
     // reparsed copy's synthetic one.
     assertEquals(tree.children(0).text, "5")
     assertEquals((tree.children(0).from, tree.children(0).length), (0, 1))
     val grown = parse(g, "(2 + 3) %")
     assertEquals(toDetached(grown),
-      n(exprTag("div"), n(exprTag("add"), il(2), il(3)), il(100)))
+      n(NodeData.GapData("%"),
+        n(exprTag("+"), il(2), il(3))))
   }
 
   test("an unbound placeholder lands as a gap inside the terms") {
@@ -83,16 +84,16 @@ class DesugarSuite extends munit.FunSuite {
     val meaning = desugared(
       exprRules.copy(rules = exprRules.rules :+ unbound))
       .rules.last.meaning
-    assertEquals(meaning.tag, "div")
+    assertEquals(meaning.tag, "/")
     assert(hasGap(meaning))
   }
 
   test("a gap in the phrase quotes the gap") {
     val s = exprRules.copy(rules =
       exprRules.rules :+ readRuleOrGap("a % means a +"))
-    assertEquals(desugared(s).rules.last.meaning.tag, "add")
+    assertEquals(desugared(s).rules.last.meaning.tag, "+")
     val tree = parse(grammarFor(desugared(s)), "5 %")
     assertEquals(toDetached(tree),
-      n(exprTag("add"), il(5), DetachedNode.leaf(NodeData.GapData(""))))
+      n(NodeData.GapData("%"), il(5)))
   }
 }

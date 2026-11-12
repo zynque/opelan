@@ -101,7 +101,7 @@ def sequenceRule(
         }
         failedAt match {
           case None =>
-            ParseResult(cur, applyMeaning(theRule.meaning, bindings, in, from,
+            ParseResult(cur, ruleTree(theRule, bindings, in, from,
               cur, tag), applied = true, seen)
           case Some(at) => closer match {
             case None => failedGap(in, pos, seen)
@@ -116,7 +116,7 @@ def sequenceRule(
                 case None
                     if middleIntact &&
                        skipSpace(in.input, cur) >= in.input.length =>
-                  ParseResult(cur, applyMeaning(theRule.meaning, bindings, in,
+                  ParseResult(cur, ruleTree(theRule, bindings, in,
                     from, in.input.length, tag), applied = true, seen)
                 case None =>
                   ParseResult(in.input.length,

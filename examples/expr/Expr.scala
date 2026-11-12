@@ -25,15 +25,16 @@ enum Expr {
 object Expr {
   // Content encoding: an IntData/FloatData leaf is a literal; an
   // InternalNodeRef leaf (to a node that isn't an import) is a reference;
-  // a node applying the add/sub/mul/div construct — its data refers to
-  // the term's vocabulary entry in lang: expression, through an import —
-  // with exactly two children is a binary operation; a GapData node is a
-  // gap. The tags below are term names, used only to look the
-  // constructs up (exprTerms).
-  val AddTag = "add"
-  val SubTag = "sub"
-  val MulTag = "mul"
-  val DivTag = "div"
+  // a node applying the + - * / constructs — its data refers to the
+  // literal-piece declaration in lang: expression, whose rule meaning
+  // interprets it as add/sub/mul/div at eval — with exactly two children
+  // is a binary operation; a GapData node is a gap. The tags below are
+  // the declared construct names, used only to look the declarations up
+  // (exprTerms).
+  val AddTag = "+"
+  val SubTag = "-"
+  val MulTag = "*"
+  val DivTag = "/"
 
   // Infix text with minimal parentheses: `*` and `/` bind tighter than
   // `+` and `-`, and every level is left-associative, so a compound right

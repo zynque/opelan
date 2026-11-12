@@ -46,7 +46,12 @@ case class ViewContext(
     // The rendered document's own URL, when the host knows it — a def
     // doc's URL is the identity of the language it defines, so decoding
     // it for interpretation needs it.
-    docUrl: Option[String] = None)
+    docUrl: Option[String] = None,
+    // The term name a construct ref stands for: ambient refs name
+    // themselves; a ref anchored inside another def document names the
+    // vocabulary term its node declares — resolved through the host's
+    // store. Views evaluating stored nodes pass it to evalNode.
+    termName: ExternalNodeReference => Option[String] = (_ => None))
 
 val docImpls = Impls(
   views = Map(

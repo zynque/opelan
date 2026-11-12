@@ -19,12 +19,14 @@ class DeriveVocabularySuite extends FunSuite {
   private def names(terms: List[NodeTerm]): List[(String, NodeShape)] =
     terms.map(t => (t.name, t.shape))
 
-  test("construct meanings never declare — they reference") {
+  test("operator patterns declare their literal; meanings reference") {
     val set = rules(
       "(a) means a",
       "a * b means mul(a, b)",
       "a + b means add(a, b)")
-    assertEquals(vocabularyFrom(set), Nil)
+    assertEquals(names(vocabularyFrom(set)), List(
+      "*" -> NodeShape.Fixed(2),
+      "+" -> NodeShape.Fixed(2)))
   }
 
   test("a construct-application pattern declares its construct") {
@@ -51,13 +53,14 @@ class DeriveVocabularySuite extends FunSuite {
       List("square" -> NodeShape.Fixed(1)))
   }
 
-  test("token-spine patterns declare notations, not constructs") {
+  test("postfix patterns declare; phrase patterns declare nothing") {
     val set = rules(
       "(a) means a",
       "a % means a / 100",
       "if c then a else b means c",
       "a means source(a)")
-    assertEquals(vocabularyFrom(set), Nil)
+    assertEquals(vocabularyFrom(set).map(t => (t.name, t.shape)).toSet,
+      Set("%" -> NodeShape.Fixed(1)))
   }
 
   test("where-bound terms join the vocabulary as leaf terms") {
@@ -65,9 +68,12 @@ class DeriveVocabularySuite extends FunSuite {
       "-n means literal(neg(n)) where n: number",
       "a + b means add(a, b)",
       "ref:c,r means cell(c, r) where c, r: whole number")
-    assertEquals(names(vocabularyFrom(set)), List(
-      "number"       -> NodeShape.Leaf,
-      "whole number" -> NodeShape.Leaf))
+    assertEquals(vocabularyFrom(set).map(t => (t.name, t.shape)).toSet,
+      Set(
+        "number"       -> NodeShape.Leaf,
+        "whole number" -> NodeShape.Leaf,
+        "-"            -> NodeShape.Fixed(1),
+        "+"            -> NodeShape.Fixed(2)))
   }
 
   test("every impls leaf names a lexical term, bound or not") {

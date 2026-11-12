@@ -115,7 +115,7 @@ def compileRules(
           (in: ParseInput, pos: Int) => {
             val parsed = bound(in, pos)
             if (!parsed.applied) parsed
-            else parsed.copy(tree = applyMeaning(theRule.meaning,
+            else parsed.copy(tree = ruleTree(theRule,
               Map(name -> parsed.tree), in, parsed.tree.from,
               parsed.tree.to, tag))
           }
@@ -142,7 +142,7 @@ def compileRules(
         if (names.zip(operands).exists { case (n, t) =>
               bound.get(n).exists(lt => !lt.check(t.data)) })
           gapNode(in, from, to)
-        else applyMeaning(theRule.meaning, names.zip(operands).toMap,
+        else ruleTree(theRule, names.zip(operands).toMap,
           in, from, to, tag))
   }
 

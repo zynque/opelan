@@ -1,7 +1,7 @@
 package opelan.examples
 
 import opelan.examples.sheet.{SheetLanguage, sheetDef}
-import opelan.examples.expr.{ExprLanguage, demoExprDef, exprDef}
+import opelan.examples.expr.{ExprLanguage, demoExprDoc, exprDef}
 import opelan.foundation.document._
 import opelan.foundation.document.store._
 import opelan.foundation.langdef.{
@@ -105,7 +105,7 @@ class ResolveSuite extends FunSuite {
     val staged = List(ExprLanguage, SheetLanguage, DocLanguage)
       .foldLeft(Store.empty)((s, l) => s.put(
         l.typeRef.documentUrl,
-        if (l == ExprLanguage) langDefDoc(demoExprDef) else l.langDoc)._1)
+        if (l == ExprLanguage) demoExprDoc else l.langDoc)._1)
     val budget = SheetLanguage.sampleDoc
     def perPerson(st: Store, b: Document[NodeData]) =
       languageForDoc(b, st).get

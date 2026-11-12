@@ -41,21 +41,21 @@ class AssociativitySuite extends FunSuite {
 
   test("an infix operator associates left by default") {
     assertEquals(parse(powers, "2 ^ 3 ^ 4"),
-      node("pow", node("pow", lit(2), lit(3)), lit(4)))
+      node("^", node("^", lit(2), lit(3)), lit(4)))
   }
 
   test("a right-grouped example selects right associativity") {
     val right = powers.copy(examples =
       List(Example("a ^ b ^ c", "a ^ (b ^ c)")))
     assertEquals(parse(right, "2 ^ 3 ^ 4"),
-      node("pow", lit(2), node("pow", lit(3), lit(4))))
+      node("^", lit(2), node("^", lit(3), lit(4))))
   }
 
   test("a left-grouped example confirms the default") {
     val left = powers.copy(examples =
       List(Example("a ^ b ^ c", "(a ^ b) ^ c")))
     assertEquals(parse(left, "2 ^ 3 ^ 4"),
-      node("pow", node("pow", lit(2), lit(3)), lit(4)))
+      node("^", node("^", lit(2), lit(3)), lit(4)))
   }
 
   test("an example that doesn't chain the rule witnesses nothing") {
@@ -65,7 +65,7 @@ class AssociativitySuite extends FunSuite {
     // `a ^ (b ^ c) ^ d` splits `^` three times — not a witness —
     // and `+`/`*` aren't this rule's literal.
     assertEquals(parse(set, "2 ^ 3 ^ 4"),
-      node("pow", node("pow", lit(2), lit(3)), lit(4)))
+      node("^", node("^", lit(2), lit(3)), lit(4)))
   }
 
   test("a multi-literal operator chains on its joined literals") {
@@ -86,9 +86,9 @@ class AssociativitySuite extends FunSuite {
     })
     // The continued operand prints bare, the regrouping one keeps
     // parentheses — minimal for right-associative `^`.
-    assertEquals(print(node("pow", lit(2), node("pow", lit(3), lit(4)))),
+    assertEquals(print(node("^", lit(2), node("^", lit(3), lit(4)))),
       "2 ^ 3 ^ 4")
-    assertEquals(print(node("pow", node("pow", lit(2), lit(3)), lit(4))),
+    assertEquals(print(node("^", node("^", lit(2), lit(3)), lit(4))),
       "(2 ^ 3) ^ 4")
   }
 }

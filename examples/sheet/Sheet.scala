@@ -40,7 +40,8 @@ def sheetView(
     ctx: ViewContext = ViewContext()): DetachedNode[NodeData] = {
   val d = resolveGridRefs(healGaps(doc, sheetId, ctx.parseInput), sheetId)
   val currency = ctx.settings.get("currency")
-  grid(d.childrenOf(sheetId).map(r => rowView(d, r, isHRow(d, r), currency))*)
+  grid(d.childrenOf(sheetId).map(r =>
+    rowView(d, r, isHRow(d, r), currency, ctx.termName))*)
 }
 
 // The "formulas" view: the same grid, showing each cell's formula
@@ -49,7 +50,8 @@ def formulasView(
     doc: Document[NodeData], sheetId: Int,
     ctx: ViewContext = ViewContext()): DetachedNode[NodeData] = {
   val d = healGaps(doc, sheetId, ctx.parseInput)
-  grid(d.childrenOf(sheetId).map(r => formulaRow(d, r, isHRow(d, r)))*)
+  grid(d.childrenOf(sheetId).map(r =>
+    formulaRow(d, r, isHRow(d, r), ctx.termName))*)
 }
 
 private def isHRow(doc: Document[NodeData], rowId: Int): Boolean =
@@ -57,23 +59,34 @@ private def isHRow(doc: Document[NodeData], rowId: Int): Boolean =
 
 private def rowView(
     doc: Document[NodeData], rowId: Int,
-    header: Boolean, currency: Option[String]): DetachedNode[NodeData] =
-  row(doc.childrenOf(rowId).map(cid => cellView(doc, cid, header, currency))*)
+    header: Boolean, currency: Option[String],
+    nameOf: ExternalNodeReference => Option[String])
+    : DetachedNode[NodeData] =
+  row(doc.childrenOf(rowId).map(cid =>
+    cellView(doc, cid, header, currency, nameOf))*)
 
 private def formulaRow(
     doc: Document[NodeData], rowId: Int,
-    header: Boolean): DetachedNode[NodeData] =
-  row(doc.childrenOf(rowId).map(cid => formulaCell(doc, cid, header))*)
+    header: Boolean,
+    nameOf: ExternalNodeReference => Option[String] = (_ => None))
+    : DetachedNode[NodeData] =
+  row(doc.childrenOf(rowId).map(cid =>
+    formulaCell(doc, cid, header, nameOf))*)
 
 private def cellView(
     doc: Document[NodeData], cellId: Int,
-    header: Boolean, currency: Option[String]): DetachedNode[NodeData] =
-  mkCell(header, cellId, valueOf(doc, cellId, currency))
+    header: Boolean, currency: Option[String],
+    nameOf: ExternalNodeReference => Option[String])
+    : DetachedNode[NodeData] =
+  mkCell(header, cellId, valueOf(doc, cellId, currency, nameOf))
 
 private def formulaCell(
     doc: Document[NodeData], cellId: Int,
-    header: Boolean): DetachedNode[NodeData] =
-  mkCell(header, cellId, input(cellId, txt(cellText(doc, cellId))))
+    header: Boolean,
+    nameOf: ExternalNodeReference => Option[String] = (_ => None))
+    : DetachedNode[NodeData] =
+  mkCell(header, cellId,
+    input(cellId, txt(cellText(doc, cellId, nameOf))))
 
 private def mkCell(
     header: Boolean, cellId: Int,
@@ -87,13 +100,15 @@ private def mkCell(
 // compute.
 private def valueOf(
     doc: Document[NodeData], cellId: Int,
-    currency: Option[String]): DetachedNode[NodeData] =
+    currency: Option[String],
+    nameOf: ExternalNodeReference => Option[String])
+    : DetachedNode[NodeData] =
   doc.getNode(cellId) match {
     case Some(node)
         if node.childIds.isEmpty &&
            !node.data.isInstanceOf[NodeData.InternalNodeRef] =>
       input(cellId, txt(cellText(doc, cellId)))
-    case _ => evalCell(doc, cellId, currency)
+    case _ => evalCell(doc, cellId, currency, nameOf)
   }
 
 // A computed value, evaluated by the derived evaluator over the
@@ -107,8 +122,11 @@ private val sheetSemantics = semanticsOf(exprRules)
 
 private def evalCell(
     doc: Document[NodeData], cellId: Int,
-    currency: Option[String]): DetachedNode[NodeData] =
-  evalNode(sheetSemantics, exprTerms, doc, cellId, Set(cellId)) match {
+    currency: Option[String],
+    nameOf: ExternalNodeReference => Option[String] = (_ => None))
+    : DetachedNode[NodeData] =
+  evalNode(sheetSemantics, exprTerms, doc, cellId, Set(cellId),
+    nameOf) match {
     case Right(v) => (currency, v) match {
       case (Some(c), NodeData.IntData(n))   => txt(c + "%.2f".format(n.toDouble))
       case (Some(c), NodeData.FloatData(n)) => txt(c + "%.2f".format(n))
@@ -122,7 +140,10 @@ private def evalCell(
 // is a genuine no-op: labels show bare, gaps show `?text`, refs show
 // their target's cell name ("D5"), and formulas show their printed
 // expression with refs named the same way.
-def cellText(doc: Document[NodeData], cellId: Int): String =
+def cellText(
+    doc: Document[NodeData], cellId: Int,
+    nameOf: ExternalNodeReference => Option[String] = (_ => None))
+    : String =
   doc.getNode(cellId) match {
     case Some(node) if node.childIds.isEmpty => node.data match {
       case NodeData.StringData(t)      => t
@@ -133,8 +154,8 @@ def cellText(doc: Document[NodeData], cellId: Int): String =
       case other                       => NodeDataText.show(other)
     }
     case _ => nameRefs(doc, cellId,
-      ViewTree.flatten(printViewWith(exprRules, exprTag, exprViewLeaf)(
-        resolveGridRefs(doc, cellId), cellId)))
+      ViewTree.flatten(printViewWith(exprRules, exprTag, exprViewLeaf,
+        nameOf)(resolveGridRefs(doc, cellId), cellId)))
   }
 
 // The sheet's input grammar (Language.parseInput): text committed in a
@@ -153,8 +174,12 @@ def parseCellText(text: String): DetachedNode[NodeData] =
     case e            => exprToDetached(e)
   }
 
+// The code-side cell grammar reads through the full expression def
+// (every rule incl. `/`); a store-resolved grammar — the def doc the
+// sheet's input ref pins — is what ViewContext.parseInput hands
+// healGaps, so the demo's staged def gates what heals live.
 private def exprOf(text: String): Expr =
-  ExprLanguage.parse(text).map(exprFromDetached)
+  ExprLanguage.parse(text).map(exprFromDetached(_))
     .getOrElse(Expr.Gap(text))
 
 private def mentionsCell(text: String): Boolean =

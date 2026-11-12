@@ -120,7 +120,12 @@ steps*, item 1).
    closing edge, and def docs carry no vocabulary section — ambient
    terms (foundation primitives + placeholders) and imports resolved
    through the referenced def's own vocabulary cover it, so a decoded
-   `add` is the foundational `add`.
+   `add` is the foundational `add`. Sheet cells reference the
+   rule-declared constructs (`*`, `+`) of lang: expression rather than
+   foundation arithmetic directly; eval interprets them through the
+   rules' meanings, and name resolution runs through the referenced
+   document's vocabulary (ViewContext.termName) with the code-side
+   term map as fallback.
    Remaining:
 
    - *Beyond parity:*

@@ -1,7 +1,7 @@
 package opelan.examples
 
 import opelan.examples.sheet.{SheetLanguage, sheetDef}
-import opelan.examples.expr.{ExprLanguage, demoExprDef, exprDef, exprImpls, exprRules}
+import opelan.examples.expr.{ExprLanguage, demoExprDoc, exprDef, exprImpls, exprRules}
 import opelan.foundation.document._
 import opelan.foundation.grammar.RuleName
 import opelan.foundation.document.store._
@@ -209,10 +209,15 @@ class LangDefDocSuite extends FunSuite {
     val d = langDefFromDocument(url, updated)
     assert(d.syntax.get.rules.get.rules.map(r => printRule(r))
       .contains("a % b means add(a, b)"))
-    // And the edited language really parses with the new rule.
+    // And the edited language really parses with the new rule: `6 % 4`
+    // commits the `%` construct the pattern declares — a ref anchored
+    // at the rule's literal piece inside the def document.
     val parsed = languageFromDef(d).parse("6 % 4").get
-    assertEquals(parsed.data, NodeData.ExternalNodeRef(
-      foundationRefs("add")))
+    parsed.data match {
+      case NodeData.ExternalNodeRef(r) =>
+        assertEquals(r.documentUrl, url)
+      case d => fail(s"expected the `%` construct's ref, got $d")
+    }
     // The committed construct stores its foundational reference —
     // meanings never hold bare names.
     assert(updated.subtreeIds(ruleId).exists(k =>
@@ -242,9 +247,10 @@ class LangDefDocSuite extends FunSuite {
     val updated = commitContent(meaningId, content, doc).toOption.get
     val rule = langDefFromDocument(url, updated)
       .syntax.get.rules.get.rules(4)
-    // The phrase parsed at entry: construct term by ref, `a` as use,
-    // the literal `100` quoted — and the rule's pattern is untouched.
-    assertEquals(rule.meaning.tag, "div")
+    // The phrase parsed at entry: the `/` construct term by ref,
+    // `a` as use, the literal `100` quoted — and the rule's pattern
+    // is untouched.
+    assertEquals(rule.meaning.tag, "/")
     assertEquals(rule.meaning.arguments.map(_.tag), List("use", "quote"))
     assertEquals(printPattern(rule.pattern), "a - b")
     // The `use` operand links to the pattern's `a` piece node.
@@ -255,11 +261,18 @@ class LangDefDocSuite extends FunSuite {
     assertEquals(rule.meaning.arguments(0).arguments.head.reference,
       Some(ExternalNodeReference(url, 0, aPiece)))
     // And the language really parses with the stored meaning —
-    // the pattern is still `a - b`, so `5 - 3` now builds a div.
+    // the pattern is still `a - b`, so `5 - 3` builds the `-`
+    // construct node, whose new meaning interprets as `a / 100`.
     val parsed = languageFromDef(
       langDefFromDocument(url, updated)).parse("5 - 3").get
     assertEquals(parsed.data,
-      NodeData.ExternalNodeRef(foundationRefs("div")))
+      NodeData.ExternalNodeRef(ExternalNodeReference(url, 0,
+        doc.childrenOf(doc.childrenOf(ruleNodeIds(doc)(4))
+          .find(metaConsOf(doc, _).contains("pattern")).get)
+          .find(id => metaConsOf(doc, id).contains("literal") &&
+            doc.childrenOf(id).exists(k =>
+              doc.getNode(k).exists(_.data == NodeData.StringData("-"))))
+          .get)))
   }
 
   test("a meaning field re-edit reparses through its input session") {
@@ -305,7 +318,7 @@ class LangDefDocSuite extends FunSuite {
       .syntax.get.rules.get.rules(4)
     // The phrase parsed through the language's own rules at entry —
     // the stored meaning is the desugared term tree.
-    assertEquals(rule.meaning.tag, "div")
+    assertEquals(rule.meaning.tag, "/")
     assertEquals(rule.meaning.arguments.map(_.tag), List("use", "quote"))
     // And the edit view projects the authored spelling back through
     // the language's own printer, not the constructor's.
@@ -315,11 +328,11 @@ class LangDefDocSuite extends FunSuite {
   }
 
   test("a phrase the set can't read stays a quoted gap and heals on arrival") {
-    val url = demoExprDef.typeRef.documentUrl
-    val doc = langDefDoc(demoExprDef) // no `/` rule yet
+    val url = exprDef.typeRef.documentUrl
+    val doc = demoExprDoc // the seeded encoding: no `/` rule yet
     val pctId = ruleNodeIds(doc)(1)   // a * b means mul(a, b)
     val pct = commitMetaInput(doc, url, pctId,
-      "a % means a / 100", impls = implsFor(demoExprDef)).get._1
+      "a % means a / 100", impls = implsFor(exprDef)).get._1
     val withPct = commitContent(pctId, pct, doc).toOption.get
     // The unparseable phrase stores as a quoted gap — `a / 100`
     // keeps its text and prints back marked as a gap.
@@ -333,14 +346,19 @@ class LangDefDocSuite extends FunSuite {
     val subId = ruleNodeIds(withPct)(3) // a - b means sub(a, b)
     val withDiv = commitContent(subId,
       commitMetaInput(withPct, url, subId,
-        "a / b means div(a, b)", impls = implsFor(demoExprDef)).get._1,
+        "a / b means div(a, b)", impls = implsFor(exprDef)).get._1,
       withPct).toOption.get
     val d2 = langDefFromDocument(url, withDiv)
     val parsed = languageFromDef(d2).parse("5 %").get
-    assertEquals(parsed.data,
-      NodeData.ExternalNodeRef(foundationRefs("div")))
+    // `5 %` commits the `%` construct — a ref into the def document,
+    // the bound `5` its only child (the `100` is the meaning's quote).
+    parsed.data match {
+      case NodeData.ExternalNodeRef(r) =>
+        assertEquals(r.documentUrl, url)
+      case d => fail(s"expected the `%` construct's ref, got $d")
+    }
     assertEquals(parsed.children.map(_.data),
-      List(NodeData.IntData(5), NodeData.IntData(100)))
+      List(NodeData.IntData(5)))
   }
 
   // The SourceRef ids of every `input` element in a view tree.

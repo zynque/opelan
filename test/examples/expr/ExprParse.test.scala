@@ -4,7 +4,8 @@ import Expr._
 
 // The expression language's parse surface: literals, precedence,
 // parentheses, signum, and the whole recovery contract — asserted through
-// the def'd language (DefLanguage over exprDef), the only parser now.
+// the def'd language (DefLanguage over exprDef — ExprLanguage; the
+// seeded demo document drops `/`, see demoExprDoc).
 class ExprParseSuite extends munit.FunSuite {
 
   private def parse(input: String): Expr =

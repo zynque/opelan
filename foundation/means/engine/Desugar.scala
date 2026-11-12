@@ -137,13 +137,18 @@ private def refOf(d: NodeData): Option[ExternalNodeReference] = d match {
   case _ => None
 }
 
-// Node data → construct name, for every construct term in the set —
-// so a parsed node names the meaning that would have built it.
+// Node data → construct name — for every construct term in the set's
+// meanings AND every construct the patterns declare (`a / 100` parses
+// to the `/` node the pattern declares, which the term keeps by
+// reference).
 def namesByData(
     set: RuleSet, tag: String => NodeData): Map[NodeData, String] =
-  set.rules.flatMap(r => constructs(r.meaning)).map { m =>
-    m.reference.map(NodeData.ExternalNodeRef(_)).getOrElse(tag(m.tag)) ->
-      m.tag
+  set.rules.flatMap { r =>
+    constructs(r.meaning).map { m =>
+      m.reference.map(NodeData.ExternalNodeRef(_)).getOrElse(tag(m.tag)) ->
+        m.tag
+    } ++ r.pattern.constructForm.map { case (name, _) =>
+      tag(name) -> name }.toList
   }.toMap
 
 private def constructs(m: Meaning): List[Meaning] =

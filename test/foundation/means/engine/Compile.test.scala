@@ -52,35 +52,35 @@ class CompileSuite extends FunSuite {
 
   test("infix rules respect the binding list") {
     assertEquals(parse(arithmetic, "1 + 2 * 3"),
-      node("add", lit(1), node("mul", lit(2), lit(3))))
+      node("+", lit(1), node("*", lit(2), lit(3))))
     assertEquals(parse(arithmetic, "8 / 4 / 2"),
-      node("div", node("div", lit(8), lit(4)), lit(2)))
+      node("/", node("/", lit(8), lit(4)), lit(2)))
   }
 
   test("prefix rules nest and bind at their tier") {
     assertEquals(parse(arithmetic, "-1 + 2"),
-      node("add", node("neg", lit(1)), lit(2)))
+      node("+", node("-", lit(1)), lit(2)))
     assertEquals(parse(arithmetic, "- -1"),
-      node("neg", node("neg", lit(1))))
+      node("-", node("-", lit(1))))
     assertEquals(parse(arithmetic, "1 - -2"),
-      node("sub", lit(1), node("neg", lit(2))))
+      node("-", lit(1), node("-", lit(2))))
   }
 
   test("closed rules serve as operands") {
     assertEquals(parse(arithmetic, "(1 + 2) * 3"),
-      node("mul", node("add", lit(1), lit(2)), lit(3)))
+      node("*", node("+", lit(1), lit(2)), lit(3)))
     assertEquals(parse(arithmetic, "((4))"), lit(4))
   }
 
   test("an unclosed bracket closes implicitly, meaning intact") {
     assertEquals(parse(arithmetic, "(1 +"),
-      node("add", lit(1), gap("")))
+      node("+", lit(1), gap("")))
   }
 
   test("a degenerate bracket keeps its brackets in the gap") {
     assertEquals(parse(arithmetic, "(1 2)"), gap("(1 2)"))
     assertEquals(parse(arithmetic, "(1 2) + 3"),
-      node("add", gap("(1 2)"), lit(3)))
+      node("+", gap("(1 2)"), lit(3)))
   }
 
   test("a phrase meaning desugars with the language's own rules") {
@@ -91,9 +91,9 @@ class CompileSuite extends FunSuite {
       tiers = arithmetic.tiers.updated(0,
         Tier(readPattern("-a") :: readPattern("a %") :: Nil))),
       atom, NodeData.StringData(_), "e", lex)
-    assertEquals(parse(percent, "5 %"), node("div", lit(5), lit(100)))
+    assertEquals(parse(percent, "5 %"), node("%", lit(5)))
     assertEquals(parse(percent, "5 % + 1"),
-      node("add", node("div", lit(5), lit(100)), lit(1)))
+      node("+", node("%", lit(5)), lit(1)))
   }
 
   test("a keyword-led rule compiles to a sequence, no binding needed") {
@@ -109,7 +109,7 @@ class CompileSuite extends FunSuite {
   test("operators the binding list forgot compile loosest") {
     val flat = arithmetic.copy(tiers = Nil)
     assertEquals(parse(flat, "1 + 2 * 3"),
-      node("mul", node("add", lit(1), lit(2)), lit(3)))
+      node("*", node("+", lit(1), lit(2)), lit(3)))
   }
 
   test("a constructor meaning nests") {
@@ -117,7 +117,7 @@ class CompileSuite extends FunSuite {
       aRule("-n means neg(neg(n))"), aRule("(a) means a")),
       tiers = List(Tier(List(readPattern("-n")))))
     assertEquals(parse(set, "-5"),
-      node("neg", node("neg", lit(5))))
+      node("-", lit(5)))
   }
 
   test("a bare placeholder meaning passes the bound tree through") {
@@ -150,7 +150,7 @@ class CompileSuite extends FunSuite {
       tiers = List(Tier(List(readPattern("a + b")))))
     assertEquals(parse(set, "5", lexicals), lit(5))
     assertEquals(parse(set, "5 + 6", lexicals),
-      node("add", lit(5), lit(6)))
+      node("+", lit(5), lit(6)))
     // A token the production doesn't accept isn't an operand —
     // the unrecognized fallback recovers it.
     assertEquals(parse(set, "x", lexicals), gap("x"))
@@ -187,10 +187,10 @@ class CompileSuite extends FunSuite {
         aRule("a + b means add(a, b) where a, b: number")),
       tiers = List(Tier(List(readPattern("a + b")))))
     assertEquals(parse(set, "5 + 6", lexicals),
-      node("add", lit(5), lit(6)))
+      node("+", lit(5), lit(6)))
     // A grown operand keeps its leaf data — parentheses don't hide it.
     assertEquals(parse(set, "(5) + 6", lexicals),
-      node("add", lit(5), lit(6)))
+      node("+", lit(5), lit(6)))
     // A bound gap violates the constraint — the whole application
     // surfaces as the gap.
     assertEquals(parse(set, "(x) + 5", lexicals), gap("(x) + 5"))
@@ -205,15 +205,15 @@ class CompileSuite extends FunSuite {
         aRule("a + b means add(a, b) where a, b: value")),
       tiers = List(Tier(List(readPattern("a + b")))))
     assertEquals(parse(set, "5 + 6", cellLexicals),
-      node("add", lit(5), lit(6)))
+      node("+", lit(5), lit(6)))
     assertEquals(parse(set, "(5) + 6", cellLexicals),
-      node("add", lit(5), lit(6)))
+      node("+", lit(5), lit(6)))
     // A bound ref violates — the whole application is the gap.
     assertEquals(parse(set, "x + 5", cellLexicals), gap("x + 5"))
     assertEquals(parse(set, "5 + x", cellLexicals), gap("5 + x"))
     // A bound gap satisfies provisionally — unknown, not wrong.
     assertEquals(parse(set, "5 + ", cellLexicals),
-      node("add", lit(5), gap("")))
+      node("+", lit(5), gap("")))
   }
 
   test("a check-only where in a sequence reads an expression, then checks") {
@@ -227,7 +227,7 @@ class CompileSuite extends FunSuite {
         aRule("pick a done means got(a) where a: value")),
       tiers = List(Tier(List(readPattern("a + b")))))
     assertEquals(parse(set, "pick 5 + 6 done", cellLexicals),
-      node("got", node("add", lit(5), lit(6))))
+      node("got", node("+", lit(5), lit(6))))
     assertEquals(parse(set, "pick x done", cellLexicals),
       gap("pick x done"))
   }
@@ -243,6 +243,6 @@ class CompileSuite extends FunSuite {
         Tier(List(readPattern("-a"))),
         Tier(List(readPattern("a + b")))))
     assertEquals(parse(set, "-1 + 2", cellLexicals),
-      node("add", node("neg", lit(1)), lit(2)))
+      node("+", node("-", lit(1)), lit(2)))
   }
 }

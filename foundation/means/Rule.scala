@@ -28,13 +28,25 @@ case class Pattern(pieces: List[Piece]) {
   def placeholders: List[String] =
     pieces.collect { case Piece.Placeholder(name, _) => name }
 
-  // A construct-application pattern — `square(a, b)` — the token-spine
-  // spelling of a tree pattern matching that construct: it declares
-  // `square` and binds its children to the placeholders positionally.
-  // `ref:c,r` is not one (`ref:` isn't followed by `(`).
+  // A construct-application pattern — `square(a, b)`, `a * b`, `-n` —
+  // the token-spine spelling of a tree pattern matching that
+  // construct: it declares the construct under its literal name and
+  // binds its children to the placeholders positionally. `ref:c,r` is
+  // not one (`ref:` isn't followed by `(`); `(a)` is punctuation, not
+  // a named construct.
   def constructForm: Option[(String, List[String])] = pieces match {
     case Piece.Literal(name, _) :: Piece.Literal("(", _) :: rest =>
       formArgs(rest).map(name -> _)
+    // `a * b` — a binary operator construct named by its literal.
+    case List(
+        Piece.Placeholder(l, _),
+        Piece.Literal(name, _),
+        Piece.Placeholder(r, _)) => Some((name, List(l, r)))
+    // `+n` — a unary operator construct (prefix or postfix).
+    case List(Piece.Literal(name, _), Piece.Placeholder(arg, _)) =>
+      Some((name, List(arg)))
+    case List(Piece.Placeholder(arg, _), Piece.Literal(name, _)) =>
+      Some((name, List(arg)))
     case _ => None
   }
 

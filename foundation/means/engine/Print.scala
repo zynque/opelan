@@ -28,8 +28,11 @@ import opelan.foundation.means.text._
 def printWith(
     set: RuleSet,
     termTag: String => NodeData,
-    leaf: NodeData => String): DetachedNode[NodeData] => String = {
-  val index = PrintIndex(set, termTag)
+    leaf: NodeData => String,
+    nameOf: ExternalNodeReference => Option[String] = (_ => None),
+    defUrl: Option[String] = None)
+    : DetachedNode[NodeData] => String = {
+  val index = PrintIndex(set, termTag, nameOf, defUrl)
   import index._
 
   // `ctx` is the print level a node must meet to stand bare.
@@ -39,7 +42,7 @@ def printWith(
   }
 
   def emit(node: DetachedNode[NodeData]): (String, Int) =
-    builders.get(node.data) match {
+    builderFor(node.data, node.children.length) match {
       case Some(rule) if isOperatorPattern(rule.pattern) =>
         (walk(node, rule, operandCtx(rule, _, _)),
          levels.getOrElse(rule.pattern.key, Int.MaxValue))

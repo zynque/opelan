@@ -5,7 +5,7 @@ import opelan.foundation.document.store._
 import opelan.foundation.langdef.{placeholderDoc, placeholderUrl}
 import opelan.foundation.langdef.doc.langDefDoc
 import opelan.examples.allLanguages
-import opelan.examples.expr.{demoExprDef, ExprLanguage}
+import opelan.examples.expr.{demoExprDoc, ExprLanguage}
 import opelan.examples.sheet.SheetLanguage
 
 // The demo's opening lineup, seeded into a store that doesn't already
@@ -25,7 +25,7 @@ private[workbench] val seedDocs: List[(String, Document[NodeData])] =
     (Store.urlForName("Household budget") -> SheetLanguage.sampleDoc)
 
 private def seedDocOf(l: opelan.foundation.language.Language): Document[NodeData] =
-  if (l eq ExprLanguage) langDefDoc(demoExprDef) else l.langDoc
+  if (l.eq(ExprLanguage)) demoExprDoc else l.langDoc
 
 // The seeds `store` is missing.
 private[workbench] def missingSeeds(

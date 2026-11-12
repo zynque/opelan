@@ -39,14 +39,17 @@ private def binOf(tag: String): (Expr, Expr) => Expr = tag match {
 // data, foreign constructs, wrong arity, literals with children) read as
 // gaps, so malformed subtrees surface as gaps rather than errors — the
 // same totality the text parser gives typed input.
-def exprFromDocument(doc: Document[NodeData], nodeId: Int): Either[String, Expr] =
+def exprFromDocument(
+    doc: Document[NodeData], nodeId: Int,
+    terms: Map[String, ExternalNodeReference] = exprTerms
+): Either[String, Expr] =
   doc.getNode(nodeId) match {
     case None => Left(s"Expr: node id $nodeId does not exist in document")
-    case Some(node) => termOf(exprTerms, doc, nodeId) match {
+    case Some(node) => termOf(terms, doc, nodeId) match {
       case Some(tag) if binTags(tag) && node.childIds.length == 2 =>
         for {
-          left <- exprFromDocument(doc, node.childIds(0))
-          right <- exprFromDocument(doc, node.childIds(1))
+          left <- exprFromDocument(doc, node.childIds(0), terms)
+          right <- exprFromDocument(doc, node.childIds(1), terms)
         } yield binOf(tag)(left, right)
       case _ if externalRefOf(doc, nodeId).isDefined => Right(Gap(gapText(node.data)))
       case _ => Right(leafExpr(node.data, node.childIds.isEmpty))
@@ -55,10 +58,13 @@ def exprFromDocument(doc: Document[NodeData], nodeId: Int): Either[String, Expr]
 
 // The detached-tree counterpart of exprFromDocument — same recovery:
 // anything that is not valid expression syntax reads as a gap.
-def exprFromDetached(t: DetachedNode[NodeData]): Expr =
-  termOfData(exprTerms, t.data) match {
+def exprFromDetached(
+    t: DetachedNode[NodeData],
+    terms: Map[String, ExternalNodeReference] = exprTerms): Expr =
+  termOfData(terms, t.data) match {
     case Some(tag) if binTags(tag) && t.children.length == 2 =>
-      binOf(tag)(exprFromDetached(t.children(0)), exprFromDetached(t.children(1)))
+      binOf(tag)(exprFromDetached(t.children(0), terms),
+        exprFromDetached(t.children(1), terms))
     case _ => leafExpr(t.data, t.children.isEmpty)
   }
 

@@ -4,7 +4,7 @@ import opelan.foundation.document._
 import opelan.foundation.document.typed._
 import opelan.foundation.langdef._
 import opelan.foundation.langdef.syntax._
-import opelan.foundation.langdef.doc.termRefs
+import opelan.foundation.langdef.doc.{langDefDoc, metaConsOf, termRefs}
 import opelan.foundation.langdef.LeafKind._
 import opelan.foundation.means._
 import opelan.foundation.means.engine.{evalView, printViewWith, semanticsOf}
@@ -45,10 +45,27 @@ val exprDef = LanguageDef(
 
 // The demo's starting point for lang: expression: the `/` rule and its
 // binding are missing, so the budget's per-person formula sits as a gap
-// until the audience adds them to the definition document. The ambient
-// floor keeps `div` referenceable, so term ids match exprDef's.
+// until the audience adds them to the definition document.
 val demoExprDef = exprDef.copy(syntax =
   Some(SyntaxDef("expr", Some(withoutPattern(exprRules, "a / b")))))
+
+// The demo's seeded document — exprDef's own encoding minus the `a / b`
+// rule's subtree, every other node id intact, so the remaining
+// declarations (`+`, `*`, `-`) keep exprDef's anchors: one anchor space
+// across both encodings of the language (a `/` node lands only once the
+// user commits the rule, anchored at its new piece in the updated doc).
+lazy val demoExprDoc: Document[NodeData] = {
+  val doc = langDefDoc(exprDef)
+  val ruleId = doc.nodes.indices.find(id =>
+    metaConsOf(doc, id).contains("rule") &&
+    doc.subtreeIds(id).exists(k =>
+      doc.getNode(k).exists(_.data == NodeData.StringData("/"))))
+    .getOrElse(sys.error("exprDef encodes no / rule"))
+  doc.getNode(ruleId).flatMap(_.parentId)
+    .flatMap(p => updateNodeChildIds(p,
+      doc.childrenOf(p).filterNot(_ == ruleId), doc).toOption)
+    .getOrElse(doc)
+}
 
 // A rule set minus one pattern — its rule and every binding entry.
 private def withoutPattern(set: RuleSet, text: String): RuleSet = {
@@ -77,21 +94,29 @@ val exprImpls = Impls(
       "ref"          -> LeafDef(List("ref" -> RefLit("ref:"))))
   },
   views = Map(
-    "expr-print" -> ((doc, id, _) =>
-      printViewWith(exprRules, exprTag, exprViewLeaf)(doc, id)),
-    "expr-eval"  -> ((doc, id, _) =>
-      evalView(semanticsOf(exprRules), exprTerms)(doc, id))))
+    "expr-print" -> ((doc, id, ctx) =>
+      printViewWith(exprRules, exprTag, exprViewLeaf,
+        ctx.termName)(doc, id)),
+    "expr-eval"  -> ((doc, id, ctx) =>
+      evalView(semanticsOf(exprRules), exprTerms, ctx.termName)(doc, id))))
 
-// Construct identities of the language. Code names a term ("mul") only
+// Construct identities of the language. Code names a term ("*") only
 // to look up its vocabulary entry in the canonical encoding; documents
 // store the entry's ref, and readers match on it — so a construct
 // renamed in its lang: document keeps working (node ids are never
-// reused).
-// The arithmetic constructs resolve to foundational definitions
-// through the ambient registry — their refs ARE the foundation's.
+// reused). A `*`/`+` node refs the rule-declared literal piece inside
+// the definition document — the rule's meaning interprets it to
+// `mul`/`add` at eval. Refs anchored in a different document — the
+// def doc a user edits, where new declarations land on fresh ids —
+// resolve to their names through the document resolver
+// (ViewContext.termName).
 lazy val exprTerms: Map[String, ExternalNodeReference] =
   ambientRefs ++ termRefs(exprDef)
 
 // Node data applying a construct, inline — a document imports it when
-// the tree is inserted (see makeTyped / internalizeRefs).
-def exprTag(term: String): NodeData = NodeData.ExternalNodeRef(exprTerms(term))
+// the tree is inserted (see makeTyped / internalizeRefs). A construct
+// the language doesn't declare keeps its name as a gap — the same
+// fallback DefLanguage.termTag gives.
+def exprTag(term: String): NodeData =
+  exprTerms.get(term).map(NodeData.ExternalNodeRef(_))
+    .getOrElse(NodeData.GapData(term))

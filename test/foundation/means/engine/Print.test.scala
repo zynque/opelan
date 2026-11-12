@@ -40,12 +40,12 @@ class PrintSuite extends FunSuite {
     DetachedNode(NodeData.StringData(name), children.toList)
   private def lit(v: Int): DetachedNode[NodeData] =
     DetachedNode(NodeData.IntData(v), Nil)
-  private def add(l: DetachedNode[NodeData], r: DetachedNode[NodeData]) = node("add", l, r)
-  private def sub(l: DetachedNode[NodeData], r: DetachedNode[NodeData]) = node("sub", l, r)
-  private def mul(l: DetachedNode[NodeData], r: DetachedNode[NodeData]) = node("mul", l, r)
-  private def div(l: DetachedNode[NodeData], r: DetachedNode[NodeData]) = node("div", l, r)
-  private def neg(x: DetachedNode[NodeData]) = node("neg", x)
-  private def pct(x: DetachedNode[NodeData]) = node("pct", x)
+  private def add(l: DetachedNode[NodeData], r: DetachedNode[NodeData]) = node("+", l, r)
+  private def sub(l: DetachedNode[NodeData], r: DetachedNode[NodeData]) = node("-", l, r)
+  private def mul(l: DetachedNode[NodeData], r: DetachedNode[NodeData]) = node("*", l, r)
+  private def div(l: DetachedNode[NodeData], r: DetachedNode[NodeData]) = node("/", l, r)
+  private def neg(x: DetachedNode[NodeData]) = node("-", x)
+  private def pct(x: DetachedNode[NodeData]) = node("%", x)
   private def group(x: DetachedNode[NodeData]) = node("group", x)
   private def choose(c: DetachedNode[NodeData], a: DetachedNode[NodeData],
       b: DetachedNode[NodeData]) = node("choose", c, a, b)

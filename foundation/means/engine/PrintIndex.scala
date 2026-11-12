@@ -12,7 +12,9 @@ import opelan.foundation.means._
 // operand prints under. Extracted so the string emitter and the
 // view-tree emitter make the same minimal-parentheses decisions.
 private[means] case class PrintIndex(
-    set: RuleSet, termTag: String => NodeData) {
+    set: RuleSet, termTag: String => NodeData,
+    nameOf: ExternalNodeReference => Option[String] = (_ => None),
+    defUrl: Option[String] = None) {
   val tiers: List[List[Rule]] = orderedOperatorRules(set)
   val count: Int = tiers.length
 
@@ -24,12 +26,52 @@ private[means] case class PrintIndex(
     tiers.zipWithIndex.flatMap { case (rs, i) =>
       rs.map(r => r.pattern.key -> (count - i)) }.toMap
 
-  val builders: Map[NodeData, Rule] = set.rules.reverse.flatMap { r =>
-    if (Meaning.isConstruct(r.meaning))
+  // A node prints through the rule it applies: key the construct's
+  // own declaration ref (a `*` node) and, for a construct meaning,
+  // the meaning's ref as before — a stored `mul(a, b)` still prints
+  // `a * b`. List-valued: a name may declare several arities (`+n`
+  // beside `a + b`); `builderFor` selects by child count.
+  val builders: Map[NodeData, List[Rule]] = set.rules.flatMap { r =>
+    (if (Meaning.isConstruct(r.meaning))
       List(r.meaning.reference.map(NodeData.ExternalNodeRef(_))
         .getOrElse(termTag(r.meaning.tag)) -> r)
-    else Nil
-  }.toMap
+    else Nil) ++
+    r.pattern.constructForm.map { case (name, _) =>
+      termTag(name) -> r }.toList
+  }.map { case (d, r) => canonical(d) -> r }
+    // Same-doc keys arrive two ways — termTagOf emits an
+    // InternalNodeRef, a stored meaning's reference the external
+    // form — so lookups key on the canonical external form.
+    .groupBy(_._1).map { case (d, rs) => d -> rs.map(_._2) }
+
+  private def canonical(data: NodeData): NodeData =
+    data match {
+      case NodeData.InternalNodeRef(id) =>
+        defUrl.map(url => NodeData.ExternalNodeRef(
+          ExternalNodeReference(url, 0, id))).getOrElse(data)
+      case _ => data
+    }
+
+  // The rule a node prints through: the one whose arity matches the
+  // node's children — the declaration's placeholder count for a
+  // declared-construct node, the meaning's arguments for a node the
+  // meaning itself materialized.
+  def builderFor(data: NodeData, arity: Int): Option[Rule] = {
+    // A ref anchored in another encoding of the language names its
+    // construct through `nameOf`, then keys by that term's data.
+    val key = data match {
+      case NodeData.ExternalNodeRef(r) if !builders.contains(data) =>
+        nameOf(r).map(termTag).map(canonical).getOrElse(data)
+      case _ => canonical(data)
+    }
+    val candidates = builders.getOrElse(key, Nil)
+    // A node that declares its own construct prints through that
+    // rule before one whose meaning merely coincides — the `%` in
+    // `a % means a / 100` doesn't swallow `/`'s own spelling.
+    candidates.find(r =>
+      r.pattern.constructForm.exists(_._2.length == arity)).orElse(
+        candidates.find(_.meaning.arguments.length == arity))
+  }
 
   // Each infix rule's associativity as the worked examples derive
   // it — the operand the chain continues prints at the rule's own
@@ -60,7 +102,7 @@ private[means] case class PrintIndex(
   // a prefix operator parses is the level's operand, which accepts
   // tier-i prefixes.
   private def isTierPrefix(child: NodeData, pl: Int): Boolean =
-    builders.get(child).exists(r =>
+    builders.getOrElse(child, Nil).exists(r =>
       isOperatorPattern(r.pattern) && r.shape == Shape.Prefix &&
         levels.get(r.pattern.key).contains(pl))
 

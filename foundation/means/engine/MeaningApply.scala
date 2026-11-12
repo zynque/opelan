@@ -68,6 +68,28 @@ def applyMeaning(
   case _ => gapNode(in, from, to)
 }
 
+// A matched rule's stored tree. A pattern that declares a construct
+// (`a * b`, `square(a)`) stores THE DECLARED CONSTRUCT — a node naming
+// the def's `*`/`square` term, its children the bound operands — and
+// the meaning applies at eval as the construct's semantics, not at
+// parse (the parse-time meaning is the backwards direction: documents
+// would carry `mul` constructs instead of `*` ones). A rule without a
+// construct declaration, or whose meaning isn't a construct
+// application (`n means n`, `-n means literal(neg(n))`), keeps the
+// meaning's tree.
+def ruleTree(
+    theRule: Rule,
+    bindings: Map[String, ParseTree],
+    in: ParseInput, from: Int, to: Int,
+    tag: String => NodeData): ParseTree =
+  (theRule.pattern.constructForm, theRule.meaning) match {
+    case (Some((name, params)), m) if Meaning.isConstruct(m) =>
+      ParseTree(tag(name), in.input.substring(from, to), from, to - from,
+        params.map(p => bindings.get(p)
+          .map(rebased(_, from)).getOrElse(gapNode(in, to, to))))
+    case _ => applyMeaning(theRule.meaning, bindings, in, from, to, tag)
+  }
+
 // The tree a `use` term's operand name binds — None unbound.
 private def bound(
     meaning: Meaning, bindings: Map[String, ParseTree]): Option[ParseTree] =

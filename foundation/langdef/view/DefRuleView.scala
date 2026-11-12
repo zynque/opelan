@@ -107,7 +107,8 @@ private def meaningDisplay(
 private[langdef] def meaningFieldText(d: LanguageDef, r: Rule): String =
   (for {
     set <- d.syntax.flatMap(_.rules) if hasQuote(r.meaning)
-  } yield printWith(set, termTagOf(d), meaningLeaf)(
+  } yield printWith(set, termTagOf(d), meaningLeaf,
+    defUrl = Some(d.typeRef.documentUrl))(
     meaningTree(r.meaning, termTagOf(d))))
     .getOrElse(printMeaning(r.meaning))
 
