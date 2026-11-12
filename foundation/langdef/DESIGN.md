@@ -42,8 +42,11 @@ subtree (`doc/RuleEncode`, `doc/RuleDocDecode`, `doc/RuleLink`). Like
 every construct use, a meaning names its constructor by reference:
 `add(a, b)` is a node whose data refers to `add`'s term entry — a
 declared term's first meaning occurrence, or for an imported term
-the ref the `vocabulary` section's `term` entry carries (a decoded
-`add` is the foundational `add`) — and `a` spells `use(a)` — an operand
+the ref it names: foundational terms are ambient (`foundationalOf`/
+`foundationRefs` is the floor at decode and commit, so a rule-bearing
+def writes no `vocabulary` section for them — a decoded `add` is the
+foundational `add`); a non-foundational import's ref rides the
+`vocabulary` section's `term` entry — and `a` spells `use(a)` — an operand
 ref to the pattern's placeholder node — so a rule survives renames on
 either side. Rules compile to the recovering combinators of
 [`foundation/grammar`](../grammar/DESIGN.md) — the implementation layer

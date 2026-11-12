@@ -36,8 +36,8 @@ def foundationalOf(ref: ExternalNodeReference): Option[FoundationalDef] =
   foundationDefs.find(d => sameNode(d.ref, ref))
 
 // name → ref — the recovery floor for content carrying bare names;
-// a def doc that uses a foundational term declares it as an import
-// instead (DefDocEncode's vocabulary section).
+// a rule-bearing def doc resolves foundational names through this
+// ambient floor rather than storing `vocabulary` entries.
 val foundationRefs: Map[String, ExternalNodeReference] =
   foundationDefs.map(d => d.name -> d.ref).toMap
 

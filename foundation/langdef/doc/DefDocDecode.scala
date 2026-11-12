@@ -6,6 +6,7 @@ import opelan.foundation.document.typed._
 import opelan.foundation.langdef._
 import opelan.foundation.langdef.syntax.vocabularyFrom
 import opelan.foundation.means.Meaning
+import opelan.foundation.means.engine.foundationDefs
 
 // The recovering read of a `lang:` document — the inverse of
 // DefDocEncode. Constructs are recognized by identity (which
@@ -35,10 +36,11 @@ def langDefFromDocument(
     // The vocabulary: terms the rules declare — `where`-bound leaf
     // terms and construct-application pattern declarations, each
     // entry's ref its declaration node's id through termIds — plus
-    // the `vocabulary` section's entries: a rule-less def's declared
-    // terms, or a rule-bearing def's imports — term entries carrying
-    // the ref they name, so a decoded `add` is the foundational
-    // `add`.
+    // the `vocabulary` section's entries (a rule-less def's declared
+    // terms, or non-foundational imports), and — for a rule-bearing
+    // def — the ambient foundation: foundational terms resolve by
+    // name without a stored entry, so a decoded `add` is the
+    // foundational `add`.
     vocabulary = {
       val derived = r.section("syntax").toList
         .flatMap(sid => r.entries(sid, "rules"))
@@ -48,7 +50,13 @@ def langDefFromDocument(
               .map(ExternalNodeReference(url, version, _))))))
       val section = r.section("vocabulary").toList
         .flatMap(sid => r.entries(sid, "term").map(r.termEntry))
-      derived ++ section.filterNot(t => derived.exists(_.name == t.name))
+      val named = (derived ++ section).map(_.name).toSet
+      val floor =
+        if (derived.isEmpty) Nil
+        else foundationDefs.map(d => NodeTerm(
+          d.name, NodeShape.Fixed(d.arity), Some(d.ref)))
+          .filterNot(t => named(t.name))
+      derived ++ section.filterNot(t => derived.exists(_.name == t.name)) ++ floor
     },
     syntax = r.section("syntax").map { sid =>
       SyntaxDef(

@@ -2,6 +2,7 @@ package opelan.foundation.langdef.doc
 
 import opelan.foundation.document._
 import opelan.foundation.document.typed._
+import opelan.foundation.means.engine.foundationRefs
 
 // Point each meaning's `use`/`source`/`builtin`/`literal` operand at
 // the placeholder piece node it names. The operand decodes through the piece's
@@ -54,13 +55,14 @@ private[langdef] def metaTag(doc: Document[NodeData], id: Int): Option[String] =
   doc.getNode(id).map(_.data).flatMap(pendingName)
     .orElse(metaConsOf(doc, id))
 
-// The def's imported terms as written in its `vocabulary` section —
-// `term` entries carrying an external ref: name → the imported ref.
-// A committed rule's construct names heal against these first, so an
-// imported name never becomes a local declaration.
+// The def's imported terms: `term` entries carrying an external ref
+// in its `vocabulary` section — name → the imported ref — over the
+// ambient foundation floor, so a foundational name resolves without a
+// stored entry. A committed rule's construct names heal against these
+// first, so an imported name never becomes a local declaration.
 private[langdef] def termImports(
     doc: Document[NodeData], cid: Int): Map[String, ExternalNodeReference] =
-  doc.childrenOf(cid)
+  foundationRefs ++ doc.childrenOf(cid)
     .filter(id => metaTag(doc, id).contains("vocabulary"))
     .flatMap(doc.childrenOf)
     .filter(id => metaTag(doc, id).contains("term"))

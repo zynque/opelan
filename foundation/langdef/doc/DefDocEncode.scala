@@ -4,6 +4,7 @@ import opelan.foundation.document._
 import opelan.foundation.document.typed._
 import opelan.foundation.document.Detached._
 import opelan.foundation.langdef._
+import opelan.foundation.means.engine.foundationalOf
 
 // A LanguageDef as a document: a typed document (type = the
 // language-definition language, langDefTypeRef) whose content carries
@@ -21,9 +22,11 @@ import opelan.foundation.langdef._
 //     definition
 //       description  "the arithmetic-expression language"
 //       name         "Expressions"
-//       vocabulary   term("add", fixed(2), ext:…arithmetic@0#1) …
-//                    imported terms carry the ref they name —
-//                    declared terms (rule-less defs) don't
+//       vocabulary   term(…) — only imports the foundation doesn't
+//                    already name; foundational terms are ambient,
+//                    referenced directly in meanings. Rule-less defs
+//                    write their whole vocabulary (it's declaration
+//                    content, no ref children)
 //       syntax       "expr"  rules(…)   — the operand fallback is the
 //                              lexicon's recovery and stores nothing
 //       views        view("print", "expr-print") …
@@ -43,15 +46,18 @@ private[langdef] def encodeDef(
   val hasRules = d.syntax.flatMap(_.rules).isDefined
   // A def that carries rules declares its terms in them — leaf
   // terms through `where` bindings, constructs through
-  // construct-application patterns — so the only vocabulary section
-  // it writes is its imports: the terms the def uses but doesn't
-  // declare, each entry carrying the ref it names (a decoded `add`
-  // IS the foundational `add`). Defs without rules (lang: language
-  // itself, the sheet) write their whole vocabulary: it's authored
-  // declaration content, and its term entries anchor the refs stored
-  // docs point at.
+  // construct-application patterns — so it writes a vocabulary
+  // section only for imports the foundation doesn't already name:
+  // foundational terms resolve through the ambient floor
+  // (foundationalOf/foundationRefs), a decoded `add` IS the
+  // foundational `add` without a stored entry. Defs without rules
+  // (lang: language itself, the sheet) write their whole vocabulary:
+  // it's authored declaration content, and its term entries anchor
+  // the refs stored docs point at.
   val imported = d.vocabulary.filter(_.ref.isDefined)
-  val section = if (hasRules) imported else d.vocabulary
+  val section = if (hasRules)
+    imported.filter(t => t.ref.forall(r => foundationalOf(r).isEmpty))
+  else d.vocabulary
   val (doc1, vocabularyId) =
     if (section.isEmpty) add(doc0, cid,
       n(pending("description"), sl(d.description)),

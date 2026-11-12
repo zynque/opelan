@@ -60,21 +60,30 @@ class LangDefDocSuite extends FunSuite {
       withTermRefs(exprDef).syntax.get.rules)
   }
 
-  test("foundational imports are declared and decode to the foundation's refs") {
-    // The def doc's vocabulary section carries the imported terms —
-    // each entry naming the ref it stands for — so a decoded `add`
-    // IS the foundational `add`, no code-side table involved.
+  test("foundational imports decode to the foundation's refs without a section") {
+    // A rule-bearing def writes no `vocabulary` section for the
+    // terms the foundation already names — they resolve through the
+    // ambient floor, so a decoded `add` IS the foundational `add`,
+    // no stored entries involved.
     val doc = langDefDoc(exprDef)
+    assert(
+      !doc.nodes.indices.exists(metaConsOf(doc, _).contains("vocabulary")))
     val d = langDefFromDocument(exprDef.typeRef.documentUrl, doc)
     assertEquals(
       d.vocabulary.filter(_.name == "add").flatMap(_.ref),
       List(foundationRefs("add")))
+    // The unused `div` stays referenceable — the audience can add
+    // `a / b means div(a, b)` and the name resolves to the floor.
+    assertEquals(
+      d.vocabulary.filter(_.name == "div").flatMap(_.ref),
+      List(foundationRefs("div")))
   }
 
   test("a committed construct name heals to the def's import") {
     // A meaning landing as a bare `add` — written without its
-    // reference — relinks to the vocabulary's imported term, the
-    // link `linkCommitted` applies after a text-surface commit.
+    // reference — relinks to the foundation's term through the
+    // ambient floor, the link `linkCommitted` applies after a
+    // text-surface commit.
     val doc = langDefDoc(exprDef)
     val cid = contentId(doc).get
     val addUse = doc.subtreeIds(cid)
@@ -456,10 +465,9 @@ class LangDefDocSuite extends FunSuite {
       byLine.collectFirst {
         case (l, m) if l.trim.startsWith(prefix) => m.kind }
     assertEquals(kindOf("definition"), Some("cm-meta"))
-    assertEquals(kindOf("vocabulary"), Some("cm-meta"))
-    assertEquals(kindOf("\"add\""), Some("cm-string"))
+    assertEquals(kindOf("syntax"), Some("cm-meta"))
+    assertEquals(kindOf("\"expr\""), Some("cm-string"))
     assertEquals(kindOf("a + b"), Some("cm-rule"))
-    assertEquals(kindOf("ref:opelan:foundation"), Some("cm-ref"))
     // A rule line's spans mark `means` as a keyword and its
     // placeholders — offsets relative to the line, not the trimmed text.
     val rule = byLine.find(_._1.trim.startsWith("a + b means")).get
@@ -475,9 +483,13 @@ class LangDefDocSuite extends FunSuite {
     assertEquals(marks(4).kind, "cm-rule")
     assertEquals(marks(5).kind, "cm-gap")
     // Outside `rules`, a bare word the meta vocabulary doesn't declare
-    // paints as unmatched (it commits as a string — not a pattern).
-    val outside = defDocLineMarks("definition\n  bogusword\n")
-    assertEquals(outside(1).kind, "cm-unmatched")
+    // paints as unmatched (it commits as a string — not a pattern), a
+    // meta word as a construct line, a `ref:` payload as a reference.
+    val outside = defDocLineMarks(
+      "definition\n  vocabulary\n    ref:opelan:foundation/arithmetic@0#1\n    bogusword\n")
+    assertEquals(outside(1).kind, "cm-meta")
+    assertEquals(outside(2).kind, "cm-ref")
+    assertEquals(outside(3).kind, "cm-unmatched")
   }
 
   test("encoding is deterministic") {

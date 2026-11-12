@@ -31,8 +31,9 @@ val exprDef = LanguageDef(
   // construct-application pattern declarations (DeriveVocabulary.scala).
   // The arithmetic constructs the rules use are foundational
   // definitions — declared as imports: entries whose ref IS the
-  // foundation's own, so the encoded def doc points `add` at the
-  // foundational `add` and a decoded def needs no code-side table.
+  // foundation's own. They encode as no `vocabulary` section at all —
+  // meanings point `add` at the foundational `add` and decode through
+  // the ambient floor, so a decoded def needs no code-side table.
   vocabulary = vocabularyFrom(exprRules) ++ foundationDefs.map(d =>
     NodeTerm(d.name, NodeShape.Fixed(d.arity), Some(d.ref))),
   // The rules carry the syntax; the operand fallback they compile
@@ -46,8 +47,8 @@ val exprDef = LanguageDef(
 
 // The demo's starting point for lang: expression: the `/` rule and its
 // binding are missing, so the budget's per-person formula sits as a gap
-// until the audience adds them to the definition document. The vocabulary
-// still declares `div`, so term ids match exprDef's.
+// until the audience adds them to the definition document. The ambient
+// floor keeps `div` referenceable, so term ids match exprDef's.
 val demoExprDef = exprDef.copy(syntax =
   Some(SyntaxDef("expr", Some(withoutPattern(exprRules, "a / b")))))
 
