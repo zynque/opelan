@@ -117,8 +117,10 @@ steps*, item 1).
    on both the expression language and the sheet (`resolveGridRefs`
    projects `ref` constructs to `InternalNodeRef` leaves; `evalTree`,
    `LocExpr`, and `Num` are retired), a cycle renders as a gap at the
-   closing edge, and def docs encode foundational imports in their
-   vocabulary sections so a decoded `add` is the foundational `add`.
+   closing edge, and def docs carry no vocabulary section — ambient
+   terms (foundation primitives + placeholders) and imports resolved
+   through the referenced def's own vocabulary cover it, so a decoded
+   `add` is the foundational `add`.
    Remaining:
 
    - *Beyond parity:*

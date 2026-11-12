@@ -21,17 +21,19 @@ import opelan.foundation.langdef._
 //     definition
 //       description  "the arithmetic-expression language"
 //       name         "Expressions"
-//       vocabulary   term(…) — only terms the ambient layer doesn't
-//                    already name: foundation primitives and
-//                    placeholders (lang: language's meta constructs,
-//                    the sheet's grid terms) are ambient, referenced
-//                    directly in meanings. A def whose every term is
-//                    ambient writes no vocabulary section at all
 //       syntax       "expr"  rules(…)   — the operand fallback is the
 //                              lexicon's recovery and stores nothing
 //       views        view("print", "expr-print") …
 //                    view("sheet", "sheet-grid", setting("currency", "$"))
 //       inputs       language(&import, as-label)
+//
+// There is no `vocabulary` section: every term a meaning can use is
+// ambient (foundation primitives + placeholders), imported (the
+// `imports` declaration names the documents, the resolver reads their
+// terms), or declared by the def's own rule patterns — each
+// construct-application pattern declaration anchors the term's ref.
+// The `vocabulary`/`term` meta constructs stay reserved for a future
+// declaration form.
 def langDefDoc(d: LanguageDef): Document[NodeData] = encodeDef(d)._1
 
 // The document plus each vocabulary term's node id. lang: language
@@ -44,32 +46,9 @@ private[langdef] def encodeDef(
     DetachedNode.leaf(pending("definition")))
   val cid = contentId(doc0).getOrElse(doc0.rootId)
   val hasRules = d.syntax.flatMap(_.rules).isDefined
-  // A term the ambient layer already names — a foundation primitive
-  // (ref'd) or a placeholder (named by the registry, with or without
-  // a ref on the entry) — declares nothing in the document: it's
-  // referenced directly in meanings, so no vocabulary section is
-  // written for it.
-  def ambientEntry(t: NodeTerm): Boolean =
-    ambientRefs.get(t.name).exists(r => t.ref.forall(sameNode(r, _)))
-  // A def that carries rules declares its terms in them — leaf
-  // terms through `where` bindings, constructs through
-  // construct-application patterns — so its section holds only
-  // non-ambient imports; a rule-less def's section is its declared
-  // terms, minus the placeholders the registry names for it.
-  val section = d.vocabulary.filter(t =>
-    (t.ref.isDefined || !hasRules) && !ambientEntry(t))
-  val imported = d.vocabulary.filter(_.ref.isDefined)
-  val (doc1, vocabularyId) =
-    if (section.isEmpty) add(doc0, cid,
-      n(pending("description"), sl(d.description)),
-      n(pending("name"), sl(d.name)))
-    else add(doc0, cid,
-      n(pending("description"), sl(d.description)),
-      n(pending("name"), sl(d.name)),
-      n(pending("vocabulary"), section.map(termNode)*))
-  val sectionIds =
-    if (hasRules || section.isEmpty) Map.empty[String, Int]
-    else section.map(_.name).zip(doc1.childrenOf(vocabularyId)).toMap
+  val (doc1, _) = add(doc0, cid,
+    n(pending("description"), sl(d.description)),
+    n(pending("name"), sl(d.name)))
   val doc2 = add(doc1, cid, List(
     d.syntax.map(s => n(pending("syntax"),
       sl(s.lexicon) +:
@@ -78,13 +57,11 @@ private[langdef] def encodeDef(
     d.inputParser.map(cp => n(pending("inputs"), inputsNode(cp)))).flatten*)._1
   val linked = linkRuleUses(doc2, cid)
   val termIds =
-    if (hasRules) deriveTermIds(linked, cid) else sectionIds
+    if (hasRules) deriveTermIds(linked, cid) else Map.empty[String, Int]
   // Bare construct names in meanings bind to the ambient registry
-  // first (foundation + placeholders), then to non-ambient imports.
-  val imports = ambientRefs ++
-    imported.flatMap(t => t.ref.map(t.name -> _)).toMap
+  // (foundation primitives + placeholders).
   val doc3 = resolvePending(
-    linkTerms(linked, cid, termIds, imports), name =>
+    linkTerms(linked, cid, termIds, ambientRefs), name =>
     metaRef(name).map(NodeData.ExternalNodeRef(_))
       .getOrElse(NodeData.GapData(name)))
   (internalizeStandard(doc3), termIds)
@@ -105,16 +82,6 @@ private def viewNode(v: ViewBinding): DetachedNode[NodeData] =
     v.settings.toList.sorted.map { case (k, value) =>
       n(pending("setting"), sl(k), sl(value))
     })*)
-
-// A term entry: name, shape, and — for an import — the ref it names
-// as a third child (internalized to an import entry like every
-// external use).
-private def termNode(t: NodeTerm): DetachedNode[NodeData] =
-  n(pending("term"), (sl(t.name) +: (t.shape match {
-    case NodeShape.Leaf     => DetachedNode.leaf(pending("leaf"))
-    case NodeShape.Any      => DetachedNode.leaf(pending("any"))
-    case NodeShape.Fixed(a) => n(pending("fixed"), il(a))
-  }) +: t.ref.toList.map(erl))*)
 
 private def inputsNode(cp: InputParserDef): DetachedNode[NodeData] = cp match {
   case InputParserDef.Builtin(name) =>

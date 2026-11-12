@@ -39,25 +39,20 @@ def langDefFromDocument(
     title = title,
     name = r.section("name").flatMap(r.childStr(_, 0)).getOrElse(title),
     description = r.section("description").flatMap(r.childStr(_, 0)).getOrElse(""),
-    // The vocabulary the document declares: terms the rules declare
-    // — `where`-bound leaf terms and construct-application pattern
-    // declarations, each entry's ref its declaration node's id
-    // through termIds — plus the `vocabulary` section's entries
-    // (non-ambient imports or non-ambient declared terms). Ambient
-    // terms — foundation primitives and placeholders — never appear:
-    // they resolve through `ambientRefs`/`ambientTermOf` at the
-    // consumers instead of being listed here.
-    vocabulary = {
-      val derived = r.section("syntax").toList
+    // The vocabulary the document declares: the terms the rules
+    // declare — `where`-bound leaf terms and construct-application
+    // pattern declarations, each entry's ref its declaration node's
+    // id through termIds. There is no vocabulary section: ambient
+    // terms (foundation primitives + placeholders) resolve through
+    // `ambientRefs`/`ambientTermOf` at the consumers, imported terms
+    // through `resolve` and the referenced def's own vocabulary.
+    vocabulary =
+      r.section("syntax").toList
         .flatMap(sid => r.entries(sid, "rules"))
         .headOption.toList.flatMap(rs =>
           vocabularyFrom(r.ruleSetFrom(rs)).map(t =>
             t.copy(ref = t.ref.orElse(r.termIds.get(t.name)
-              .map(ExternalNodeReference(url, version, _))))))
-      val section = r.section("vocabulary").toList
-        .flatMap(sid => r.entries(sid, "term").map(r.termEntry))
-      derived ++ section.filterNot(t => derived.exists(_.name == t.name))
-    },
+              .map(ExternalNodeReference(url, version, _)))))),
     syntax = r.section("syntax").map { sid =>
       SyntaxDef(
         r.childStr(sid, 0).getOrElse(""),

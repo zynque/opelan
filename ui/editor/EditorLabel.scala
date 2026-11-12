@@ -2,6 +2,8 @@ package opelan.ui.editor
 
 import opelan.foundation.document._
 import opelan.foundation.document.store._
+import opelan.foundation.document.typed.externalRefOf
+import opelan.foundation.langdef.ambientTermOf
 import opelan.ui.fp._
 import opelan.ui.fp.Dsl._
 
@@ -13,15 +15,27 @@ private[editor] def nodeLabel(
     m: EditorModel, id: Int, node: Node[NodeData]): View[EditorInput] =
   node.data match {
     case _: NodeData.InternalNodeRef | _: NodeData.ExternalNodeRef if !m.rawLabels =>
-      refName(m.store, m.doc, id).map(refLabel(_, node)).getOrElse(dataLabel(node))
+      refName(m.store, m.doc, id, ambientName)
+        .map(refLabel(_, node, m.doc, id)).getOrElse(dataLabel(node))
     case _ => dataLabel(node)
   }
 
-private def refLabel(name: String, node: Node[NodeData]): View[EditorInput] =
+// Ambient refs name themselves outside the document layer — a
+// foundation primitive or placeholder has no stored document.
+private def ambientName(r: ExternalNodeReference): Option[String] =
+  ambientTermOf(r).map(_.name)
+
+private def refLabel(name: String, node: Node[NodeData],
+    doc: Document[NodeData], id: Int): View[EditorInput] =
   el("span")(
     el("span", style("color: #7b2cbf; font-weight: bold;"))(text(name)),
     el("span", style("color: #bbb; margin-left: 6px; font-size: 11px;"))(
-      text(DocumentEditor.displayData(node.data))))
+      // The path hint: the resolved external ref when the use is
+      // external (inline or via an `&` import entry), else the stored
+      // internal ref.
+      text(externalRefOf(doc, id)
+        .map(r => DocumentEditor.displayData(NodeData.ExternalNodeRef(r)))
+        .getOrElse(DocumentEditor.displayData(node.data)))))
 
 private def dataLabel(node: Node[NodeData]): View[EditorInput] = {
   val css = node.data match {

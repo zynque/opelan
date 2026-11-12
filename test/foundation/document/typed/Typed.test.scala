@@ -88,4 +88,18 @@ class TypedSuite extends munit.FunSuite {
     // A rename in a later version shows through the pinned import.
     assertEquals(refName(store0.put("test:lang", lang1)._1, d, cid), Some("add"))
   }
+
+  test("refName falls back to the ambient name for store-less refs") {
+    // A ref into a document the store never holds — a foundation
+    // primitive or placeholder — names itself ambiently.
+    val ambient = (r: ExternalNodeReference) =>
+      if (r.documentUrl == "opelan:foundation/arithmetic") Some("mul")
+      else None
+    val d = makeTyped(ref, er(titleRef), er(importsRef), s("doc"),
+      n(er(ExternalNodeReference("opelan:foundation/arithmetic", 0, 3)),
+        il(1)))
+    val cid = contentId(d).get
+    assertEquals(refName(Store.empty, d, cid, ambient), Some("mul"))
+    assertEquals(refName(Store.empty, d, cid), None)
+  }
 }

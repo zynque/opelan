@@ -7,10 +7,12 @@ The `lang:` document format for a `LanguageDef`/rule set
   a typed `lang:` document and read it back recoveringly; sets are
   sorted so encoding is deterministic. Readers match
   constructs by node identity (`DefDocReader.cons`), never on a string.
-  The `vocabulary` section encodes only what the ambient layer can't
-  name (a non-ambient import or a term shadowing a placeholder name);
-  at decode, a non-ambient ref's name comes through `resolve` — the
-  referenced def's own vocabulary — instead of a stored entry.
+  There is no `vocabulary` section: every term is ambient (the
+  foundation + placeholder registries), imported (the `imports`
+  declaration names the documents; at decode a non-ambient ref's name
+  comes through `resolve` — the referenced def's own vocabulary — and
+  at commit `termImports` binds the same names to their refs), or
+  declared by the def's own rule patterns.
 - **`RuleEncode` / `RuleDocDecode`** — a rule set as document nodes:
   each `rule` holds `pattern` + `meaning` (+ `where`) sections; pattern
   pieces are `placeholder`/`literal` nodes with a `glued` marker when

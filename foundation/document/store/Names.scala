@@ -21,18 +21,25 @@ def definitionName(doc: Document[NodeData], id: Int): Option[String] =
 
 // The name of the node `ref` addresses, read at the document's head so a
 // rename shows at once; the pinned version answers when the head no
-// longer has the node.
-def nameOfRef(store: Store, ref: ExternalNodeReference): Option[String] =
-  store.head(ref.documentUrl)
-    .filter(_._2.getNode(ref.nodeId).isDefined)
-    .orElse(store.get(ref.documentUrl, ref.documentVersionId).map(ref.documentVersionId -> _))
-    .flatMap { case (_, d) => definitionName(d, ref.nodeId) }
+// longer has the node. `ambient` names refs into documents the store
+// never holds — foundation primitives and placeholders, which name
+// themselves outside the document layer (the caller supplies it;
+// document/store can't see langdef).
+def nameOfRef(store: Store, ref: ExternalNodeReference,
+    ambient: ExternalNodeReference => Option[String] = _ => None): Option[String] =
+  ambient(ref).orElse(
+    store.head(ref.documentUrl)
+      .filter(_._2.getNode(ref.nodeId).isDefined)
+      .orElse(store.get(ref.documentUrl, ref.documentVersionId)
+        .map(ref.documentVersionId -> _))
+      .flatMap { case (_, d) => definitionName(d, ref.nodeId) })
 
 // The name to show for a reference node in `doc`: external and imported
-// refs resolve through the store, internal ones locally.
-def refName(store: Store, doc: Document[NodeData], id: Int): Option[String] =
+// refs resolve through the store (or `ambient`), internal ones locally.
+def refName(store: Store, doc: Document[NodeData], id: Int,
+    ambient: ExternalNodeReference => Option[String] = _ => None): Option[String] =
   externalRefOf(doc, id) match {
-    case Some(r) => nameOfRef(store, r)
+    case Some(r) => nameOfRef(store, r, ambient)
     case None => doc.getNode(id).map(_.data).collect {
       case NodeData.InternalNodeRef(t) => t
     }.flatMap(definitionName(doc, _))

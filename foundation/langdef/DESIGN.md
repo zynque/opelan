@@ -50,12 +50,12 @@ every construct use, a meaning names its constructor by reference:
 declared term's first meaning occurrence, or the ambient ref it
 names: foundation primitives and placeholders are ambient
 (`ambientRefs`/`ambientTermOf`, built on `foundationalOf` +
-`placeholderOf`), so a def writes no `vocabulary` section for them — a
-decoded `add` is the foundational `add`. A ref into another
-definition's document names itself through that definition's own
-vocabulary, resolved through the `resolve` parameter
-(`langDefFromDocument`, and `termImports` for name→ref at commit) —
-so the section is gone even for non-foundation imports — and `a`
+`placeholderOf`), and a ref into another definition's document names
+itself through that definition's own vocabulary, resolved through the
+`resolve` parameter (`langDefFromDocument`, and `termImports` for
+name→ref at commit). Ambient terms and resolved imports between them
+cover every case the `vocabulary` section ever served, so the format
+has no vocabulary section at all. `a`
 spells `use(a)` — an operand
 ref to the pattern's placeholder node — so a rule survives renames on
 either side. Rules compile to the recovering combinators of

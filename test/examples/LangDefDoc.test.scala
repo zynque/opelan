@@ -438,12 +438,10 @@ class LangDefDocSuite extends FunSuite {
     val url = sheetDef.typeRef.documentUrl
     val doc = langDefDoc(sheetDef)
     val back = langDefFromDocument(url, doc)
-    // The grid terms are ambient placeholders — they write no section,
-    // so the decoded vocabulary holds only `literal` and `ref`, the
-    // sheet terms shadowed by meta placeholders of the same names.
-    val shadowed = sheetDef.vocabulary
-      .filter(t => metaPlaceholderRefs.contains(t.name))
-    assertEquals(back, withTermRefs(sheetDef).copy(vocabulary = shadowed))
+    // The grid terms are ambient placeholders — with no `vocabulary`
+    // section at all the decoded vocabulary holds only what rules
+    // declare, and a rule-less def declares nothing.
+    assertEquals(back, withTermRefs(sheetDef).copy(vocabulary = List()))
     // The input grammar really does name the expression language.
     assertEquals(
       back.inputParser,
@@ -459,9 +457,7 @@ class LangDefDocSuite extends FunSuite {
     assertEquals(
       langDefFromDocument("opelan:languages/sheet",
         SheetLanguage.langDoc),
-      withTermRefs(sheetDef).copy(vocabulary =
-        sheetDef.vocabulary
-          .filter(t => metaPlaceholderRefs.contains(t.name))))
+      withTermRefs(sheetDef).copy(vocabulary = List()))
   }
 
   test("the def text surface's line marks paint what each line read as") {

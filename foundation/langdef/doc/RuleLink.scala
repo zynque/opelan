@@ -58,10 +58,9 @@ private[langdef] def metaTag(doc: Document[NodeData], id: Int): Option[String] =
 // The names a def's construct uses resolve against: the ambient
 // registry (foundation primitives + placeholders), then the terms of
 // the definition documents the doc already imports — each resolved
-// through `resolve` — then the `vocabulary` section's `term` entries
-// carrying an external ref. A committed rule's construct names heal
-// against these first, so an imported or ambient name never becomes a
-// local declaration.
+// through `resolve`. A committed rule's construct names heal against
+// these first, so an imported or ambient name never becomes a local
+// declaration.
 private[langdef] def termImports(
     doc: Document[NodeData], cid: Int,
     resolve: ExternalNodeReference => Option[LanguageDef] = _ => None
@@ -73,22 +72,7 @@ private[langdef] def termImports(
     .flatMap(u => resolve(ExternalNodeReference(u, 0, 0)).toList
       .flatMap(d => d.vocabulary.flatMap(t => t.ref.map(t.name -> _))))
     .toMap
-  ambientRefs ++ imported ++ doc.childrenOf(cid)
-    .filter(id => metaTag(doc, id).contains("vocabulary"))
-    .flatMap(doc.childrenOf)
-    .filter(id => metaTag(doc, id).contains("term"))
-    .flatMap { k =>
-      // A term's own leaves: name (string) plus the optional imported
-      // ref — the shape child is a meta construct, so both sit in the
-      // non-meta children.
-      val own = doc.childrenOf(k).filter(id => metaTag(doc, id).isEmpty)
-      (for {
-        name <- own.headOption.flatMap(id => doc.getNode(id).map(_.data))
-          .collect { case NodeData.StringData(s) => s }
-        ref  <- own.tail.flatMap(externalRefOf(doc, _)).headOption
-      } yield name -> ref)
-    }
-    .toMap
+  ambientRefs ++ imported
 }
 
 // Term name → its declaration node's id: the first meaning-position
