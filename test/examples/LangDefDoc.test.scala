@@ -445,6 +445,41 @@ class LangDefDocSuite extends FunSuite {
       withTermRefs(sheetDef))
   }
 
+  test("the def text surface's line marks paint what each line read as") {
+    val doc = langDefDoc(exprDef)
+    val text = defDocLines(
+      doc, exprDef.typeRef.documentUrl, contentId(doc).get).mkString("\n")
+    val marks = defDocLineMarks(text)
+    assertEquals(marks.length, text.split("\n", -1).length)
+    val byLine = text.split("\n", -1).zip(marks)
+    def kindOf(prefix: String) =
+      byLine.collectFirst {
+        case (l, m) if l.trim.startsWith(prefix) => m.kind }
+    assertEquals(kindOf("definition"), Some("cm-meta"))
+    assertEquals(kindOf("vocabulary"), Some("cm-meta"))
+    assertEquals(kindOf("\"add\""), Some("cm-string"))
+    assertEquals(kindOf("a + b"), Some("cm-rule"))
+    assertEquals(kindOf("ref:opelan:foundation"), Some("cm-ref"))
+    // A rule line's spans mark `means` as a keyword and its
+    // placeholders — offsets relative to the line, not the trimmed text.
+    val rule = byLine.find(_._1.trim.startsWith("a + b means")).get
+    assert(rule._2.spans.exists { case (_, _, c) => c == "cm-keyword" })
+    assert(rule._2.spans.exists { case (f, t, c) =>
+      c == "cm-placeholder" && rule._1.substring(f, t) == "a" })
+  }
+
+  test("failing rule lines and bare words mark as gap and unmatched") {
+    val text = "definition\n  syntax\n    \"expr\"\n    rules\n" +
+      "      a + b means add(a, b)\n      total garbage here\n"
+    val marks = defDocLineMarks(text)
+    assertEquals(marks(4).kind, "cm-rule")
+    assertEquals(marks(5).kind, "cm-gap")
+    // Outside `rules`, a bare word the meta vocabulary doesn't declare
+    // paints as unmatched (it commits as a string — not a pattern).
+    val outside = defDocLineMarks("definition\n  bogusword\n")
+    assertEquals(outside(1).kind, "cm-unmatched")
+  }
+
   test("encoding is deterministic") {
     assertEquals(
       render(langDefDoc(exprDef)),

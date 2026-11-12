@@ -23,6 +23,11 @@ The `lang:` document format for a `LanguageDef`/rule set
   keep their structured encoding, so hand-written structure still
   lands. Phrase meanings a language-aware commit would desugar stay
   quoted gaps; `rephraseRuleSet` retries them at interpretation.
+- **`DefDocMarks`** — `defDocLineMarks`: the mark pass behind the
+  `edit` view's decorations — per line, a class saying what the line
+  read as (meta construct, parsed rule, gap rule, payload kind,
+  unmatched word) plus inline spans for `means`/`where` keywords and
+  placeholder names. Read-only: it classifies, `DefDocText` commits.
 - **`Meta`** — `metaTermIds`: the node ids of `lang: language`'s own
   constructs, taken from encoding `docLanguageDef`, so code can know a
   meta construct by identity.

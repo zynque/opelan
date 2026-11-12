@@ -5,6 +5,7 @@ import opelan.foundation.document._
 import opelan.foundation.document.store._
 import opelan.foundation.document.typed._
 import opelan.foundation.langdef.autoUpdateEnabled
+import opelan.foundation.langdef.doc.defDocLineMarks
 import opelan.examples.languageForDoc
 import opelan.ui.fp._
 import opelan.ui.fp.Dsl._
@@ -63,7 +64,8 @@ private def derivedPane(m: TypedDocModel): View[TypedDocInput] = {
     } else None
   val click: dom.Event => Option[TypedDocInput] = e => {
     val t = e.target.asInstanceOf[dom.Element]
-    if (!t.isInstanceOf[dom.HTMLInputElement] && t.querySelector("input") == null)
+    if (!t.isInstanceOf[dom.HTMLInputElement] && t.querySelector("input") == null
+        && t.closest(".cm-editor") == null)
       e.currentTarget.asInstanceOf[dom.HTMLElement].focus()
     None
   }
@@ -73,8 +75,27 @@ private def derivedPane(m: TypedDocModel): View[TypedDocInput] = {
       "style" -> ("flex: 1; display: flex; flex-direction: column; " +
         "min-height: 0; outline: none;" + hidden(active.isEmpty))),
     events = Map("keydown" -> keydown, "click" -> click))(
-    active.toList.flatMap(name => Vector(derivedBar(name), derivedBody(name, m))))
+    active.toList.flatMap(name => Vector(derivedBar(name),
+      if (name == "edit") defEditor(m) else derivedBody(name, m))))
 }
+
+// The `def` view is the projectional editing surface for a language
+// definition: the document's text (for a lang: doc, its means-line
+// outline — the same surface `raw text` commits) in a decorated
+// editor. Any text is accepted anywhere; each keystroke commits through
+// TextEdited like the plain text surface, and the decorations paint
+// what each line read as — meta constructs, payloads, rules — with
+// failed rule lines and `?` text flagged as gaps. The pane mirrors the
+// document's own `text`/`textEpoch`, so a structural edit refreshes it
+// the same way it does the plain surface.
+private def defEditor(m: TypedDocModel): View[TypedDocInput] =
+  el("div", style("flex: 1; overflow: hidden; display: flex; flex-direction: column;"))(
+    managed(s"cm-def-${m.textEpoch}") { (host, emit) =>
+      CodeMirror.mountMarked(host, m.text,
+        t => emit(TypedDocInput.TextEdited(t)),
+        text => defDocLineMarks(text).map(lm => (lm.kind, lm.spans)))
+      ()
+    })
 
 private def derivedBar(name: String): View[TypedDocInput] =
   els("div",

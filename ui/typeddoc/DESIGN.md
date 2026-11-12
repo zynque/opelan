@@ -6,8 +6,12 @@ surfaces (`DocView`): **Editor** (structural), **Text** (a `Managed`
 CodeMirror surface bound to `docText`/`applyDocText` —
 [`foundation/language`](../../foundation/language/DESIGN.md)), and
 **Derived** views offered by the document's language (`print`, `eval`,
-`sheet`, `formulas`). Derived views also stay live in a sidebar while
-editing. Shown alone, a derived view is the *app* surface — the
+`sheet`, `formulas`). On a `lang:` document the `edit` view is itself
+an editing surface — the `docText` outline (means lines) in a
+decorated CodeMirror (`defEditor`), where `defDocLineMarks` paints
+what each line reads as and every keystroke commits through
+`TextEdited` exactly like the plain text surface. Derived views also
+stay live in a sidebar while editing. Shown alone, a derived view is the *app* surface — the
 spreadsheet without the machinery — with two exits: **Raw** (this
 document's representation) and **Definition** (F12: follow the type ref
 to the language document — the app's implementation). Notable
