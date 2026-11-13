@@ -30,7 +30,8 @@ the app's implementation *is a document in the same workbench*.
 
 ## The demo, narrated
 
-Sidebar documents: `Household budget`, `lang: sheet`, `lang: expression`,
+Sidebar documents: `Expression sample`, `Household budget`,
+`lang: sheet`, `lang: expression`,
 freshly seeded (**Reset** reseeds a used store).
 
 **Act 1 — the app.**

@@ -11,8 +11,9 @@ import opelan.examples.sheet.SheetLanguage
 // The demo's opening lineup, seeded into a store that doesn't already
 // have it. Each registered language's descriptive document is seeded at
 // the URL its typeRef names — so following a document's type ref lands
-// on a real node (act 2's "under the hood" beat) — and the budget is
-// the app built on them. lang: expression is seeded staged, without
+// on a real node (act 2's "under the hood" beat) — and the two samples
+// are the documents built on them. lang: expression is seeded staged,
+// without
 // `/`, so the budget's per-person gap heals when the audience adds it.
 //
 // Seeding never overwrites: a URL the store already holds is left
@@ -22,6 +23,10 @@ private[workbench] val seedDocs: List[(String, Document[NodeData])] =
     // The placeholder registry — placeholder refs name themselves
     // through it (foundation/langdef/PlaceholderTerms.scala).
     (placeholderUrl -> placeholderDoc) :+
+    // The URL slug sorts after household-budget so the budget stays the
+    // first-opened document; the doc's own title supplies the sidebar
+    // label ("Expression sample").
+    (Store.urlForName("Sample expression") -> ExprLanguage.sampleDoc) :+
     (Store.urlForName("Household budget") -> SheetLanguage.sampleDoc)
 
 private def seedDocOf(l: opelan.foundation.language.Language): Document[NodeData] =

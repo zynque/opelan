@@ -1,8 +1,6 @@
 package opelan.ui.typeddoc
 
 import opelan.examples.languageForDoc
-import opelan.examples.expr.ExprLanguage
-import opelan.examples.sheet.SheetLanguage
 import opelan.foundation.document._
 import opelan.foundation.document.store._
 import opelan.foundation.document.typed._
@@ -83,11 +81,6 @@ private def step(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel, 
       Update(m2, u.out ++
         (if (pull != m.appliedPullSeq) Vector(DocChanged(m2.doc))
          else Vector.empty))
-    case LoadExprSample =>
-      load(m, ExprLanguage.sampleDoc, None, "Expression sample loaded")
-    case LoadSheetSample =>
-      load(m, SheetLanguage.sampleDoc, None, "Sheet sample loaded")
-
     // A text edit is total: apply returns a new document (with gaps
     // where the text doesn't fit) or an error that only touches status.
     // A language with an incremental syntax reparses through the pane's

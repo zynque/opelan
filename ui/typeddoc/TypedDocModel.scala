@@ -89,8 +89,6 @@ enum TypedDocInput {
   case Pane(
       push: Option[TypedDocInput], pushSeq: Int, pull: Int,
       store: Store = Store.empty, docUrl: Option[String] = None)
-  case LoadExprSample
-  case LoadSheetSample
   case TextEdited(text: String)
   // A provenance-tagged fragment of a derived view was clicked: select
   // the source node in the structural editor.

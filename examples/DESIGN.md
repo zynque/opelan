@@ -77,4 +77,5 @@ View settings are data in the def doc (`view(name, builtin,
 setting(key, value)…)`); the sheet's `currency` setting formats computed
 values. A gap or cycle in a referenced cell propagates only to the
 cells that use it — the app recovers like the documents it is made of.
-`sampleDoc` seeds the demo's household budget.
+`sampleDoc` seeds the demo's household budget (the expression language's
+`sampleDoc` seeds the sidebar's expression sample).

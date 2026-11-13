@@ -161,7 +161,7 @@ class TypedDocSuite extends munit.FunSuite {
   }
 
   test("CommitInputText rewrites the node in place and pushes the doc") {
-    val m = typedDocUpdate(init, TypedDocInput.LoadSheetSample).state
+    val m = typedDocUpdate(init, TypedDocInput.Load(SheetLanguage.sampleDoc)).state
     val price = cellId(m.doc, 1, 2) // Apples' price
     val u = typedDocUpdate(m, TypedDocInput.CommitInputText(price, "1.50"))
     assertEquals(
@@ -171,7 +171,7 @@ class TypedDocSuite extends munit.FunSuite {
   }
 
   test("an input commit keeps the ids of unchanged subtrees") {
-    val m = typedDocUpdate(init, TypedDocInput.LoadSheetSample).state
+    val m = typedDocUpdate(init, TypedDocInput.Load(SheetLanguage.sampleDoc)).state
     val total = cellId(m.doc, 1, 3) // Apples' line total = qty * price
     val refs = m.doc.childrenOf(total)
     val u = typedDocUpdate(
@@ -197,7 +197,7 @@ class TypedDocSuite extends munit.FunSuite {
     val seeded = List(ExprLanguage, SheetLanguage).foldLeft(Store.empty)(
       (s, l) => s.put(l.typeRef.documentUrl, l.langDoc)._1)
     val m = typedDocUpdate(
-      init.copy(store = seeded), TypedDocInput.LoadSheetSample).state
+      init.copy(store = seeded), TypedDocInput.Load(SheetLanguage.sampleDoc)).state
     val total = cellId(m.doc, 1, 3)
     val Seq(NodeData.InternalNodeRef(qty), _) =
       m.doc.childrenOf(total).map(id => m.doc.getNode(id).get.data).runtimeChecked
@@ -230,7 +230,7 @@ class TypedDocSuite extends munit.FunSuite {
   }
 
   test("an unchanged CommitInputText is a no-op") {
-    val m = typedDocUpdate(init, TypedDocInput.LoadSheetSample).state
+    val m = typedDocUpdate(init, TypedDocInput.Load(SheetLanguage.sampleDoc)).state
     val price = cellId(m.doc, 1, 2)
     val u = typedDocUpdate(m, TypedDocInput.CommitInputText(price, "1.2"))
     assertEquals(u.state, m)

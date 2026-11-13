@@ -130,15 +130,7 @@ private def toolbar(m: TypedDocModel): View[TypedDocInput] =
         l.views.map(v => viewButton(v, DocView.Derived(v), m))) ++
       Vector(
         el("span", style("color: #666; margin: 0 10px;"))(text(s"type: ${typeLabel(m)}"))) ++
-      pendingControls(m) ++
-      Vector(
-        el("span", style("float: right;"))(
-          el("button",
-            style("padding: 3px 8px; margin-left: 6px;"),
-            events = on("click", TypedDocInput.LoadExprSample))(text("Expr sample")),
-          el("button",
-            style("padding: 3px 8px; margin-left: 6px;"),
-            events = on("click", TypedDocInput.LoadSheetSample))(text("Sheet sample")))))
+      pendingControls(m))
 
 // Pending pin updates + the auto-update opt-in: the accept button
 // appears only when a ref pins behind a head; the toggle writes the

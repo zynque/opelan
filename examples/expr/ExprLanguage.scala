@@ -24,7 +24,7 @@ object ExprLanguage extends DefLanguage(
       typeRef,
       er(docTitleRef),
       er(docImportsRef),
-      NodeData.StringData("expr sample"),
+      NodeData.StringData("Expression sample"),
       exprToDetached(
         Expr.Sub(
           Expr.Add(Expr.Lit(1), Expr.Lit(2)),
