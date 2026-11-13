@@ -9,15 +9,17 @@ import opelan.foundation.means.text.{
   meaningView, patternView, printMeaning, readPattern, ruleView, whereView}
 import opelan.foundation.view.ViewTree._
 
-// The rules section of the "edit" view, rendered as projected inputs:
+// The `definitions` section of the "edit" view, rendered as projected
+// inputs:
 // a structured rule line is its fields — `pattern`, `meaning`, and
 // `where` inputs bound to their own nodes, so the meaning field
 // commits through the defined language's rules (commitMetaInput) —
 // while binding patterns and example fields bind to their text
-// leaves. A text-form `rule` (a string first child — the transitional
+// leaves. A text-form `definition` (a string first child — the
+// transitional
 // encoding) keeps a single whole-line input; a malformed line reads
 // as a gap rule, never an error.
-// Falls back to None when the document has no `rules` node (a def
+// Falls back to None when the document has no `definitions` node (a def
 // decoded but never written as one), so callers can print instead.
 // `check` runs a worked example — input text, expected text — and
 // returns a failure detail the line shows as a gap.
@@ -27,10 +29,11 @@ private[langdef] def docRuleLines(
     : Option[List[DetachedNode[NodeData]]] =
   for {
     syn <- doc.childrenOf(rootId).find(docCons(doc, _).contains("syntax"))
-    rs  <- doc.childrenOf(syn).find(docCons(doc, _).contains("rules"))
+    rs  <- doc.childrenOf(syn).find(docCons(doc, _).contains("definitions"))
   } yield doc.childrenOf(rs).flatMap(ruleLine(doc, _, d, check))
 
-// One `rules` entry as a line: a text-form `rule` edits its leaf in
+// One `definitions` entry as a line: a text-form `definition` edits its
+// leaf in
 // one input bound to the rule node (a commit structures it); a
 // structured rule projects `pattern`/`meaning`/`where` as inputs
 // bound to their own nodes — displaying role-styled text (keywords
@@ -45,7 +48,7 @@ private def ruleLine(
     check: (String, String) => Option[String])
     : List[DetachedNode[NodeData]] =
   docCons(doc, id) match {
-    case Some("rule") =>
+    case Some("definition") =>
       List(doc.childrenOf(id).headOption match {
         case Some(t)
             if doc.getNode(t).exists(
@@ -67,9 +70,9 @@ private def ruleLine(
                   List(styled("keyword", txt(" where ")),
                     input(w, whereView(r.where)*)))
               flow(fields*)
-            case _ => gap("rule")
+            case _ => gap("definition")
           }
-        case None    => gap("rule")
+        case None    => gap("definition")
       })
     case Some("binding") =>
       styled("keyword", txt("binding:")) +: doc.childrenOf(id)
@@ -136,7 +139,8 @@ private def commaInputs(
     }
 
 // A rule set printed rather than edited — the fallback when the doc
-// carries no `rules` node (e.g. a def decoded from an older doc) and
+// carries no `definitions` node (e.g. a def decoded from an older doc)
+// and
 // for surfaces that only render text.
 private[langdef] def ruleLines(set: RuleSet): List[DetachedNode[NodeData]] =
   set.rules.map(r => ruleView(r)) ++

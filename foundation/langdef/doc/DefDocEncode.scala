@@ -8,7 +8,8 @@ import opelan.foundation.langdef._
 // A LanguageDef as a document: a typed document (type = the
 // language-definition language, langDefTypeRef) whose content carries
 // the definition as data. Every construct is used by reference — the
-// meta constructs (`term`, `vocabulary`, `rule` …) are imported from
+// meta constructs (`term`, `vocabulary`, `definition` …) are imported
+// from
 // lang: language, and references *within* the definition (a `use`
 // operand to its placeholder piece, a construct to its declaring
 // meaning node) are internal refs to the defining node. Only the

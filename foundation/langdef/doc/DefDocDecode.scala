@@ -55,9 +55,9 @@ def langDefFromDocument(
       val patternTermIds: Map[String, Int] = {
         var ids = Map.empty[String, Int]
         r.section("syntax").toList
-          .flatMap(sid => r.entries(sid, "rules"))
+          .flatMap(sid => r.entries(sid, "definitions"))
           .flatMap(doc.childrenOf)
-          .filter(id => metaConsOf(doc, id).contains("rule"))
+          .filter(id => metaConsOf(doc, id).contains("definition"))
           .flatMap(doc.childrenOf)
           .filter(id => metaConsOf(doc, id).contains("pattern"))
           .flatMap(doc.childrenOf)
@@ -72,7 +72,7 @@ def langDefFromDocument(
         ids
       }
       r.section("syntax").toList
-        .flatMap(sid => r.entries(sid, "rules"))
+        .flatMap(sid => r.entries(sid, "definitions"))
         .headOption.toList.flatMap(rs =>
           vocabularyFrom(r.ruleSetFrom(rs)).map(t =>
             t.copy(ref = t.ref.orElse(
@@ -82,7 +82,7 @@ def langDefFromDocument(
     syntax = r.section("syntax").map { sid =>
       SyntaxDef(
         r.childStr(sid, 0).getOrElse(""),
-        r.entries(sid, "rules").headOption.map(r.ruleSetFrom))
+        r.entries(sid, "definitions").headOption.map(r.ruleSetFrom))
     },
     views = r.section("views").toList.flatMap { vid =>
       r.entries(vid, "view").map(k => ViewBinding(
@@ -114,9 +114,9 @@ def withTermRefs(d: LanguageDef): LanguageDef = {
   val ruleIds = contentId(doc).toList.flatMap(cid =>
     doc.childrenOf(cid).filter(metaConsOf(doc, _).contains("syntax"))
       .flatMap(s => doc.childrenOf(s)
-        .filter(metaConsOf(doc, _).contains("rules")))
+        .filter(metaConsOf(doc, _).contains("definitions")))
       .flatMap(rs => doc.childrenOf(rs)
-        .filter(metaConsOf(doc, _).contains("rule"))))
+        .filter(metaConsOf(doc, _).contains("definition"))))
   def refify(pieces: Map[String, Int])(m: Meaning): Meaning =
     if (Set("use", "source", "builtin", "literal")(m.tag))
       m.copy(arguments = m.arguments.map(a =>

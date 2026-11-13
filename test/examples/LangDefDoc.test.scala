@@ -38,14 +38,15 @@ class LangDefDocSuite extends FunSuite {
     assert(!strings.contains("vocabulary") && !strings.contains("term"), strings)
     // Every meta construct use goes through the imports section.
     val imported = importEntries(doc).map(_._2)
-    assert(imported.contains(metaRef("rule").get))
+    assert(imported.contains(metaRef("definition").get))
     assert(imported.forall(r => Set(langDefTypeRef.documentUrl,
       "opelan:foundation/arithmetic",
       "opelan:foundation/placeholders")(r.documentUrl)))
   }
 
   test("means rules encode as structure and decode back") {
-    // Each `rule` node carries `pattern` + `meaning` sections — the
+    // Each `definition` node carries `pattern` + `meaning` sections —
+    // the
     // line's text is a projection, not the storage.
     val doc = langDefDoc(exprDef)
     val ruleIds = ruleNodeIds(doc)
@@ -102,7 +103,7 @@ class LangDefDocSuite extends FunSuite {
       Some(NodeData.ExternalNodeRef(foundationRefs("add"))))
   }
 
-  test("rule meanings reference their definitions by node identity") {
+  test("rule meanings reference their declaring nodes by identity") {
     // `a / b means div(a, b)` decodes to a construct whose reference
     // is the foundational `div` entry — the by-reference encoding.
     val doc = langDefDoc(exprDef)
@@ -187,7 +188,8 @@ class LangDefDocSuite extends FunSuite {
   test("the edit view projects rule fields as inputs bound to their nodes") {
     val doc = langDefDoc(exprDef)
     val bound = inputSourceIds(defView(doc, contentId(doc).get)).toSet
-    // A structured rule binds pattern and meaning inputs to their own
+    // A structured definition binds pattern and meaning inputs to their
+    // own
     // nodes — each field commits separately; binding patterns and
     // example fields still bind to their text leaves.
     ruleNodeIds(doc).foreach(id => doc.childrenOf(id).foreach(k =>
@@ -410,10 +412,11 @@ class LangDefDocSuite extends FunSuite {
   private def ruleNodeIds(doc: Document[NodeData]): List[Int] =
     doc.nodes.indices.filter(id =>
       !isImportEntry(doc, id) &&
-        metaConsOf(doc, id).contains("rule")).toList
+        metaConsOf(doc, id).contains("definition")).toList
 
-  test("a rule node missing its pattern decodes as a gap rule") {
-    // Never Broken for rules too: a malformed rule becomes a rule
+  test("a definition node missing its pattern decodes as a gap rule") {
+    // Never Broken for rules too: a malformed definition becomes a gap
+    // rule
     // that never applies, and the rest of the set still compiles.
     val doc = langDefDoc(exprDef)
     val ruleId = ruleNodeIds(doc)(2) // a / b means div(a, b)
@@ -424,29 +427,30 @@ class LangDefDocSuite extends FunSuite {
     assert(languageFromDef(d).parse("1 + 2").isDefined)
   }
 
-  test("a text-form rule still decodes — the transitional encoding") {
-    // A `rule` node whose first child is a string reads through
+  test("a text-form definition still decodes — the transitional encoding") {
+    // A `definition` node whose first child is a string reads through
     // readRuleOrGap, as docs written before the structured form did.
     val doc = langDefDoc(exprDef)
     val ruleId = ruleNodeIds(doc)(2)
     val texty = commitContent(ruleId,
-      n(meta("rule"), sl("a / b means div(a, b)")), doc).toOption.get
+      n(meta("definition"), sl("a / b means div(a, b)")), doc).toOption.get
     val d = langDefFromDocument(exprDef.typeRef.documentUrl, texty)
     assert(d.syntax.get.rules.get.rules.map(r => printRule(r))
       .contains("a / b means div(a, b)"))
   }
 
   test("meta constructs are placeholders — refs name themselves") {
-    // `rule`/`meaning`/… are placeholder terms (PlaceholderTerms):
+    // `definition`/`meaning`/… are placeholder terms
+    // (PlaceholderTerms):
     // a def doc stores their placeholder refs, and both directions —
     // metaNameOf at decode, ambientRefs at commit — run through the
     // registry, not through a stored vocabulary entry.
     val doc = langDefDoc(exprDef)
     val ruleIds = doc.nodes.indices.filter(id =>
       !isImportEntry(doc, id) &&
-      externalRefOf(doc, id).contains(metaRef("rule").get))
+      externalRefOf(doc, id).contains(metaRef("definition").get))
     assert(ruleIds.nonEmpty)
-    assert(ruleIds.forall(id => metaConsOf(doc, id).contains("rule")))
+    assert(ruleIds.forall(id => metaConsOf(doc, id).contains("definition")))
     assertEquals(
       langDefFromDocument(exprDef.typeRef.documentUrl, doc).vocabulary.map(_.name),
       exprDef.vocabulary.map(_.name))
@@ -501,12 +505,13 @@ class LangDefDocSuite extends FunSuite {
   }
 
   test("failing rule lines and bare words mark as gap and unmatched") {
-    val text = "dialect\n  syntax\n    \"expr\"\n    rules\n" +
+    val text = "dialect\n  syntax\n    \"expr\"\n    definitions\n" +
       "      a + b means add(a, b)\n      total garbage here\n"
     val marks = defDocLineMarks(text)
     assertEquals(marks(4).kind, "cm-rule")
     assertEquals(marks(5).kind, "cm-gap")
-    // Outside `rules`, a bare word the meta vocabulary doesn't declare
+    // Outside `definitions`, a bare word the meta vocabulary doesn't
+    // declare
     // paints as unmatched (it commits as a string — not a pattern), a
     // meta word as a construct line, a `ref:` payload as a reference.
     val outside = defDocLineMarks(

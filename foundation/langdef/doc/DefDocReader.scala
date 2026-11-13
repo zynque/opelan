@@ -33,11 +33,11 @@ private class DefDocReader(
 
   def entries(id: Int, name: String): List[Int] = children(id).filter(cons(_).contains(name))
 
-  // A `rules` section: each `rule` node through the recovering reader
-  // (RuleDocDecode — a malformed rule becomes a gap rule), `binding`
-  // tiers as pattern texts, `example` pairs.
+  // A `definitions` section: each `definition` node through the
+  // recovering reader (RuleDocDecode — a malformed definition becomes
+  // a gap rule), `binding` tiers as pattern texts, `example` pairs.
   def ruleSetFrom(id: Int): RuleSet = RuleSet(
-    rules = entries(id, "rule").map(
+    rules = entries(id, "definition").map(
       ruleFromDoc(doc, url, version, termIds, resolve, _)),
     tiers = entries(id, "binding").flatMap(b =>
       entries(b, "tier").map(t =>

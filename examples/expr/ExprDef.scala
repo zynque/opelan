@@ -57,10 +57,10 @@ val demoExprDef = exprDef.copy(syntax =
 lazy val demoExprDoc: Document[NodeData] = {
   val doc = langDefDoc(exprDef)
   val ruleId = doc.nodes.indices.find(id =>
-    metaConsOf(doc, id).contains("rule") &&
+    metaConsOf(doc, id).contains("definition") &&
     doc.subtreeIds(id).exists(k =>
       doc.getNode(k).exists(_.data == NodeData.StringData("/"))))
-    .getOrElse(sys.error("exprDef encodes no / rule"))
+    .getOrElse(sys.error("exprDef encodes no / definition"))
   doc.getNode(ruleId).flatMap(_.parentId)
     .flatMap(p => updateNodeChildIds(p,
       doc.childrenOf(p).filterNot(_ == ruleId), doc).toOption)

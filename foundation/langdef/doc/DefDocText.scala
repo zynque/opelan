@@ -9,8 +9,8 @@ import opelan.foundation.means.text.{printPattern, readRuleOrGap}
 
 // The text surface of a `lang:` document (foundation/language,
 // DocText): the def's content subtree as an outline in which meta
-// constructs print by name and each `rule` subtree flattens to its
-// `means` line — the surface reads and writes rules, never the
+// constructs print by name and each `definition` subtree flattens to
+// its `means` line — the surface reads and writes rules, never the
 // encoding's leaf strings:
 //
 //   dialect
@@ -18,7 +18,7 @@ import opelan.foundation.means.text.{printPattern, readRuleOrGap}
 //     name "Expressions"
 //     syntax
 //       "expr"
-//       rules
+//       definitions
 //         a + b means add(a, b)
 //         n means n where n: number
 //         binding
@@ -33,13 +33,15 @@ import opelan.foundation.means.text.{printPattern, readRuleOrGap}
 //
 // Writing back: a bare word naming a meta construct is that construct
 // (quoting keeps a word a string); `ref:`/`src:`/`?`/number lines keep
-// the outline payloads. Under `rules`, a string line is a rule — it
+// the outline payloads. Under `definitions`, a string line is a
+// definition — it
 // reads through readRuleOrGap into the structured
 // pattern/meaning/where encoding — while `binding`,
-// `tier`, `example`, and `rule` meta nodes keep their structured
+// `tier`, `example`, and `definition` meta nodes keep their structured
 // encoding, so hand-written structure still lands.
 
-// The content subtree as lines: meta constructs by name, a `rule` as
+// The content subtree as lines: meta constructs by name, a `definition`
+// as
 // its canonical `pattern means meaning [where]` text (phrase meanings
 // project back through the defined language's own printer, as the def
 // view's meaning field does), everything else as its outline payload —
@@ -53,7 +55,7 @@ def defDocLines(
   val termIds = deriveTermIds(doc, rootId)
   def lines(id: Int, depth: Int): List[String] =
     metaConsOf(doc, id) match {
-      case Some("rule") =>
+      case Some("definition") =>
         List("  " * depth + ruleLineText(
           d, ruleFromDoc(doc, url, 0, termIds, resolve, id)))
       case Some(name) =>
@@ -70,8 +72,9 @@ def defDocLines(
 
 // Read the text back into a detached content subtree — what
 // DocLanguage.parse feeds commitContent (foundation/language/DocText).
-// Total: bare meta words become construct refs, rule lines under
-// `rules` become `rule` nodes, and anything else stays the outline
+// Total: bare meta words become construct refs, `means` lines under
+// `definitions` become `definition` nodes, and anything else stays the
+// outline
 // payload it spelled. Phrase meanings a language-aware commit would
 // desugar stay quoted gaps here — interpretation retries them
 // (rephraseRuleSet).
@@ -103,11 +106,12 @@ private def block(
       DetachedNode(data, block(children)) :: block(rest)
   }
 
-// A string child of a `rules` node is a rule line — structure it;
+// A string child of a `definitions` node is a means line — structure
+// it;
 // everything else keeps the form it was written in.
 private def structured(t: DetachedNode[NodeData]): DetachedNode[NodeData] = {
   val children = t.children.map(structured)
-  if (isMeta(t.data, "rules"))
+  if (isMeta(t.data, "definitions"))
     DetachedNode(t.data, children.map(c => c.data match {
       case NodeData.StringData(line) =>
         ruleNode(readRuleOrGap(line), "", Map.empty, externalMeta)

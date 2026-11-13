@@ -5,7 +5,8 @@ import opelan.foundation.document.typed._
 import opelan.foundation.langdef._
 
 // Meta-construct identity. A def document uses `term`, `vocabulary`,
-// `rule` … as meta placeholders — lang: language's vocabulary anchored
+// `definition` … as meta placeholders — lang: language's vocabulary
+// anchored
 // in the foundation's placeholder registry (PlaceholderTerms.scala) —
 // so code recognizes them by ref, never by name: the ids are fixed by
 // the registry and stay valid however the eventual stored entries are

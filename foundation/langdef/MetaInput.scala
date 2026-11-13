@@ -12,7 +12,8 @@ import opelan.foundation.means.text.{
   noLanguage, readConstraintsText, readPattern, readRuleOrGap}
 
 // Text committed against a meta construct produces the structured
-// subtree its decode reads back, never a bare string: a `rule` line
+// subtree its decode reads back, never a bare string: a `definition`
+// line
 // becomes pattern + meaning nodes, its constructs bound to the doc's
 // own vocabulary entries; `pattern`, `meaning`, and `where` fields
 // commit their own sections — the meaning through the defined
@@ -28,7 +29,7 @@ def commitMetaInput(
     impls: Impls = Impls())
     : Option[(DetachedNode[NodeData], InputSessions)] =
   metaConsOf(doc, id) match {
-    case Some("rule") =>
+    case Some("definition") =>
       // Constructs bind through the def's own vocabulary — its
       // imports and declarations, not a code-side name table.
       val refs = ambientRefs ++ termRefs(langDefFromDocument(docUrl, doc))
@@ -44,14 +45,15 @@ def commitMetaInput(
     case _ => None
   }
 
-// The `rule` node a meta commit belongs to — the node itself or its
+// The `definition` node a meta commit belongs to — the node itself or
+// its
 // parent — where `linkRuleUses` re-points `use`/`source` operands at
 // the pattern's piece nodes after the commit lands.
 def enclosingRuleId(
     doc: Document[NodeData], id: Int): Int =
-  if (metaConsOf(doc, id).contains("rule")) id
+  if (metaConsOf(doc, id).contains("definition")) id
   else doc.getNode(id).flatMap(_.parentId)
-    .filter(metaConsOf(doc, _).contains("rule")).getOrElse(id)
+    .filter(metaConsOf(doc, _).contains("definition")).getOrElse(id)
 
 // A committed meaning that landed as one quoted gap re-reads through
 // the doc's own rules — with the new rule swapped into the set — the
@@ -80,12 +82,12 @@ private def desugarCommitted(
 }
 
 // The committed rule's index in the decoded set: its position among
-// the `rule` children of its `rules` parent.
+// the `definition` children of its `definitions` parent.
 private def ruleIndex(doc: Document[NodeData], id: Int): Option[Int] =
   for {
     parent <- doc.getNode(id).flatMap(_.parentId)
-    if metaConsOf(doc, parent).contains("rules")
-    rules = doc.childrenOf(parent).filter(metaConsOf(doc, _).contains("rule"))
+    if metaConsOf(doc, parent).contains("definitions")
+    rules = doc.childrenOf(parent).filter(metaConsOf(doc, _).contains("definition"))
     i = rules.indexOf(id) if i >= 0
   } yield i
 

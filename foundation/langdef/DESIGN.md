@@ -42,7 +42,7 @@ definition machinery (see
 [`test/`](../../test/DESIGN.md)).
 
 **Rules as documents.** A `lang:` document stores each rule as a
-`rule(pattern, meaning, where)` node — pieces as `placeholder`/`literal`
+`definition(pattern, meaning, where)` node — pieces as `placeholder`/`literal`
 nodes (`glued` marking unspaced adjacency), the meaning as its term
 subtree (`doc/RuleEncode`, `doc/RuleDocDecode`, `doc/RuleLink`). Like
 every construct use, a meaning names its constructor by reference:
@@ -61,9 +61,9 @@ ref to the pattern's placeholder node — so a rule survives renames on
 either side. Rules compile to the recovering combinators of
 [`foundation/grammar`](../grammar/DESIGN.md) — the implementation layer
 — through `compileRules`. The `means` notation is the
-text surface of the language-definition language — `rule` nodes print
-as `means` lines and `means` lines under `rules` commit as `rule`
-nodes (`doc/DefDocText`) — eventually described
+text surface of the language-definition language — `definition` nodes print
+as `means` lines and `means` lines under `definitions` commit as
+`definition` nodes (`doc/DefDocText`) — eventually described
 by its own rules (see [`../means/DESIGN.md`](../means/DESIGN.md)).
 
 Other pieces:

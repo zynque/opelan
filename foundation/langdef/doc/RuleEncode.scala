@@ -8,7 +8,7 @@ import opelan.foundation.means.text._
 
 // A rule set as document nodes (foundation/document/typed/DESIGN.md,
 // *Everything by reference*):
-// each `rule` holds `pattern` + `meaning` (+ `where`) sections; pattern
+// each `definition` holds `pattern` + `meaning` (+ `where`) sections; pattern
 // pieces are `placeholder`/`literal` nodes with a `glued` marker when
 // the source wrote them unspaced; the meaning is the term subtree —
 // `use`/`source`/`builtin` operands name their bound placeholder (by
@@ -23,13 +23,13 @@ import opelan.foundation.means.text._
 // `meta` supplies meta-construct data: `pending` inside a def-doc
 // build, `externalMeta` in detached content (a committed input has no
 // resolvePending pass). The reader also accepts the older text form —
-// a `rule` whose first child is a string — so docs written before the
+// a `definition` whose first child is a string — so docs written before the
 // structured encoding and lines edited mid-migration still decode.
 private[langdef] def rulesNode(
     set: RuleSet,
     url: String,
     meta: String => NodeData): DetachedNode[NodeData] =
-  n(meta("rules"),
+  n(meta("definitions"),
     (set.rules.map(ruleNode(_, url, Map.empty, meta)) ++
       bindingNode(set.tiers, meta) ++
       set.examples.map(e =>
@@ -38,7 +38,7 @@ private[langdef] def rulesNode(
 private[langdef] def ruleNode(
     r: Rule, url: String, pieceIds: Map[String, Int],
     meta: String => NodeData): DetachedNode[NodeData] =
-  n(meta("rule"),
+  n(meta("definition"),
     (List(
       patternNode(r.pattern, meta),
       n(meta("meaning"), meaningTermNode(r.meaning, url, pieceIds, meta))) ++

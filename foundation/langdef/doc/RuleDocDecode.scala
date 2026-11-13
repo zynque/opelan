@@ -8,7 +8,8 @@ import opelan.foundation.means._
 import opelan.foundation.langdef.{ambientTermOf, LanguageDef}
 import opelan.foundation.means.text._
 
-// A `rule` node read back to a `Rule` — the inverse of RuleEncode. A
+// A `definition` node read back to a `Rule` — the inverse of RuleEncode.
+// A
 // string first child is the text form (read tolerantly through
 // readRuleOrGap, as docs written before the structured encoding did);
 // otherwise the structured form — `pattern` pieces, the `meaning` term

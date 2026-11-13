@@ -37,7 +37,8 @@ private[langdef] def commitMeaningInput(
   }
 
 // The incremental syntax of one meaning field: the def's own rules
-// compiled over an operand that also accepts the rule's placeholder
+// compiled over an operand that also accepts the definition's
+// placeholder
 // names, under the def's lexicon. The key carries everything the
 // parser was built from — a pattern edit or a rules change restarts
 // or reruns only the rules the diff names, like the text surface's.
@@ -46,7 +47,7 @@ private def meaningSyntax(
     meaningId: Int, impls: Impls): Option[TextSyntax] =
   for {
     ruleId <- doc.getNode(meaningId).flatMap(_.parentId)
-      .filter(metaConsOf(doc, _).contains("rule"))
+      .filter(metaConsOf(doc, _).contains("definition"))
     defined = langDefFromDocument(docUrl, doc)
     s <- defined.syntax
     set <- s.rules
@@ -93,7 +94,7 @@ private def meaningNode(
     m: Meaning, doc: Document[NodeData], docUrl: String, meaningId: Int)
     : DetachedNode[NodeData] = {
   val pieceIds = doc.getNode(meaningId).flatMap(_.parentId)
-    .filter(metaConsOf(doc, _).contains("rule"))
+    .filter(metaConsOf(doc, _).contains("definition"))
     .map(pieceIdsFor(doc, _)).getOrElse(Map.empty)
   n(externalMeta("meaning"),
     meaningTermNode(m, docUrl, pieceIds, externalMeta))

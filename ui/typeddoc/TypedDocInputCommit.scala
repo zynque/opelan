@@ -51,11 +51,12 @@ private[typeddoc] def commitInputText(
         Vector(Status("No input grammar")))
   }
 
-// The impls a `rule`/`meaning` commit needs to desugar phrase meanings
+// The impls a `definition`/`meaning` commit needs to desugar phrase
+// meanings
 // through the def's own syntax — the doc being edited is the def, so
 // its lexicon comes from the foundational bundle the def names.
 private def metaImpls(m: TypedDocModel, id: Int): Impls =
-  if (metaConsOf(m.doc, id).exists(Set("rule", "meaning")))
+  if (metaConsOf(m.doc, id).exists(Set("definition", "meaning")))
     m.docUrl.map(u => implsFor(langDefFromDocument(u, m.doc)))
       .getOrElse(Impls())
   else Impls()

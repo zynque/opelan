@@ -45,9 +45,9 @@ private[langdef] val metaTerms: List[NodeTerm] = List(
   NodeTerm("gap", Fixed(0)),
   NodeTerm("ref", Fixed(1)),
   NodeTerm("setting", Fixed(2)),  // view setting: key + value
-  NodeTerm("rules", Any),         // a def's means rules + binding + examples
-  NodeTerm("rule", Any),          // one means rule — pattern + meaning
-                                  // (+ where); its text is the older form
+  NodeTerm("definitions", Any),   // a def's definitions + binding + examples
+  NodeTerm("definition", Any),    // one definition — pattern + meaning
+                                  // (+ where); its text is the means line
   NodeTerm("binding", Any),       // the binding list: tiers, tightest first
   NodeTerm("tier", Any),          // one binding level: pattern texts
   NodeTerm("example", Fixed(2)),  // worked example: input + expected

@@ -9,7 +9,7 @@ import opelan.foundation.means.engine._
 import opelan.foundation.means.text._
 
 // Language-change diffing over rule sets: memo names are rule
-// identities — the `rule` node's id once rules live in `lang:`
+// identities — the `definition` node's id once rules live in `lang:`
 // documents — so a rename invalidates nothing and only real changes
 // drop parse results (foundation/grammar/DESIGN.md, *Incremental
 // parsing*).

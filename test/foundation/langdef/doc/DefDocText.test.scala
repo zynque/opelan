@@ -19,7 +19,7 @@ class DefDocTextSuite extends FunSuite {
   test("the text surface spells meta constructs by name and rules as means lines") {
     val text = textOf(langDefDoc(exprDef))
     assert(text.contains("dialect"), text)
-    assert(text.contains("rules"), text)
+    assert(text.contains("definitions"), text)
     assert(text.contains("a + b means add(a, b)"), text)
     assert(text.contains("+n means literal(n) where n: number"), text)
     assert(text.contains("binding"), text)
@@ -43,7 +43,7 @@ class DefDocTextSuite extends FunSuite {
     assertEquals(textOf(reapplied), textOf(doc))
   }
 
-  test("a means line edit writes a structured rule, not a leaf string") {
+  test("a means line edit writes a structured definition, not a leaf string") {
     val doc = langDefDoc(exprDef)
     val text = textOf(doc)
     val line = text.linesIterator.find(_.contains("a * b means")).get
@@ -54,17 +54,18 @@ class DefDocTextSuite extends FunSuite {
     val set = langDefFromDocument("u", updated).syntax.get.rules.get
     assert(set.rules.exists(r => printPattern(r.pattern) == "a ^ b"),
       set.rules.map(r => printPattern(r.pattern)).mkString(", "))
-    // The stored node is the structured encoding: a `rule` node whose
+    // The stored node is the structured encoding: a `definition` node
+    // whose
     // children are `pattern`/`meaning` sections, not a string leaf.
     val cid = contentId(updated).get
     val ruleIds = updated.subtreeIds(cid)
-      .filter(id => metaConsOf(updated, id).contains("rule"))
+      .filter(id => metaConsOf(updated, id).contains("definition"))
     assert(ruleIds.exists(id =>
       updated.childrenOf(id).exists(k =>
         metaConsOf(updated, k).contains("meaning"))))
   }
 
-  test("a committed rule's use operands link to their pattern pieces") {
+  test("a committed definition's use operands link to their pattern pieces") {
     val doc = langDefDoc(exprDef)
     val updated = applyDocText(doc, langFor, textOf(doc)).toOption.get
     val cid = contentId(updated).get

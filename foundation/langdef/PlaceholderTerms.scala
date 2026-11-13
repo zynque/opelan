@@ -13,7 +13,8 @@ import opelan.foundation.means.engine.{foundationalOf, foundationRefs}
 // foundation layer once the definition language can express them.
 //
 //   meta        — lang: language's own constructs (`term`, `vocabulary`,
-//                 `rule`, `meaning`, …): the bootstrap anchor, until
+//                 `definition`, `meaning`, …): the bootstrap anchor,
+// until
 //                 def documents can declare their constructs
 //   structural  — the sheet language's grid terms (`ref`, `column`,
 //                 `row`, …): structural vocabulary no definition

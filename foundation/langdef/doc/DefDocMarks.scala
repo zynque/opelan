@@ -8,7 +8,8 @@ import opelan.foundation.means.text.readRule
 // one mark per line — what the line read as — plus sub-line spans for
 // the pieces a rule line carried. Kind names are CSS classes a host
 // binds: `cm-meta` for constructs, `cm-string`/`cm-number`/`cm-ref`
-// for payloads, `cm-rule` for a line under `rules` that reads, `cm-gap`
+// for payloads, `cm-rule` for a line under `definitions` that reads,
+// `cm-gap`
 // for `?`-text and rules that didn't, and `cm-unmatched` for a bare
 // word the meta vocabulary doesn't declare — it lands as a string,
 // so the painting signals it isn't a recognized pattern.
@@ -16,14 +17,14 @@ case class LineMark(kind: String, spans: List[(Int, Int, String)] = Nil)
 
 // Indentation tracks the outline's nesting the way defDocParse's
 // `block` does: a line is a rule when its nearest shallower ancestor
-// is the `rules` construct.
+// is the `definitions` construct.
 def defDocLineMarks(text: String): List[LineMark] = {
   var stack: List[(Int, String)] = Nil
   text.split("\n", -1).toList.map { line =>
     val indent = line.takeWhile(c => c == ' ' || c == '\t').length
     val trimmed = line.trim
     while (stack.headOption.exists(_._1 >= indent)) stack = stack.tail
-    val inRules = stack.headOption.exists(_._2 == "rules")
+    val inRules = stack.headOption.exists(_._2 == "definitions")
     val mark =
       if (trimmed.isEmpty) LineMark("")
       else if (metaRef(trimmed).isDefined) LineMark("cm-meta")

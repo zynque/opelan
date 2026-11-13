@@ -14,7 +14,7 @@ The `lang:` document format for a `LanguageDef`/rule set
   at commit `termImports` binds the same names to their refs), or
   declared by the def's own rule patterns.
 - **`RuleEncode` / `RuleDocDecode`** — a rule set as document nodes:
-  each `rule` holds `pattern` + `meaning` (+ `where`) sections; pattern
+  each `definition` holds `pattern` + `meaning` (+ `where`) sections; pattern
   pieces are `placeholder`/`literal` nodes with a `glued` marker when
   the source wrote them unspaced; the meaning is the term subtree.
 - **`RuleLink`** — points each meaning's `use`/`source`/`builtin`/
@@ -22,10 +22,13 @@ The `lang:` document format for a `LanguageDef`/rule set
   placeholder rename heals every use.
 - **`DefDocText`** — the `lang:` document's text surface
   (`foundation/language/DocText.scala`): the content subtree as an
-  outline in which meta constructs print by name and each `rule`
-  subtree flattens to its `means` line. A string line under `rules`
-  reads back as a `rule` — the surface reads/writes rules rather than
-  leaf strings — while `binding`/`tier`/`example`/`rule` meta nodes
+  outline in which meta constructs print by name and each `definition`
+  subtree flattens to its `means` line. A string line under
+  `definitions`
+  reads back as a `definition` — the surface reads/writes rules rather
+  than
+  leaf strings — while `binding`/`tier`/`example`/`definition` meta
+  nodes
   keep their structured encoding, so hand-written structure still
   lands. Phrase meanings a language-aware commit would desugar stay
   quoted gaps; `rephraseRuleSet` retries them at interpretation.

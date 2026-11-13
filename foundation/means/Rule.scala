@@ -145,7 +145,8 @@ object Meaning {
 // The term is free text until a type vocabulary exists.
 case class Constraint(placeholders: List[String], term: String)
 
-// `id` is the rule's stable identity — its `rule` node's id in the
+// `id` is the rule's stable identity — its `definition` node's id in
+// the
 // `lang:` document it was decoded from (foundation/grammar/DESIGN.md,
 // *Incremental parsing*: the memo key survives renames and only real changes
 // invalidate). Rules written in code or read from text have none and

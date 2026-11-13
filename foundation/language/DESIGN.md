@@ -34,7 +34,8 @@ Typed documents use their language's `parse`/`print` for the content;
 everything else falls back to `Outline`. `lang:` documents' language
 has no rule set — their text form is a format in
 [`../langdef/doc/DefDocText.scala`](../langdef/doc/DefDocText.scala)
-(meta constructs by name, `rule` nodes as `means` lines), supplied by
+(meta constructs by name, `definition` nodes as `means` lines), supplied
+by
 `DefLanguage` for any def interpreted as `lang: language`, and applied
 through the same `parse` → `commitContent` path — so a text edit keeps
 the ids of whatever didn't change, and `linkCommitted` then runs the

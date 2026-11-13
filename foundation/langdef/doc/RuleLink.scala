@@ -15,7 +15,7 @@ import opelan.foundation.langdef.{ambientRefs, LanguageDef}
 def linkRuleUses(
     doc: Document[NodeData], root: Int): Document[NodeData] =
   doc.subtreeIds(root)
-    .filter(id => metaTag(doc, id).contains("rule"))
+    .filter(id => metaTag(doc, id).contains("definition"))
     .foldLeft(doc) { (d, ruleId) =>
       val pieces = pieceIdsFor(doc, ruleId)
       doc.childrenOf(ruleId)
@@ -35,7 +35,7 @@ def linkRuleUses(
         }
     }
 
-// Placeholder name → its piece node id, within a `rule` node's
+// Placeholder name → its piece node id, within a `definition` node's
 // pattern — the operand link targets.
 private[langdef] def pieceIdsFor(
     doc: Document[NodeData], ruleId: Int): Map[String, Int] =
