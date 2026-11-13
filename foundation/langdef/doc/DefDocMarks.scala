@@ -1,6 +1,7 @@
 package opelan.foundation.langdef.doc
 
 import opelan.foundation.document.{NodeData, NodeDataText}
+import opelan.foundation.language.LineMark
 import opelan.foundation.means.Piece
 import opelan.foundation.means.text.readRule
 
@@ -13,7 +14,6 @@ import opelan.foundation.means.text.readRule
 // for `?`-text and rules that didn't, and `cm-unmatched` for a bare
 // word the meta vocabulary doesn't declare — it lands as a string,
 // so the painting signals it isn't a recognized pattern.
-case class LineMark(kind: String, spans: List[(Int, Int, String)] = Nil)
 
 // Indentation tracks the outline's nesting the way defDocParse's
 // `block` does: a line is a rule when its nearest shallower ancestor

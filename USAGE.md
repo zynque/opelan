@@ -42,7 +42,10 @@ click (saving a dependency cascades pin bumps through every flagged
 dependent). A **broken: N** marker counts refs pinning a node that no
 longer exists at the head — they can't be bumped; the tooltip lists
 them. The sidebar's seeded documents include the samples: **Expression
-sample** is a typed expression-language document, and **Household
+sample** is a typed expression-language document, **Markdown notes** is
+a typed markdown document — its `edit` view is a free-text editor with
+marked-up `#`/`##` headings, `* ` items, and `*italic*`/`**bold**`,
+beside a live formatted `preview` — and **Household
 budget** is the typed spreadsheet — rows
 of label, literal, and formula cells (`qty * price`, a summed total,
 `total / people`) whose `sheet` view computes values and whose

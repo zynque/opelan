@@ -9,7 +9,8 @@ The demonstration languages and the language registry — the first
 `languageForRef` looks up the type ref's URL in the document store, and
 if the document there is a `lang:` document, that document *is* the
 language. Otherwise it falls back to the code registry (`allLanguages`:
-`ExprLanguage`, `SheetLanguage`, and `DocLanguage` — the code-resident
+`ExprLanguage`, `SheetLanguage`, `MarkdownLanguage`, and `DocLanguage` —
+the code-resident
 language that `lang:` documents are themselves typed by, defined in
 [`../foundation/langdef/Defs.scala`](../foundation/langdef/DESIGN.md);
 that is where the regress stops). Malformed defs degrade to gaps:
@@ -79,3 +80,25 @@ values. A gap or cycle in a referenced cell propagates only to the
 cells that use it — the app recovers like the documents it is made of.
 `sampleDoc` seeds the demo's household budget (the expression language's
 `sampleDoc` seeds the sidebar's expression sample).
+
+## Markdown language (`markdown/`)
+
+`MarkdownLanguage` — a document type for a small markdown subset:
+`#`/`##` headings, `* ` list items, paragraphs, and `*italic*`/`**bold**`
+inline runs. `parseMarkdown` reads plain text into a block tree —
+`markdown > h1 | h2 | list(item*) | para(run*)`, runs being plain
+strings, `bold`, or `italic` — and `markdownLines` prints it back
+(unmatched markers stay literal, so the tree round-trips the text).
+Block tags are `PlaceholderTerms` references declared in the def's
+`vocabulary` (placeholder-anchored entries encode as nothing — the refs
+already exist), so a stored `lang: markdown` document is
+interchangeable with `markdownDef`. The impls register the machinery:
+`Impls.textParser` is the text surface's commit path and
+`Impls.editSurface` the editor's marks plus preview — a structural
+language needs no `RuleSet`. The `edit` view is an `EditSurface` — a
+decorated CodeMirror where `markdownLineMarks` classifies each line
+(heading, list item, paragraph) and paints markers, bold, and italic
+spans — with `preview` alongside it: the `markdown-preview` builtin
+(`markdownPreview`) renders the formatted document, read-only, updated
+live through `TextEdited` commits. `sampleDoc` seeds the sidebar's
+`Markdown notes`.

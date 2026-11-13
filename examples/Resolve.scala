@@ -1,6 +1,7 @@
 package opelan.examples
 
 import opelan.examples.expr._
+import opelan.examples.markdown._
 import opelan.examples.sheet._
 import opelan.foundation.document._
 import opelan.foundation.document.store._
@@ -12,7 +13,8 @@ import opelan.foundation.language.Language
 // The assembled world: the concrete languages the demo knows about.
 // DocLanguage is the bootstrap root — it resolves the meta type ref
 // that every `lang:` document carries.
-val allLanguages: List[Language] = List(ExprLanguage, SheetLanguage, DocLanguage)
+val allLanguages: List[Language] =
+  List(ExprLanguage, SheetLanguage, MarkdownLanguage, DocLanguage)
 
 // The foundational languages, each paired with the implementations its
 // def names. This list is the only built-in registry: a def decoded
@@ -21,6 +23,7 @@ val allLanguages: List[Language] = List(ExprLanguage, SheetLanguage, DocLanguage
 val foundation: List[(LanguageDef, Impls)] = List(
   exprDef        -> exprImpls,
   sheetDef       -> sheetImpls,
+  markdownDef    -> markdownImpls,
   docLanguageDef -> docImpls)
 
 def implsFor(d: LanguageDef): Impls =

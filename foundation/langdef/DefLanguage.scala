@@ -135,18 +135,30 @@ class DefLanguage(
     else {
       val bindings =
         if (isDocLanguage) docViewBindings else languageDef.views
-      bindings.find(_.name == view) match {
-        case None => Left(s"$name has no '$view' view")
-        case Some(vb) => impls.views.get(vb.builtin) match {
-          case None => Left(s"$name: unknown builtin view '${vb.builtin}'")
-          case Some(b) => contentId(doc)
-            .toRight(s"$name: typed document has no content")
-            .map(id => b(doc, id, ViewContext(
-              vb.settings, inputs.parse(retry), interpretDef, docUrl,
-              termName)))
+      bindings.find(_.name == view).map(vb => (vb, vb.settings)) match {
+        case Some((vb, settings)) =>
+          impls.views.get(vb.builtin) match {
+            case None => Left(s"$name: unknown builtin view '${vb.builtin}'")
+            case Some(b) => runBuiltin(b, settings, doc, retry, docUrl)
+          }
+        // An unlisted builtin is still renderable by its own name —
+        // `print` renders a language's text surface (docText) without
+        // claiming a slot in the view menu.
+        case None => impls.views.get(view) match {
+          case Some(b) => runBuiltin(b, Map.empty, doc, retry, docUrl)
+          case None    => Left(s"$name has no '$view' view")
         }
       }
     }
+
+  private def runBuiltin(
+      b: BuiltinView, settings: Map[String, String],
+      doc: Document[NodeData], retry: GapRetry, docUrl: Option[String])
+      : Either[String, DetachedNode[NodeData]] =
+    contentId(doc)
+      .toRight(s"$name: typed document has no content")
+      .map(id => b(doc, id, ViewContext(
+        settings, inputs.parse(retry), interpretDef, docUrl, termName)))
 
   // Total like every recovering grammar: Some whenever a syntax exists —
   // and always for the meta language, whose text form is the format in
@@ -155,6 +167,7 @@ class DefLanguage(
     if (isDocLanguage) Some(defDocParse(text))
     else syntax.map { case (lexicon, g) =>
       toDetached(g(ParseInput(text, lexicon), 0).tree) }
+      .orElse(impls.textParser.map(_(text)))
 
   // lang: documents relink what text can't carry — placeholder uses and
   // term constructs pointed at their nodes — after a text-surface
@@ -186,6 +199,10 @@ class DefLanguage(
             retagBy(beforeTags, termTag)))
         case _ => None
       })
+
+  // The `edit` view's editor surface, when the impls name one (the
+  // meta language's rule/gap marks, markdown's construct marks).
+  override def editSurface = impls.editSurface
 
   override def parseInput(text: String): Option[DetachedNode[NodeData]] =
     inputs.parse(GapRetry())(text)

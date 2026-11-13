@@ -5,6 +5,8 @@ import opelan.foundation.document.Detached._
 import opelan.foundation.grammar.Lexicon
 import opelan.foundation.langdef.syntax._
 import opelan.foundation.langdef.view._
+import opelan.foundation.langdef.doc.defDocLineMarks
+import opelan.foundation.language.EditSurface
 
 // The code-side semantics a language definition names. A LanguageDef
 // references lexicons, views, and input parsers by name — behavior lives
@@ -30,7 +32,14 @@ case class Impls(
     // unparsed text mentioning one stays a healable gap rather than
     // falling back to a label (InputGrammar).
     refName: Option[String => Boolean] = None,
-    commitLink: Option[CommitLink] = None)
+    commitLink: Option[CommitLink] = None,
+    // The document text surface, when it's code rather than a compiled
+    // rule set (the meta language's outline is built into DefLanguage;
+    // markdown's parse is a builtin): text → content subtree.
+    textParser: Option[String => DetachedNode[NodeData]] = None,
+    // The `edit` view's free-text surface: line marks and an optional
+    // preview view name.
+    editSurface: Option[EditSurface] = None)
 
 // What a builtin view gets from the language rendering it: the view's
 // settings as written in the def doc, the language's current input
@@ -59,4 +68,6 @@ val docImpls = Impls(
     "summary-view" -> ((doc, id, ctx) => defSummary(doc, id, ctx))),
   // "text": the committed string becomes the node's StringData — how a
   // def doc's projected inputs (rule lines and friends) write back.
-  inputParsers = Map("text" -> (t => sl(t))))
+  inputParsers = Map("text" -> (t => sl(t))),
+  // The `edit` view's editor surface: construct/rule/gap marks.
+  editSurface = Some(EditSurface(defDocLineMarks)))

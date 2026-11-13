@@ -57,6 +57,11 @@ trait Language {
   // proportion to its size. Its content must equal `parse`'s.
   def textSyntax: Option[TextSyntax] = None
 
+  // The `edit` view's free-text surface, when the language has one:
+  // line decorations for the editor and optionally a live preview
+  // rendered beside it. None — `edit` renders its view tree.
+  def editSurface: Option[EditSurface] = None
+
   // A committed content subtree's finishing pass — run after a text- or
   // input-surface commit rewrote `rootId`'s subtree in place: a language
   // points the references text can't carry at their nodes (lang:

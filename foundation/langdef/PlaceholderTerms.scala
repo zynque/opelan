@@ -17,7 +17,8 @@ import opelan.foundation.means.engine.{foundationalOf, foundationRefs}
 // until
 //                 def documents can declare their constructs
 //   structural  — the sheet language's grid terms (`ref`, `column`,
-//                 `row`, …): structural vocabulary no definition
+//                 `row`, …) and the markdown language's block/inline
+//                 constructs: structural vocabulary no definition
 //                 document authors yet
 //
 // Every placeholder anchors in `placeholderDoc` — an outline document
@@ -49,8 +50,22 @@ val structuralPlaceholders: List[PlaceholderTerm] = List(
   NodeTerm("formula", Any)).zipWithIndex.map((t, i) =>
   anchored(metaTerms.length + i, t))
 
+// The markdown language's structural terms — the block and inline
+// constructs its documents hold (`* ` items group under `list`;
+// `**bold**`/`*italic*` are inline spans of a block's text runs).
+val markdownPlaceholders: List[PlaceholderTerm] = List(
+  NodeTerm("markdown", Any),
+  NodeTerm("h1", Any),
+  NodeTerm("h2", Any),
+  NodeTerm("list", Any),
+  NodeTerm("item", Any),
+  NodeTerm("para", Any),
+  NodeTerm("bold", Any),
+  NodeTerm("italic", Any)).zipWithIndex.map((t, i) =>
+  anchored(metaTerms.length + structuralPlaceholders.length + i, t))
+
 val placeholderTerms: List[PlaceholderTerm] =
-  metaPlaceholders ++ structuralPlaceholders
+  metaPlaceholders ++ structuralPlaceholders ++ markdownPlaceholders
 
 val metaPlaceholderRefs: Map[String, ExternalNodeReference] =
   metaPlaceholders.map(t => t.name -> t.ref).toMap
@@ -58,12 +73,15 @@ val metaPlaceholderRefs: Map[String, ExternalNodeReference] =
 val structuralPlaceholderRefs: Map[String, ExternalNodeReference] =
   structuralPlaceholders.map(t => t.name -> t.ref).toMap
 
+val markdownPlaceholderRefs: Map[String, ExternalNodeReference] =
+  markdownPlaceholders.map(t => t.name -> t.ref).toMap
+
 // Placeholder name → its ref. The two groups share names (`ref`,
 // `literal`); the meta names win by convention — the def documents are
 // the ambient-heavy readers, and a language whose own vocabulary
 // declares the name overrides this map at every consumer.
 val placeholderRefs: Map[String, ExternalNodeReference] =
-  structuralPlaceholderRefs ++ metaPlaceholderRefs
+  markdownPlaceholderRefs ++ structuralPlaceholderRefs ++ metaPlaceholderRefs
 
 // The placeholder a ref names, if any.
 def placeholderOf(

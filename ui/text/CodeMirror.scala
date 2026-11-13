@@ -129,5 +129,13 @@ object CodeMirror {
         "background-color" -> "#ffe9e9",
         "border-bottom" -> "2px dotted #c62828"),
       ".cm-unmatched" -> js.Dynamic.literal(
-        "color" -> "#9a6700", "background-color" -> "#fff8ec")))
+        "color" -> "#9a6700", "background-color" -> "#fff8ec"),
+      // The markdown surface's kinds (examples/markdown/MarkdownMarks).
+      ".cm-h1" -> js.Dynamic.literal(
+        "font-weight" -> "700", "font-size" -> "1.25em"),
+      ".cm-h2" -> js.Dynamic.literal("font-weight" -> "700"),
+      ".cm-list" -> js.Dynamic.literal("color" -> "#444"),
+      ".cm-marker" -> js.Dynamic.literal("color" -> "#93a1a1"),
+      ".cm-bold" -> js.Dynamic.literal("font-weight" -> "700"),
+      ".cm-italic" -> js.Dynamic.literal("font-style" -> "italic")))
 }

@@ -5,7 +5,6 @@ import opelan.foundation.document._
 import opelan.foundation.document.store._
 import opelan.foundation.document.typed._
 import opelan.foundation.langdef.autoUpdateEnabled
-import opelan.foundation.langdef.doc.defDocLineMarks
 import opelan.examples.languageForDoc
 import opelan.ui.fp._
 import opelan.ui.fp.Dsl._
@@ -76,26 +75,43 @@ private def derivedPane(m: TypedDocModel): View[TypedDocInput] = {
         "min-height: 0; outline: none;" + hidden(active.isEmpty))),
     events = Map("keydown" -> keydown, "click" -> click))(
     active.toList.flatMap(name => Vector(derivedBar(name),
-      if (name == "edit") defEditor(m) else derivedBody(name, m))))
+      if (name == "edit") editPane(m) else derivedBody(name, m))))
 }
 
-// The `def` view is the projectional editing surface for a language
-// definition: the document's text (for a lang: doc, its means-line
-// outline — the same surface `raw text` commits) in a decorated
-// editor. Any text is accepted anywhere; each keystroke commits through
-// TextEdited like the plain text surface, and the decorations paint
-// what each line read as — meta constructs, payloads, rules — with
-// failed rule lines and `?` text flagged as gaps. The pane mirrors the
-// document's own `text`/`textEpoch`, so a structural edit refreshes it
-// the same way it does the plain surface.
-private def defEditor(m: TypedDocModel): View[TypedDocInput] =
-  el("div", style("flex: 1; overflow: hidden; display: flex; flex-direction: column;"))(
-    managed(s"cm-def-${m.textEpoch}") { (host, emit) =>
-      CodeMirror.mountMarked(host, m.text,
-        t => emit(TypedDocInput.TextEdited(t)),
-        text => defDocLineMarks(text).map(lm => (lm.kind, lm.spans)))
-      ()
-    })
+// The `edit` view is a language's free-text editing surface when its
+// impls declare one: the document's text (the same surface `raw text`
+// commits) in a decorated editor — keystrokes commit through TextEdited
+// and the decorations paint what each line read as (lang: constructs
+// and gaps, markdown's markup). A surface may also name a preview
+// view rendered beside the editor, live; a language with no edit
+// surface falls back to the view's own tree.
+private def editPane(m: TypedDocModel): View[TypedDocInput] = {
+  val lang = languageForDoc(m.doc, m.store)
+  lang.flatMap(_.editSurface) match {
+    case Some(surface) =>
+      els("div", style("flex: 1; display: flex; min-height: 0;"))(
+        Vector(
+          el("div",
+            style("flex: 1; overflow: hidden; display: flex; " +
+              "flex-direction: column;"))(
+            managed[TypedDocInput](
+              s"cm-edit-${m.textEpoch}-${m.docUrl.getOrElse("")}") {
+              (host, emit) =>
+                CodeMirror.mountMarked(host, m.text,
+                  t => emit(TypedDocInput.TextEdited(t)),
+                  text => surface.marks(text).map(lm => (lm.kind, lm.spans)))
+                ()
+            })) ++
+        surface.preview.toList.map(name =>
+          el("div",
+            style("flex: 1; overflow: auto; padding: 12px; " +
+              "border-left: 1px solid #ddd;"))(
+            body(lang
+              .map(_.renderWith(name, m.doc, m.gapRetry, m.docUrl))
+              .getOrElse(Left("no language for this document"))))))
+    case None => derivedBody("edit", m)
+  }
+}
 
 private def derivedBar(name: String): View[TypedDocInput] =
   els("div",

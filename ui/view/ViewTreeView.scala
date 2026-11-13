@@ -95,6 +95,10 @@ private def roleCss(role: String): String = role match {
   case "tag"         => "color: #859900; "
   case "term"        => "color: #d33682; "
   case "marker"      => "color: #93a1a1; "
+  case "h1"          => "font-size: 1.4em; font-weight: bold; "
+  case "h2"          => "font-size: 1.15em; font-weight: bold; "
+  case "bold"        => "font-weight: bold; "
+  case "italic"      => "font-style: italic; "
   case _             => ""
 }
 

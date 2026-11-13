@@ -6,6 +6,7 @@ import opelan.foundation.langdef.{placeholderDoc, placeholderUrl}
 import opelan.foundation.langdef.doc.langDefDoc
 import opelan.examples.allLanguages
 import opelan.examples.expr.{demoExprDoc, ExprLanguage}
+import opelan.examples.markdown.MarkdownLanguage
 import opelan.examples.sheet.SheetLanguage
 
 // The demo's opening lineup, seeded into a store that doesn't already
@@ -27,6 +28,7 @@ private[workbench] val seedDocs: List[(String, Document[NodeData])] =
     // first-opened document; the doc's own title supplies the sidebar
     // label ("Expression sample").
     (Store.urlForName("Sample expression") -> ExprLanguage.sampleDoc) :+
+    (Store.urlForName("Markdown notes") -> MarkdownLanguage.sampleDoc) :+
     (Store.urlForName("Household budget") -> SheetLanguage.sampleDoc)
 
 private def seedDocOf(l: opelan.foundation.language.Language): Document[NodeData] =
