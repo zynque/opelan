@@ -1,5 +1,6 @@
 package opelan.examples.expr
 
+import opelan.foundation.means.engine.printWith
 import Expr._
 
 // The expression language's parse surface: literals, precedence,
@@ -10,6 +11,11 @@ class ExprParseSuite extends munit.FunSuite {
 
   private def parse(input: String): Expr =
     exprFromDetached(ExprLanguage.parse(input).get)
+
+  // The derived printer over the encoded AST — printWith reads the
+  // rule set backwards, the tiers supplying minimal parentheses.
+  private def printExpr(e: Expr): String =
+    printWith(exprRules, exprTag, exprPrintLeaf)(exprToDetached(e))
 
   test("parses literals and left-associative operator chains") {
     assertEquals(parse("42"), Lit(42))
@@ -48,14 +54,16 @@ class ExprParseSuite extends munit.FunSuite {
       parse("8 / 4 / 2"), Div(Div(Lit(8), Lit(4)), Lit(2)))
   }
 
-  test("round-trips Expr.print with the full grammar") {
+  test("the derived printer round-trips through the full grammar") {
     val e = Add(Mul(FLit(1.5), Ref(4)), Div(Lit(8), Lit(2)))
-    assertEquals(parse(print(e)), e)
+    assertEquals(printExpr(e), "1.5 * ref:4 + 8 / 2")
+    assertEquals(parse(printExpr(e)), e)
   }
 
-  test("round-trips Expr.print") {
+  test("the derived printer parenthesizes only where binding requires") {
     val e = Sub(Add(Lit(1), Lit(2)), Sub(Lit(3), Lit(4)))
-    assertEquals(parse(print(e)), e)
+    assertEquals(printExpr(e), "1 + 2 - (3 - 4)")
+    assertEquals(parse(printExpr(e)), e)
   }
 
   test("missing operand produces an empty gap") {

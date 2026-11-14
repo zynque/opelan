@@ -14,3 +14,14 @@ def exprViewLeaf(data: NodeData): DetachedNode[NodeData] = data match {
   case NodeData.GapData(t)         => gap(t)
   case other                       => gap(gapText(other))
 }
+
+// The same leaf spelled as surface text — what `printWith` emits for
+// data no rule claims: ints and floats as written, `ref:` references,
+// a gap verbatim (or `?` when empty, so it reparses).
+def exprPrintLeaf(data: NodeData): String = data match {
+  case NodeData.IntData(v)         => v.toString
+  case NodeData.FloatData(f)       => f.toString
+  case NodeData.InternalNodeRef(t) => s"ref:$t"
+  case NodeData.GapData(t)         => if (t.isEmpty) "?" else t
+  case other                       => gapText(other)
+}

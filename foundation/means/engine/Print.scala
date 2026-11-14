@@ -9,8 +9,8 @@ import opelan.foundation.means.text._
 // back (foundation/means/DESIGN.md, *The meaning side*): every construct-meaning
 // rule is a template whose literals print verbatim and whose
 // placeholders print their argument trees, and the binding list
-// supplies the parentheses — the same minimal-parentheses dance Expr.print
-// encodes by hand, derived instead.
+// supplies the parentheses — the minimal-parentheses dance a
+// hand-written printer encodes, derived instead.
 //
 // An operator rule prints each edge operand in the context the parser
 // gave it: left-associative infix keeps its left operand at its own

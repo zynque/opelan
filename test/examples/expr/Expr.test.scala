@@ -5,7 +5,7 @@ import opelan.foundation.document._
 import opelan.foundation.document.typed._
 import opelan.foundation.document.Detached._
 import opelan.foundation.language.applyDocText
-import opelan.foundation.means.engine.{evalNode, semanticsOf}
+import opelan.foundation.means.engine.{evalNode, printWith, semanticsOf}
 import opelan.foundation.view.ViewTree
 import Expr._
 
@@ -54,25 +54,31 @@ class ExprSuite extends munit.FunSuite {
     assert(eval(Add(Lit(1), Gap("x"))).isLeft)
   }
 
+  // The derived printer over the encoded AST (printViewWith's string
+  // sibling — the same rule set and tiers drive the document's `print`
+  // view).
+  private def printExpr(e: Expr): String =
+    printWith(exprRules, exprTag, exprPrintLeaf)(exprToDetached(e))
+
   test("print uses minimal parentheses") {
-    assertEquals(print(sample), "1 + 2 - (3 - 4)")
-    assertEquals(print(Sub(Sub(Lit(1), Lit(2)), Lit(3))), "1 - 2 - 3")
-    assertEquals(print(Add(Lit(1), Add(Lit(2), Lit(3)))), "1 + (2 + 3)")
-    assertEquals(print(Lit(42)), "42")
-    assertEquals(print(Gap("")), "?")
-    assertEquals(print(Add(Lit(1), Gap("foo"))), "1 + foo")
+    assertEquals(printExpr(sample), "1 + 2 - (3 - 4)")
+    assertEquals(printExpr(Sub(Sub(Lit(1), Lit(2)), Lit(3))), "1 - 2 - 3")
+    assertEquals(printExpr(Add(Lit(1), Add(Lit(2), Lit(3)))), "1 + (2 + 3)")
+    assertEquals(printExpr(Lit(42)), "42")
+    assertEquals(printExpr(Gap("")), "?")
+    assertEquals(printExpr(Add(Lit(1), Gap("foo"))), "1 + foo")
   }
 
   test("print respects * and / precedence") {
     assertEquals(
-      print(Add(Lit(2), Mul(Lit(3), Lit(4)))), "2 + 3 * 4")
+      printExpr(Add(Lit(2), Mul(Lit(3), Lit(4)))), "2 + 3 * 4")
     assertEquals(
-      print(Mul(Add(Lit(2), Lit(3)), Lit(4))), "(2 + 3) * 4")
+      printExpr(Mul(Add(Lit(2), Lit(3)), Lit(4))), "(2 + 3) * 4")
     assertEquals(
-      print(Div(Mul(Lit(8), Lit(2)), Mul(Lit(4), Lit(1)))),
+      printExpr(Div(Mul(Lit(8), Lit(2)), Mul(Lit(4), Lit(1)))),
       "8 * 2 / (4 * 1)")
-    assertEquals(print(Mul(FLit(1.5), Lit(2))), "1.5 * 2")
-    assertEquals(print(Ref(9)), "ref:9")
+    assertEquals(printExpr(Mul(FLit(1.5), Lit(2))), "1.5 * 2")
+    assertEquals(printExpr(Ref(9)), "ref:9")
   }
 
   test("fromDocument reads back what toDetached wrote") {
