@@ -51,8 +51,9 @@ private def dataMatches(leaf: LeafKind, data: NodeData): Boolean =
 // itself an operand as the foundation's `gap` does. An Impls leaf
 // naming a standard term overrides it.
 def lexicalTerms(impls: Impls): Map[String, LexicalTerm] =
-  standardTerms ++ impls.leaves.map { case (name, theLeaf) =>
-    name -> LexicalTerm(Some(leafParser(theLeaf)), leafAccepts(theLeaf)) }
+  standardTerms ++ impls.productions ++
+    impls.leaves.map { case (name, theLeaf) =>
+      name -> LexicalTerm(Some(leafParser(theLeaf)), leafAccepts(theLeaf)) }
 
 // The workbench's gap leaf: the `gap` token reads as a gap.
 private val gapLeaf = LeafDef(List("gap" -> LeafKind.GapLeaf))

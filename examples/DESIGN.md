@@ -85,20 +85,20 @@ cells that use it — the app recovers like the documents it is made of.
 
 `MarkdownLanguage` — a document type for a small markdown subset:
 `#`/`##` headings, `* ` list items, paragraphs, and `*italic*`/`**bold**`
-inline runs. `parseMarkdown` reads plain text into a block tree —
-`markdown > h1 | h2 | list(item*) | para(run*)`, runs being plain
-strings, `bold`, or `italic` — and `markdownLines` prints it back
-(unmatched markers stay literal, so the tree round-trips the text).
-Block tags are `PlaceholderTerms` references declared in the def's
-`vocabulary` (placeholder-anchored entries encode as nothing — the refs
-already exist), so a stored `lang: markdown` document is
-interchangeable with `markdownDef`. The impls register the machinery:
-`Impls.textParser` is the text surface's commit path and
-`Impls.editSurface` the editor's marks plus preview — a structural
-language needs no `RuleSet`. The `edit` view is an `EditSurface` — a
-decorated CodeMirror where `markdownLineMarks` classifies each line
-(heading, list item, paragraph) and paints markers, bold, and italic
-spans — with `preview` alongside it: the `markdown-preview` builtin
-(`markdownPreview`) renders the formatted document, read-only, updated
-live through `TextEdited` commits. `sampleDoc` seeds the sidebar's
-`Markdown notes`.
+inline runs — driven by its `definitions` like every other `lang:` doc.
+`markdownRules` spells them: `# t means h1(t)`, `* t means item(t)`,
+`*t* means italic(t)`, and so on, with `where` constraints binding the
+impls' productions. `markdownParse` composes them to document level:
+`blocks` (the block sequence), `runs` (a line's inline spans), and
+`plain` (an emphasis operand) are `Impls.productions`/`leaves` built on
+`sequenceRule` over those rules — strict, so an unmatched `*` stays
+literal text and the tree round-trips the text. The stored tree holds
+the surface constructs the patterns declare — `#`, `##`, `*` items —
+with `bold`/`italic`/`para`/`list`/`runs`/`markdown` placeholder tags;
+`h1`/`h2`/`item` are the constructs' meanings. `markdownLexicon` is the
+marker/text tokenizer. `markdownLines` prints the tree back;
+`markdownPreview` renders the formatted document read-only. The impls
+register it all: `Impls.textParser` the commit path, `Impls.editSurface`
+the `edit` view's `markdownLineMarks` (heading/item/paragraph line
+kinds plus marker/bold/italic spans) beside the live `preview`.
+`sampleDoc` seeds the sidebar's `Markdown notes`.

@@ -7,6 +7,7 @@ import opelan.foundation.langdef.syntax._
 import opelan.foundation.langdef.view._
 import opelan.foundation.langdef.doc.defDocLineMarks
 import opelan.foundation.language.EditSurface
+import opelan.foundation.means.engine.LexicalTerm
 
 // The code-side semantics a language definition names. A LanguageDef
 // references lexicons, views, and input parsers by name — behavior lives
@@ -33,9 +34,15 @@ case class Impls(
     // falling back to a label (InputGrammar).
     refName: Option[String => Boolean] = None,
     commitLink: Option[CommitLink] = None,
+    // Named productions `where` terms bind that aren't token leaves —
+    // combinator parsers over the rule set's own compiled rules
+    // (markdown's `blocks`/`runs` — the document's block sequence and a
+    // line's inline runs).
+    productions: Map[String, LexicalTerm] = Map.empty,
     // The document text surface, when it's code rather than a compiled
     // rule set (the meta language's outline is built into DefLanguage;
-    // markdown's parse is a builtin): text → content subtree.
+    // markdown's parse composes its `blocks` production): text →
+    // content subtree.
     textParser: Option[String => DetachedNode[NodeData]] = None,
     // The `edit` view's free-text surface: line marks and an optional
     // preview view name.

@@ -52,7 +52,9 @@ val structuralPlaceholders: List[PlaceholderTerm] = List(
 
 // The markdown language's structural terms — the block and inline
 // constructs its documents hold (`* ` items group under `list`;
-// `**bold**`/`*italic*` are inline spans of a block's text runs).
+// `**bold**`/`*italic*` are inline spans of a block's `runs`; `h1`,
+// `h2`, `item` are the *meanings* of the `#`, `##`, `*` surface
+// constructs its definitions declare).
 val markdownPlaceholders: List[PlaceholderTerm] = List(
   NodeTerm("markdown", Any),
   NodeTerm("h1", Any),
@@ -60,6 +62,7 @@ val markdownPlaceholders: List[PlaceholderTerm] = List(
   NodeTerm("list", Any),
   NodeTerm("item", Any),
   NodeTerm("para", Any),
+  NodeTerm("runs", Any),
   NodeTerm("bold", Any),
   NodeTerm("italic", Any)).zipWithIndex.map((t, i) =>
   anchored(metaTerms.length + structuralPlaceholders.length + i, t))

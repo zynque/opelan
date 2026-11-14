@@ -3,6 +3,7 @@ package opelan.examples.markdown
 import opelan.foundation.document._
 import opelan.foundation.langdef._
 import opelan.foundation.langdef.doc.termRefs
+import opelan.foundation.langdef.syntax.vocabularyFrom
 import opelan.foundation.language.EditSurface
 import opelan.foundation.view.ViewTree
 
@@ -20,15 +21,16 @@ val markdownDef = LanguageDef(
   title = "lang: markdown",
   name = "Markdown",
   description = "a small markdown subset — headings, lists, emphasis",
-  // The block/inline constructs are placeholders — structural
-  // vocabulary no definition document authors yet (the sheet's grid
-  // terms the same). Listed so the def's names resolve to their refs;
-  // they encode as no `vocabulary` section.
-  vocabulary = markdownPlaceholders.map(t =>
-    NodeTerm(t.name, t.shape, Some(t.ref))),
-  // The text surface is code, not a rule set: `parse`/`print` are the
-  // impls' builtins, so the def declares no `syntax` section.
-  syntax = None,
+  // The vocabulary the rules declare: the `where` leaf terms
+  // (`blocks`, `runs`, `plain`) and the surface constructs (`#`, `##`,
+  // `*` — construct-application patterns declare them). `markdown`,
+  // `list`, `para`, `bold`, `italic` and the `h1`/`h2`/`item` meanings
+  // are ambient placeholders — no vocabulary section encodes.
+  vocabulary = vocabularyFrom(markdownRules),
+  // The `definitions` the lang: doc shows — parsed through the impls'
+  // `blocks`/`runs`/`plain` productions rather than the compiled
+  // `self` (the document isn't one expression).
+  syntax = Some(SyntaxDef("markdown", Some(markdownRules))),
   views = List(
     // `edit` binds the source-text builtin — the sidebar's edit tile
     // shows what the editor holds; the pane's edit view is the impls'
@@ -37,24 +39,34 @@ val markdownDef = LanguageDef(
     ViewBinding("preview", "markdown-preview")),
   inputParser = None)
 
-// The code-side semantics the def names — kept beside it. "print" is
-// the document's text surface (docText renders it unlisted);
-// `textParser` the commit path's parser; `editSurface` the editor's
-// marks plus the live preview pane.
+// The code-side semantics the def names — kept beside it. `blocks`,
+// `runs`, `plain` are the productions the `where` clauses bind
+// (MarkdownParse.scala builds them from the rules); "print" is the
+// document's text surface (docText renders it unlisted); `textParser`
+// the commit path — `blocks` itself; `editSurface` the editor's marks
+// plus the live preview pane.
 val markdownImpls = Impls(
+  lexicons = Map("markdown" -> markdownLexicon),
+  leaves = Map("plain" -> plainLeaf),
+  productions = Map(
+    "blocks" -> blocksTerm,
+    "runs"   -> runsTerm),
   views = Map(
     "print" -> ((doc, id, ctx) =>
       ViewTree.block(markdownLines(doc, id).map(ViewTree.txt)*)),
     "markdown-preview" -> ((doc, id, ctx) => markdownPreview(doc, id))),
-  textParser = Some(parseMarkdown),
+  textParser = Some(markdownParse),
   editSurface = Some(
     EditSurface(markdownLineMarks, preview = Some("preview"))))
 
-// Construct identities of the language — the placeholder anchors, as
-// the sheet's are (SheetDef). Documents store the ref; readers match
-// on it — a construct renamed in its placeholder entry keeps working.
+// Construct identities of the language — ambient refs (the
+// `markdown`/`list`/`para`/`runs`/`bold`/`italic` placeholders the
+// meanings name) plus the declared constructs' term refs (`#`, `##`,
+// `*` — anchored at their declaring pattern pieces). Documents store
+// the ref; readers match on it — a construct renamed in its lang:
+// document keeps working.
 lazy val markdownTerms: Map[String, ExternalNodeReference] =
-  termRefs(markdownDef)
+  ambientRefs ++ termRefs(markdownDef)
 
 // Node data applying a construct, inline — a document imports it when
 // the tree is inserted (see makeTyped / internalizeRefs).

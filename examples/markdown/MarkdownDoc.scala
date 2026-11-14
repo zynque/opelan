@@ -1,83 +1,59 @@
 package opelan.examples.markdown
 
-import opelan.examples.termOf
 import opelan.foundation.document._
-import opelan.foundation.document.Detached._
+import opelan.foundation.grammar._
+import opelan.foundation.means._
+import opelan.foundation.means.text.readRuleOrGap
 
 // A markdown document's content: a `markdown` node whose children are
-// the blocks — `h1`/`h2` headings, `list`s of `item`s, and `para`
-// paragraphs. Inline markup lives inside a block's children: plain
-// StringData leaves as text runs among `bold`/`italic` span nodes.
+// the blocks — `#`/`##` headings, `list`s of `*` items, and `para`
+// paragraphs. Tags name the surface constructs the definitions declare:
+// a `* t` item stores the `*` construct whose meaning is `item`, as
+// `a * b` stores the `*` construct meaning `mul` — the document IS the
+// surface syntax. A block's inline content is a `runs` node: plain
+// StringData text leaves among `bold`/`italic` span nodes.
 //
-//   # Title        →  h1(inline…)
-//   ## Section     →  h2(inline…)
-//   * item         →  list(item(inline…)…) — consecutive `* ` lines
-//                     group under one list
-//   para text      →  para(inline…)
+//   # Title        →  #(runs(…))
+//   ## Section     →  ##(runs(…))
+//   * item         →  list(*(runs(…))…) — consecutive `* ` lines group
+//   para text      →  para(runs(…))
 //
-// The constructs are the language's placeholder terms (MarkdownDef);
-// documents carry them by ref.
+// `markdown`, `list`, `para`, `runs`, `bold`, `italic` (and the `h1`,
+// `h2`, `item` meanings) are the language's placeholder terms.
 
 val MarkdownTag = "markdown"
-val H1Tag = "h1"
-val H2Tag = "h2"
+val H1Tag = "#"
+val H2Tag = "##"
+val ItemTag = "*"
 val ListTag = "list"
-val ItemTag = "item"
 val ParaTag = "para"
+val RunsTag = "runs"
 val BoldTag = "bold"
 val ItalicTag = "italic"
 
-// The text surface — markdown text to the content subtree. Total:
-// every non-blank line is a block and an unmatched `*` stays literal
-// text, so no input fails.
-def parseMarkdown(text: String): DetachedNode[NodeData] =
-  n(markdownTag(MarkdownTag), blocksOf(text.split("\n", -1).toList)*)
+// The lexicon: marker tokens, then the plain-text run. `##`/`**` precede
+// `#`/`*` — ordered choice takes the longest marker. `text` stops at
+// `*` (the only markup opener inside a run) and the line's end.
+val markdownLexicon = Lexicon(List(
+  "h2"    -> exactly("##"),
+  "h1"    -> exactly("#"),
+  "bstar" -> exactly("**"),
+  "istar" -> exactly("*"),
+  "text"  -> runOf(1)(c => c != '*' && c != '\n')),
+  gapStart = Set("h2", "h1", "bstar", "istar", "text"),
+  gapRun = Set("h2", "h1", "bstar", "istar", "text"))
 
-private def blocksOf(lines: List[String]): List[DetachedNode[NodeData]] =
-  lines match {
-    case Nil => Nil
-    case line :: rest if line.startsWith("## ") =>
-      n(markdownTag(H2Tag), inlinesOf(line.drop(3))*) :: blocksOf(rest)
-    case line :: rest if line.startsWith("# ") =>
-      n(markdownTag(H1Tag), inlinesOf(line.drop(2))*) :: blocksOf(rest)
-    case line :: rest if line.startsWith("* ") =>
-      val (items, more) = rest.span(_.startsWith("* "))
-      n(markdownTag(ListTag),
-        (line :: items).map(l =>
-          n(markdownTag(ItemTag), inlinesOf(l.drop(2))*))*) ::
-        blocksOf(more)
-    case line :: rest if line.trim.isEmpty => blocksOf(rest)
-    case line :: rest =>
-      n(markdownTag(ParaTag), inlinesOf(line)*) :: blocksOf(rest)
-  }
-
-// A line's inline runs: `**bold**` and `*italic*` spans among plain
-// text. `**` binds first; a `*` with no closing match is literal.
-def inlinesOf(text: String): List[DetachedNode[NodeData]] = {
-  val out = List.newBuilder[DetachedNode[NodeData]]
-  val plain = new StringBuilder
-  def flush(): Unit =
-    if (plain.nonEmpty) { out += sl(plain.toString); plain.clear() }
-  var i = 0
-  while (i < text.length) {
-    if (text.startsWith("**", i)) {
-      val end = text.indexOf("**", i + 2)
-      if (end > i + 2) {
-        flush()
-        out += n(markdownTag(BoldTag),
-          inlinesOf(text.substring(i + 2, end))*)
-        i = end + 2
-      } else { plain += text(i); i += 1 }
-    } else if (text(i) == '*') {
-      val end = text.indexOf('*', i + 1)
-      if (end > i + 1) {
-        flush()
-        out += n(markdownTag(ItalicTag),
-          inlinesOf(text.substring(i + 1, end))*)
-        i = end + 1
-      } else { plain += text(i); i += 1 }
-    } else { plain += text(i); i += 1 }
-  }
-  flush()
-  out.result()
-}
+// The language's rules — what `lang: markdown`'s `definitions` section
+// holds. `d` binds the impls' `blocks` production (the document's block
+// sequence); `t` binds `runs` (a line's inline runs) or `plain` (one
+// text token — emphasis operands don't nest). The means placeholder
+// convention is single letters — `## t`, not `## text`.
+val markdownRules: RuleSet = RuleSet(
+  rules = List(
+    "d means d where d: blocks",
+    "# t means h1(t) where t: runs",
+    "## t means h2(t) where t: runs",
+    "* t means item(t) where t: runs",
+    "t means para(t) where t: runs",
+    "**t** means bold(t) where t: plain",
+    "*t* means italic(t) where t: plain").map(readRuleOrGap))

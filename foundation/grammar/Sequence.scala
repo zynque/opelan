@@ -42,6 +42,13 @@ def many(data: NodeData)(p: Parser): Parser =
     ParseResult(cur, node(in, data, children.result(), pos), applied = true, seen)
   }
 
+// One or more `p`, as one node like `many`; doesn't apply empty.
+def some(data: NodeData)(p: Parser): Parser =
+  (in, pos) => {
+    val r = many(data)(p)(in, pos)
+    if (r.tree.children.isEmpty) emptyGap(in, pos, r.examined) else r
+  }
+
 // `p`, or nothing.
 def optional(p: Parser): Parser = choice(p, nothing())
 

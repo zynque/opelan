@@ -30,11 +30,12 @@ private def blockView(
 
 private def inlines(
     doc: Document[NodeData], id: Int): List[DetachedNode[NodeData]] =
-  doc.childrenOf(id).map(k =>
+  doc.childrenOf(id).flatMap(k =>
     termOf(markdownTerms, doc, k) match {
-      case Some(BoldTag)   => styled("bold", from(k, inlines(doc, k)*))
-      case Some(ItalicTag) => styled("italic", from(k, inlines(doc, k)*))
-      case _               => from(k, txt(leafText(doc, k)))
+      case Some(RunsTag)   => inlines(doc, k)
+      case Some(BoldTag)   => List(styled("bold", from(k, inlines(doc, k)*)))
+      case Some(ItalicTag) => List(styled("italic", from(k, inlines(doc, k)*)))
+      case _               => List(from(k, txt(leafText(doc, k))))
     })
 
 private def leafText(doc: Document[NodeData], id: Int): String =

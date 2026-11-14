@@ -23,7 +23,7 @@ object MarkdownLanguage extends DefLanguage(
     makeTyped(typeRef,
       er(docTitleRef), er(docImportsRef),
       NodeData.StringData("Markdown notes"),
-      parseMarkdown(
+      markdownParse(
         """# Notes
           |
           |## Groceries

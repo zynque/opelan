@@ -8,8 +8,9 @@ import opelan.foundation.language.{applyDocText, docText}
 import opelan.foundation.view.ViewTree
 import munit.FunSuite
 
-// The markdown language: text ↔ block tree, the live preview, the
-// edit surface's marks, and store-first resolution of its lang: doc.
+// The markdown language: the means definitions its `lang:` document
+// holds, the `blocks`/`runs` productions they parse through, the live
+// preview, and store-first resolution of the def document.
 class MarkdownSuite extends FunSuite {
 
   private val source =
@@ -19,9 +20,11 @@ class MarkdownSuite extends FunSuite {
   private def tag(t: DetachedNode[NodeData]): NodeData = t.data
 
   test("markdown text parses to a block tree") {
-    val content = parseMarkdown(source)
+    val content = markdownParse(source)
     assertEquals(tag(content), markdownTag(MarkdownTag))
     val Seq(h1, h2, list, para) = content.children
+    // Blocks store the surface constructs the definitions declare —
+    // `#`, `##`, `*` — each holding its line's `runs`.
     assertEquals(tag(h1), markdownTag(H1Tag))
     assertEquals(tag(h2), markdownTag(H2Tag))
     assertEquals(tag(list), markdownTag(ListTag))
@@ -29,22 +32,37 @@ class MarkdownSuite extends FunSuite {
       list.children.map(tag),
       List(markdownTag(ItemTag), markdownTag(ItemTag)))
     assertEquals(tag(para), markdownTag(ParaTag))
-    // The second item carries a bold span; the paragraph an italic and
-    // a bold among its text runs.
-    assert(list.children(1).children.exists(
-      c => tag(c) == markdownTag(BoldTag)))
-    val spans = para.children.map(tag)
+    // The second item's runs carry a bold span; the paragraph's runs
+    // an italic and a bold among plain text leaves.
+    val itemRuns = list.children(1).children.flatMap(_.children)
+    assert(itemRuns.exists(c => tag(c) == markdownTag(BoldTag)),
+      itemRuns.map(tag))
+    val spans = para.children.flatMap(_.children).map(tag)
     assert(spans.contains(markdownTag(ItalicTag)), spans)
     assert(spans.contains(markdownTag(BoldTag)), spans)
     assert(spans.exists(_.isInstanceOf[NodeData.StringData]))
   }
 
   test("an unmatched star stays literal text") {
-    val content = parseMarkdown("2 * 3\n")
+    val content = markdownParse("2 * 3\n")
     val Seq(para) = content.children
     assertEquals(tag(para), markdownTag(ParaTag))
+    // `2 ` a text run, `*` a stray marker kept verbatim, ` ` and `3`
+    // a space leaf and a text token — literal text, reassembled.
     assertEquals(
-      para.children.map(_.data), List(NodeData.StringData("2 * 3")))
+      para.children.flatMap(_.children).map(_.data),
+      List(NodeData.StringData("2 "), NodeData.StringData("*"),
+        NodeData.StringData(" "), NodeData.StringData("3")))
+  }
+
+  test("the def's text surface shows the definitions") {
+    // `lang: markdown`'s raw text — the `definitions` the rules spell.
+    val text = docText(MarkdownLanguage.langDoc, registryForDoc)
+    assert(text.contains("# t means h1(t)"), text)
+    assert(text.contains("## t means h2(t)"), text)
+    assert(text.contains("* t means item(t)"), text)
+    assert(text.contains("**t** means bold(t)"), text)
+    assert(text.contains("*t* means italic(t)"), text)
   }
 
   test("the language's text surface round-trips") {

@@ -165,9 +165,12 @@ class DefLanguage(
   // doc/DefDocText.scala rather than a rule set.
   override def parse(text: String): Option[DetachedNode[NodeData]] =
     if (isDocLanguage) Some(defDocParse(text))
-    else syntax.map { case (lexicon, g) =>
-      toDetached(g(ParseInput(text, lexicon), 0).tree) }
-      .orElse(impls.textParser.map(_(text)))
+    // A code-side text parser outranks the compiled rules — the
+    // document-level composition isn't always expression-shaped
+    // (markdown parses through its `blocks` production).
+    else impls.textParser.map(_(text))
+      .orElse(syntax.map { case (lexicon, g) =>
+        toDetached(g(ParseInput(text, lexicon), 0).tree) })
 
   // lang: documents relink what text can't carry — placeholder uses and
   // term constructs pointed at their nodes — after a text-surface
@@ -186,7 +189,10 @@ class DefLanguage(
   // and a version bump re-pins kept content's term tags rather than
   // reparsing.
   override def textSyntax: Option[TextSyntax] =
-    for {
+    // A textParser-driving language's surface parse isn't the compiled
+    // `self` (see parse) — no incremental session for it.
+    if (impls.textParser.isDefined) None
+    else for {
       s <- languageDef.syntax
       (lexicon, parser) <- syntax
     } yield TextSyntax(parser, lexicon,

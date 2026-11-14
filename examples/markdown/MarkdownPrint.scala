@@ -4,9 +4,11 @@ import opelan.examples.termOf
 import opelan.foundation.document._
 import opelan.foundation.document.DetachedNode
 
-// The content subtree as markdown lines — parseMarkdown's inverse, the
-// "print" builtin's text. A `markdown` root's children print block per
-// line; anything else degrades to its outline payload.
+// The content subtree as markdown lines — the "print" builtin's text.
+// A `markdown` root's children print block per line — `#`/`##` headings
+// with their `runs` inline, `list` items as `* ` lines, `para`s bare;
+// `runs` splices transparently wherever it nests. Anything else
+// degrades to its outline payload.
 def markdownLines(
     doc: Document[NodeData], contentId: Int): List[String] =
   if (termOf(markdownTerms, doc, contentId).contains(MarkdownTag))
@@ -29,6 +31,7 @@ private def blockLines(doc: Document[NodeData], id: Int): List[String] =
 private def inlineText(doc: Document[NodeData], id: Int): String =
   doc.childrenOf(id).map(k =>
     termOf(markdownTerms, doc, k) match {
+      case Some(RunsTag)   => inlineText(doc, k)
       case Some(BoldTag)   => "**" + inlineText(doc, k) + "**"
       case Some(ItalicTag) => "*" + inlineText(doc, k) + "*"
       case _ => doc.getNode(k).map(_.data).collect {

@@ -39,11 +39,18 @@ import opelan.foundation.means._
 // sign to the number's token, so `- 4` isn't this rule. Glue beside
 // an expression-level placeholder isn't a lexical constraint — `a`
 // in `(a)` can be a whole sub-expression, so `( 1 )` still parses.
+// `strict` — set by a host placing the rule inside a bounded
+// production (an inline run — markdown's `*t*` inside a line's `runs`)
+// — turns the closed-rule recovery off: a partial match consumes
+// nothing, so an opener with no closer falls through to whatever the
+// host tries next instead of scanning forward and gap-eating text the
+// enclosing production still has claims on.
 def sequenceRule(
     theRule: Rule,
     expression: Parser,
     tag: String => NodeData,
-    bound: Map[String, LexicalTerm] = Map.empty): Parser = {
+    bound: Map[String, LexicalTerm] = Map.empty,
+    strict: Boolean = false): Parser = {
   val pieces = theRule.pattern.pieces.toVector
   val closer = pieces.last match {
     case Piece.Literal(text, _) => Some(text)
@@ -103,6 +110,7 @@ def sequenceRule(
           case None =>
             ParseResult(cur, ruleTree(theRule, bindings, in, from,
               cur, tag), applied = true, seen)
+          case Some(_) if strict => failedGap(in, pos, seen)
           case Some(at) => closer match {
             case None => failedGap(in, pos, seen)
             case Some(text) =>
