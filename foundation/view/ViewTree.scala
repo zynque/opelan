@@ -31,7 +31,8 @@ import opelan.foundation.document.Detached._
 // Broken): unknown containers show their tag as a gap.
 object ViewTree {
 
-  val tags = Set("block", "flow", "heading", "grid", "row", "cell", "hcell", "input")
+  val tags = Set("block", "flow", "heading", "grid", "row", "cell", "hcell",
+    "controls", "input")
 
   private def tagged(tag: String, children: Seq[DetachedNode[NodeData]]) =
     DetachedNode(NodeData.StringData(tag), children.toList)
@@ -42,6 +43,9 @@ object ViewTree {
   def grid(rows: DetachedNode[NodeData]*)        = tagged("grid", rows)
   def row(cells: DetachedNode[NodeData]*)        = tagged("row", cells)
   def cell(children: DetachedNode[NodeData]*)    = tagged("cell", children)
+  // A borderless cell at a grid's edge carrying `action:` affordances —
+  // the control sits at the table's rim, not in an outlined column.
+  def controls(children: DetachedNode[NodeData]*) = tagged("controls", children)
   def hcell(children: DetachedNode[NodeData]*)   = tagged("hcell", children)
 
   // An inline text run.
@@ -92,7 +96,8 @@ object ViewTree {
     case NodeData.SourceRef(_) => true
     case NodeData.StringData(tag) =>
       tag.startsWith("action:") ||
-        (tags(tag) && t.children.nonEmpty && t.children.forall(chrome))
+        (tags(tag) && t.children.forall(chrome) &&
+          (tag == "controls" || t.children.nonEmpty))
     case _ => false
   }
 

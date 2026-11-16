@@ -84,7 +84,8 @@ private def actionView[I](
     label: List[DetachedNode[NodeData]],
     onSource: Int => I, onEdit: (Int, String) => I,
     onAction: (Int, String) => I): View[I] =
-  el("button", Map("type" -> "button"),
+  el("button",
+    Map("type" -> "button", "style" -> actionCss),
     on("click", onAction(id, command)))(
     label.map(k => viewTree(k, onSource, onEdit, onAction))*)
 
@@ -100,12 +101,20 @@ private def element[I](tag: String, children: Iterable[View[I]]): View[I] =
         els("tbody")(children.map(asRow)))
     case "row" => els("tr")(children.map(asCell))
     case "cell" => els("td", style(cellCss))(children)
+    case "controls" =>
+      els("td", style("border: none; padding: 0 3px; " +
+        "vertical-align: middle; text-align: center;"))(children)
     case "hcell" =>
       els("th",
         style(cellCss + " text-align: left; background: #f5f5f5;"))(children)
   }
 
 private val cellCss = "border: 1px solid #ddd; padding: 2px 8px;"
+
+private val actionCss =
+  "border-radius: 50%; width: 18px; height: 18px; padding: 0; " +
+  "line-height: 1; font-size: 12px; border: 1px solid #bbb; " +
+  "background: #fff; color: #555; cursor: pointer;"
 
 // The styles a `styled:` role paints with — the one place a presentation
 // role becomes pixels (a solarized accent each, as the gap chips use).
