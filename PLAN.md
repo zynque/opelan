@@ -1,57 +1,36 @@
 # Plan
 
-Point-in-time state of the Opelan workbench: what doesn't yet work and
+What doesn't yet work and
 what comes next. What works is described per package in each folder's
 `DESIGN.md`; the root `DESIGN.md` covers architecture and rationale;
 `DEMO.md` is the demo being worked toward.
-
-Last updated: 2026-11-14
 
 **Current Major Focus:** Reducing the examples so that they consist of only dialect documents expressed in terms of foundational constructs provided by the platform, and contain no custom Scala code
 
 ## Known gaps
 
-- **Demo rough edges.** An expression like 'a // b' does not work, because tokens are hard-coded. History does not show updates when the sheet document is updated to pull in the new language definition.
-- **Synced remote text doesn't parse incrementally.** It is the
-  `Serial` outline, parsed by the outline format rather than a language
-  grammar. Input sessions are pane-local and start fresh after a reload
-  or for an input's first commit; builtin input parsers (a def's
-  `inputParser` naming an impls function) parse whole.
-- **Synced history:** remote changes apply as a whole-text reparse;
-  text-surface edits made while browsing a version still write to the main
-  session (branching covers structural edits); undo stacks are
-  session-local and lost on resume; branch merge-back is manual; edits
+- **Demo rough edges:** Addition of an expression like 'a // b' does not work, because tokens are hard-coded instead of being derived as part of the expression dialect. History does not show updates when the sheet document is updated to pull in the updates to the sheets & expression dialect.
+- **Sync:** Remote text doesn't parse incrementally. Display of remote changes in local history is unclear. Undo stacks are session-local and lost on resume. Edits
   made before first sync contact resolve last-writer-wins rather than
-  merging; edit bursts aren't coalesced. Unsynced session history isn't
+  merging. Edit bursts aren't coalesced. Unsynced session history isn't
   persisted.
-- **References:** an `ExternalNodeRef` to a missing target reports
-  "unresolved" rather than offering creation; refs into old pinned
+- **References:** References into old pinned
   versions open read-write, and saving appends a new head rather than
-  branching; cross-document paste doesn't externalize and re-import refs
-  (`extractExternalized` and `internalizeRefs` are the primitives).
-- **Old stores aren't migrated.** Stores from before the by-reference
-  format degrade to gaps; use **Reset** to reseed. Seeds' construct ids
-  must match code's canonical encodings (`metaTermIds`, `termRefs`), so
-  changing a seed's layout needs a reset or a migration.
-- **Vocabularies are descriptive only:** node terms aren't checked, and the
+  branching. Cross-document paste doesn't externalize and re-import refs.
+- **Old stores aren't migrated.** For now we make no attempt to migrate old stored documents. Anything intended to be persisted should be saved within the Scala code itself.
+- **Vocabularies are descriptive only:** Node terms aren't checked, and the
   gap/typing machinery isn't folded into the document model.
-- **No network transport or presence:** sync is tab-to-tab only.
+- **No network transport or presence:** Sync is tab-to-tab only.
 
 ## Open design questions
 
-1. *Two-layer history* (`collaboration/DESIGN.md`). The gesture split is settled and
-   built. Open: the op-log compaction boundary, the synced meta-log for
-   history mutation, branch merge-back semantics, and the presence
-   channel's shape.
-2. *Bootstrap.* Definitions are documents and their syntax is authored
-   `means` rules, but their semantics (lexicons, views, eval) still name
-   Scala builtins. The `means` series is the planned answer.
+1. *Two-layer history* (`collaboration/DESIGN.md`). By giving the history document its own history, we can have a more granular control over the history compaction and merging without data loss.
+2. *Bootstrap.* The example dialects and definitions therein work, but pieces still point to hardcoded scala code. The dialect definition language itself should eventually become authored in the platform.
 3. *Immediately typed.* Real typechecking per keystroke over gappy trees
    (Hazelnut-style edit semantics), beyond parse-level gaps.
 4. *Semantic diff/merge.* Node-id-stable documents enable meaning-aware
-   diffs; compaction is the defined lineage boundary.
-5. *Polysyntactic parity.* The text surface is per-language and
-   reparses fully; richer projections (tables, diagrams as editors,
+   diffs.
+5. *Polysyntactic parity.* Richer projections (tables, diagrams as editors,
    per-user notation) remain open.
 6. *Migration classes.* Per *Evolvable*, a language change should derive
    migrations for its artifacts, applied automatically by default. But
@@ -82,30 +61,7 @@ Last updated: 2026-11-14
 ## Next steps
 
 1. **`means` rules — the next major series.** `pattern means meaning`
-   rules compiled onto the recovering combinators
-   (`foundation/means/DESIGN.md`). The engine groundwork — including the
-   derived printer and derived vocabulary — has landed
-   (`foundation/means/engine/DESIGN.md`, `foundation/grammar/DESIGN.md`),
-   and the printer's role spans now reach the def view as `styled:` styling
-   — `means` emphasized, placeholders italic — on read-only lines and
-   inside the editable fields' displays
-   (`foundation/means/text/DESIGN.md`, `foundation/view/DESIGN.md`).
-   Meaning layers are done — eval is derived (`means/engine/Eval.scala`)
-   on both the expression language and the sheet (`resolveGridRefs`
-   projects `ref` constructs to `InternalNodeRef` leaves; `evalTree`,
-   `LocExpr`, and `Num` are retired), a cycle renders as a gap at the
-   closing edge, and def docs carry no vocabulary section — ambient
-   terms (foundation primitives + placeholders) and imports resolved
-   through the referenced def's own vocabulary cover it, so a decoded
-   `add` is the foundational `add`. Sheet cells reference the
-   rule-declared constructs (`*`, `+`) of lang: expression rather than
-   foundation arithmetic directly; eval interprets them through the
-   rules' meanings, and name resolution runs through the referenced
-   document's vocabulary (ViewContext.termName) with the code-side
-   term map as fallback.
-   Remaining:
-
-   - *Beyond parity:*
+   - *Remaining*
      - **Structural rules.** The general rule form of which textual
        `means` is the token-spine projection: a tree pattern — the
        canonical shape and editor (form: text boxes, dropdowns) for
