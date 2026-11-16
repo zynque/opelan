@@ -62,66 +62,24 @@ what comes next. What works is described per package in each folder's
 
 1. **`means` rules — the next major series.** `pattern means meaning`
    - *Remaining*
-     - **Structural rules.** The general rule form of which textual
-       `means` is the token-spine projection: a tree pattern — the
-       canonical shape and editor (form: text boxes, dropdowns) for
-       the construct it declares — matching subtrees instead of
-       tokens. `lang: language`'s `metaTerms` and `sheet`'s
-       `sheet`/`row`/`cell` become structural rules, and
-       `vocabulary`/`declared` leaves `LanguageDef` entirely.
-       Ambiguous surfaces store a deferred-choice gap (the projection
+     - **Structural Definitions** Stored definitions should start with AST structure and provide text, editor, etc. projections. Definitions like 'a * b means mul(a, b) can still be used to infer the structure *and* the text, but the structure should be the primary focus. Ambiguous parsers are allowed, but produce a deferred-choice gap (the projection
        renders candidates as a dropdown) rather than silently
        first-wins.
-     - **Sheet on rules.** Positional refs (`C4` naming works at commit time via
-      `commitLink`/`linkCellRefs`; parse-time meanings remain) as
-       parse-time meanings resolving to stable `InternalNodeRef`s and
-       printing back as current positions; ranges (`a .. b`).
-     - **`where` and adjustable verbosity.** `where` clauses with
-       constraints inferred from the layer below; a detail-level
-       (terse/verbose) toggle switching `means` to `=>` and hiding
-       `where` behind a marker, in the `def` view, separate from
-       show/hide implementation; violated constraints surface as
-       gaps at every zoom level.
-     - **Value-level `where` — types, not tokens.** Today's `where`
-       binds only leaf productions: `n: number` means an int/float
-       *token* fills `n`. `a, b: int` meaning "the bound subtree has
-       type int" is a different constraint, and needs:
-       - *A type vocabulary.* `Constraint.term` is free text
-         resolved only against `lexicals` (an unknown term is
-         silently dropped); types want their own namespace — a
-         small builtin set first, declared per-construct rather
-         than per-token.
-       - *Construct signatures.* The inference source: `add`/`mul`
-         declare argument and result types — on the builtin
-         registry *Semantics as rules* exposes — so
-         `a + b means add(a, b)` derives `a, b: number` unwritten
-         (`foundation/means/DESIGN.md`, *Placeholders and `where`*:
-         implied constraints show only on zoom-in).
-       - *`typeOf` over gappy trees.* Enforcement stays a
-         post-binding check like `leafAccepts`, but on the bound
-         subtree's inferred type — the result type of the construct
-         that produced it, structural rather than evaluated. A gap
-         operand's type is unknown: it satisfies provisionally, not
-         violates (Never Broken). The thin end of *Immediately
-         typed* (open question 3) and the matching half of item 5.
-       - *Spelling.* Distinguish a leaf binding (`n: number`) from
-         a type binding (`a: int`) in `where` — separate namespaces
-         or a marker — before authored type constraints can coexist
-         with token ones.
-     - **Cycle prevention in the editor.** Completion on a meaning
-       offers only rules below it in the DAG.
-     - **Self-description.** The language-definition language's own
-       syntax written as `means` rules, closing the bootstrap loop.
-     - **Authored leaf productions.** User-defined leaf kinds —
+     - **Adjustable Verbosity in Definitions** (Terse/Verbose) toggle
+       switching `means` to `=>` and hiding `where` behind a marker
+     - **Types in Definitions** In today's definitions 'where a, b: number'
+       only controls which *tokens* are accepted for those placeholders.
+       In some cases, it should act as a type constraint, so those placeholders
+       can be filled with any expression that matches the type. We still need
+       a way to differentiate whether a placeholder is an expression of said type, or
+       a leaf token of said type. Gaps need to be compatible with expected types.
+     - **Cycle Prevention** The editor should only show definitions below the current one
+       in the DAG, but manual document editing could still result in a cycle.
+     - **Self-Description** The language-definition language's own
+       syntax written a Dialect, closing the bootstrap loop.
+     - **Authored Leaf Productions** User-defined leaf kinds —
        dates, currency literals, unit suffixes — as document rules
-       (`n means number(n) where n: digits`), once `where` narrowing
-       grows past builtin token kinds (the opaque-type question —
-       `TokenKind`/`RuleName` value classes now mark the seam). When
-       lexing moves into documents, a token kind ids by the leaf's
-       node — rename-stable like `means:#N` for grammar rules — and
-       `token`, `unrecognized`, `where` terms, and a lexicon's
-       `gapStart`/`gapRun` refer by it. Deferred past the means
-       series, like the lexicons they name.
+       (`n means number(n) where n: digits`)
 2. **Surfaces as definitions — the examples shed their code.** The
    `means` series made expression syntax and printing data, but each
    example still hand-writes its document-level surface: markdown's
