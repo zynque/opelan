@@ -197,6 +197,8 @@ private def step(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel, 
       }
 
     case CommitInputText(id, t) => commitInputText(m, id, t)
+
+    case CommitAction(id, c) => commitActionInput(m, id, c)
   }
 
 // The resolver handed to the text-surface functions: type refs resolve

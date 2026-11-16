@@ -44,6 +44,7 @@ private[typeddoc] def body(
     case Right(tree) =>
       viewTree(tree,
         id => TypedDocInput.SelectSource(id),
-        (id, t) => TypedDocInput.CommitInputText(id, t))
+        (id, t) => TypedDocInput.CommitInputText(id, t),
+        (id, c) => TypedDocInput.CommitAction(id, c))
     case Left(err)   => el("span", style("color: #b00;"))(text(s"error: $err"))
   }

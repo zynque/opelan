@@ -73,13 +73,33 @@ object ViewTree {
   def from(nodeId: Int, children: DetachedNode[NodeData]*) =
     flow(src(nodeId) +: children*)
 
+  // A clickable affordance: `command` names the document operation the
+  // host runs against `nodeId` — `input`'s sibling for actions rather
+  // than text (a sheet's "+ row", "× column"). The children render as
+  // the button's label.
+  def action(nodeId: Int, command: String,
+      children: DetachedNode[NodeData]*) =
+    tagged(s"action:$command", src(nodeId) +: children)
+
   // The view tree projected to plain text — for surfaces that only speak
   // text (the print view feeding docText). Text runs and gaps
   // concatenate; block and grid break lines, row separates cells with
   // tabs; unrecognized structure degrades to gaps so flattened output
   // reparses as gaps.
+  // Interactive chrome — `action:` affordances and containers holding
+  // nothing else — contributes no text, so `flatten` sees only content.
+  private def chrome(t: DetachedNode[NodeData]): Boolean = t.data match {
+    case NodeData.SourceRef(_) => true
+    case NodeData.StringData(tag) =>
+      tag.startsWith("action:") ||
+        (tags(tag) && t.children.nonEmpty && t.children.forall(chrome))
+    case _ => false
+  }
+
   def flatten(t: DetachedNode[NodeData]): String = t match {
     case DetachedNode(NodeData.SourceRef(_), _) => ""
+    case DetachedNode(NodeData.StringData(tag), _)
+        if tag.startsWith("action:") => ""
     case DetachedNode(NodeData.GapData(text), children) =>
       (if (text.isEmpty) "?" else text) + children.map(flatten).mkString
     case DetachedNode(NodeData.StringData(tag), children)
@@ -91,7 +111,7 @@ object ViewTree {
         case "row"            => "\t"
         case _                => ""
       }
-      children.map(flatten).mkString(sep)
+      children.filterNot(chrome).map(flatten).mkString(sep)
     case DetachedNode(NodeData.StringData(tag), children) if children.nonEmpty =>
       s"?$tag" + children.map(flatten).mkString
     case DetachedNode(NodeData.StringData(s), _) => s

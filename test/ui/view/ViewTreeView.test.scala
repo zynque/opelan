@@ -9,7 +9,7 @@ import opelan.ui.fp.View
 class ViewTreeViewSuite extends munit.FunSuite {
 
   private def vt(t: DetachedNode[NodeData]) =
-    viewTree[Int](t, identity, (id, _) => -id)
+    viewTree[Int](t, identity, (id, _) => -id, (_, _) => 0)
 
   test("elements map to their tags; leaves render as text") {
     vt(cell(txt("x"))) match {

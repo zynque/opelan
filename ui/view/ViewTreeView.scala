@@ -21,16 +21,22 @@ import org.scalajs.dom
 def viewTree[I](
     t: DetachedNode[NodeData],
     onSource: Int => I,
-    onEdit: (Int, String) => I): View[I] = {
+    onEdit: (Int, String) => I,
+    onAction: (Int, String) => I): View[I] = {
   val (src, children) = t.children match {
     case DetachedNode(NodeData.SourceRef(id), Nil) :: rest => (Some(id), rest)
     case _ => (None, t.children)
   }
   if (t.data == NodeData.StringData("input"))
-    src.fold(gapView("?input"))(id => inputView(id, children, onSource, onEdit))
-  else {
-    val v = content(t.data, children, onSource, onEdit)
-    src.fold(v)(id => annotated(v, id, onSource))
+    src.fold(gapView("?input"))(id => inputView(id, children, onSource, onEdit, onAction))
+  else t.data match {
+    case NodeData.StringData(tag) if tag.startsWith("action:") =>
+      src.fold(gapView("?action"))(id =>
+        actionView(id, tag.stripPrefix("action:"), children,
+          onSource, onEdit, onAction))
+    case _ =>
+      val v = content(t.data, children, onSource, onEdit, onAction)
+      src.fold(v)(id => annotated(v, id, onSource))
   }
 }
 
@@ -38,23 +44,26 @@ private def content[I](
     data: NodeData,
     children: List[DetachedNode[NodeData]],
     onSource: Int => I,
-    onEdit: (Int, String) => I): View[I] =
+    onEdit: (Int, String) => I,
+    onAction: (Int, String) => I): View[I] =
   data match {
     case NodeData.StringData(tag) if tag.startsWith("styled:") =>
       els("span", style(roleCss(tag.stripPrefix("styled:"))))(
-        children.map(k => viewTree(k, onSource, onEdit)))
+        children.map(k => viewTree(k, onSource, onEdit, onAction)))
     case NodeData.StringData(tag) if ViewTree.tags(tag) =>
-      element(tag, children.map(k => viewTree(k, onSource, onEdit)))
+      element(tag,
+        children.map(k => viewTree(k, onSource, onEdit, onAction)))
     case NodeData.StringData(tag) if children.nonEmpty =>
       // An unrecognized element: surface the tag as a gap, children
       // still render.
-      element("block",
-        gapView(s"?$tag") +: children.map(k => viewTree(k, onSource, onEdit)))
+      element("block", gapView(s"?$tag") +:
+        children.map(k => viewTree(k, onSource, onEdit, onAction)))
     case NodeData.StringData(s) => text(s)
     case NodeData.GapData(t) =>
       val chip = gapView(if (t.isEmpty) "?" else t)
       if (children.isEmpty) chip
-      else els("span")(chip +: children.map(k => viewTree(k, onSource, onEdit)))
+      else els("span")(
+        chip +: children.map(k => viewTree(k, onSource, onEdit, onAction)))
     case other =>
       // Scalars render as text; refs and stray SourceRefs become gaps.
       val lead = other match {
@@ -64,8 +73,20 @@ private def content[I](
       }
       if (children.isEmpty) lead
       else element("block",
-        lead +: children.map(k => viewTree(k, onSource, onEdit)))
+        lead +: children.map(k => viewTree(k, onSource, onEdit, onAction)))
   }
+
+// An action element renders as a plain button: a click emits its
+// command with the source node's id for the host to run against the
+// document.
+private def actionView[I](
+    id: Int, command: String,
+    label: List[DetachedNode[NodeData]],
+    onSource: Int => I, onEdit: (Int, String) => I,
+    onAction: (Int, String) => I): View[I] =
+  el("button", Map("type" -> "button"),
+    on("click", onAction(id, command)))(
+    label.map(k => viewTree(k, onSource, onEdit, onAction))*)
 
 private def element[I](tag: String, children: Iterable[View[I]]): View[I] =
   tag match {
@@ -120,10 +141,11 @@ private def inputView[I](
     id: Int,
     display: List[DetachedNode[NodeData]],
     onSource: Int => I,
-    onEdit: (Int, String) => I): View[I] = {
+    onEdit: (Int, String) => I,
+    onAction: (Int, String) => I): View[I] = {
   val current = display.map(ViewTree.flatten).mkString
   if (display.exists(hasStyled))
-    styledInputView(id, display, current, onSource, onEdit)
+    styledInputView(id, display, current, onSource, onEdit, onAction)
   else
     el("input",
       Map(
@@ -146,12 +168,13 @@ private def styledInputView[I](
     display: List[DetachedNode[NodeData]],
     current: String,
     onSource: Int => I,
-    onEdit: (Int, String) => I): View[I] =
+    onEdit: (Int, String) => I,
+    onAction: (Int, String) => I): View[I] =
   el("span")(
     el("span",
       Map("style" -> (inputCss(current) + "cursor: text;")),
       onEventOpt("click")(startEdit))(
-      display.map(k => viewTree(k, onSource, onEdit))*),
+      display.map(k => viewTree(k, onSource, onEdit, onAction))*),
     el("input",
       Map(
         "type"  -> "text",

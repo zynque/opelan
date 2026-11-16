@@ -45,6 +45,14 @@ trait Language {
   // the node it edits. None = the language's views are read-only.
   def parseInput(text: String): Option[DetachedNode[NodeData]] = None
 
+  // A view's `action:` element clicked: `command` names a document
+  // operation the language interprets against the node it was emitted
+  // for — a whole-document edit (a sheet's row/column add/remove), not
+  // a single node's rewrite like parseInput. None = read-only.
+  def commitAction(
+      id: Int, command: String,
+      doc: Document[NodeData]): Option[Document[NodeData]] = None
+
   // A projected input commit through the host's per-input sessions, so
   // re-editing an input reparses in proportion to the edit. Its content
   // must equal `parseInput`'s; the default parses whole.

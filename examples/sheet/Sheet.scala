@@ -40,8 +40,9 @@ def sheetView(
     ctx: ViewContext = ViewContext()): DetachedNode[NodeData] = {
   val d = resolveGridRefs(healGaps(doc, sheetId, ctx.parseInput), sheetId)
   val currency = ctx.settings.get("currency")
-  grid(d.childrenOf(sheetId).map(r =>
-    rowView(d, r, isHRow(d, r), currency, ctx.termName))*)
+  grid((d.childrenOf(sheetId).map(r =>
+    rowView(d, sheetId, r, isHRow(d, r), currency, ctx.termName)) :+
+      row(cell(action(sheetId, "add-row", txt("+ row")))))*)
 }
 
 // The "formulas" view: the same grid, showing each cell's formula
@@ -58,12 +59,18 @@ private def isHRow(doc: Document[NodeData], rowId: Int): Boolean =
   termOf(sheetTerms, doc, rowId).contains(HRowTag)
 
 private def rowView(
-    doc: Document[NodeData], rowId: Int,
+    doc: Document[NodeData], sheetId: Int, rowId: Int,
     header: Boolean, currency: Option[String],
     nameOf: ExternalNodeReference => Option[String])
-    : DetachedNode[NodeData] =
-  row(doc.childrenOf(rowId).map(cid =>
-    cellView(doc, cid, header, currency, nameOf))*)
+    : DetachedNode[NodeData] = {
+  val cells = doc.childrenOf(rowId).map(cid =>
+    cellView(doc, cid, header, currency, nameOf))
+  val controls =
+    if (header)
+      List(cell(action(sheetId, "add-column", txt("+ col"))))
+    else List(cell(action(rowId, "remove-row", txt("−"))))
+  row((cells ++ controls)*)
+}
 
 private def formulaRow(
     doc: Document[NodeData], rowId: Int,
@@ -78,7 +85,10 @@ private def cellView(
     header: Boolean, currency: Option[String],
     nameOf: ExternalNodeReference => Option[String])
     : DetachedNode[NodeData] =
-  mkCell(header, cellId, valueOf(doc, cellId, currency, nameOf))
+  if (header)
+    mkCell(header, cellId, valueOf(doc, cellId, currency, nameOf),
+      action(cellId, "remove-column", txt("−")))
+  else mkCell(header, cellId, valueOf(doc, cellId, currency, nameOf))
 
 private def formulaCell(
     doc: Document[NodeData], cellId: Int,

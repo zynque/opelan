@@ -96,6 +96,9 @@ enum TypedDocInput {
   // A projected input committed text: parse it through the
   // language's input grammar and rewrite the node in place.
   case CommitInputText(nodeId: Int, text: String)
+  // A view's action element clicked: the command names a document
+  // operation the language interprets (a sheet's row/column edits).
+  case CommitAction(nodeId: Int, command: String)
   // Go to definition: follow the document's type ref — the owner opens
   // the language document it names (the app's "implementation").
   case GoToDefinition

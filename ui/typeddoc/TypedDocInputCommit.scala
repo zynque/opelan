@@ -51,6 +51,27 @@ private[typeddoc] def commitInputText(
         Vector(Status("No input grammar")))
   }
 
+// An `action:` element's command: the document's language interprets
+// it as a whole-document edit (Language.commitAction — a sheet's
+// row/column add/remove), the doc replaced wholesale and mirrored out.
+private[typeddoc] def commitActionInput(
+    m: TypedDocModel, id: Int,
+    command: String): Update[TypedDocModel, TypedDocOutput, TypedDocInput] =
+  languageForDoc(m.doc, m.store)
+    .flatMap(_.commitAction(id, command, m.doc)) match {
+    case Some(d) =>
+      val msg = "Document updated"
+      Update(
+        m.copy(doc = d, pushedDoc = d, pushedSelect = None,
+          pushMode = DocPush.Merge("Action"), status = msg,
+          text = docText(d, langFor(m)), textEpoch = m.textEpoch + 1,
+          inputSessions = m.inputSessions.retain(reachableIds(d))),
+        Vector(DocChanged(d), Status(msg)))
+    case None =>
+      Update(m.copy(status = "No action handler"),
+        Vector(Status("No action handler")))
+  }
+
 // The impls a `definition`/`meaning` commit needs to desugar phrase
 // meanings
 // through the def's own syntax — the doc being edited is the def, so

@@ -50,7 +50,8 @@ val sheetImpls = Impls(
     "sheet-formulas" -> ((doc, id, ctx) => formulasView(doc, id, ctx))),
   inputParsers = Map("sheet-cell" -> parseCellText),
   refName = Some(isCellRefName),
-  commitLink = Some(linkCellRefs))
+  commitLink = Some(linkCellRefs),
+  action = Some(sheetAction))
 
 // Construct identities of the language. Code names a term ("hrow") only
 // to look up its vocabulary entry in the canonical encoding; documents

@@ -217,6 +217,11 @@ class DefLanguage(
       : Option[(DetachedNode[NodeData], InputSessions)] =
     inputs.commit(id, text, sessions)
 
+  override def commitAction(
+      id: Int, command: String, doc: Document[NodeData])
+      : Option[Document[NodeData]] =
+    impls.action.flatMap(_(doc, id, command))
+
   override def rememberGaps(
       doc: Document[NodeData], retry: GapRetry): GapRetry =
     rememberInputGaps(doc, inputs.syntax, retry)

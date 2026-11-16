@@ -34,6 +34,11 @@ case class Impls(
     // falling back to a label (InputGrammar).
     refName: Option[String => Boolean] = None,
     commitLink: Option[CommitLink] = None,
+    // Document operations a view's `action:` elements name — the
+    // (doc, emitted node id, command) → new document map; a sheet's
+    // add/remove row/column, where commitInput can't apply.
+    action: Option[
+      (Document[NodeData], Int, String) => Option[Document[NodeData]]] = None,
     // Named productions `where` terms bind that aren't token leaves —
     // combinator parsers over the rule set's own compiled rules
     // (markdown's `blocks`/`runs` — the document's block sequence and a

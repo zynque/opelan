@@ -60,26 +60,25 @@ what comes next. What works is described per package in each folder's
 
 ## Next steps
 
-1. **`means` rules — the next major series.** `pattern means meaning`
-   - *Remaining*
-     - **Structural Definitions** Stored definitions should start with AST structure and provide text, editor, etc. projections. Definitions like 'a * b means mul(a, b) can still be used to infer the structure *and* the text, but the structure should be the primary focus. Ambiguous parsers are allowed, but produce a deferred-choice gap (the projection
-       renders candidates as a dropdown) rather than silently
-       first-wins.
-     - **Adjustable Verbosity in Definitions** (Terse/Verbose) toggle
-       switching `means` to `=>` and hiding `where` behind a marker
-     - **Types in Definitions** In today's definitions 'where a, b: number'
-       only controls which *tokens* are accepted for those placeholders.
-       In some cases, it should act as a type constraint, so those placeholders
-       can be filled with any expression that matches the type. We still need
-       a way to differentiate whether a placeholder is an expression of said type, or
-       a leaf token of said type. Gaps need to be compatible with expected types.
-     - **Cycle Prevention** The editor should only show definitions below the current one
-       in the DAG, but manual document editing could still result in a cycle.
-     - **Self-Description** The language-definition language's own
-       syntax written a Dialect, closing the bootstrap loop.
-     - **Authored Leaf Productions** User-defined leaf kinds —
-       dates, currency literals, unit suffixes — as document rules
-       (`n means number(n) where n: digits`)
+1. **Dialects** `pattern means meaning`
+    - **Structural Definitions** Stored definitions should start with AST structure and provide text, editor, etc. projections. Definitions like 'a * b means mul(a, b) can still be used to infer the structure *and* the text, but the structure should be the primary focus. Ambiguous parsers are allowed, but produce a deferred-choice gap (the projection
+      renders candidates as a dropdown) rather than silently
+      first-wins.
+    - **Adjustable Verbosity in Definitions** (Terse/Verbose) toggle
+      switching `means` to `=>` and hiding `where` behind a marker
+    - **Types in Definitions** In today's definitions 'where a, b: number'
+      only controls which *tokens* are accepted for those placeholders.
+      In some cases, it should act as a type constraint, so those placeholders
+      can be filled with any expression that matches the type. We still need
+      a way to differentiate whether a placeholder is an expression of said type, or
+      a leaf token of said type. Gaps need to be compatible with expected types.
+    - **Cycle Prevention** The editor should only show definitions below the current one
+      in the DAG, but manual document editing could still result in a cycle.
+    - **Self-Description** The language-definition language's own
+      syntax written a Dialect, closing the bootstrap loop.
+    - **Authored Leaf Productions** User-defined leaf kinds —
+      dates, currency literals, unit suffixes — as document rules
+      (`n means number(n) where n: digits`)
 2. **Surfaces as definitions — the examples shed their code.** The
    `means` series made expression syntax and printing data, but each
    example still hand-writes its document-level surface: markdown's
