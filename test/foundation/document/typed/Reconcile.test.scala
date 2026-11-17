@@ -95,4 +95,32 @@ class ReconcileSuite extends FunSuite {
     val doc = buildDocument(n(s("root"), sl("x")))
     assert(commitContent(999, sl("y"), doc).isLeft)
   }
+  test("an inserted sibling doesn't take a changed neighbor's id") {
+    def rule(op: String, name: String, k: Int) =
+      n(s("rule"), sl(op), sl(name), il(k))
+    val doc = buildDocument(n(s("root"),
+      n(s("box"), rule("+", "add", 0), rule("-", "sub", 0))))
+    val b = box(doc)
+    val old = doc.childrenOf(b)
+    val d = commitContent(b, n(s("box"), rule("//", "div", 1),
+      rule("+", "add", 1), rule("-", "sub", 1)), doc).toOption.get
+    val ids = d.childrenOf(b)
+    assertEquals(ids.drop(1), old)
+    assert(!old.contains(ids.head), ids.toString)
+  }
+
+  test("a child cut by one commit keeps its id when the next restores it") {
+    val doc = buildDocument(n(s("root"),
+      n(s("box"), n(s("rule"), sl("*"), il(0)), n(s("rule"), sl("+"), il(0)))))
+    val b = box(doc)
+    val old = doc.childrenOf(b)
+    val merged = commitContent(b,
+      n(s("box"), sl("a // b a * b"), n(s("rule"), sl("+"), il(0))), doc)
+      .toOption.get
+    assert(!merged.childrenOf(b).contains(old(0)))
+    val restored = commitContent(b, n(s("box"), n(s("rule"), sl("//"), il(1)),
+      n(s("rule"), sl("*"), il(1)), n(s("rule"), sl("+"), il(0))), merged)
+      .toOption.get
+    assertEquals(restored.childrenOf(b).drop(1), old)
+  }
 }

@@ -43,25 +43,49 @@ def commitContent(
           case d => d
         }
 
-      // Which old child a new subtree keeps: (id, whole?). The child at
-      // the same index is tried before the rest so unchanged positions
-      // don't scan. A whole-subtree match leaves it untouched; a
-      // data-only match keeps the node and rematches its children.
-      def keep(child: DetachedNode[NodeData], index: Int): Option[(Int, Boolean)] = {
-        val ordered = oldIds.lift(index).toList ++ oldIds
-        def pick(pred: Int => Boolean): Option[Int] =
-          ordered.find(cid => !claimed(cid) && pred(cid))
-        pick(cid => extractExternalized(document, cid).contains(child))
-          .map(_ -> true)
-          .orElse(
-            if (child.children.isEmpty) None
-            else pick(cid => externalData(cid).contains(child.data)).map(_ -> false))
+      // Which old child a new subtree keeps. Whole-subtree matches
+      // claim first, the same index tried before the rest so unchanged
+      // positions don't scan. Data-only matches — the node kept, its
+      // children rematched — then pair the rest by how many leaves they
+      // share, best pairs first: a sibling inserted beside unchanged
+      // ones must not take a neighbor's id by position. Former
+      // children (cut, still parented here — ids are never reused)
+      // are candidates after the live ones: text typed mid-line can
+      // merge a line away for a keystroke, and its content returning
+      // must find its identity again.
+      val former = document.nodes.indices.filter(id =>
+        !oldIds.contains(id) &&
+          document.nodes(id).parentId.contains(nodeId)).toList
+      val pool = oldIds ++ former
+
+      def pick(index: Int, pred: Int => Boolean): Option[Int] =
+        (oldIds.lift(index).toList ++ pool)
+          .find(cid => !claimed(cid) && pred(cid))
+
+      val whole = content.children.zipWithIndex.map { case (child, i) =>
+        val k = pick(i, cid => extractExternalized(document, cid).contains(child))
+        k.foreach(claimed += _)
+        k
       }
 
+      val partial = (for {
+        (child, i) <- content.children.zipWithIndex
+        if whole(i).isEmpty && child.children.nonEmpty
+        cid <- pool
+        if !claimed(cid) && externalData(cid).contains(child.data)
+        old <- extractExternalized(document, cid)
+      } yield (i, cid, sharedLeaves(child, old),
+        oldIds.lift(i).contains(cid), oldIds.contains(cid)))
+        .sortBy { case (i, _, score, here, live) =>
+          (-score, !here, !live, i) }
+        .foldLeft(Map.empty[Int, Int]) { case (acc, (i, cid, _, _, _)) =>
+          if (acc.contains(i) || claimed(cid)) acc
+          else { claimed += cid; acc + (i -> cid) }
+        }
+
       val pairs = content.children.zipWithIndex.map { case (child, i) =>
-        val k = keep(child, i)
-        k.foreach(p => claimed += p._1)
-        child -> k
+        child -> whole(i).map(_ -> true)
+          .orElse(partial.get(i).map(_ -> false))
       }
 
       for {
@@ -90,3 +114,12 @@ def commitContent(
               else updateNodeChildIds(nodeId, newIds, d3)
       } yield d4
   }
+
+// How many leaves two subtrees share, as multisets — the likeness a
+// data-only match ranks candidates by.
+private def sharedLeaves(
+    a: DetachedNode[NodeData], b: DetachedNode[NodeData]): Int = {
+  def leaves(t: DetachedNode[NodeData]): List[NodeData] =
+    if (t.children.isEmpty) List(t.data) else t.children.flatMap(leaves)
+  leaves(a).intersect(leaves(b)).size
+}

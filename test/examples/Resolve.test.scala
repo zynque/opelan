@@ -191,4 +191,50 @@ class ResolveSuite extends FunSuite {
     assertEquals(committed.children.size, 2,
       s"committed cell shape: $committed")
   }
+
+  // The workbench report: after both bumps, a cell committed as
+  // `D5 // B6` renders as a value — the sheet evaluates (and prints)
+  // through the pinned expression def's rules, not the code-side set.
+  test("a cell using an authored alternate notation evaluates in the sheet view") {
+    import opelan.foundation.document.typed.commitContent
+    import opelan.foundation.language.{
+      InputSessions, Language, applyDocText, docText}
+    import opelan.foundation.view.ViewTree
+    val staged = List(ExprLanguage, SheetLanguage, DocLanguage)
+      .foldLeft(Store.empty)((s, l) => s.put(
+        l.typeRef.documentUrl,
+        if (l == ExprLanguage) demoExprDoc else l.langDoc)._1)
+    // Authored as the workbench does: Enter at the end of the
+    // `(a) means a` line, then the new line typed keystroke by
+    // keystroke — every state commits. Node ids of existing rules
+    // must survive it: cells reference their declarations by id.
+    val langFor: Document[NodeData] => Option[Language] =
+      _ => Some(DocLanguage)
+    val text = docText(demoExprDoc, langFor)
+    val line = text.linesIterator.find(_.contains("(a) means")).get
+    val end = text.indexOf(line) + line.length
+    val rule = line.takeWhile(_ == ' ') + "a // b means div(a, b)"
+    val typed = (0 to rule.length).map(k =>
+      text.substring(0, end) + "\n" + rule.take(k) + text.substring(end))
+    val v1 = typed.foldLeft(demoExprDoc)((d, t) =>
+      applyDocText(d, langFor, t).toOption.get)
+    val s1 = staged.put(ExprLanguage.typeRef.documentUrl, v1)._1
+    val sheetDoc = s1.get("opelan:languages/sheet", 0).get
+    val s2 = s1.put("opelan:languages/sheet",
+      acceptUpdates(sheetDoc, s1).get)._1
+    val budget = acceptUpdates(SheetLanguage.sampleDoc, s2).get
+    val cellId = budget.nodes.indexWhere(n =>
+      n != null && n.data == NodeData.GapData("D5 / B6"))
+    val sheet = languageForDoc(budget, s2).get
+    val (content, _) = sheet.commitInput(cellId, "D5 // B6", InputSessions()).get
+    val edited = commitContent(cellId, content, budget).toOption.get
+    val rows = sheet.render("sheet", edited).map(ViewTree.flatten)
+      .toOption.get.split("\n")
+    assertEquals(rows(6), "per person\t\t\t$8.10")
+    val formulas = sheet.render("formulas", edited).map(ViewTree.flatten)
+      .toOption.get.split("\n")
+    assertEquals(formulas(6), "per person\t\t\tD5 // B6")
+    assertEquals(formulas(1), "Apples\t4\t1.2\tB2 * C2")
+    assertEquals(formulas(4), "total\t\t\tD2 + D3 + D4")
+  }
 }

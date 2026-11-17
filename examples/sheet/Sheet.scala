@@ -1,9 +1,9 @@
 package opelan.examples.sheet
 
 import opelan.examples.termOf
-import opelan.examples.expr.{Expr, ExprLanguage, exprFromDetached, exprRules, exprTag, exprTerms, exprToDetached, exprViewLeaf}
+import opelan.examples.expr.{Expr, ExprLanguage, ExprReading, codeExprReading, exprFromDetached, exprReading, exprToDetached, exprViewLeaf}
 import opelan.foundation.document._
-import opelan.foundation.means.engine.{evalNode, printViewWith, semanticsOf, valueText}
+import opelan.foundation.means.engine.{evalNode, printViewWith, valueText}
 import opelan.foundation.view.ViewTree
 import opelan.foundation.view.ViewTree._
 import opelan.foundation.langdef.ViewContext
@@ -40,9 +40,11 @@ def sheetView(
     ctx: ViewContext = ViewContext()): DetachedNode[NodeData] = {
   val d = resolveGridRefs(healGaps(doc, sheetId, ctx.parseInput), sheetId)
   val currency = ctx.settings.get("currency")
+  val reading = exprReading(ctx)
   grid((List(deleteControlsRow(d, sheetId)) ++
       d.childrenOf(sheetId).map(r =>
-        rowView(d, sheetId, r, isHRow(d, r), currency, ctx.termName)) :+
+        rowView(d, sheetId, r, isHRow(d, r), currency, reading,
+          ctx.termName)) :+
       row(controls(action(sheetId, "add-row", txt("+")))))*)
 }
 
@@ -53,7 +55,7 @@ def formulasView(
     ctx: ViewContext = ViewContext()): DetachedNode[NodeData] = {
   val d = healGaps(doc, sheetId, ctx.parseInput)
   grid(d.childrenOf(sheetId).map(r =>
-    formulaRow(d, r, isHRow(d, r), ctx.termName))*)
+    formulaRow(d, r, isHRow(d, r), exprReading(ctx), ctx.termName))*)
 }
 
 private def isHRow(doc: Document[NodeData], rowId: Int): Boolean =
@@ -69,11 +71,11 @@ private def deleteControlsRow(
 
 private def rowView(
     doc: Document[NodeData], sheetId: Int, rowId: Int,
-    header: Boolean, currency: Option[String],
+    header: Boolean, currency: Option[String], reading: ExprReading,
     nameOf: ExternalNodeReference => Option[String])
     : DetachedNode[NodeData] = {
   val cells = doc.childrenOf(rowId).map(cid =>
-    cellView(doc, cid, header, currency, nameOf))
+    cellView(doc, cid, header, currency, reading, nameOf))
   val left =
     if (header) List(controls())
     else List(controls(action(rowId, "remove-row", txt("−"))))
@@ -85,26 +87,27 @@ private def rowView(
 
 private def formulaRow(
     doc: Document[NodeData], rowId: Int,
-    header: Boolean,
-    nameOf: ExternalNodeReference => Option[String] = (_ => None))
+    header: Boolean, reading: ExprReading,
+    nameOf: ExternalNodeReference => Option[String])
     : DetachedNode[NodeData] =
   row(doc.childrenOf(rowId).map(cid =>
-    formulaCell(doc, cid, header, nameOf))*)
+    formulaCell(doc, cid, header, reading, nameOf))*)
 
 private def cellView(
     doc: Document[NodeData], cellId: Int,
-    header: Boolean, currency: Option[String],
+    header: Boolean, currency: Option[String], reading: ExprReading,
     nameOf: ExternalNodeReference => Option[String])
     : DetachedNode[NodeData] =
-  mkCell(header, cellId, valueOf(doc, cellId, currency, nameOf))
+  mkCell(header, cellId,
+    valueOf(doc, cellId, currency, reading, nameOf))
 
 private def formulaCell(
     doc: Document[NodeData], cellId: Int,
-    header: Boolean,
-    nameOf: ExternalNodeReference => Option[String] = (_ => None))
+    header: Boolean, reading: ExprReading,
+    nameOf: ExternalNodeReference => Option[String])
     : DetachedNode[NodeData] =
   mkCell(header, cellId,
-    input(cellId, txt(cellText(doc, cellId, nameOf))))
+    input(cellId, txt(cellText(doc, cellId, nameOf, reading))))
 
 private def mkCell(
     header: Boolean, cellId: Int,
@@ -118,7 +121,7 @@ private def mkCell(
 // compute.
 private def valueOf(
     doc: Document[NodeData], cellId: Int,
-    currency: Option[String],
+    currency: Option[String], reading: ExprReading,
     nameOf: ExternalNodeReference => Option[String])
     : DetachedNode[NodeData] =
   doc.getNode(cellId) match {
@@ -126,7 +129,7 @@ private def valueOf(
         if node.childIds.isEmpty &&
            !node.data.isInstanceOf[NodeData.InternalNodeRef] =>
       input(cellId, txt(cellText(doc, cellId)))
-    case _ => evalCell(doc, cellId, currency, nameOf)
+    case _ => evalCell(doc, cellId, currency, reading, nameOf)
   }
 
 // A computed value, evaluated by the derived evaluator over the
@@ -136,14 +139,12 @@ private def valueOf(
 // cyclic ref renders as a gap tagged to the blocking node. With the
 // view's `currency` setting, every computed result shows as money
 // ("$8.10", "$8.00") — literal inputs stay plain.
-private val sheetSemantics = semanticsOf(exprRules)
-
 private def evalCell(
     doc: Document[NodeData], cellId: Int,
-    currency: Option[String],
-    nameOf: ExternalNodeReference => Option[String] = (_ => None))
+    currency: Option[String], reading: ExprReading,
+    nameOf: ExternalNodeReference => Option[String])
     : DetachedNode[NodeData] =
-  evalNode(sheetSemantics, exprTerms, doc, cellId, Set(cellId),
+  evalNode(reading.semantics, reading.terms, doc, cellId, Set(cellId),
     nameOf) match {
     case Right(v) => (currency, v) match {
       case (Some(c), NodeData.IntData(n))   => txt(c + "%.2f".format(n.toDouble))
@@ -160,7 +161,8 @@ private def evalCell(
 // expression with refs named the same way.
 def cellText(
     doc: Document[NodeData], cellId: Int,
-    nameOf: ExternalNodeReference => Option[String] = (_ => None))
+    nameOf: ExternalNodeReference => Option[String] = (_ => None),
+    reading: ExprReading = codeExprReading)
     : String =
   doc.getNode(cellId) match {
     case Some(node) if node.childIds.isEmpty => node.data match {
@@ -172,7 +174,7 @@ def cellText(
       case other                       => NodeDataText.show(other)
     }
     case _ => nameRefs(doc, cellId,
-      ViewTree.flatten(printViewWith(exprRules, exprTag, exprViewLeaf,
+      ViewTree.flatten(printViewWith(reading.rules, reading.tag, exprViewLeaf,
         nameOf)(resolveGridRefs(doc, cellId), cellId)))
   }
 

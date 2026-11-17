@@ -72,7 +72,11 @@ case class ViewContext(
     // themselves; a ref anchored inside another def document names the
     // vocabulary term its node declares — resolved through the host's
     // store. Views evaluating stored nodes pass it to evalNode.
-    termName: ExternalNodeReference => Option[String] = (_ => None))
+    termName: ExternalNodeReference => Option[String] = (_ => None),
+    // The definition a view interprets constructs by — the rendered
+    // def when it has rules, else the def its input grammar pins — so
+    // an authored `a // b` evaluates and prints wherever it reads.
+    dialect: Option[LanguageDef] = None)
 
 val docImpls = Impls(
   views = Map(

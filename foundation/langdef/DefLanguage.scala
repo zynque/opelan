@@ -162,7 +162,12 @@ class DefLanguage(
     contentId(doc)
       .toRight(s"$name: typed document has no content")
       .map(id => b(doc, id, ViewContext(
-        settings, inputs.parse(retry), interpretDef, docUrl, termName)))
+        settings, inputs.parse(retry), interpretDef, docUrl, termName,
+        viewDialect)))
+
+  private lazy val viewDialect: Option[LanguageDef] =
+    if (languageDef.syntax.flatMap(_.rules).isDefined) Some(languageDef)
+    else inputs.dialect
 
   // Total like every recovering grammar: Some whenever a syntax exists —
   // and always for the meta language, whose text form is the format in

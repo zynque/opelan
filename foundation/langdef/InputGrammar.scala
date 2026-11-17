@@ -23,6 +23,12 @@ case class InputGrammar(
     parser.collect { case InputParserDef.Language(ref, _) => ref }
       .flatMap(resolve).flatMap(_.textSyntax)
 
+  // The def the grammar refers to — what reads the text also
+  // interprets what it read.
+  def dialect: Option[LanguageDef] =
+    parser.collect { case InputParserDef.Language(ref, _) => ref }
+      .flatMap(resolve).collect { case d: DefLanguage => d.languageDef }
+
   def parse(retry: GapRetry)(text: String): Option[DetachedNode[NodeData]] =
     parser.map(p => commitLinked(p match {
       case InputParserDef.Builtin(name) =>

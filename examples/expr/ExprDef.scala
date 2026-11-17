@@ -95,10 +95,11 @@ val exprImpls = Impls(
   },
   views = Map(
     "expr-print" -> ((doc, id, ctx) =>
-      printViewWith(exprRules, exprTag, exprViewLeaf,
-        ctx.termName)(doc, id)),
+      printViewWith(exprReading(ctx).rules, exprReading(ctx).tag,
+        exprViewLeaf, ctx.termName)(doc, id)),
     "expr-eval"  -> ((doc, id, ctx) =>
-      evalView(semanticsOf(exprRules), exprTerms, ctx.termName)(doc, id))))
+      evalView(exprReading(ctx).semantics, exprReading(ctx).terms,
+        ctx.termName)(doc, id))))
 
 // Construct identities of the language. Code names a term ("*") only
 // to look up its vocabulary entry in the canonical encoding; documents
