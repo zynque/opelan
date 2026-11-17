@@ -45,6 +45,14 @@ def infixLiteralsOf(set: RuleSet): Set[String] =
     }.collect { case Piece.Literal(text, _) => text }
   }.toSet
 
+// What `set` contributes to its lexicon: the spelled literals and
+// which of them open gap runs. The part of tokenization a rules edit
+// can move — an incremental session may carry memoized results only
+// while this signature is unchanged (a moved literal can have mis-
+// scanned anything, so a change restarts the parse).
+def lexiconSignature(set: RuleSet): (List[String], Set[String]) =
+  (literalsOf(set), infixLiteralsOf(set))
+
 // Lexicon entries for the spelled literals, longest first — the
 // token kind is the spelling itself.
 def literalRules(spelled: List[String]): List[(String, LexicalRule)] =

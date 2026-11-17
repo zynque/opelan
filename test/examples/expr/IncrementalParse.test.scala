@@ -31,16 +31,22 @@ class IncrementalParseSuite extends FunSuite {
   }
 
   test("a rules change carries the session — a means entry drops with its caller") {
-    // Under the staged rules, `(7 / 7)` doesn't fit: its `(a)` sequence
-    // result is memoized. Adding the `/` rule marks only `expr` changed,
-    // but `(a)`'s placeholder recursed through `expr`, so its entry
-    // falls with it — no stale result survives.
-    val staged = languageFromDef(demoExprDef).textSyntax.get
-    val withDiv = languageFromDef(exprDef).textSyntax.get
-    val names = withDiv.changedSince(staged).map(_.rules).get
+    // Under the staged rules, `(7 + 7)` doesn't fit: the number
+    // operand rule is missing, so `(a)`'s sequence result is memoized
+    // against its failed `expr` call. Restoring the rule changes only
+    // `expr` — the derived literal set is untouched — and `(a)`'s
+    // entry falls with it: no stale result survives.
+    import opelan.foundation.langdef.SyntaxDef
+    import opelan.foundation.means.text.readPattern
+    val noNumber = exprDef.copy(syntax = Some(SyntaxDef("expr", Some(
+      exprRules.copy(rules = exprRules.rules.filterNot(
+        _.pattern == readPattern("n")))))))
+    val staged = languageFromDef(noNumber).textSyntax.get
+    val fullSyntax = languageFromDef(exprDef).textSyntax.get
+    val names = fullSyntax.changedSince(staged).map(_.rules).get
     assertEquals(names, Set(RuleName("expr")))
-    val s0 = ParseSession.start(staged.parser, exprTokens, "(7 / 7)")
-    val s1 = s0.changeRules(withDiv.parser, names)
-    assertEquals(normal(s1.result), full(withDiv.parser, s1.text))
+    val s0 = ParseSession.start(staged.parser, exprTokens, "(7 + 7)")
+    val s1 = s0.changeRules(fullSyntax.parser, names)
+    assertEquals(normal(s1.result), full(fullSyntax.parser, s1.text))
   }
 }

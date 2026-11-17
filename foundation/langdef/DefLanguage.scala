@@ -7,7 +7,7 @@ import opelan.foundation.langdef.doc._
 import opelan.foundation.langdef.syntax._
 import opelan.foundation.means.RuleSet
 import opelan.foundation.means.engine.{
-  compileRules, rephraseRuleSet, withLiterals}
+  compileRules, lexiconSignature, rephraseRuleSet, withLiterals}
 import opelan.foundation.language.{
   GapRetry, InputSessions, Language, SyntaxChange, TextSyntax}
 import opelan.foundation.view.ViewTree
@@ -190,7 +190,9 @@ class DefLanguage(
   // syntax plus the construct refs it emits (they pin the def's
   // version), so a session survives re-decoding an unchanged def; after
   // an edit to the def, only rules whose definitions changed rerun —
-  // and a version bump re-pins kept content's term tags rather than
+  // unless the edit moved the derived literals (a changed tokenization
+  // can have mis-scanned anything, so the session restarts) — and a
+  // version bump re-pins kept content's term tags rather than
   // reparsing.
   override def textSyntax: Option[TextSyntax] =
     // A textParser-driving language's surface parse isn't the compiled
@@ -202,8 +204,13 @@ class DefLanguage(
     } yield TextSyntax(parser, lexicon,
       (s.lexicon, s.rules, termTags),
       changedSince = previous => previous.key match {
+        // Kept results are honest only while tokenization is unchanged:
+        // literals derive from the rules, so a differing signature —
+        // `a // b` added — can make any kept result wrong. Restart.
         case (s.lexicon, beforeRules: Option[RuleSet] @unchecked,
-              beforeTags: Map[String, NodeData] @unchecked) =>
+              beforeTags: Map[String, NodeData] @unchecked)
+            if beforeRules.map(lexiconSignature) ==
+               s.rules.map(lexiconSignature) =>
           Some(SyntaxChange(
             syntaxChanges(SyntaxDef(s.lexicon, beforeRules), s),
             retagBy(beforeTags, termTag)))

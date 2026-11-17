@@ -131,4 +131,64 @@ class ResolveSuite extends FunSuite {
     val budget2 = acceptUpdates(budget, s2).get
     assertEquals(perPerson(s2, budget2), "per person\t\t\t$8.10")
   }
+
+  // The `a // b` report: an authored alternate notation saved as
+  // expression v1 reaches cells only through the same two bumps —
+  // the sheet def's input-grammar pin, then the budget's type-ref pin.
+  test("an authored alternate notation reaches cells after both pin bumps") {
+    import opelan.examples.expr.{demoExprDef, exprRules}
+    import opelan.foundation.langdef.SyntaxDef
+    import opelan.foundation.means.text.readRuleOrGap
+    // Seeded like the workbench: lang: expression v0 is the staged
+    // demo def — no `/`, no `div` declared.
+    val staged = List(ExprLanguage, SheetLanguage, DocLanguage)
+      .foldLeft(Store.empty)((s, l) => s.put(
+        l.typeRef.documentUrl,
+        if (l == ExprLanguage) demoExprDoc else l.langDoc)._1)
+    val budget = SheetLanguage.sampleDoc
+    val cell = "D5 // B6"
+    def read(st: Store, b: Document[NodeData]) =
+      languageForDoc(b, st).get.parseInput(cell)
+
+    // expression v0 knows no `//`: whatever v0 makes of the cell, it
+    // is not a clean two-operand construct.
+    val before = read(staged, budget)
+
+    // The authored rule saved as expression v1 — pins unchanged.
+    val v1 = demoExprDef.copy(syntax = demoExprDef.syntax.map(s =>
+      s.copy(rules = s.rules.map(rs => rs.copy(rules =
+        rs.rules :+ readRuleOrGap("a // b means div(a, b)"))))))
+    val s1 = staged.put(
+      ExprLanguage.typeRef.documentUrl, langDefDoc(v1))._1
+    assertEquals(read(s1, budget), before)
+
+    // lang: sheet accepts: its input-grammar ref bumps to expression v1.
+    val sheetDoc = s1.get("opelan:languages/sheet", 0).get
+    val s2 = s1.put("opelan:languages/sheet",
+      acceptUpdates(sheetDoc, s1).get)._1
+
+    // The budget accepts: type ref bumps to sheet v1 — `//` now reads.
+    val budget2 = acceptUpdates(budget, s2).get
+    val after = read(s2, budget2).get
+    assert(!after.data.isInstanceOf[NodeData.GapData],
+      s"cell still unread: $after")
+    assertEquals(after.children.size, 2, s"cell shape: $after")
+
+    // The commit path the workbench exercises: a session started
+    // under v0 (lexicon without `//`) must not retext under the stale
+    // lexicon — the derived literal set changed, so it restarts.
+    import opelan.foundation.language.InputSessions
+    def hasGap(n: DetachedNode[NodeData]): Boolean =
+      n.data.isInstanceOf[NodeData.GapData] || n.children.exists(hasGap)
+    val sheet0 = languageForDoc(budget, s1).get
+    val sheet1 = languageForDoc(budget2, s2).get
+    val (stale, sessions) =
+      sheet0.commitInput(5, cell, InputSessions()).get
+    assert(hasGap(stale), s"v0 cell unexpectedly clean: $stale")
+    val (committed, _) = sheet1.commitInput(5, cell, sessions).get
+    assert(!hasGap(committed),
+      s"committed cell still carries a gap: $committed")
+    assertEquals(committed.children.size, 2,
+      s"committed cell shape: $committed")
+  }
 }

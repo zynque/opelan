@@ -74,10 +74,13 @@ private def meaningSyntax(
       tokens,
       (s.lexicon, set, placeholders, tags),
       changedSince = previous => previous.key match {
+        // As the text surface's: a moved literal means a moved
+        // tokenization — restart rather than carry stale results.
         case (lex: String, before: RuleSet,
               ph: Set[String] @unchecked,
               beforeTags: Map[String, NodeData] @unchecked)
-            if lex == s.lexicon && ph == placeholders =>
+            if lex == s.lexicon && ph == placeholders &&
+               lexiconSignature(before) == lexiconSignature(set) =>
           Some(SyntaxChange(
             syntaxChanges(SyntaxDef(lex, Some(before)), s),
             retagBy(beforeTags, tag)))

@@ -53,17 +53,29 @@ class TextSessionSuite extends FunSuite {
   }
 
   test("a re-decoded unchanged def keeps the session; a changed one carries it") {
+    import opelan.foundation.langdef.SyntaxDef
+    import opelan.foundation.means.text.readPattern
     val text = "8 / 2 + ref:3"
     val s0 = TextSession.start(languageFromDef(demoExprDef).textSyntax.get, text)
     val again = languageFromDef(demoExprDef).textSyntax.get
     assertEquals(again.key, s0.syntax.key)
-    // adding "/" back changes only the expr rule: the session carries
-    // over, and still equals a full parse
-    val withDiv = languageFromDef(exprDef)
-    val s1 = s0.retext(withDiv.textSyntax.get, text)
-    assertEquals(withDiv.textSyntax.get.changedSince(s0.syntax).map(_.rules),
+    // Restoring a rule that adds no literal — `n means n` — changes
+    // only the expr rule: the session carries over, and still equals
+    // a full parse. A change that moves literals instead restarts:
+    // tokenization moved, so no kept result is honest.
+    val noNumber = exprDef.copy(syntax = Some(SyntaxDef("expr", Some(
+      exprRules.copy(rules = exprRules.rules.filterNot(
+        _.pattern == readPattern("n")))))))
+    val staged = languageFromDef(noNumber).textSyntax.get
+    val full = languageFromDef(exprDef).textSyntax.get
+    assertEquals(full.changedSince(staged).map(_.rules),
       Some(Set(RuleName("expr"))))
-    assertEquals(Some(s1.content), withDiv.parse(text))
+    assertEquals(full.changedSince(s0.syntax), None)
+    val s1 = TextSession.start(staged, "7 + 7")
+      .retext(full, "7 + 7")
+    assertEquals(Some(s1.content), languageFromDef(exprDef).parse("7 + 7"))
+    val s2 = s0.retext(full, text)
+    assertEquals(Some(s2.content), languageFromDef(exprDef).parse(text))
   }
 
   test("a def version bump carries the session — kept results re-pin") {
