@@ -2,7 +2,7 @@
 
 **Typed documents** (`Typed.scala`): a document's *type* is an
 `ExternalNodeRef` in the root node's *data* — the header, naming the
-document that defines the language the rest of the tree is written in.
+document that defines the dialect the rest of the tree is written in.
 A simple document can be just that: a root ref with data children. Most
 documents extend the standard core language, whose layout is positional:
 first child the *imports* node — a direct `ExternalNodeRef` to the core
@@ -18,7 +18,7 @@ Untyped documents are "raw".
 
 ## Everything by reference
 
-Content never spells a language construct by name. A node applying `mul`
+Content never spells a dialect construct by name. A node applying `mul`
 (or `vocabulary`, `term`, `row`) has as its data an `InternalNodeRef` to
 an import entry. That entry is an `ExternalNodeRef` to the construct's
 declaration in its `lang:` document — the first meaning-position node
@@ -69,7 +69,7 @@ Whitespace and layout are formatting, not content. A committed node
 records *what* was said; the derived printer decides where the spaces go
 — continuous auto-format on every commit, in the streaming spirit,
 rather than preserving whatever the surface happened to hold. If a
-language ever needs genuinely meaningful layout (a verbatim block, a
+dialect ever needs genuinely meaningful layout (a verbatim block, a
 comment, a chosen block format), the answer is an explicit construct in
 its `NodeData` — content, not inferred trivia — the same way `GapData`
 already carries a gap's raw text. This makes provenance a function of

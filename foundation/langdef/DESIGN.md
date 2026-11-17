@@ -1,8 +1,8 @@
 # `foundation/langdef/` — design
 
-**Language definitions as documents** — the bootstrap path, and
+**Dialect definitions as documents** — the bootstrap path, and
 *Frictionless* in practice. A `LanguageDef` (`LanguageDef.scala`) is a
-language as data: identity, a vocabulary of node terms (derived from the
+dialect as data: identity, a vocabulary of node terms (derived from the
 rules — each term's first meaning occurrence is its declaration), a
 `means` rule set, view bindings, and an input grammar. `langDefDoc`
 encodes a def as a typed `lang:` document; `langDefFromDocument` reads
@@ -13,8 +13,8 @@ into a live `Language`. A
 def doc's sections and rule nodes are constructs
 of `lang: language` (`metaTerms`) — *placeholders*: their vocabulary
 lives in the placeholder registry (`PlaceholderTerms.scala`), anchored
-in the seeded `opelan:foundation/placeholders` document until the def
-language can declare it in-document. That registry is the second
+in the seeded `opelan:foundation/placeholders` document until `lang:
+language` can declare it in-document. That registry is the second
 category beside the truly foundational primitives: placeholders share
 the foundation's ambient implementation (name↔ref with no stored
 entry) but are marked as terms intended to move up out of the
@@ -22,7 +22,7 @@ foundation layer once it is rich enough to define them — the sheet's
 grid terms (`ref`, `column`, `row`, …) are the other group.
 Code knows meta constructs by placeholder ref (`metaRef`/`metaNameOf`,
 `doc/Meta.scala`; `DocLanguage` bottoms out as the code-resident
-language `lang:` documents are themselves typed by — `Defs.scala`). It knows an example language's
+dialect `lang:` documents are themselves typed by — `Defs.scala`). It knows an example dialect's
 constructs by the ids its canonical encoding assigns (`termRefs`,
 `exprTerms`, `sheetTerms` — see [`examples/`](../../examples/DESIGN.md)).
 Each decoded `NodeTerm` carries its `ref`, and a def-interpreted parser
@@ -32,7 +32,7 @@ through an `Impls` bundle (`Builtins.scala`, also `ViewContext`: the
 view's settings plus the language's current input grammar): honest
 scaffolding while behavior still lives in code. The input grammar
 (`InputParserDef.Language(ref, fallback)`, `InputGrammar.scala`) names
-another language by ref, which is how the sheet's cells parse with
+another dialect by ref, which is how the sheet's cells parse with
 `lang: expression`. `DefDocEncode`/`DefDocDecode`/`DefDocReader` (in
 [`doc/`](doc/DESIGN.md)) implement the def↔document format, with sets
 sorted so encoding is deterministic. A constructed `DefLanguage(exprDef)`
@@ -61,7 +61,7 @@ ref to the pattern's placeholder node — so a rule survives renames on
 either side. Rules compile to the recovering combinators of
 [`foundation/grammar`](../grammar/DESIGN.md) — the implementation layer
 — through `compileRules`. The `means` notation is the
-text surface of the language-definition language — `definition` nodes print
+text surface of the dialect-definition dialect — `definition` nodes print
 as `means` lines and `means` lines under `definitions` commit as
 `definition` nodes (`doc/DefDocText`) — eventually described
 by its own rules (see [`../means/DESIGN.md`](../means/DESIGN.md)).
@@ -74,8 +74,8 @@ Other pieces:
   [`../document/store/DESIGN.md`](../document/store/DESIGN.md).
 - **`InputGrammar.scala`** — a def's input grammar: how text committed
   in a projected input becomes content. A builtin parser runs as named;
-  a grammar that refers to another language reads the text with that
-  language's parser — through the host's remembered gap attempts when
+  a grammar that refers to another dialect reads the text with that
+  dialect's parser — through the host's remembered gap attempts when
   rendering, through its per-input sessions when committing — then
   classifies the result (see
   [`../language/DESIGN.md`](../language/DESIGN.md)).
@@ -85,7 +85,7 @@ Other pieces:
   attempts for texts no longer present.
 - **`MeaningInput.scala`** — the meaning field of a rule in a `lang:`
   document as a language-aware input: phrases desugar at entry through
-  the language being defined (see *Phrases desugar at entry* in
+  the dialect being defined (see *Phrases desugar at entry* in
   [`../means/DESIGN.md`](../means/DESIGN.md)).
 
 Sub-packages:

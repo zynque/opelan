@@ -24,9 +24,9 @@ this direction:
 
 - *Lexing is the lowest layer of rules.* Number, name, and text become
   builtin character-level rules (`n means number(n) where n: digits`)
-  instead of a tokenizer outside the language definition.
+  instead of a tokenizer outside the dialect definition.
 - *Composition.* A separate tokenizer imposes one global token set, so
-  an input cannot embed a language with different lexical rules.
+  an input cannot embed a dialect with different lexical rules.
   Character parsers compose freely (PLAN, *Language composition*), and
   context-dependent lexing (`ref:3,4`, units like `5kg`, string
   interpolation) is natural.
@@ -144,7 +144,7 @@ stale.
   rule diff plus a migration, and kept results re-pin their tags rather
   than reparse.
 - Verified by property tests over a multi-rule grammar and the
-  interpreted expression language: after hundreds of random edits, with
+  interpreted expression dialect: after hundreds of random edits, with
   rule changes interleaved, a session equals a full parse (trees, spans,
   positions, examined extents). A one-statement edit in a 20-statement
   text reruns under a quarter of the rule bodies, and untouched subtrees

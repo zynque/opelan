@@ -38,7 +38,7 @@ foundation/           # Pure model layer
 ├── version/          # Version DAG / merge-base machinery (ported from olw-p4)
 ├── language/         # The Language interface and text surfaces
 ├── grammar/          # Recovering, incremental parser combinators
-├── langdef/          # Language definitions as documents
+├── langdef/          # Dialect definitions as documents
 ├── means/            # `means` rules: model, reader, printer
 └── view/             # View-tree vocabulary for derived views
 

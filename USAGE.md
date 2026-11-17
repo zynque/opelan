@@ -23,17 +23,17 @@ Three surfaces over one document:
 
 - **editor** — the structural outliner (below).
 - **text** — the document's text surface in a CodeMirror editor.
-  Typed documents use their language's parse/print; everything else uses
+  Typed documents use their dialect's parse/print; everything else uses
   the outline format. Edits reparse the whole text; malformed input
   becomes gaps, not errors.
-- **Sidebar** — the language's derived views (e.g. `print`, `eval` for the
-  expression language; `sheet`, `formulas` for the sheet language),
+- **Sidebar** — the dialect's derived views (e.g. `print`, `eval` for the
+  expression dialect; `sheet`, `formulas` for the sheet dialect),
   re-rendered live on each change. Gaps render as
   yellow chips. Fragments tagged with a source node show a `node #n`
   tooltip and select that node in the structural editor when clicked.
 
 Toolbar also shows the document's type label ("raw document", the
-language name, or `unknown:` ref), plus two update controls: **Update
+dialect name, or `unknown:` ref), plus two update controls: **Update
 (N)** appears when `N` of the document's external refs pin versions
 behind a store head — a pending update — and clicking it bumps every
 pin to its head as one ordinary, versioned edit; **auto-update** writes
@@ -42,7 +42,7 @@ click (saving a dependency cascades pin bumps through every flagged
 dependent). A **broken: N** marker counts refs pinning a node that no
 longer exists at the head — they can't be bumped; the tooltip lists
 them. The sidebar's seeded documents include the samples: **Expression
-sample** is a typed expression-language document, **Markdown notes** is
+sample** is a typed expression-dialect document, **Markdown notes** is
 a typed markdown document — its `edit` view is a free-text editor with
 marked-up `#`/`##` headings, `* ` items, and `*italic*`/`**bold**`,
 beside a live formatted `preview` — and **Household

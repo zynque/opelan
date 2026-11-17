@@ -1,7 +1,8 @@
 # `foundation/language/` — design
 
 **Languages** (`Language.scala`): a `Language` gives meaning to a type
-reference:
+reference — a language defined as data (a `lang:` document,
+interpreted by `DefLanguage`) is a *dialect* (GLOSSARY.md):
 
 ```scala
 trait Language {

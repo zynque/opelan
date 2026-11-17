@@ -17,7 +17,7 @@ beside the editor live (markdown's `preview`). Derived views also
 stay live in a sidebar while editing. Shown alone, a derived view is the *app* surface — the
 spreadsheet without the machinery — with two exits: **Raw** (this
 document's representation) and **Definition** (F12: follow the type ref
-to the language document — the app's implementation). Notable
+to the dialect document — the app's implementation). Notable
 mechanics:
 
 - The editor child stays mounted in every view (`display:none`),

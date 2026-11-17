@@ -6,6 +6,17 @@ are all versioned structured trees (see `MANIFESTO.md`, `DESIGN.md`).
 
 ## Language
 
+**Dialect**:
+A small, document-defined language — the platform's internal term
+for a DSL (outward-facing docs like `ADOPTION.md` say "DSL").
+A `lang:` document *is* a dialect's definition: its `dialect` section
+holds the name, description, syntax rules, views, and examples that
+give the language its meaning. Expression, sheet, and markdown are
+dialects; `lang: language` is the dialect they are written in.
+"Language" on its own stays the machinery sense (the `Language`
+trait, language-aware, per-language) and the philosophical one
+(`MANIFESTO.md`).
+
 **Tower**:
 The stack of languages the platform is built to support: the workbench's
 base languages at the bottom, then increasingly domain-specific languages —

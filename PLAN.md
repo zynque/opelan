@@ -48,7 +48,7 @@ what comes next. What works is described per package in each folder's
    settled (`DESIGN.md`, *Towers*). Open: resolving input-surface
    ambiguity between imported languages (inline prompt or stored
    preference), a canonical base vocabulary of shared language
-   fragments, and a shared value model so one DSL's artifacts mean
+   fragments, and a shared value model so one dialect's artifacts mean
    something to another.
 8. *Tree-native sync* (`collaboration/DESIGN.md`). Syncing `Serial` text is
    scaffolding; line-level merges renumber duplicate ids and can
@@ -107,7 +107,7 @@ what comes next. What works is described per package in each folder's
    - *Document-level `self`.* With `blocks` declared, `d means d
      where d: blocks` compiles the whole document — `DefLanguage`'s
      `textParser` shortcut retires and `textSyntax` returns, giving
-     markdown the incremental sessions the expression language has.
+     markdown the incremental sessions the expression dialect has.
    - *Production-aware derived printing.* `printWith` already walks
      rules backwards inside a line; extend it over the declared
      productions — `list`/`some`/`many` nodes emit children
@@ -245,4 +245,4 @@ what comes next. What works is described per package in each folder's
      ref from its node term, and from there on to the implementation
      (language def, grammar, builtin) through the go-to-definition
      machinery.
-   - A fuller evaluation engine beyond the expression language's `eval`.
+   - A fuller evaluation engine beyond the expression dialect's `eval`.

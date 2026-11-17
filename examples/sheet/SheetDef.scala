@@ -20,7 +20,7 @@ val sheetDef = LanguageDef(
   typeRef = sheetTypeRef,
   title = "lang: sheet",
   name = "Sheet",
-  description = "the spreadsheet language — a grid of cells",
+  description = "the spreadsheet dialect — a grid of cells",
   // The grid's structural terms are placeholders — the def language
   // can't yet declare them in-document, so the registry
   // (foundation/langdef/PlaceholderTerms.scala) anchors each at the

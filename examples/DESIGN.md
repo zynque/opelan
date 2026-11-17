@@ -1,6 +1,6 @@
 # `examples/` — design
 
-The demonstration languages and the language registry — the first
+The demonstration dialects and the language registry — the first
 *layers* above the core (see *Towers* in the root
 [`DESIGN.md`](../DESIGN.md)).
 
@@ -8,19 +8,19 @@ The demonstration languages and the language registry — the first
 
 `languageForRef` looks up the type ref's URL in the document store, and
 if the document there is a `lang:` document, that document *is* the
-language. Otherwise it falls back to the code registry (`allLanguages`:
+dialect. Otherwise it falls back to the code registry (`allLanguages`:
 `ExprLanguage`, `SheetLanguage`, `MarkdownLanguage`, and `DocLanguage` —
 the code-resident
-language that `lang:` documents are themselves typed by, defined in
+dialect that `lang:` documents are themselves typed by, defined in
 [`../foundation/langdef/Defs.scala`](../foundation/langdef/DESIGN.md);
 that is where the regress stops). Malformed defs degrade to gaps:
 missing refs, cyclic grammars, and cyclic documents are all guarded, and
 an old store with untyped `lang:` docs falls back to the registry.
 
-## Expression language (`expr/`)
+## Expression dialect (`expr/`)
 
 `ExprLanguage`, `Expr`/`ExprDoc`, `ExprLexicon`/`ExprRules`,
-`ExprView` — the demonstration language. It has int and float
+`ExprView` — the demonstration dialect. It has int and float
 literals (integer arithmetic stays integral, division and floats are
 decimal, and displayed values drop float noise — `valueText`'s
 rule); `+`, `-`, `*`, `/` with precedence-aware printing; `ref:N`
@@ -37,15 +37,15 @@ instead of diverging. `exprLexicon` is the authored leaf layer
 derive from the rules — `exprTokens` composes them for direct parses
 (`foundation/means/engine/LiteralLexicon`).
 
-`ExprRules`/`ExprDef` define the language as `means` rules and a def —
+`ExprRules`/`ExprDef` define the dialect as `means` rules and a def —
 `ExprLanguage` IS `DefLanguage(exprDef)`. The 28-input battery holding
 a constructed `DefLanguage(exprDef)` identical to the singleton (parse,
 print, eval) checks the construction path of the definition machinery
-(see [`test/`](../test/DESIGN.md)). Code knows an example language's
+(see [`test/`](../test/DESIGN.md)). Code knows an example dialect's
 constructs by the ids its canonical encoding assigns (`termRefs`,
 `exprTerms`, `sheetTerms`).
 
-## Sheet language (`sheet/`)
+## Sheet dialect (`sheet/`)
 
 `Sheet`, `SheetLanguage` — the demo app: a typed document whose content
 subtree is `sheet > row/hrow > cell`. Label cells (plain string leaves)
@@ -66,7 +66,7 @@ back as the position they name; `ref:N` remains as a raw
 `InternalNodeRef` escape hatch, displayed by position too (`CellRef`).
 The `sheet` view
 renders the computed grid; `formulas` renders each cell's expression
-instead of its value. Cells parse with the expression language's
+instead of its value. Cells parse with the expression dialect's
 grammar, referenced by type ref — pinned, so a new `lang: expression`
 version reaches sheet cells when the sheet's ref bumps to it, not when
 the expression doc is saved (see
@@ -82,10 +82,10 @@ View settings are data in the def doc (`view(name, builtin,
 setting(key, value)…)`); the sheet's `currency` setting formats computed
 values. A gap or cycle in a referenced cell propagates only to the
 cells that use it — the app recovers like the documents it is made of.
-`sampleDoc` seeds the demo's household budget (the expression language's
+`sampleDoc` seeds the demo's household budget (the expression dialect's
 `sampleDoc` seeds the sidebar's expression sample).
 
-## Markdown language (`markdown/`)
+## Markdown dialect (`markdown/`)
 
 `MarkdownLanguage` — a document type for a small markdown subset:
 `#`/`##` headings, `* ` list items, paragraphs, and `*italic*`/`**bold**`

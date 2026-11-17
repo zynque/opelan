@@ -147,7 +147,7 @@ same tree model — same node types, store, versioning, and
 `url@version#node` addressing — so artifacts reference each other
 structurally rather than living in silos. *Transitively typed* adds shared
 semantics; *Polysyntactic* lowers the cost of reading a foreign DSL;
-*Evolvable* lets dialects converge instead of stranding users.
+*Evolvable* lets DSLs converge instead of stranding users.
 
 **Open** — deliberate mechanisms against proliferation: *language
 composition* (extending a language document should be cheaper than

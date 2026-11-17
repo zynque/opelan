@@ -21,7 +21,7 @@ Packages:
   and incremental packrat parsing
 - [`language/`](language/DESIGN.md) — the `Language` trait, the text
   surface, and text/input sessions
-- [`langdef/`](langdef/DESIGN.md) — language definitions as documents:
+- [`langdef/`](langdef/DESIGN.md) — dialect definitions as documents:
   the def model, format, interpretation, and views
 - [`means/`](means/DESIGN.md) — the `means` rule notation for defining
   languages, its engine, and its text surface

@@ -20,8 +20,8 @@ The demo must show: app → navigate to definition → change → see effect.
 - **Task/project checklist.** Cheapest real app, but reads as a form;
   impl changes are cosmetic (add a field) rather than semantic.
 - **Live notes with inline computed expressions** (mini-Notion). Cheapest
-  option that still demos language composition (a notes language
-  embedding the expression language by ref), but a rendered document
+  option that still demos dialect composition (a notes dialect
+  embedding the expression dialect by ref), but a rendered document
   undersells the application story.
 
 The bootstrap-as-demo alternative was considered and set aside: an
@@ -61,13 +61,13 @@ freshly seeded (**Reset** reseeds a used store).
 
 5. From the sheet: F12 or the **Definition** button follows the type ref
    → lands on `opelan:languages/sheet`, a *document*: node kinds, cell
-   formulas typed by the expression language, the view declarations —
+   formulas typed by the expression dialect, the view declarations —
    editable in the same editor. The doc is itself typed (by
-   `lang: language`, the def-definition language), so it gets a `def`
+   `lang: language`, the dialect-definition dialect), so it gets a `def`
    view and F12 bottoms out at the self-describing `lang: language`
    doc.
 6. Follow the formula's `ext:` ref → `opelan:languages/int-expression`,
-   the expression language's document. With `means` rules, both
+   the expression dialect's document. With `means` rules, both
    definitions read as rules rather than outlines of combinators.
 7. Add the `/` production — with `means` rules, one line the audience
    can read,
@@ -91,7 +91,7 @@ freshly seeded (**Reset** reseeds a used store).
    budget's next version, and the cell computes. The formula isn't
    re-rendered text: it was stored as a tree all along, gap included,
    and now the tree holds the rule. No rebuild, no redeploy: a running
-   application's language changed by editing a document, and adopting
+   application's dialect changed by editing a document, and adopting
    it was an explicit, versioned gesture at each layer — opting a
    document into automatic updates makes the same recorded accepts
    happen without the clicks. **The moment.**

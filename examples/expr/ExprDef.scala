@@ -26,7 +26,7 @@ val exprDef = LanguageDef(
   typeRef = exprTypeRef,
   title = "lang: expression",
   name = "Expressions",
-  description = "the arithmetic-expression language",
+  description = "the arithmetic-expression dialect",
   // Declared terms derive: where-bound leaf terms plus
   // construct-application pattern declarations (DeriveVocabulary.scala).
   // The arithmetic constructs the rules use are ambient foundation

@@ -28,10 +28,10 @@ drive the workbench), `PLAN.md` (current state and next steps), and
 | [`foundation/version/`](foundation/version/DESIGN.md) | the version DAG, LSCA merge base, the two-layer history model |
 | [`foundation/grammar/`](foundation/grammar/DESIGN.md) | scannerless recovering combinators, lexicons, incremental packrat parsing |
 | [`foundation/language/`](foundation/language/DESIGN.md) | the `Language` trait, text surface, `TextSession`/`InputSessions`/`GapRetry` |
-| [`foundation/langdef/`](foundation/langdef/DESIGN.md) | language definitions as `lang:` documents; format in `doc/`, interpretation in `syntax/`, def views in `view/` |
+| [`foundation/langdef/`](foundation/langdef/DESIGN.md) | dialect definitions as `lang:` documents; format in `doc/`, interpretation in `syntax/`, def views in `view/` |
 | [`foundation/means/`](foundation/means/DESIGN.md) | the `means` rule notation; evaluation and rule→combinator compilation in `engine/`, rule text in `text/` |
 | [`foundation/view/`](foundation/view/DESIGN.md) | the derived view-tree vocabulary, `SourceRef` provenance, verbosity |
-| [`examples/`](examples/DESIGN.md) | the expression and sheet languages, the store-first resolver/registry |
+| [`examples/`](examples/DESIGN.md) | the expression and sheet dialects, the store-first resolver/registry |
 | [`data/storage/`](data/storage/DESIGN.md) | IndexedDB persistence |
 | [`collaboration/`](collaboration/DESIGN.md) | Automerge sync, sessions, unified history, per-actor undo, backup vs sharing |
 | [`ui/`](ui/DESIGN.md) | the effect boundary: fp components over the pure core |
@@ -58,7 +58,7 @@ Four earlier prototypes `github.com/zynque/olw-p1` ... `olw-p4` each explored a 
 Lessons carried forward:
 
 - *Documents all the way down.* A repository, a directory tree, a version
-  tree, a language definition — all are documents (olw-p3 `notes.txt`).
+  tree, a dialect definition — all are documents (olw-p3 `notes.txt`).
   The manifesto itself ships as a sample document (`EditorSample`).
 - *Views are derived, not stored.* p1's per-context interpretations became
   `Language.views` — renderings computed from the canonical tree.
@@ -161,7 +161,7 @@ the same document, never edits:
   what it means in the layer below — a rule to its meaning, a meaning to
   its builtin (see
   [`foundation/means`](foundation/means/DESIGN.md)), an app to its
-  language document (today's Definition/F12 exit). Orthogonal to detail
+  dialect document (today's Definition/F12 exit). Orthogonal to detail
   level: an implementation can itself be shown tersely or verbosely.
 - *Scope* (hoist/focus): a subtree becomes the temporary root of the
   view — the outliner's zoom. Orthogonal to both.
@@ -194,8 +194,8 @@ broadcast state.
 
 The platform's long-term shape is a *tower* (see `GLOSSARY.md`): the
 workbench's base languages at the bottom, then increasingly
-domain-specific languages — a game language, a card-game language, a
-language for one game's items, behaviors, and levels — with the artifact
+domain-specific dialects — a game dialect, a card-game dialect, a
+dialect for one game's items, behaviors, and levels — with the artifact
 itself (the game, the budget) as the topmost document. Each *layer* is a
 `lang:` document written only in constructs the layers below provide.
 
