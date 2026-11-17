@@ -9,7 +9,7 @@ what comes next. What works is described per package in each folder's
 
 ## Known gaps
 
-- **Demo rough edges:** Addition of an expression like 'a // b' does not work, because tokens are hard-coded instead of being derived as part of the expression dialect. History does not show updates when the sheet document is updated to pull in the updates to the sheets & expression dialect.
+- **Demo rough edges:** History does not show updates when the sheet document is updated to pull in the updates to the sheets & expression dialect.
 - **Sync:** Remote text doesn't parse incrementally. Display of remote changes in local history is unclear. Undo stacks are session-local and lost on resume. Edits
   made before first sync contact resolve last-writer-wins rather than
   merging. Edit bursts aren't coalesced. Unsynced session history isn't
@@ -131,11 +131,17 @@ what comes next. What works is described per package in each folder's
      become `GapData`/`StringData` checks. `Expr.scala`/
      `ExprDoc.scala` delete, or `Expr` survives as pure test
      scaffolding.
-   - *Lexicons, partly.* Marker literals (`##`, `**`, `#`, `*`) are
-     spelled in the patterns — collectable longest-first; the token
-     productions (`text`, `number`, `ref`, `plain`) stay authored,
-     either in `Impls.leaves` until *Authored leaf productions*
-     (item 1) lands or as `leaf` declarations beside the rules.
+   - *Lexicons, partly.* Landed for literals:
+     `LiteralLexicon.withLiterals` composes the patterns' literal
+     spellings over the authored lexicon — longest-first, reserved
+     over the leaves, infix literals carrying gap-start — so a rule
+     line is all a literal needs (`a // b` tokenizes as soon as its
+     definition exists). Remaining: run-leaf stop sets are still
+     hand-authored (`text` stopping at `*`, `unrecognized`'s
+     exclusion — a glued `x&&b` still reads one token), and the
+     token productions (`text`, `number`, `ref`, `plain`) stay
+     authored in `Impls.leaves` until *Authored leaf productions*
+     (item 1) lands or becomes `leaf` declarations beside the rules.
    - *Sheet's commit surface* (`commitLink`/`linkCellRefs`,
      positional `C4` → `InternalNodeRef`) stays an `Impls`
      interpretation — it rewrites committed structure, it isn't

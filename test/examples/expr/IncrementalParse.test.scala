@@ -14,13 +14,13 @@ class IncrementalParseSuite extends FunSuite {
   // A marking table so the oracle's trees carry the same ParseMarks a
   // session's do — marks are deterministic bookkeeping, not content.
   private def full(g: Parser, text: String) =
-    normal(g(ParseInput(text, exprLexicon, MemoTable(marking = true)), 0))
+    normal(g(ParseInput(text, exprTokens, MemoTable(marking = true)), 0))
 
   test("property: random edits to expressions match full reparses") {
     val grammar = languageFromDef(exprDef).textSyntax.get.parser
     val random = new Random(3)
     val alphabet = "0123456789+-*/(). ?xref:"
-    var s = ParseSession.start(grammar, exprLexicon, "(1 + 2) * 3 - ref:4 / 5")
+    var s = ParseSession.start(grammar, exprTokens, "(1 + 2) * 3 - ref:4 / 5")
     (1 to 500).foreach { i =>
       val from = random.nextInt(s.text.length + 1)
       val to = from + random.nextInt((s.text.length - from).min(4) + 1)
@@ -39,7 +39,7 @@ class IncrementalParseSuite extends FunSuite {
     val withDiv = languageFromDef(exprDef).textSyntax.get
     val names = withDiv.changedSince(staged).map(_.rules).get
     assertEquals(names, Set(RuleName("expr")))
-    val s0 = ParseSession.start(staged.parser, exprLexicon, "(7 / 7)")
+    val s0 = ParseSession.start(staged.parser, exprTokens, "(7 / 7)")
     val s1 = s0.changeRules(withDiv.parser, names)
     assertEquals(normal(s1.result), full(withDiv.parser, s1.text))
   }

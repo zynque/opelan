@@ -19,18 +19,18 @@ class DesugarSuite extends munit.FunSuite {
 
   private val percent = readRuleOrGap("a % means a / 100")
   private val atom =
-    unrecognized(exprLexicon.gapStart, exprLexicon.gapRun)
+    unrecognized(exprTokens.gapStart, exprTokens.gapRun)
   private val lexicals = lexicalTerms(exprImpls)
 
   private def desugared(set: RuleSet): RuleSet =
-    rephraseRuleSet(set, atom, exprTag, "expr", exprLexicon, lexicals)
+    rephraseRuleSet(set, atom, exprTag, "expr", exprTokens, lexicals)
 
   private def grammarFor(set: RuleSet): Parser =
     phrase(compileRules(set, atom, exprTag, "expr",
       lexicals), Set.empty)
 
   private def parse(g: Parser, input: String): ParseTree =
-    g(ParseInput(input, exprLexicon), 0).tree
+    g(ParseInput(input, exprTokens), 0).tree
 
   private val set = exprRules.copy(rules = exprRules.rules :+ percent)
 

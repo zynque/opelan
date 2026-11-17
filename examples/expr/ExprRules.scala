@@ -1,6 +1,8 @@
 package opelan.examples.expr
 
+import opelan.foundation.grammar.Lexicon
 import opelan.foundation.means._
+import opelan.foundation.means.engine.withLiterals
 import opelan.foundation.means.text._
 
 // The expression language as `means` rules — the definition ExprDef
@@ -28,3 +30,9 @@ val exprRules = RuleSet(
     Tier(List(readPattern("a * b"), readPattern("a / b"))),
     Tier(List(readPattern("a + b"), readPattern("a - b")))),
   examples = List(Example("1 + 2 * 3", "1 + (2 * 3)")))
+
+// The document lexicon — the authored leaves plus the literals the
+// rules spell, longest-first. `exprImpls` keeps `exprLexicon` (the
+// base): DefLanguage composes the decoded def's own literals at
+// interpretation — a stored rule line is all a new literal needs.
+val exprTokens: Lexicon = withLiterals(exprRules, exprLexicon)

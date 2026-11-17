@@ -6,7 +6,8 @@ import opelan.foundation.grammar._
 import opelan.foundation.langdef.doc._
 import opelan.foundation.langdef.syntax._
 import opelan.foundation.means.RuleSet
-import opelan.foundation.means.engine.{compileRules, rephraseRuleSet}
+import opelan.foundation.means.engine.{
+  compileRules, rephraseRuleSet, withLiterals}
 import opelan.foundation.language.{
   GapRetry, InputSessions, Language, SyntaxChange, TextSyntax}
 import opelan.foundation.view.ViewTree
@@ -107,13 +108,16 @@ class DefLanguage(
       // hand-written grammar memoizes by. `phrase` supplies the
       // to-EOF recovery.
       case Some(rules) =>
-        val atom = unrecognized(lexicon.gapStart, lexicon.gapRun)
+        // The patterns spell the literal tokens — `a // b`'s `//`
+        // tokenizes as soon as its rule exists (LiteralLexicon).
+        val tokens = withLiterals(rules, lexicon)
+        val atom = unrecognized(tokens.gapStart, tokens.gapRun)
         val lexicals = lexicalTerms(impls)
         // Quoted-gap meanings — phrases the set couldn't yet read —
         // retry at interpretation and heal as their rules arrive.
         val rephrased =
-          rephraseRuleSet(rules, atom, termTag, s.lexicon, lexicon, lexicals)
-        (lexicon, phrase(compileRules(rephrased, atom, termTag, s.lexicon,
+          rephraseRuleSet(rules, atom, termTag, s.lexicon, tokens, lexicals)
+        (tokens, phrase(compileRules(rephrased, atom, termTag, s.lexicon,
           lexicals), Set.empty))
       case None => (lexicon, restGap)
     }

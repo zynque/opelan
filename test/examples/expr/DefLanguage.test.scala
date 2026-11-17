@@ -5,6 +5,7 @@ import opelan.foundation.document._
 import opelan.foundation.document.typed._
 import opelan.foundation.langdef._
 import opelan.foundation.langdef.doc._
+import opelan.foundation.means.text.readRuleOrGap
 import munit.FunSuite
 
 // A language described as data and interpreted by DefLanguage behaves
@@ -72,6 +73,25 @@ class DefLanguageSuite extends FunSuite {
     val l = new DefLanguage(edited, implsFor(edited))
     assert(l.parse("1 + 2").isDefined)
     assert(l.render("print", hand.sampleDoc).isRight)
+  }
+
+  test("a stored def's new literal tokenizes — `a // b` needs no lexicon entry") {
+    // The `a // b` rough edge: the literal needs no pre-configured
+    // token table — its rule line in the def document is enough
+    // (LiteralLexicon). The decode path proves it end to end.
+    val edited = exprDef.copy(syntax = exprDef.syntax.map(s =>
+      s.copy(rules = s.rules.map(r => r.copy(rules =
+        r.rules :+ readRuleOrGap("a // b means fdiv(a, b)"))))))
+    val doc = langDefDoc(edited)
+    val l = new DefLanguage(
+      langDefFromDocument("opelan:languages/expr", doc),
+      implsFor(edited))
+    val parsed = l.parse("1 // 2")
+    assert(parsed.isDefined)
+    def hasGap(t: DetachedNode[NodeData]): Boolean =
+      t.data.isInstanceOf[NodeData.GapData] || t.children.exists(hasGap)
+    assert(!hasGap(parsed.get))
+    assertEquals(parsed.get.children.length, 2)
   }
 
   test("a def claiming an unknown type ref binds no impls") {

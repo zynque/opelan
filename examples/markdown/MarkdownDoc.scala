@@ -3,6 +3,7 @@ package opelan.examples.markdown
 import opelan.foundation.document._
 import opelan.foundation.grammar._
 import opelan.foundation.means._
+import opelan.foundation.means.engine.withLiterals
 import opelan.foundation.means.text.readRuleOrGap
 
 // A markdown document's content: a `markdown` node whose children are
@@ -31,17 +32,15 @@ val RunsTag = "runs"
 val BoldTag = "bold"
 val ItalicTag = "italic"
 
-// The lexicon: marker tokens, then the plain-text run. `##`/`**` precede
-// `#`/`*` — ordered choice takes the longest marker. `text` stops at
-// `*` (the only markup opener inside a run) and the line's end.
+// The authored leaf layer — what no rule pattern spells. The marker
+// tokens (`#`, `##`, `*`, `**`) derive from the rules' literals at
+// composition (LiteralLexicon.withLiterals, longest-first). `text`
+// is a run stopping at `*` — the only markup opener inside a run —
+// and the line's end.
 val markdownLexicon = Lexicon(List(
-  "h2"    -> exactly("##"),
-  "h1"    -> exactly("#"),
-  "bstar" -> exactly("**"),
-  "istar" -> exactly("*"),
-  "text"  -> runOf(1)(c => c != '*' && c != '\n')),
-  gapStart = Set("h2", "h1", "bstar", "istar", "text"),
-  gapRun = Set("h2", "h1", "bstar", "istar", "text"))
+  "text" -> runOf(1)(c => c != '*' && c != '\n')),
+  gapStart = Set("text"),
+  gapRun = Set("text"))
 
 // The language's rules — what `lang: markdown`'s `definitions` section
 // holds. `d` binds the impls' `blocks` production (the document's block
@@ -57,3 +56,9 @@ val markdownRules: RuleSet = RuleSet(
     "t means para(t) where t: runs",
     "**t** means bold(t) where t: plain",
     "*t* means italic(t) where t: plain").map(readRuleOrGap))
+
+// The document lexicon — the authored `text` leaf under the markers
+// the rules spell. `markdownImpls` keeps `markdownLexicon` (the base):
+// DefLanguage composes the decoded def's own literals; direct parses
+// use this one.
+val markdownTokens = withLiterals(markdownRules, markdownLexicon)

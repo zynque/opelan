@@ -19,19 +19,23 @@ an old store with untyped `lang:` docs falls back to the registry.
 
 ## Expression language (`expr/`)
 
-`ExprLanguage`, `Expr`/`ExprDoc`, `ExprLexicon`, `ExprView`
-— the demonstration language. It has int and float literals (integer
-arithmetic stays integral, division and floats are decimal, and
-displayed values drop float noise — `valueText`'s rule); `+`, `-`,
-`*`, `/` with precedence-aware printing; `ref:N` references stored as
-`InternalNodeRef` (so "go to definition" is the ordinary ref jump); and
-grouping by tree structure. It provides `print` and `eval` views and a
-total, recovering parser. Both views are derived from the rule set —
-`printViewWith` and `evalView` (`foundation/means/engine`) — and every
-piece of the view tree carries its source id. Evaluation resolves refs
-through the enclosing document — a referenced cell's own subtree is
-evaluated, so formulas compose — and a visiting set reports ref cycles
-as gaps instead of diverging. `Expr.print` round-trips gaps.
+`ExprLanguage`, `Expr`/`ExprDoc`, `ExprLexicon`/`ExprRules`,
+`ExprView` — the demonstration language. It has int and float
+literals (integer arithmetic stays integral, division and floats are
+decimal, and displayed values drop float noise — `valueText`'s
+rule); `+`, `-`, `*`, `/` with precedence-aware printing; `ref:N`
+references stored as `InternalNodeRef` (so "go to definition" is the
+ordinary ref jump); and grouping by tree structure. It provides
+`print` and `eval` views and a total, recovering parser. Both views
+are derived from the rule set — `printViewWith` and `evalView`
+(`foundation/means/engine`) — and every piece of the view tree
+carries its source id. Evaluation resolves refs through the
+enclosing document — a referenced cell's own subtree is evaluated,
+so formulas compose — and a visiting set reports ref cycles as gaps
+instead of diverging. `exprLexicon` is the authored leaf layer
+(`float`, `int`, `ref`, `?`, `unrecognized`); the literal tokens
+derive from the rules — `exprTokens` composes them for direct parses
+(`foundation/means/engine/LiteralLexicon`).
 
 `ExprRules`/`ExprDef` define the language as `means` rules and a def —
 `ExprLanguage` IS `DefLanguage(exprDef)`. The 28-input battery holding
@@ -95,8 +99,9 @@ impls' productions. `markdownParse` composes them to document level:
 literal text and the tree round-trips the text. The stored tree holds
 the surface constructs the patterns declare — `#`, `##`, `*` items —
 with `bold`/`italic`/`para`/`list`/`runs`/`markdown` placeholder tags;
-`h1`/`h2`/`item` are the constructs' meanings. `markdownLexicon` is the
-marker/text tokenizer. `markdownLines` prints the tree back;
+`h1`/`h2`/`item` are the constructs' meanings. `markdownLexicon` is
+the authored `text` leaf under `markdownTokens`' derived markers.
+`markdownLines` prints the tree back;
 `markdownPreview` renders the formatted document read-only. The impls
 register it all: `Impls.textParser` the commit path, `Impls.editSurface`
 the `edit` view's `markdownLineMarks` (heading/item/paragraph line

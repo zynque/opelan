@@ -54,7 +54,10 @@ private def meaningSyntax(
     lexicon <- impls.lexicons.get(s.lexicon)
   } yield {
     val tag = termTagOf(defined)
-    val atom = unrecognized(lexicon.gapStart, lexicon.gapRun)
+    // The def's own literals (`(`, `)`, `,`) are the spelled tokens —
+    // the authored lexicon supplies only the leaf layer.
+    val tokens = withLiterals(set, lexicon)
+    val atom = unrecognized(tokens.gapStart, tokens.gapRun)
     val lexicals = lexicalTerms(impls)
     val placeholders = ruleFromDoc(doc, docUrl, 0,
       deriveTermIds(doc, contentId(doc).getOrElse(doc.rootId)),
@@ -68,7 +71,7 @@ private def meaningSyntax(
       phrase(compileRules(set,
         choice(placeholderAtom(placeholders), atom),
         tag, s.lexicon, lexicals), Set.empty),
-      lexicon,
+      tokens,
       (s.lexicon, set, placeholders, tags),
       changedSince = previous => previous.key match {
         case (lex: String, before: RuleSet,
@@ -83,7 +86,7 @@ private def meaningSyntax(
       toContent = tree => meaningNode(
         readMeaningText(tree.text,
           arg => phraseMeaning(arg, placeholders, set, atom, tag,
-            s.lexicon, lexicon, lexicals))
+            s.lexicon, tokens, lexicals))
           .getOrElse(toTerm(tree, names)),
         doc, docUrl, meaningId))
   }

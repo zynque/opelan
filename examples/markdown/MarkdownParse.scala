@@ -156,4 +156,4 @@ lazy val blocksTerm: LexicalTerm = LexicalTerm(
 // content a text commit stores.
 def markdownParse(text: String): DetachedNode[NodeData] =
   toDetached(
-    blocksTerm.parser.get(ParseInput(text, markdownLexicon), 0).tree)
+    blocksTerm.parser.get(ParseInput(text, markdownTokens), 0).tree)

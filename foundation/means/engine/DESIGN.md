@@ -92,6 +92,17 @@ Recovery stays in the combinators (a missing operand folds to a gap);
 the operand fallback is the lexicon's (`Lexicon.gapStart`/`gapRun`),
 so nothing but rules is authored.
 
+The token layer derives too (`LiteralLexicon`): the patterns' literal
+spellings *are* the lexicon's literal tokens — composed over the
+authored leaf productions longest-first, reserved over the leaves —
+so `a // b means idiv(a,b)` tokenizes the moment the rule exists and
+`Impls.lexicons` shrinks to what no pattern can spell (numbers,
+refs, text runs). A literal's token kind is its spelling; an
+*interior* literal (a placeholder each side — `a + b`'s `+`) joins
+`gapStart`, and a word-ending literal (`mod`) holds a right-edge
+word boundary. Still authored: run-leaf stop sets and the leaf
+productions themselves (PLAN, *Surfaces as definitions*).
+
 ## Printing (`Print`, `PrintIndex`, `PrintView`)
 
 Read right to left, a constructor meaning is the printer: the engine
