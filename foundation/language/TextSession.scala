@@ -1,7 +1,7 @@
 package opelan.foundation.language
 
 import opelan.foundation.document._
-import opelan.foundation.grammar.{Lexicon, ParseSession, Parser, ParseTree, RuleName, toDetached}
+import opelan.foundation.grammar.{Grammar, ParseSession, ParseTree, RuleName, toDetached}
 import opelan.foundation.grammar.{Edit => TextEdit}
 
 // What changed between two syntaxes: the rules whose definitions
@@ -13,14 +13,14 @@ case class SyntaxChange(
     rules: Set[RuleName],
     migrate: NodeData => NodeData = identity)
 
-// A language's text syntax as an incremental parser: the grammar, its
-// lexicon, a `key` identifying both (equal keys parse identically), and
-// how a parse tree becomes content. `changedSince` describes the change
-// from an earlier syntax when the language can tell, and returns None
-// when it can't, which restarts the parse.
+// A language's text syntax as an incremental parser: the grammar — its
+// parser paired with the lexicon it tokenizes through — a `key`
+// identifying both (equal keys parse identically), and how a parse tree
+// becomes content. `changedSince` describes the change from an earlier
+// syntax when the language can tell, and returns None when it can't,
+// which restarts the parse.
 case class TextSyntax(
-    parser: Parser,
-    lexicon: Lexicon,
+    grammar: Grammar,
     key: Any,
     changedSince: TextSyntax => Option[SyntaxChange] = _ => None,
     toContent: ParseTree => DetachedNode[NodeData] = toDetached)
@@ -41,7 +41,7 @@ case class TextSession(syntax: TextSyntax, session: ParseSession) {
     val carried =
       if (next.key == syntax.key) Some(session)
       else next.changedSince(syntax).map(ch =>
-        session.changeRules(next.parser, ch.rules, ch.migrate))
+        session.changeRules(next.grammar, ch.rules, ch.migrate))
     carried match {
       case Some(s) => TextSession(next, s.edit(textEdit(s.text, text)))
       case None    => TextSession.start(next, text)
@@ -51,7 +51,7 @@ case class TextSession(syntax: TextSyntax, session: ParseSession) {
 
 object TextSession {
   def start(syntax: TextSyntax, text: String): TextSession =
-    TextSession(syntax, ParseSession.start(syntax.parser, syntax.lexicon, text))
+    TextSession(syntax, ParseSession.start(syntax.grammar, text))
 }
 
 // The single edit turning `before` into `after`: the common prefix and

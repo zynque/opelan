@@ -68,10 +68,11 @@ private def meaningSyntax(
     val tags = termRefs(defined).view
       .mapValues(NodeData.ExternalNodeRef(_)).toMap
     TextSyntax(
-      phrase(compileRules(set,
-        choice(placeholderAtom(placeholders), atom),
-        tag, s.lexicon, lexicals), Set.empty),
-      tokens,
+      Grammar(
+        phrase(compileRules(set,
+          choice(placeholderAtom(placeholders), atom),
+          tag, s.lexicon, lexicals), Set.empty),
+        tokens),
       (s.lexicon, set, placeholders, tags),
       changedSince = previous => previous.key match {
         // As the text surface's: a moved literal means a moved

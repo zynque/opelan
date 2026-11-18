@@ -17,6 +17,8 @@ import opelan.foundation.document._
 
 // The parse input: the source text, the lexicon its tokens come from,
 // and the memo table of this parse (fresh unless a session seeds it).
+// Session-level entry points take a Grammar instead — the parser and
+// the lexicon it reads through paired, so the two can't drift.
 case class ParseInput(input: String, lexicon: Lexicon, memo: MemoTable = MemoTable())
 
 // A parse-tree node: its node data, the source slice it came from, and

@@ -127,8 +127,8 @@ class GrammarChangesSuite extends FunSuite {
       "rpar" -> exactly(")")))
     val set = RuleSet(List(rule("(a) means a", 3)))
     val s = ParseSession.start(
-      compileRules(set, gapHere, NodeData.StringData(_), "e"),
-      lexicon, "(5)")
+      Grammar(compileRules(set, gapHere, NodeData.StringData(_), "e"),
+        lexicon), "(5)")
     assert(s.consulted.contains("means:#3"), s.consulted.toString)
   }
 }

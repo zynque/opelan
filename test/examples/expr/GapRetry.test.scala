@@ -32,7 +32,7 @@ class GapRetrySuite extends FunSuite {
     val (_, r0) = GapRetry().parse(staged, "ref:3 / ref:4")
     // withDiv's parser would heal it; the change claims to touch only an
     // unconsulted rule, so the failed attempt stands.
-    val unrelated = TextSyntax(withDiv.parser, withDiv.lexicon, "other",
+    val unrelated = TextSyntax(withDiv.grammar, "other",
       changedSince = _ => Some(SyntaxChange(Set("unconsulted"))))
     val (c1, r1) = r0.parse(unrelated, "ref:3 / ref:4")
     assert(c1.data.isInstanceOf[NodeData.GapData], c1.toString)
@@ -41,7 +41,7 @@ class GapRetrySuite extends FunSuite {
 
   test("an undescribable change reparses") {
     val (_, r0) = GapRetry().parse(staged, "ref:3 / ref:4")
-    val opaque = TextSyntax(withDiv.parser, withDiv.lexicon, "opaque")
+    val opaque = TextSyntax(withDiv.grammar, "opaque")
     val (c1, _) = r0.parse(opaque, "ref:3 / ref:4")
     assert(!c1.data.isInstanceOf[NodeData.GapData], c1.toString)
   }
@@ -52,7 +52,7 @@ class GapRetrySuite extends FunSuite {
       case NodeData.GapData(t) => NodeData.GapData(s"$t!")
       case d                   => d
     }
-    val bumped = TextSyntax(withDiv.parser, withDiv.lexicon, "bumped",
+    val bumped = TextSyntax(withDiv.grammar, "bumped",
       changedSince = _ => Some(SyntaxChange(Set.empty, migrate)))
     val (c1, r1) = r0.parse(bumped, "ref:3 / ref:4")
     assertEquals(c1.data, NodeData.GapData("ref:3 / ref:4!"))

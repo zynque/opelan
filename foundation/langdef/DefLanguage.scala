@@ -98,7 +98,7 @@ class DefLanguage(
       resolveDef(r).flatMap(d => termRefs(d).collectFirst {
         case (n, tr) if sameNode(tr, r) => n }))
 
-  private lazy val syntax: Option[(Lexicon, Parser)] =
+  private lazy val syntax: Option[Grammar] =
     for {
       s <- languageDef.syntax
       lexicon <- impls.lexicons.get(s.lexicon)
@@ -117,9 +117,9 @@ class DefLanguage(
         // retry at interpretation and heal as their rules arrive.
         val rephrased =
           rephraseRuleSet(rules, atom, termTag, s.lexicon, tokens, lexicals)
-        (tokens, phrase(compileRules(rephrased, atom, termTag, s.lexicon,
-          lexicals), Set.empty))
-      case None => (lexicon, restGap)
+        Grammar(phrase(compileRules(rephrased, atom, termTag, s.lexicon,
+          lexicals), Set.empty), tokens)
+      case None => Grammar(restGap, lexicon)
     }
 
   def render(view: String, doc: Document[NodeData])
@@ -178,8 +178,7 @@ class DefLanguage(
     // document-level composition isn't always expression-shaped
     // (markdown parses through its `blocks` production).
     else impls.textParser.map(_(text))
-      .orElse(syntax.map { case (lexicon, g) =>
-        toDetached(g(ParseInput(text, lexicon), 0).tree) })
+      .orElse(syntax.map(g => toDetached(g(text).tree)))
 
   // lang: documents relink what text can't carry — placeholder uses and
   // term constructs pointed at their nodes — after a text-surface
@@ -205,8 +204,8 @@ class DefLanguage(
     if (impls.textParser.isDefined) None
     else for {
       s <- languageDef.syntax
-      (lexicon, parser) <- syntax
-    } yield TextSyntax(parser, lexicon,
+      grammar <- syntax
+    } yield TextSyntax(grammar,
       (s.lexicon, s.rules, termTags),
       changedSince = previous => previous.key match {
         // Kept results are honest only while tokenization is unchanged:

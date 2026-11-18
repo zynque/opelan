@@ -34,15 +34,16 @@ class ParseSessionSuite extends FunSuite {
   }
 
   private val plainWords = many(tag("words"))(word)
-  private val g1 = grammar(plainWords)
+  private val g1 = Grammar(grammar(plainWords), lexicon)
   // A changed `words` rule: words may now be separated by "+".
-  private val g2 = grammar(chainLeft(Map("+" -> tag("and")))(word))
+  private val g2 = Grammar(
+    grammar(chainLeft(Map("+" -> tag("and")))(word)), lexicon)
 
   private def normal(r: ParseResult) = (r.position, r.applied, r.examined, r.tree)
   // A marking table so the oracle's trees carry the same ParseMarks a
   // session's do — marks are deterministic bookkeeping, not content.
-  private def full(g: Parser, text: String) =
-    normal(g(ParseInput(text, lexicon, MemoTable(marking = true)), 0))
+  private def full(g: Grammar, text: String) =
+    normal(g(text, MemoTable(marking = true)))
 
   // Two statement nodes hold the same subtree: their child lists are the
   // same object (memoized results share their graphs when reused).
@@ -50,14 +51,14 @@ class ParseSessionSuite extends FunSuite {
     a.children.nonEmpty && (a.children eq b.children)
 
   test("a fresh session equals a plain parse") {
-    val s = ParseSession.start(g1, lexicon, "1 + 2; ab cd; (3 * 4)")
+    val s = ParseSession.start(g1, "1 + 2; ab cd; (3 * 4)")
     assertEquals(normal(s.result), full(g1, s.text))
   }
 
   test("property: after any edits, incremental equals full reparse") {
     val random = new Random(7)
     val alphabet = "0123456789+*();ab "
-    var s = ParseSession.start(g1, lexicon, "1 + 2 * 3; ab; (4 + 5) * 6; cd ef")
+    var s = ParseSession.start(g1, "1 + 2 * 3; ab; (4 + 5) * 6; cd ef")
     (1 to 400).foreach { i =>
       val from = random.nextInt(s.text.length + 1)
       val to = from + random.nextInt((s.text.length - from).min(3) + 1)
@@ -69,7 +70,7 @@ class ParseSessionSuite extends FunSuite {
 
   test("an edit reruns only what it touched; reused subtrees are the same objects") {
     val text = (1 to 20).map(i => s"$i + $i;").mkString(" ")
-    val s0 = ParseSession.start(g1, lexicon, text)
+    val s0 = ParseSession.start(g1, text)
     val at = text.indexOf("15 + 15")
     val s1 = s0.edit(Edit(at, at + 2, "99"))
     assertEquals(normal(s1.result), full(g1, s1.text))
@@ -85,7 +86,7 @@ class ParseSessionSuite extends FunSuite {
 
   test("a length-changing edit moves nothing: subtrees after it are reused as-is") {
     val text = (1 to 8).map(i => s"$i + $i;").mkString(" ")
-    val s0 = ParseSession.start(g1, lexicon, text)
+    val s0 = ParseSession.start(g1, text)
     val at = text.indexOf("3 + 3")
     val s1 = s0.edit(Edit(at, at + 5, "300 + 300"))
     assertEquals(normal(s1.result), full(g1, s1.text))
@@ -98,7 +99,7 @@ class ParseSessionSuite extends FunSuite {
   }
 
   test("the memo lives on the tree: marks claim what the side table can't") {
-    val s = ParseSession.start(g1, lexicon, "1 + 2; ab cd; (3 * 4)")
+    val s = ParseSession.start(g1, "1 + 2; ab cd; (3 * 4)")
     // Result-tree nodes carry marks naming the rules that produced them.
     val marked = liveMarks(s.tree)
     assertEquals(marked.map(_._3.rule).toSet,
@@ -115,7 +116,7 @@ class ParseSessionSuite extends FunSuite {
   }
 
   test("a rule change drops only results that depend on the changed rule") {
-    val s0 = ParseSession.start(g1, lexicon, "1 + 2; ab cd; 3 * 4; ef")
+    val s0 = ParseSession.start(g1, "1 + 2; ab cd; 3 * 4; ef")
     val s1 = s0.changeRules(g2, Set("words"))
     assertEquals(normal(s1.result), full(g2, s1.text))
     // The new `words` rule splits "ab cd" into two statements, so find
@@ -130,7 +131,7 @@ class ParseSessionSuite extends FunSuite {
 
   test("property: rule changes interleaved with edits stay equal to full parses") {
     val random = new Random(11)
-    var s = ParseSession.start(g1, lexicon, "ab + cd; 1 + 2; ef; (3)")
+    var s = ParseSession.start(g1, "ab + cd; 1 + 2; ef; (3)")
     var current = g1
     (1 to 100).foreach { i =>
       if (i % 10 == 0) {

@@ -13,7 +13,7 @@ import opelan.foundation.document.NodeData
 // every result it cannot have affected and reparses, so only what
 // the change touched runs again (*Incremental*).
 //
-//   val s0 = ParseSession.start(grammar, lexicon, "1 + 2")
+//   val s0 = ParseSession.start(grammar, "1 + 2")
 //   val s1 = s0.edit(Edit(4, 5, "20"))           // "1 + 20"
 //   val s2 = s1.changeRules(grammar2, Set("expr"))
 //
@@ -27,8 +27,7 @@ import opelan.foundation.document.NodeData
 case class Edit(from: Int, to: Int, inserted: String)
 
 case class ParseSession(
-    grammar: Parser,
-    lexicon: Lexicon,
+    grammar: Grammar,
     text: String,
     // Memo entries the result tree doesn't represent: one column per
     // position, holding the rejected and re-spanned results only.
@@ -68,7 +67,7 @@ case class ParseSession(
         case (pos, node, mark) if pos >= to =>
           markEntry(pos + delta, node, mark)
       })
-    ParseSession.run(grammar, lexicon, newText, seed)
+    ParseSession.run(grammar, newText, seed)
   }
 
   // A language change: `changed` names the rules whose definitions
@@ -76,7 +75,7 @@ case class ParseSession(
   // are dropped; everything else is reused under the new grammar —
   // `migrate` rewrites node data a kept result carries (e.g. term tags
   // re-pinning to a newer definition version).
-  def changeRules(newGrammar: Parser, changed: Set[RuleName],
+  def changeRules(newGrammar: Grammar, changed: Set[RuleName],
       migrate: NodeData => NodeData = identity): ParseSession = {
     val keep = (pos: Int, mark: ParseMark) =>
       !changed(mark.rule) && !mark.calls.exists(changed)
@@ -89,7 +88,7 @@ case class ParseSession(
     val seed = mergeMarks(moved, text.length,
       liveMarks(migrated).collect { case (pos, node, mark)
           if keep(pos, mark) => markEntry(pos, node, mark) })
-    ParseSession.run(newGrammar, lexicon, text, seed)
+    ParseSession.run(newGrammar, text, seed)
   }
 
   // A node's mark claims the entry its rule stored — rebuilt exactly
@@ -117,19 +116,19 @@ case class ParseSession(
 }
 
 object ParseSession {
-  def start(grammar: Parser, lexicon: Lexicon, text: String): ParseSession =
-    run(grammar, lexicon, text, Vector.fill(text.length + 1)(Map.empty))
+  def start(grammar: Grammar, text: String): ParseSession =
+    run(grammar, text, Vector.fill(text.length + 1)(Map.empty))
 
   private def run(
-      grammar: Parser, lexicon: Lexicon, text: String,
+      grammar: Grammar, text: String,
       seed: Vector[Map[RuleName, MemoEntry]]): ParseSession = {
     val table = MemoTable(seed, marking = true)
-    val result = grammar(ParseInput(text, lexicon, table), 0)
+    val result = grammar.parser(grammar.input(text, table), 0)
     val claimed = liveMarks(result.tree).map((pos, _, mark) =>
       (mark.rule, pos)).toSet
     val side = table.snapshot.zipWithIndex.map { case (column, i) =>
       column.filterNot { case (name, _) => claimed((name, i)) } }
-    ParseSession(grammar, lexicon, text, side, result, table.evaluations)
+    ParseSession(grammar, text, side, result, table.evaluations)
   }
 }
 
