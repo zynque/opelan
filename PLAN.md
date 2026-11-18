@@ -62,14 +62,28 @@ What doesn't yet work and what comes next.
    
    Steps, in dependency order:
 
-   - *Universal derived views.* The expression impls bind two view
-     builtins (`expr-print`, `expr-eval`) that are already generic:
-     both walk whatever dialect the document resolves to. Move the
-     "read the host dialect's rules and term anchors" half
-     (`ExprReading`) into the foundation's view context, register
-     print and eval as builtins any dialect may name — and
-     `ExprView.scala`, `ExprReading.scala`, and the per-dialect view
-     wiring all disappear.
+   - *Views derive from the definition, not a views section.* A
+     `lang:` document needs no `views:` list: a rule's pattern is the
+     construct's editing surface and its meaning is the
+     interpretation. From the decoded def alone, `DefLanguage`
+     derives the standard set — `edit` when the def has a text syntax
+     (the CodeMirror surface, line marks supplied by the compiled
+     grammar), `eval` when the rules carry meanings.
+     For now, a dialect doc itself for it's `eval` view uses the current summary as a placeholder (no separate 'summary' button).
+     `raw tree` continues to be always available. The
+     mechanics are three moves: `ViewContext` learns to read the host
+     dialect's rules and term anchors (today `ExprReading` does it
+     per-example); `eval` becomes a foundation builtin that
+     every dialect gets (today `expr-print`/`expr-eval` are named
+     per-dialect); and an `editSurface` derives from the compiled
+     rules — gap spans, construct spans, unknown runs as marks (the
+     rule-level subset of item 3's *Derived edit-surface marks*,
+     pulled forward). `edit` becomes the default view where it
+     exists, the `raw text` pane is removed from every document (it
+     returns later as a plain-text mode inside the editor), and
+     `ExprView`, `ExprReading`, `exprImpls.views`, and
+     `exprDef.views` all delete — `LanguageDef.views` shrinks to the
+     meta-language's own bootstrap bindings, then disappears.
    - *A shared leaf speller.* The functions that render a bare leaf —
      an int prints `1`, a reference prints `ref:N`, a gap prints its
      text verbatim — are dialect-neutral. Make them the foundation
@@ -120,6 +134,17 @@ What doesn't yet work and what comes next.
       first-wins.
     - **Adjustable Verbosity in Definitions** (Terse/Verbose) toggle
       switching `means` to `=>` and hiding `where` behind a marker
+    - **Patterns as Editors** The pattern language expands to express visual
+      affordances — dropdowns, widgets, per-element view toggles,
+      alternate presentations a document can switch between — so
+      richer editors and variants are authored *in* the definition,
+      not bound as named builtins. The pattern editor itself (a
+      `lang:` doc's `edit` view) is the first mixed text/graphical
+      instance of the same idea.
+    - **Asserted Examples** A `lang:` doc's examples carry their
+      expected interpretation, rendered and checked by the
+      interpretation view — a dialect document becomes self-testing.
+      `summary` is the placeholder until this lands.
     - **Types in Definitions** In today's definitions 'where a, b: number'
       only controls which *tokens* are accepted for those placeholders.
       In some cases, it should act as a type constraint, so those placeholders
@@ -184,7 +209,8 @@ What doesn't yet work and what comes next.
      `marksWith` that classifies each line by the production that
      applied and each span by the rule that matched, mapping
      construct → class by convention (`.cm-<construct>`) or by
-     settings on the def's view bindings. An unmatched marker paints
+     settings the pattern language declares (*Patterns as Editors*,
+     item 2). An unmatched marker paints
      nothing because no rule claimed it — the marks *are* the parse.
    - *A shared leaf speller* (lands with expression via item 1).
      `exprViewLeaf`/`exprPrintLeaf` collapse to a foundation default
