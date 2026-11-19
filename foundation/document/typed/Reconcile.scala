@@ -21,11 +21,24 @@ import opelan.foundation.document._
 // and for parses that never went through a session.
 
 // Replace `nodeId`'s data and children with `content`'s, keeping the
-// ids of whatever still matches.
+// ids of whatever still matches. `hints` name, by child-index path
+// below `content`, the node a subtree continues — a text surface's
+// line identity — and win over content matching while that node is
+// still a candidate there and applies the same construct.
 def commitContent(
     nodeId: Int,
     content: DetachedNode[NodeData],
-    document: Document[NodeData]
+    document: Document[NodeData],
+    hints: Map[List[Int], Int] = Map.empty
+): Either[String, Document[NodeData]] =
+  commitAt(nodeId, content, document, hints, Nil)
+
+private def commitAt(
+    nodeId: Int,
+    content: DetachedNode[NodeData],
+    document: Document[NodeData],
+    hints: Map[List[Int], Int],
+    path: List[Int]
 ): Either[String, Document[NodeData]] =
   document.getNode(nodeId) match {
     case None => Left(s"commitContent: node id $nodeId does not exist")
@@ -43,16 +56,20 @@ def commitContent(
           case d => d
         }
 
-      // Which old child a new subtree keeps. Whole-subtree matches
-      // claim first, the same index tried before the rest so unchanged
-      // positions don't scan. Data-only matches — the node kept, its
-      // children rematched — then pair the rest by how many leaves they
-      // share, best pairs first: a sibling inserted beside unchanged
-      // ones must not take a neighbor's id by position. Former
-      // children (cut, still parented here — ids are never reused)
-      // are candidates after the live ones: text typed mid-line can
-      // merge a line away for a keystroke, and its content returning
-      // must find its identity again.
+      def wholeMatch(cid: Int, child: DetachedNode[NodeData]): Boolean =
+        extractExternalized(document, cid).contains(child)
+
+      // Which old child a new subtree keeps. Hinted nodes claim first;
+      // then whole-subtree matches, the same index tried before the
+      // rest so unchanged positions don't scan. Data-only matches — the
+      // node kept, its children rematched — then pair the rest by how
+      // many leaves they share, best pairs first, and only when they
+      // share some: a sibling inserted beside unchanged ones must not
+      // take a neighbor's id by position, and a literal piece
+      // respelled (`*` → `//`) is a different piece. Former children
+      // (cut, still parented here — ids are never reused) are
+      // candidates after the live ones: a commit that drops a child
+      // and the next that restores it keep its identity.
       val former = document.nodes.indices.filter(id =>
         !oldIds.contains(id) &&
           document.nodes(id).parentId.contains(nodeId)).toList
@@ -62,19 +79,32 @@ def commitContent(
         (oldIds.lift(index).toList ++ pool)
           .find(cid => !claimed(cid) && pred(cid))
 
-      val whole = content.children.zipWithIndex.map { case (child, i) =>
-        val k = pick(i, cid => extractExternalized(document, cid).contains(child))
+      val hinted = content.children.zipWithIndex.map { case (child, i) =>
+        val k = hints.get(path :+ i).filter(cid =>
+          pool.contains(cid) && !claimed(cid) &&
+            externalData(cid).contains(child.data))
         k.foreach(claimed += _)
-        k
+        k.map(cid => cid -> wholeMatch(cid, child))
+      }
+
+      val whole = content.children.zipWithIndex.map { case (child, i) =>
+        if (hinted(i).isDefined) None
+        else {
+          val k = pick(i, wholeMatch(_, child))
+          k.foreach(claimed += _)
+          k
+        }
       }
 
       val partial = (for {
         (child, i) <- content.children.zipWithIndex
-        if whole(i).isEmpty && child.children.nonEmpty
+        if hinted(i).isEmpty && whole(i).isEmpty && child.children.nonEmpty
         cid <- pool
         if !claimed(cid) && externalData(cid).contains(child.data)
         old <- extractExternalized(document, cid)
-      } yield (i, cid, sharedLeaves(child, old),
+        score = sharedLeaves(child, old)
+        if score > 0
+      } yield (i, cid, score,
         oldIds.lift(i).contains(cid), oldIds.contains(cid)))
         .sortBy { case (i, _, score, here, live) =>
           (-score, !here, !live, i) }
@@ -84,8 +114,9 @@ def commitContent(
         }
 
       val pairs = content.children.zipWithIndex.map { case (child, i) =>
-        child -> whole(i).map(_ -> true)
-          .orElse(partial.get(i).map(_ -> false))
+        (child, i, hinted(i)
+          .orElse(whole(i).map(_ -> true))
+          .orElse(partial.get(i).map(_ -> false)))
       }
 
       for {
@@ -99,10 +130,11 @@ def commitContent(
             Right((d2, List.empty[Int]))) { (acc, pair) =>
           acc.flatMap { case (d, ids) =>
             pair match {
-              case (_, Some((cid, true))) => Right((d, ids :+ cid))
-              case (child, Some((cid, false))) =>
-                commitContent(cid, child, d).map(next => (next, ids :+ cid))
-              case (child, None) =>
+              case (_, _, Some((cid, true))) => Right((d, ids :+ cid))
+              case (child, i, Some((cid, false))) =>
+                commitAt(cid, child, d, hints, path :+ i)
+                  .map(next => (next, ids :+ cid))
+              case (child, _, None) =>
                 insertNode(child, nodeId, d.childrenOf(nodeId).length, d)
                   .map(next => (next, ids :+ (next.nodes.length - 1)))
             }

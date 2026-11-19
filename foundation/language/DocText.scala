@@ -29,12 +29,20 @@ def docText(
 // subtree — in place, keeping the ids of whatever did not change
 // (commitContent) — while the root, type, and imports are preserved,
 // and constructs the parse wrote inline are imported.
+//
+// `lineIds` — the node each line of `text` continues (LineIdentity) —
+// hint the commit through the language's line paths.
 def applyDocText(
     doc: Document[NodeData],
     languageFor: Document[NodeData] => Option[Language],
-    text: String): Either[String, Document[NodeData]] =
-  languageFor(doc).flatMap(_.parse(text)) match {
-    case Some(content) => replaceContent(doc, content, languageFor)
+    text: String,
+    lineIds: List[Option[Int]] = Nil): Either[String, Document[NodeData]] =
+  languageFor(doc).flatMap(l => l.parse(text).map(l -> _)) match {
+    case Some((lang, content)) =>
+      val hints = lang.textLinePaths(text).zip(lineIds).collect {
+        case (Some(path), Some(id)) if path.nonEmpty => path -> id
+      }.toMap
+      replaceContent(doc, content, languageFor, hints)
     case None =>
       if (isTyped(doc))
         contentId(doc) match {
@@ -65,10 +73,11 @@ def applyDocContent(
 private def replaceContent(
     doc: Document[NodeData],
     content: DetachedNode[NodeData],
-    languageFor: Document[NodeData] => Option[Language])
+    languageFor: Document[NodeData] => Option[Language],
+    hints: Map[List[Int], Int] = Map.empty)
     : Either[String, Document[NodeData]] = {
   val inserted = contentId(doc) match {
-    case Some(cid) => commitContent(cid, content, doc)
+    case Some(cid) => commitContent(cid, content, doc, hints)
     case None =>
       insertNode(content, doc.rootId, math.min(2, doc.childrenOf(doc.rootId).length), doc)
   }

@@ -180,6 +180,15 @@ class DefLanguage(
     else impls.textParser.map(_(text))
       .orElse(syntax.map(g => toDetached(g(text).tree)))
 
+  // lang: documents' text surface is an outline — a line per node, a
+  // `means` line per definition — so its lines carry identity.
+  override def textLineIds(doc: Document[NodeData]): List[Int] =
+    if (isDocLanguage) contentId(doc).map(defDocLineIds(doc, _)).getOrElse(Nil)
+    else Nil
+
+  override def textLinePaths(text: String): List[Option[List[Int]]] =
+    if (isDocLanguage) defDocLinePaths(text) else Nil
+
   // lang: documents relink what text can't carry — placeholder uses and
   // term constructs pointed at their nodes — after a text-surface
   // commit lands (the same links the doc format writes).

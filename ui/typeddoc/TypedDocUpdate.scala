@@ -6,7 +6,8 @@ import opelan.foundation.document.store._
 import opelan.foundation.document.typed._
 import opelan.foundation.langdef.{autoUpdateEnabled, setAutoUpdate}
 import opelan.foundation.language.{
-  GapRetry, TextSession, applyDocContent, applyDocText, docText, gapCount}
+  GapRetry, TextSession, applyDocContent, applyDocText, applyTrackedText,
+  docText, gapCount}
 import opelan.ui.editor.{DocPush, EditorOutput, SelectTarget}
 import opelan.ui.fp.Update
 import TypedDocInput._
@@ -88,9 +89,10 @@ private def step(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel, 
     case TextEdited(t) =>
       val session = languageForDoc(m.doc, m.store).flatMap(_.textSyntax)
         .map(syn => m.textSession.fold(TextSession.start(syn, t))(_.retext(syn, t)))
-      val applied = session match {
-        case Some(s) => applyDocContent(m.doc, langFor(m), s.content)
-        case None    => applyDocText(m.doc, langFor(m), t)
+      val (applied, lines) = session match {
+        case Some(s) => (applyDocContent(m.doc, langFor(m), s.content), None)
+        case None =>
+          applyTrackedText(m.doc, langFor(m), m.text, m.lineIdentity, t)
       }
       applied match {
         case Right(d) =>
@@ -103,7 +105,8 @@ private def step(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel, 
               doc = d, pushedDoc = d, pushedSelect = None,
               pushMode = DocPush.Merge("Text edit"),
               text = t, status = msg,
-              textSession = session.orElse(m.textSession)),
+              textSession = session.orElse(m.textSession),
+              lineIdentity = lines),
             Vector(DocChanged(d), Status(msg)))
         case Left(err) =>
           Update(m.copy(text = t, status = err), Vector(Status(err)))

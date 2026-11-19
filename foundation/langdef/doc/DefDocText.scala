@@ -70,6 +70,38 @@ def defDocLines(
   lines(rootId, 0)
 }
 
+// The node each of defDocLines' lines prints, in the same order — the
+// text surface's line identity (foundation/language/LineIdentity).
+def defDocLineIds(doc: Document[NodeData], rootId: Int): List[Int] = {
+  def ids(id: Int): List[Int] = metaConsOf(doc, id) match {
+    case Some("definition") => List(id)
+    case _                  => id :: doc.childrenOf(id).flatMap(ids)
+  }
+  ids(rootId)
+}
+
+// For each line of `text`, the child-index path (below the content
+// root) of the node defDocParse reads it into — None for blank lines.
+def defDocLinePaths(text: String): List[Option[List[Int]]] = {
+  val lines = text.split("\n", -1).toList
+  val entries = lines.zipWithIndex.filter(_._1.trim.nonEmpty).map {
+    case (line, i) => (line.takeWhile(c => c == ' ' || c == '\t').length, i)
+  }
+  def paths(es: List[(Int, Int)], parent: List[Int], index: Int)
+      : List[(Int, List[Int])] = es match {
+    case Nil => Nil
+    case (indent, line) :: tail =>
+      val (children, rest) = tail.span(_._1 > indent)
+      val path = parent :+ index
+      (line, path) :: paths(children, path, 0) ++ paths(rest, parent, index + 1)
+  }
+  val byLine = (entries match {
+    case Nil          => Nil
+    case head :: rest => (head._2, Nil) :: paths(rest, Nil, 0)
+  }).toMap
+  lines.indices.toList.map(byLine.get)
+}
+
 // Read the text back into a detached content subtree — what
 // DocLanguage.parse feeds commitContent (foundation/language/DocText).
 // Total: bare meta words become construct refs, `means` lines under

@@ -237,4 +237,46 @@ class ResolveSuite extends FunSuite {
     assertEquals(formulas(1), "Apples\t4\t1.2\tB2 * C2")
     assertEquals(formulas(4), "total\t\t\tD2 + D3 + D4")
   }
+
+  // Typing at the start of the `a * b` line, then Enter, through the
+  // workbench's tracked text surface: the `*` rule keeps its identity
+  // throughout, so the budget's `*` cells still read through it.
+  test("a rule typed in front of an existing line keeps that line's rule") {
+    import opelan.foundation.language.{
+      Language, LineIdentity, applyTrackedText, docText}
+    import opelan.foundation.view.ViewTree
+    val staged = List(ExprLanguage, SheetLanguage, DocLanguage)
+      .foldLeft(Store.empty)((s, l) => s.put(
+        l.typeRef.documentUrl,
+        if (l == ExprLanguage) demoExprDoc else l.langDoc)._1)
+    val langFor: Document[NodeData] => Option[Language] =
+      _ => Some(DocLanguage)
+    val text = docText(demoExprDoc, langFor)
+    val line = text.linesIterator.find(_.contains("a * b means")).get
+    val indent = line.takeWhile(_ == ' ')
+    val at = text.indexOf(line) + indent.length
+    val rule = "a // b means div(a, b)"
+    val states = (1 to rule.length).map(k =>
+      text.substring(0, at) + rule.take(k) + text.substring(at)) :+
+      (text.substring(0, at) + rule + "\n" + indent + text.substring(at))
+    val (v1, _, _) = states.foldLeft(
+        (demoExprDoc, text, Option.empty[LineIdentity])) {
+      case ((d, before, identity), t) =>
+        val (applied, next) = applyTrackedText(d, langFor, before, identity, t)
+        (applied.toOption.get, t, next)
+    }
+    val s1 = staged.put(ExprLanguage.typeRef.documentUrl, v1)._1
+    val sheetDoc = s1.get("opelan:languages/sheet", 0).get
+    val s2 = s1.put("opelan:languages/sheet",
+      acceptUpdates(sheetDoc, s1).get)._1
+    val budget = acceptUpdates(SheetLanguage.sampleDoc, s2).get
+    val sheet = languageForDoc(budget, s2).get
+    val formulas = sheet.render("formulas", budget).map(ViewTree.flatten)
+      .toOption.get.split("\n")
+    assertEquals(formulas(1), "Apples\t4\t1.2\tB2 * C2")
+    assertEquals(formulas(4), "total\t\t\tD2 + D3 + D4")
+    val rows = sheet.render("sheet", budget).map(ViewTree.flatten)
+      .toOption.get.split("\n")
+    assertEquals(rows(1), "Apples\t4\t1.2\t$4.80")
+  }
 }
