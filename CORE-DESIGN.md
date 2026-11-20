@@ -61,6 +61,37 @@ same dispatch handles the definition language itself — that recursion
 is the design. The workbench is the fixpoint of two interpretations of
 one tree.
 
+## Type shapes
+
+A definition's signature declares what its instances' children look
+like. Three shapes cover every type:
+
+- **Product** — a fixed tuple of typed slots (`term name, shape`). An
+  instance's children fill the slots positionally; its `eval` is a
+  function of that many arguments.
+- **Sum** — a named choice of variants (`Expr` = `Add | Mul | Lit`;
+  the `Either` of typed languages). A sum declares no slots of its
+  own; membership is declared on the variant — a slot typed `Expr`
+  accepts any node whose type claims `Expr`, so a new dialect can add
+  a variant without editing the sum's declaration. Evaluating a sum
+  slot is just evaluating whatever filled it; a meaning that must
+  inspect which variant it received uses a match construct in the
+  meaning vocabulary.
+- **List** — any number of children of one type; `eval` folds them.
+
+Nodes stay uniform — `(type ref, children)`. The shape lives on the
+declaration, not the node, and a slot's type is itself a type ref, so
+the same machinery says what may fill it.
+
+The shape alone derives a default editor: a product renders its
+children's editors in sequence with slot names as labels; a sum slot
+renders as a dropdown of variants followed by the chosen variant's
+editor; a list renders add/remove/move rows. This is the
+zero-authoring floor under the richer surfaces below — a brand-new
+type is editable before anyone writes a view for it. Slots not yet
+filled render as *unfilled-slot placeholders*: the structural
+editor's form of gap.
+
 ## Evaluation
 
 Depth-first, memoized by node id, staged through the ref:
@@ -107,6 +138,9 @@ EditOp = SetData | InsertChild | RemoveChild | MoveChild | Splice
 - **Generic floor.** A structural editor — the tree outliner — works
   for *any* node by dispatch alone: render each node through its
   definition, recurse into children. Bootstrap needs nothing more.
+- **Shape-derived default.** A type's shape derives a canonical
+  editor with no authoring — rows for products, a dropdown for sums,
+  add/remove for lists (*Type shapes* above).
 - **Derived surface.** A type's pattern — the shape of its slots —
   renders as a form: a text box per leaf slot, a nested editor per
   child slot (`foundation/means`: a structural LHS is the canonical
@@ -127,6 +161,7 @@ document can be authored, interpreted, and edited *in the platform*:
 
 ```
 seed = { meaning terms : use, quote, literal, builtin, construct-application
+       , signatures   : product, sum, list          -- the shape vocabulary
        , view terms    : input, label, row, ...      -- the editor vocabulary
        , edit ops      : the EditOp set              -- already pure
        }
