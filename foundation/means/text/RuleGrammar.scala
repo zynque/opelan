@@ -76,6 +76,27 @@ val ruleGrammar: Parser = sequence(tag("rule"))(
   optional(meaning(topEnd)),
   optional(constraints))
 
+// The four children a `rule` tree always has — pattern, `means`,
+// meaning, where — the one place the tree's shape is named.
+def ruleParts(t: ParseTree)
+    : (ParseTree, ParseTree, ParseTree, ParseTree) = {
+  val p = t.children
+  (p(0), p(1), p(2), p(3))
+}
+
+// A token leaf of the rule grammar — its tag is its token kind.
+def isRuleToken(t: ParseTree): Boolean = t.data match {
+  case NodeData.StringData(kind) => t.children.isEmpty && ruleTokenKinds(kind)
+  case _                         => false
+}
+
+// A rule tree's tag — "" for untagged nodes (an absent optional, a
+// recovery gap).
+def ruleTag(t: ParseTree): String = t.data match {
+  case NodeData.StringData(s) => s
+  case _                      => ""
+}
+
 // A meaning field's text on its own — the same productions, ended by
 // the end of input rather than `where` (the clause is its own field).
 private[text] val meaningText: Parser = meaning(endOfInput)

@@ -23,10 +23,20 @@ def readRule(
     text: String,
     phrase: (Set[String], String) => Meaning = noLanguage,
     resolve: String => Option[ExternalNodeReference] = foundationRefs.get)
+    : Either[String, Rule] =
+  readRuleTree(
+    ruleGrammar(ParseInput(text, ruleLexicon), 0).tree, phrase, resolve)
+
+// `readRule` on an already-parsed `rule` tree — for callers that keep
+// the tree (its token positions locate the encoding's nodes in the
+// source, foundation/langdef/doc/RuleSpans).
+def readRuleTree(
+    t: ParseTree,
+    phrase: (Set[String], String) => Meaning = noLanguage,
+    resolve: String => Option[ExternalNodeReference] = foundationRefs.get)
     : Either[String, Rule] = {
-  val parts = ruleGrammar(ParseInput(text, ruleLexicon), 0).tree.children
-  val (pattern, keyword, meaning, where) = (parts(0), parts(1), parts(2), parts(3))
-  if (!isToken(keyword)) Left("missing 'means'")
+  val (pattern, keyword, meaning, where) = ruleParts(t)
+  if (!isRuleToken(keyword)) Left("missing 'means'")
   else if (pattern.children.isEmpty) Left("empty pattern")
   else if (!isTagged(meaning)) Left("empty meaning")
   else for {
@@ -71,7 +81,7 @@ def readMeaningText(text: String, phrase: String => Meaning,
     resolve: String => Option[ExternalNodeReference] = foundationRefs.get)
     : Option[Meaning] =
   meaningText(ParseInput(text, ruleLexicon), 0).tree match {
-    case t if Set("build", "use")(tagOf(t)) =>
+    case t if Set("build", "use")(ruleTag(t)) =>
       Some(readMeaning(t, phrase, resolve))
     case _ => None
   }
@@ -91,24 +101,14 @@ def readPattern(text: String): Pattern = {
   Pattern(pieces(tokensIn(tree)))
 }
 
-private def isToken(t: ParseTree): Boolean = t.data match {
-  case NodeData.StringData(kind) => t.children.isEmpty && ruleTokenKinds(kind)
-  case _                         => false
-}
-
 private def isTagged(t: ParseTree): Boolean = t.data.isInstanceOf[NodeData.StringData]
-
-private def tagOf(t: ParseTree): String = t.data match {
-  case NodeData.StringData(s) => s
-  case _                      => ""
-}
 
 // The tokens under a node, in order, each with its absolute start —
 // a child's `from` is relative to its parent, so the base accumulates
 // on the way down.
 private def tokensIn(t: ParseTree): List[(Int, ParseTree)] = {
   def go(t: ParseTree, base: Int): List[(Int, ParseTree)] =
-    if (isToken(t)) List((base + t.from, t))
+    if (isRuleToken(t)) List((base + t.from, t))
     else t.children.flatMap(k => go(k, base + t.from))
   go(t, 0)
 }
@@ -122,7 +122,7 @@ private def pieces(tokens: List[(Int, ParseTree)]): List[Piece] =
       val (previousStart, previous) = tokens(i - 1)
       previousStart + previous.length == start
     }
-    tagOf(t) match {
+    ruleTag(t) match {
       case "word" if isPlaceholderWord(t.text) => Piece.Placeholder(t.text, glued)
       case "quoted"                            => Piece.Literal(unquote(t.text), glued)
       case _                                   => Piece.Literal(t.text, glued)
@@ -131,11 +131,11 @@ private def pieces(tokens: List[(Int, ParseTree)]): List[Piece] =
 
 private def readMeaning(t: ParseTree, phrase: String => Meaning,
     resolve: String => Option[ExternalNodeReference]): Meaning =
-  tagOf(t) match {
+  ruleTag(t) match {
     case "build" =>
       val arguments = t.children(2)
       val list =
-        if (tagOf(arguments) != "arguments") Nil
+        if (ruleTag(arguments) != "arguments") Nil
         else arguments.children(0) :: arguments.children(1).children.map(_.children(1))
       val tag = t.children(0).text
       // A meaning-language builtin spelled like a construct — `source(a)`
@@ -155,7 +155,7 @@ private def readMeaning(t: ParseTree, phrase: String => Meaning,
 // definition, so it binds the ref on read too.
 private def nameTermOf(t: ParseTree, phrase: String => Meaning,
     resolve: String => Option[ExternalNodeReference]): Meaning =
-  if (tagOf(t) == "use") Meaning.nameTerm(t.children(0).text)
+  if (ruleTag(t) == "use") Meaning.nameTerm(t.children(0).text)
   else readMeaning(t, phrase, resolve)
 
 // `a, b: number; c: whole number` — one constraint per group.
@@ -164,8 +164,8 @@ private def readWhere(t: ParseTree): Either[String, List[Constraint]] = {
   groups.foldRight[Either[String, List[Constraint]]](Right(Nil)) { (g, acc) =>
     val names = tokensIn(g.children(0)).map(_._2.text).filterNot(_ == ",")
     val typed = g.children(1)
-    val term = if (tagOf(typed) == "typed") tokensIn(typed.children(1)).map(_._2.text) else Nil
-    if (tagOf(typed) != "typed") Left("where needs 'placeholders: term'")
+    val term = if (ruleTag(typed) == "typed") tokensIn(typed.children(1)).map(_._2.text) else Nil
+    if (ruleTag(typed) != "typed") Left("where needs 'placeholders: term'")
     else if (names.isEmpty || term.isEmpty) Left("incomplete where clause")
     else acc.map(Constraint(names, term.mkString(" ")) :: _)
   }

@@ -30,18 +30,17 @@ def docText(
 // (commitContent) — while the root, type, and imports are preserved,
 // and constructs the parse wrote inline are imported.
 //
-// `lineIds` — the node each line of `text` continues (LineIdentity) —
-// hint the commit through the language's line paths.
+// `hints` — the document node each parsed node (by child-index path
+// below the content root) continues, when a host has tracked the text
+// surface's provenance — commitContent honors them where the parse
+// builds the same construct.
 def applyDocText(
     doc: Document[NodeData],
     languageFor: Document[NodeData] => Option[Language],
     text: String,
-    lineIds: List[Option[Int]] = Nil): Either[String, Document[NodeData]] =
+    hints: Map[List[Int], Int] = Map.empty): Either[String, Document[NodeData]] =
   languageFor(doc).flatMap(l => l.parse(text).map(l -> _)) match {
-    case Some((lang, content)) =>
-      val hints = lang.textLinePaths(text).zip(lineIds).collect {
-        case (Some(path), Some(id)) if path.nonEmpty => path -> id
-      }.toMap
+    case Some((_, content)) =>
       replaceContent(doc, content, languageFor, hints)
     case None =>
       if (isTyped(doc))
@@ -67,8 +66,9 @@ private def contentOutline(doc: Document[NodeData]): String =
 def applyDocContent(
     doc: Document[NodeData],
     languageFor: Document[NodeData] => Option[Language],
-    content: DetachedNode[NodeData]): Either[String, Document[NodeData]] =
-  replaceContent(doc, content, languageFor)
+    content: DetachedNode[NodeData],
+    hints: Map[List[Int], Int] = Map.empty): Either[String, Document[NodeData]] =
+  replaceContent(doc, content, languageFor, hints)
 
 private def replaceContent(
     doc: Document[NodeData],

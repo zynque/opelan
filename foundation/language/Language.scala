@@ -1,6 +1,7 @@
 package opelan.foundation.language
 
 import opelan.foundation.document._
+import opelan.foundation.grammar.SpannedTree
 
 // A language gives meaning to a document type: it knows how to interpret
 // the content subtree of a typed document. For now languages are defined
@@ -70,13 +71,11 @@ trait Language {
   // rendered beside it. None — `edit` renders its view tree.
   def editSurface: Option[EditSurface] = None
 
-  // The text surface's line identity: the node each line of the
-  // document's text prints, and for each line of a text the child-
-  // index path (below the content root) of the node `parse` reads it
-  // into. A host carries the ids across keystrokes (LineIdentity) and
-  // hands them to the commit as hints. Default: no line structure.
-  def textLineIds(doc: Document[NodeData]): List[Int] = Nil
-  def textLinePaths(text: String): List[Option[List[Int]]] = Nil
+  // `parse` reporting the span of text each node it builds covers —
+  // the text surface's provenance (TextProvenance). A host carries
+  // per-character owners across keystrokes and hands the matches to
+  // the commit as hints. Default: none — the host commits untracked.
+  def parseSpanned(text: String): Option[SpannedTree[NodeData]] = None
 
   // A committed content subtree's finishing pass — run after a text- or
   // input-surface commit rewrote `rootId`'s subtree in place: a language

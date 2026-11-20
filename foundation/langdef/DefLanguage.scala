@@ -180,14 +180,15 @@ class DefLanguage(
     else impls.textParser.map(_(text))
       .orElse(syntax.map(g => toDetached(g(text).tree)))
 
-  // lang: documents' text surface is an outline — a line per node, a
-  // `means` line per definition — so its lines carry identity.
-  override def textLineIds(doc: Document[NodeData]): List[Int] =
-    if (isDocLanguage) contentId(doc).map(defDocLineIds(doc, _)).getOrElse(Nil)
-    else Nil
-
-  override def textLinePaths(text: String): List[Option[List[Int]]] =
-    if (isDocLanguage) defDocLinePaths(text) else Nil
+  // The `lang:` surface's provenance: `parse` with each node's span
+  // on the node (defDocParseSpanned), so a text edit carries node
+  // identity through the outline and inside `means` lines
+  // (foundation/language/TextProvenance). The compiled-grammar parse
+  // is spanned already — a code-side text parser can't report spans.
+  override def parseSpanned(text: String): Option[SpannedTree[NodeData]] =
+    if (isDocLanguage) Some(defDocParseSpanned(text))
+    else if (impls.textParser.isEmpty) syntax.map(g => spanned(g(text).tree))
+    else None
 
   // lang: documents relink what text can't carry — placeholder uses and
   // term constructs pointed at their nodes — after a text-surface

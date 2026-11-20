@@ -40,7 +40,8 @@ private def autoAccept(
       u.copy(
         state = s.copy(
           doc = d, pushedDoc = d,
-          pushMode = DocPush.Merge("Auto-update"), status = msg),
+          pushMode = DocPush.Merge("Auto-update"), status = msg,
+          provenance = None, textSession = None),
         out = u.out ++ Vector(DocChanged(d), Status(msg)))
     case None => u
   }
@@ -64,6 +65,7 @@ private def step(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel, 
         pushMode = DocPush.Synced(h),
         text = t,
         textEpoch = m.textEpoch + (if (t == m.text) 0 else 1),
+        provenance = None, textSession = None,
         status = "Synced"))
     case RequestDoc    => Update(m, Vector(DocChanged(m.doc)))
 
@@ -89,10 +91,10 @@ private def step(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel, 
     case TextEdited(t) =>
       val session = languageForDoc(m.doc, m.store).flatMap(_.textSyntax)
         .map(syn => m.textSession.fold(TextSession.start(syn, t))(_.retext(syn, t)))
-      val (applied, lines) = session match {
+      val (applied, provenance) = session match {
         case Some(s) => (applyDocContent(m.doc, langFor(m), s.content), None)
         case None =>
-          applyTrackedText(m.doc, langFor(m), m.text, m.lineIdentity, t)
+          applyTrackedText(m.doc, langFor(m), m.text, m.provenance, t)
       }
       applied match {
         case Right(d) =>
@@ -106,7 +108,7 @@ private def step(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel, 
               pushMode = DocPush.Merge("Text edit"),
               text = t, status = msg,
               textSession = session.orElse(m.textSession),
-              lineIdentity = lines),
+              provenance = provenance),
             Vector(DocChanged(d), Status(msg)))
         case Left(err) =>
           Update(m.copy(text = t, status = err), Vector(Status(err)))
@@ -124,7 +126,8 @@ private def step(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel, 
       // Force the remount: the pane is about to reopen at a branch URL.
       val t = docText(d, langFor(m))
       Update(
-        m.copy(doc = d, text = t, textEpoch = m.textEpoch + 1),
+        m.copy(doc = d, text = t, textEpoch = m.textEpoch + 1,
+          provenance = None, textSession = None),
         Vector(BranchRequested(d)))
     case FromEditor(EditorOutput.DocChanged(d)) =>
       // The editor echoes the doc we just pushed via SyncDocument; that
@@ -178,7 +181,8 @@ private def step(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel, 
           Update(
             m.copy(
               doc = d, pushedDoc = d, pushedSelect = None,
-              pushMode = DocPush.Merge("Accept updates"), status = msg),
+              pushMode = DocPush.Merge("Accept updates"), status = msg,
+              provenance = None, textSession = None),
             Vector(DocChanged(d), Status(msg)))
         case None =>
           Update(m.copy(status = "No pending updates"),
@@ -193,7 +197,8 @@ private def step(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel, 
           Update(
             m.copy(
               doc = d, pushedDoc = d, pushedSelect = None,
-              pushMode = DocPush.Merge("Auto-update"), status = msg),
+              pushMode = DocPush.Merge("Auto-update"), status = msg,
+              provenance = None, textSession = None),
             Vector(DocChanged(d), Status(msg)))
         case Left(err) =>
           Update(m.copy(status = err), Vector(Status(err)))
@@ -219,7 +224,8 @@ private def mirrorDoc(
   val t = docText(d, langFor(m))
   Update(
     m.copy(doc = d, text = t,
-      textEpoch = m.textEpoch + (if (t == m.text) 0 else 1)),
+      textEpoch = m.textEpoch + (if (t == m.text) 0 else 1),
+      provenance = None, textSession = None),
     out)
 }
 
@@ -249,5 +255,6 @@ private def load(
       },
       text = docText(d, langFor(m)),
       textEpoch = m.textEpoch + 1,
+      provenance = None, textSession = None,
       status = msg),
     Vector(DocChanged(d), Status(msg)))

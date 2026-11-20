@@ -243,7 +243,7 @@ class ResolveSuite extends FunSuite {
   // throughout, so the budget's `*` cells still read through it.
   test("a rule typed in front of an existing line keeps that line's rule") {
     import opelan.foundation.language.{
-      Language, LineIdentity, applyTrackedText, docText}
+      Language, TextProvenance, applyTrackedText, docText}
     import opelan.foundation.view.ViewTree
     val staged = List(ExprLanguage, SheetLanguage, DocLanguage)
       .foldLeft(Store.empty)((s, l) => s.put(
@@ -260,7 +260,7 @@ class ResolveSuite extends FunSuite {
       text.substring(0, at) + rule.take(k) + text.substring(at)) :+
       (text.substring(0, at) + rule + "\n" + indent + text.substring(at))
     val (v1, _, _) = states.foldLeft(
-        (demoExprDoc, text, Option.empty[LineIdentity])) {
+        (demoExprDoc, text, Option.empty[TextProvenance])) {
       case ((d, before, identity), t) =>
         val (applied, next) = applyTrackedText(d, langFor, before, identity, t)
         (applied.toOption.get, t, next)
