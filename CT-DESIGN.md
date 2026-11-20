@@ -3,11 +3,6 @@
 The minimal core (`CORE-DESIGN.md`) restated in category-theoretic
 terms, for readers who find them clarifying.
 
-No prior category theory needed: each concept is introduced through
-its programming counterpart — ADTs, generics, folds — then named.
-The names earn their keep by making precise *why* the core has the
-shape it does.
-
 ## One level of the tree: the signature functor
 
 Start from a familiar idea — an algebraic data type. A language's
@@ -30,8 +25,8 @@ such shapes. Write "choice among" as `+`:
 F(X) = X × X  +  Leaf  +  List(X)          -- for the signature above
 ```
 
-`F` is the **signature functor**. "Functor" is the CT name for
-something every programmer knows: a type-level map that, given a type
+`F` is the **signature functor**. "Functor" is the Category Theory name for
+a type-level map that, given a type
 `X`, produces a type `F(X)` — here, "one level of tree with `X`s in
 the child slots" — and lifts any function `X -> Y` to `F(X) -> F(Y)`
 by applying it in each slot (that's `.map`). It's called *polynomial*
@@ -64,7 +59,7 @@ subterms be shared, referenced, and edited by identity.
 
 ## Folds: how every interpretation works
 
-To consume a recursive ADT, every programmer does the same thing:
+To consume a recursive ADT, programmers familiar with recursion will
 handle each constructor *given the already-computed results of its
 children*. A function of that shape — "one level whose child slots
 hold finished values" — is an **F-algebra**:
@@ -88,7 +83,7 @@ That's the **catamorphism**, better known as a **fold**:
 fold(A) : WΣ -> V
 ```
 
-You've written folds: `List.foldRight`, a `reduce` over an AST. What
+You may have written folds: `List.foldRight`, a `reduce` over an AST. What
 initiality adds is that the fold is *the* canonical consumer of a
 tree — **every compositional interpretation of a document is a
 fold.** The core's "two interpretations of one tree" is then literal:

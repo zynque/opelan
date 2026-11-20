@@ -2,7 +2,6 @@ package opelan.foundation.langdef.doc
 
 import opelan.foundation.document._
 import opelan.foundation.document.typed._
-import opelan.foundation.grammar.unspanned
 import opelan.foundation.langdef._
 import opelan.foundation.langdef.view.{meaningFieldText, whereFieldText}
 import opelan.foundation.means.Rule
@@ -71,16 +70,9 @@ def defDocLines(
   lines(rootId, 0)
 }
 
-// Read the text back into a detached content subtree — what
-// DocLanguage.parse feeds commitContent (foundation/language/DocText).
-// Total: bare meta words become construct refs, `means` lines under
-// `definitions` become `definition` nodes, and anything else stays the
-// outline
-// payload it spelled. Phrase meanings a language-aware commit would
-// desugar stay quoted gaps here — interpretation retries them
-// (rephraseRuleSet).
-def defDocParse(text: String): DetachedNode[NodeData] =
-  unspanned(defDocParseSpanned(text))
+// Reading the text back into a detached subtree is the language's
+// compiled grammar's job — `document` (DocGrammar) is the surface
+// production DocLanguage.syntax roots at.
 
 private[langdef] def dataOf(text: String): NodeData =
   metaRef(text).map(NodeData.ExternalNodeRef(_))

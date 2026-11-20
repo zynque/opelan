@@ -7,7 +7,7 @@ import opelan.foundation.means.text._
 // The `definition` encoding's children, each stamped with the span of
 // the rule-grammar tree part that produced it — a pattern piece or
 // meaning argument tracks its identity at token granularity
-// (foundation/language/TextProvenance, defDocParseSpanned). Walks the
+// (foundation/language/TextProvenance, DocMeansLine). Walks the
 // encoding against the `rule` tree — the same two structures
 // `readRuleTree`+`ruleNode` relate — so the correspondence is named
 // once, here; where they disagree (a malformed rule) a node inherits

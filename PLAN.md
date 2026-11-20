@@ -23,10 +23,17 @@ node), `Language.parseSpanned`, and span-derived path hints into
    `parse`, `parseSpanned`, and `textSyntax` root there;
    `Impls.textParser` and `markdownParse` delete; markdown gains
    incremental sessions.
-2. **`lang:` doc grammar.** A line/outline lexicon and an `indentBlock`
-   combinator, plus document productions in the meta-language's impls —
-   `defDocParse`/`DefDocSpans`/`RuleSpans`/`RuleSpanTerms` and the
-   `isDocLanguage` parse branches delete; spans and sessions come free.
+2. **`lang:` doc grammar** (landed). `document` — an outline
+   production: a line absorbs the non-blank lines indented deeper than
+   it (the root absorbs all lines, as `defDocParse`'s `spanBlock` did),
+   and a string line under `definitions` runs `ruleGrammar` on the
+   bounded line text, its `definition` encoding stamped by
+   `ruleSpannedChildren`/`RuleSpanTerms` (retained — the means-line
+   adapter's decode machinery, not a parser). `docLanguageDef.syntax`
+   roots at `surface = "document"`; `defDocParse`/`DefDocSpans` and the
+   `isDocLanguage` parse branches deleted. `lang:` docs get spans,
+   provenance-tracked text commits, and incremental `textSyntax`
+   sessions like every compiled language.
 3. **Ref-based `where`-term binding.** `where` terms bind by name
    today — `Constraint.term: String`, `sl(c.term)` in the doc,
    `lexicals` keyed `String` — while placeholder terms already have

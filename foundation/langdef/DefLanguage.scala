@@ -124,7 +124,12 @@ class DefLanguage(
           .getOrElse(compileRules(
             rephrased, atom, termTag, s.lexicon, lexicals))
         Grammar(phrase(start, Set.empty), tokens)
-      case None => Grammar(restGap, lexicon)
+      // A rule-less syntax roots at its surface production alone —
+      // `lang:`'s `document` outline — the whole input a gap without
+      // one.
+      case None => Grammar(
+        phrase(s.surface.flatMap(lexicalTerms(impls).get)
+          .flatMap(_.parser).getOrElse(restGap), Set.empty), lexicon)
     }
 
   def render(view: String, doc: Document[NodeData])
@@ -178,17 +183,14 @@ class DefLanguage(
   // and always for the meta language, whose text form is the format in
   // doc/DefDocText.scala rather than a rule set.
   override def parse(text: String): Option[DetachedNode[NodeData]] =
-    if (isDocLanguage) Some(defDocParse(text))
-    else syntax.map(g => toDetached(g(text).tree))
+    syntax.map(g => toDetached(g(text).tree))
 
-  // The `lang:` surface's provenance: `parse` with each node's span
-  // on the node (defDocParseSpanned), so a text edit carries node
-  // identity through the outline and inside `means` lines
-  // (foundation/language/TextProvenance). The compiled-grammar parse
-  // is spanned already — every language reports spans the same way.
+  // `parse` with each node's span on the node — a text edit carries
+  // node identity through the surface
+  // (foundation/language/TextProvenance). Every language reports
+  // spans the same way: the grammar positions them.
   override def parseSpanned(text: String): Option[SpannedTree[NodeData]] =
-    if (isDocLanguage) Some(defDocParseSpanned(text))
-    else syntax.map(g => spanned(g(text).tree))
+    syntax.map(g => spanned(g(text).tree))
 
   // lang: documents relink what text can't carry — placeholder uses and
   // term constructs pointed at their nodes — after a text-surface

@@ -42,7 +42,7 @@ class DefDocSpansSuite extends FunSuite {
   test("a means line's parse locates its pieces and meaning arguments") {
     val text = "dialect\n  syntax\n    definitions\n" +
       "      a * b means mul(a, b) where b: number"
-    val tree = defDocParseSpanned(text)
+    val tree = DocLanguage.parseSpanned(text).get
     def at(path: List[Int]) =
       path.foldLeft(Option(tree))((n, i) => n.flatMap(_.children.lift(i)))
         .map(n => text.substring(n.data.span.from, n.data.span.to))

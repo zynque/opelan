@@ -68,7 +68,10 @@ val docLanguageDef = LanguageDef(
   name = "Dialect definitions",
   description = "the dialect in which dialects are written",
   vocabulary = metaTerms,
-  syntax = None,
+  // The doc's own surface grammar: no rules — the `document`
+  // production (the outline + means lines, DocGrammar.scala) is the
+  // whole surface, rooted by `surface` like markdown's `blocks`.
+  syntax = Some(SyntaxDef("doc", surface = Some("document"))),
   views = List(
     ViewBinding("edit", "def-view"),
     ViewBinding("summary", "summary-view")),

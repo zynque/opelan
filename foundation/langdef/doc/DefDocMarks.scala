@@ -15,9 +15,9 @@ import opelan.foundation.means.text.readRule
 // word the meta vocabulary doesn't declare — it lands as a string,
 // so the painting signals it isn't a recognized pattern.
 
-// Indentation tracks the outline's nesting the way defDocParse's
-// `block` does: a line is a rule when its nearest shallower ancestor
-// is the `definitions` construct.
+// Indentation tracks the outline's nesting the way the `document`
+// production does (DocGrammar): a line is a rule when its nearest
+// shallower ancestor is the `definitions` construct.
 def defDocLineMarks(text: String): List[LineMark] = {
   var stack: List[(Int, String)] = Nil
   text.split("\n", -1).toList.map { line =>

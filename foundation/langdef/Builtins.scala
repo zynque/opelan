@@ -5,9 +5,10 @@ import opelan.foundation.document.Detached._
 import opelan.foundation.grammar.Lexicon
 import opelan.foundation.langdef.syntax._
 import opelan.foundation.langdef.view._
-import opelan.foundation.langdef.doc.defDocLineMarks
+import opelan.foundation.langdef.doc.{defDocLineMarks, documentTerm}
 import opelan.foundation.language.EditSurface
 import opelan.foundation.means.engine.LexicalTerm
+import opelan.foundation.means.text.ruleLexicon
 
 // The code-side semantics a language definition names. A LanguageDef
 // references lexicons, views, and input parsers by name — behavior lives
@@ -74,6 +75,11 @@ case class ViewContext(
     dialect: Option[LanguageDef] = None)
 
 val docImpls = Impls(
+  // The `lang:` surface's grammar: `document` is the outline
+  // production the syntax's `surface` roots at (DocGrammar.scala),
+  // its lexicon the rule grammar's — `means` lines tokenize under it.
+  lexicons = Map("doc" -> ruleLexicon),
+  productions = Map("document" -> documentTerm),
   views = Map(
     "def-view"     -> ((doc, id, ctx) => defView(doc, id, ctx)),
     "summary-view" -> ((doc, id, ctx) => defSummary(doc, id, ctx))),
