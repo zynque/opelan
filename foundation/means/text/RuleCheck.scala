@@ -1,14 +1,18 @@
 package opelan.foundation.means.text
 
+import opelan.foundation.document.ExternalNodeReference
 import opelan.foundation.means._
 
 // Well-formedness issues, as readable messages — reported, never thrown;
 // a rule set with issues still compiles as far as it can (*Never broken*).
 
 // `leaves` is the `where` vocabulary terms resolve against — the
-// def's leaf productions plus the check-only terms (`lexicalTerms`);
-// empty flags every `where` term as unknown.
-def ruleIssues(rule: Rule, leaves: Set[String] = Set.empty): List[String] = {
+// def's leaf productions plus the check-only terms (`lexicalTerms`,
+// keyed by the terms' anchored refs); empty flags every `where` term
+// as unknown.
+def ruleIssues(
+    rule: Rule,
+    leaves: Set[ExternalNodeReference] = Set.empty): List[String] = {
   val bound = rule.pattern.placeholders
   val shown = printRule(rule)
   val duplicates = bound.diff(bound.distinct).distinct
@@ -19,7 +23,9 @@ def ruleIssues(rule: Rule, leaves: Set[String] = Set.empty): List[String] = {
   val stray = rule.where.flatMap(_.placeholders).distinct
     .filterNot(bound.contains)
     .map(name => s"where names '$name', which is not in the pattern of: $shown")
-  val unknown = rule.where.map(_.term).distinct.filterNot(leaves)
+  val unknown = rule.where
+    .filterNot(c => c.termRef.orElse(lexicalRefs.get(c.term)).exists(leaves))
+    .map(_.term).distinct
     .map(t => s"where names '$t', which is not a leaf production or check term")
   val empty =
     if (rule.pattern.pieces.isEmpty) List(s"empty pattern: $shown") else Nil
@@ -30,7 +36,8 @@ def ruleIssues(rule: Rule, leaves: Set[String] = Set.empty): List[String] = {
 // each at most once, and every operator-shaped rule needs a tier.
 // `leaves` is the leaf vocabulary `where` terms check against.
 def ruleSetIssues(
-    ruleSet: RuleSet, leaves: Set[String] = Set.empty): List[String] = {
+    ruleSet: RuleSet,
+    leaves: Set[ExternalNodeReference] = Set.empty): List[String] = {
   val byKey = ruleSet.rules.groupBy(_.pattern.key)
   val tiered = ruleSet.tiers.flatMap(_.patterns)
   def show(pattern: Pattern) = printPattern(pattern)

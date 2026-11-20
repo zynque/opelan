@@ -142,8 +142,14 @@ object Meaning {
 }
 
 // `where c, r: whole number` — what may fill the named placeholders.
-// The term is free text until a type vocabulary exists.
-case class Constraint(placeholders: List[String], term: String)
+// `term` is the authored name; `termRef` the term's identity — the
+// anchored ref of a builtin lexical term or a declared term's
+// definition node, attached when the constraint is read from a
+// document or resolved at encode (Meaning carries `reference` the
+// same way).
+case class Constraint(
+    placeholders: List[String], term: String,
+    termRef: Option[ExternalNodeReference] = None)
 
 // `id` is the rule's stable identity — its `definition` node's id in
 // the

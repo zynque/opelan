@@ -14,8 +14,8 @@ import opelan.foundation.means._
 // (lexicalTerms); which are operands is authored by lone-placeholder
 // operand rules.
 def vocabularyFrom(set: RuleSet): List[NodeTerm] =
-  whereLeafNames(set).toList.sorted.map(
-    NodeTerm(_, NodeShape.Leaf)) ++
+  whereLeafNames(set).toList.sorted.map(name =>
+    NodeTerm(name, NodeShape.Leaf, lexicalRefs.get(name))) ++
   set.rules.flatMap(r => r.pattern.constructForm).map { case (name, ps) =>
     NodeTerm(name, NodeShape.Fixed(ps.length)) }
     .distinctBy(_.name)

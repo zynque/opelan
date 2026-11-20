@@ -5,6 +5,7 @@ import opelan.foundation.langdef._
 import opelan.foundation.langdef.doc.termRefs
 import opelan.foundation.langdef.syntax.vocabularyFrom
 import opelan.foundation.language.EditSurface
+import opelan.foundation.means.lexicalRefs
 import opelan.foundation.view.ViewTree
 
 // The markdown language's definition as data — what its `lang:`
@@ -32,7 +33,7 @@ val markdownDef = LanguageDef(
   // there: a document is one `blocks` parse, headings/lists/paragraphs
   // inside it through the `runs`/`plain` terms.
   syntax = Some(SyntaxDef("markdown", Some(markdownRules),
-    surface = Some("blocks"))),
+    surface = Some(lexicalRefs("blocks")))),
   views = List(
     // `edit` binds the source-text builtin — the sidebar's edit tile
     // shows what the editor holds; the pane's edit view is the impls'

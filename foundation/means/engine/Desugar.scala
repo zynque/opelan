@@ -32,7 +32,8 @@ def phraseMeaning(
     tag: String => NodeData,
     name: String,
     lexicon: Lexicon,
-    lexicals: Map[String, LexicalTerm] = Map.empty): Meaning = {
+    lexicals: Map[ExternalNodeReference, LexicalTerm] = Map.empty
+    ): Meaning = {
   val expression = phrase(
     compileRules(set, choice(placeholderAtom(placeholders), atom),
       tag, name, lexicals),
@@ -51,7 +52,8 @@ def rephraseMeaning(
     tag: String => NodeData,
     name: String,
     lexicon: Lexicon,
-    lexicals: Map[String, LexicalTerm] = Map.empty): Meaning =
+    lexicals: Map[ExternalNodeReference, LexicalTerm] = Map.empty
+    ): Meaning =
   gapQuoteText(m).fold(m) { text =>
     val read = phraseMeaning(text, placeholders, set, atom, tag, name,
       lexicon, lexicals)
@@ -68,7 +70,8 @@ def rephraseRuleSet(
     tag: String => NodeData,
     name: String,
     lexicon: Lexicon,
-    lexicals: Map[String, LexicalTerm] = Map.empty): RuleSet =
+    lexicals: Map[ExternalNodeReference, LexicalTerm] = Map.empty
+    ): RuleSet =
   set.copy(rules = set.rules.map(r =>
     r.copy(meaning = rephraseMeaning(r.meaning,
       r.pattern.placeholders.toSet, set, atom, tag, name, lexicon,

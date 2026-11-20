@@ -31,7 +31,7 @@ private[langdef] def ruleFromDoc(
         .getOrElse(Meaning.gap("")),
       entriesOf(doc, id, "where").headOption.toList.flatMap(w =>
         entriesOf(doc, w, "constraint")
-          .flatMap(constraintFrom(doc, _))),
+          .flatMap(constraintFrom(doc, url, version, resolve, _))),
       Some(id)))
 
 private def pieceFrom(doc: Document[NodeData], id: Int): Piece = {
@@ -123,13 +123,43 @@ private def treeFrom(doc: Document[NodeData], id: Int): ParseTree =
   ParseTree(doc.getNode(id).map(_.data).getOrElse(NodeData.GapData("")),
     "", 0, 0, doc.childrenOf(id).map(treeFrom(doc, _)))
 
-// A constraint's strings are its placeholder names then its term.
+// A constraint's children are its placeholder names then its term —
+// the term by reference when the doc linked it (a builtin's anchored
+// ref, a declared term's definition node), by name otherwise. A ref's
+// printed name resolves through the ambient registry, an imported
+// def's vocabulary, or the anchored node's own text — so a rename
+// heals the clause (Everything by reference).
 private def constraintFrom(
-    doc: Document[NodeData], id: Int): Option[Constraint] =
-  doc.childrenOf(id).flatMap(strOf(doc, _)) match {
-    case ss if ss.length >= 2 => Some(Constraint(ss.init, ss.last))
-    case _                    => None
+    doc: Document[NodeData], url: String, version: Int,
+    resolve: ExternalNodeReference => Option[LanguageDef],
+    id: Int): Option[Constraint] = {
+  val cs = doc.childrenOf(id)
+  if (cs.length < 2) None
+  else {
+    val names = cs.init.flatMap(strOf(doc, _))
+    val (term, ref) = externalRefOf(doc, cs.last) match {
+      // A linked term — the import indirection resolves it like any
+      // other construct use. Its printed name comes from the ambient
+      // registry, an imported def's vocabulary, or the anchored node's
+      // own text.
+      case Some(r) =>
+        (ambientTermOf(r).map(_.name)
+          .orElse(resolve(r).flatMap(d => d.vocabulary
+            .find(t => t.ref.exists(sameNode(_, r))).map(_.name)))
+          .orElse(
+            if (r.documentUrl == url) strOf(doc, r.nodeId) else None)
+          .getOrElse(""), Some(r))
+      case None => doc.getNode(cs.last).map(_.data) match {
+        case Some(NodeData.InternalNodeRef(t)) =>
+          (strOf(doc, t).getOrElse(""),
+            Some(ExternalNodeReference(url, version, t)))
+        case Some(NodeData.StringData(s)) => (s, lexicalRefs.get(s))
+        case _                            => ("", None)
+      }
+    }
+    Some(Constraint(names, term, ref))
   }
+}
 
 private def entriesOf(
     doc: Document[NodeData], id: Int, name: String): List[Int] =

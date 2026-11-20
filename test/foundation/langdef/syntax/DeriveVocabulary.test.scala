@@ -84,9 +84,11 @@ class DeriveVocabularySuite extends FunSuite {
       "number" -> LeafDef(List("float" -> FloatLit, "int" -> IntLit)),
       "ref"    -> LeafDef(List("ref" -> RefLit("ref:")))))
     val terms = lexicalTerms(impls)
-    assertEquals(terms.keySet, Set("gap", "number", "ref", "value"))
-    assert(terms("number").check(NodeData.IntData(3)))
-    assert(terms("number").check(NodeData.FloatData(1.5)))
-    assert(!terms("number").check(NodeData.InternalNodeRef(1)))
+    assertEquals(terms.keySet, Set("gap", "number", "ref", "value")
+      .map(lexicalRefs))
+    assert(terms(lexicalRefs("number")).check(NodeData.IntData(3)))
+    assert(terms(lexicalRefs("number")).check(NodeData.FloatData(1.5)))
+    assert(!terms(lexicalRefs("number"))
+      .check(NodeData.InternalNodeRef(1)))
   }
 }

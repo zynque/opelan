@@ -5,7 +5,7 @@ import opelan.foundation.document.store._
 import opelan.foundation.document.typed._
 import opelan.foundation.langdef._
 import opelan.foundation.langdef.syntax.vocabularyFrom
-import opelan.foundation.means.Meaning
+import opelan.foundation.means.{lexicalRefs, Meaning}
 
 // The recovering read of a `lang:` document — the inverse of
 // DefDocEncode. Constructs are recognized by identity (which
@@ -83,7 +83,9 @@ def langDefFromDocument(
       SyntaxDef(
         r.childStr(sid, 0).getOrElse(""),
         r.entries(sid, "definitions").headOption.map(r.ruleSetFrom),
-        r.entries(sid, "surface").headOption.flatMap(r.childStr(_, 0)))
+        r.entries(sid, "surface").headOption.flatMap(r.children(_).headOption)
+          .flatMap(cid => externalRefOf(doc, cid).orElse(
+            r.str(cid).flatMap(lexicalRefs.get))))
     },
     views = r.section("views").toList.flatMap { vid =>
       r.entries(vid, "view").map(k => ViewBinding(

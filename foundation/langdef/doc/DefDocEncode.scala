@@ -53,7 +53,7 @@ private[langdef] def encodeDef(
   val doc2 = add(doc1, cid, List(
     d.syntax.map(s => n(pending("syntax"),
       (List(sl(s.lexicon)) ++
-        s.surface.toList.map(p => n(pending("surface"), sl(p))) ++
+        s.surface.toList.map(r => n(pending("surface"), erl(r))) ++
         s.rules.toList.map(rulesNode(_, d.typeRef.documentUrl, pending)))*)),
     Some(n(pending("views"), d.views.map(viewNode)*)),
     d.inputParser.map(cp => n(pending("inputs"), inputsNode(cp)))).flatten*)._1

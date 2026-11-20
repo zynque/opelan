@@ -4,6 +4,7 @@ import opelan.foundation.document._
 import opelan.foundation.grammar._
 import opelan.foundation.langdef._
 import opelan.foundation.means.engine.LexicalTerm
+import opelan.foundation.means.lexicalRefs
 
 // A named leaf production a `where` term binds to — which token
 // kinds it accepts and how their text becomes leaf node data, as
@@ -45,15 +46,28 @@ private def dataMatches(leaf: LeafKind, data: NodeData): Boolean =
 
 // Every leaf an Impls names as a LexicalTerm, plus the foundation's
 // standard `where` terms — the `where` table compileRules binds
-// constraint terms through. Operand status is not a leaf property:
+// constraint terms through, keyed by the terms' anchored refs
+// (means/LexicalRefs): a constraint's `erl` is the lookup. Operand
+// status is not a leaf property:
 // a lone-placeholder rule bound to the production (`n means n where
 // n: number`) is what makes tokens operands, unless the term flags
 // itself an operand as the foundation's `gap` does. An Impls leaf
 // naming a standard term overrides it.
-def lexicalTerms(impls: Impls): Map[String, LexicalTerm] =
-  standardTerms ++ impls.productions ++
+def lexicalTerms(impls: Impls): Map[ExternalNodeReference, LexicalTerm] =
+  standardTerms ++
+    impls.productions.map { case (name, t) => lexicalRef(name) -> t } ++
     impls.leaves.map { case (name, theLeaf) =>
-      name -> LexicalTerm(Some(leafParser(theLeaf)), leafAccepts(theLeaf)) }
+      lexicalRef(name) -> LexicalTerm(
+        Some(leafParser(theLeaf)), leafAccepts(theLeaf)) }
+
+// An impls term name's anchored identity — every impls-declared leaf
+// or production must be a registered builtin (lexicalTermNames)
+// until authored leaf productions land (PLAN, *Authored leaf
+// productions*).
+private def lexicalRef(name: String): ExternalNodeReference =
+  lexicalRefs.getOrElse(name,
+    throw new IllegalArgumentException(
+      s"impls names an unanchored lexical term: '$name'"))
 
 // The workbench's gap leaf: the `gap` token reads as a gap.
 private val gapLeaf = LeafDef(List("gap" -> LeafKind.GapLeaf))
@@ -68,11 +82,11 @@ private val gapLeaf = LeafDef(List("gap" -> LeafKind.GapLeaf))
 // (SourceRef) is a workbench leaf, not a value; a bound gap
 // satisfies provisionally — its value is unknown, not wrong (Never
 // Broken).
-val standardTerms: Map[String, LexicalTerm] =
+val standardTerms: Map[ExternalNodeReference, LexicalTerm] =
   Map(
-    "gap" -> LexicalTerm(
+    lexicalRefs("gap") -> LexicalTerm(
       Some(leafParser(gapLeaf)), leafAccepts(gapLeaf), operand = true),
-    "value" -> LexicalTerm(None, {
+    lexicalRefs("value") -> LexicalTerm(None, {
       case _: NodeData.InternalNodeRef | _: NodeData.SourceRef => false
       case _                                                  => true
     }))

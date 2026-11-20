@@ -41,7 +41,9 @@ def commitMetaInput(
     case Some("meaning") =>
       Some(commitMeaningInput(doc, docUrl, id, text, inputs, impls))
     case Some("where") =>
-      Some((whereNode(readConstraintsText(text), externalMeta), inputs))
+      val refs = ambientRefs ++ termRefs(langDefFromDocument(docUrl, doc))
+      Some((whereNode(readConstraintsText(text, refs.get), externalMeta),
+        inputs))
     case _ => None
   }
 

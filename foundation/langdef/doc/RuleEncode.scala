@@ -54,7 +54,14 @@ private def bindingNode(
 private[langdef] def whereNode(
     cs: List[Constraint], meta: String => NodeData): DetachedNode[NodeData] =
   n(meta("where"), cs.map(c =>
-    n(meta("constraint"), (c.placeholders.map(sl) :+ sl(c.term))*))*)
+    n(meta("constraint"), (c.placeholders.map(sl) :+
+      // The bound term's identity is its ref — a registered builtin's
+      // anchored ref (LexicalRefs), a declared term's definition node.
+      // A name that resolves nowhere stays its text (Never Broken).
+      (c.termRef.orElse(lexicalRefs.get(c.term)) match {
+        case Some(r) => erl(r)
+        case None    => sl(c.term)
+      }))*))*)
 
 private[langdef] def patternNode(
     p: Pattern, meta: String => NodeData): DetachedNode[NodeData] =

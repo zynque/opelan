@@ -4,6 +4,7 @@ import opelan.foundation.document._
 import opelan.foundation.document.typed.sameNode
 import NodeShape._
 import opelan.foundation.means.engine.{foundationalOf, foundationRefs}
+import opelan.foundation.means.{lexicalRefs, lexicalTermOf}
 
 // Placeholder definitions — terms the workbench needs before the
 // foundation is rich enough to define them as ordinary (non-foundation)
@@ -91,18 +92,23 @@ def placeholderOf(
     ref: ExternalNodeReference): Option[PlaceholderTerm] =
   placeholderTerms.find(t => sameNode(t.ref, ref))
 
-// Every ambient name → ref: the foundation primitives and the
+// Every ambient name → ref: the foundation primitives, the builtin
+// lexical terms (`where` binds them by ref — LexicalRefs), and the
 // placeholders — usable in meanings with no vocabulary entry at all.
+// Placeholders win shared names (`ref`, `literal`, `runs`): meaning
+// positions keep resolving to constructs, not `where` terms.
 val ambientRefs: Map[String, ExternalNodeReference] =
-  foundationRefs ++ placeholderRefs
+  foundationRefs ++ lexicalRefs ++ placeholderRefs
 
-// The ambient term a ref names — a foundation primitive, else a
-// placeholder. The ref→name direction of ambientRefs.
+// The ambient term a ref names — a foundation primitive, a placeholder,
+// else a builtin lexical term. The ref→name direction of ambientRefs.
 def ambientTermOf(ref: ExternalNodeReference): Option[NodeTerm] =
   foundationalOf(ref)
     .map(d => NodeTerm(d.name, Fixed(d.arity), Some(d.ref)))
     .orElse(placeholderOf(ref)
       .map(t => NodeTerm(t.name, t.shape, Some(t.ref))))
+    .orElse(lexicalTermOf(ref)
+      .map(n => NodeTerm(n, Leaf, Some(ref))))
 
 // The registry as a document: the name leaf of placeholder i is node i
 // (buildDocument numbers the children post-order, the title root

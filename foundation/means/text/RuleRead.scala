@@ -40,7 +40,7 @@ def readRuleTree(
   else if (pattern.children.isEmpty) Left("empty pattern")
   else if (!isTagged(meaning)) Left("empty meaning")
   else for {
-    constraints <- if (isTagged(where)) readWhere(where) else Right(Nil)
+    constraints <- if (isTagged(where)) readWhere(where, resolve) else Right(Nil)
   } yield {
     val p = Pattern(pieces(tokensIn(pattern)))
     Rule(p, readMeaning(meaning, s => phrase(p.placeholders.toSet, s),
@@ -89,10 +89,12 @@ def readMeaningText(text: String, phrase: String => Meaning,
 // A `where` field's text: `a, b: term; c: term` — no `where` keyword
 // needed (the field is already the clause). Malformed text reads as
 // far as it can — the constraint list may come back short or empty.
-def readConstraintsText(text: String): List[Constraint] = {
+def readConstraintsText(text: String,
+    resolve: String => Option[ExternalNodeReference] = _ => None)
+    : List[Constraint] = {
   val stripped = text.trim.stripPrefix("where").trim
-  readWhere(constraintsText(ParseInput("where " + stripped, ruleLexicon), 0).tree)
-    .getOrElse(Nil)
+  readWhere(constraintsText(ParseInput("where " + stripped, ruleLexicon), 0).tree,
+    resolve).getOrElse(Nil)
 }
 
 // A bare pattern — how the binding list names a rule (`a * b`).
@@ -159,7 +161,9 @@ private def nameTermOf(t: ParseTree, phrase: String => Meaning,
   else readMeaning(t, phrase, resolve)
 
 // `a, b: number; c: whole number` — one constraint per group.
-private def readWhere(t: ParseTree): Either[String, List[Constraint]] = {
+private def readWhere(t: ParseTree,
+    resolve: String => Option[ExternalNodeReference])
+    : Either[String, List[Constraint]] = {
   val groups = t.children(1) :: t.children(2).children.map(_.children(1))
   groups.foldRight[Either[String, List[Constraint]]](Right(Nil)) { (g, acc) =>
     val names = tokensIn(g.children(0)).map(_._2.text).filterNot(_ == ",")
@@ -167,6 +171,12 @@ private def readWhere(t: ParseTree): Either[String, List[Constraint]] = {
     val term = if (ruleTag(typed) == "typed") tokensIn(typed.children(1)).map(_._2.text) else Nil
     if (ruleTag(typed) != "typed") Left("where needs 'placeholders: term'")
     else if (names.isEmpty || term.isEmpty) Left("incomplete where clause")
-    else acc.map(Constraint(names, term.mkString(" ")) :: _)
+    else acc.map { cs =>
+        // Ambient builtins anchor first, then the caller's vocabulary
+        // (imports, local declarations) — matching linkTerms' order.
+        val name = term.mkString(" ")
+        Constraint(names, name,
+          lexicalRefs.get(name).orElse(resolve(name))) :: cs
+      }
   }
 }

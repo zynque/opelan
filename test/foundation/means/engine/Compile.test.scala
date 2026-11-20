@@ -38,7 +38,8 @@ class CompileSuite extends FunSuite {
       Tier(List(readPattern("a + b"), readPattern("a - b")))))
 
   private def parse(set: RuleSet, text: String,
-      lexicals: Map[String, LexicalTerm] = Map.empty): DetachedNode[NodeData] =
+      lexicals: Map[ExternalNodeReference, LexicalTerm] = Map.empty
+      ): DetachedNode[NodeData] =
     toDetached(
       compileRules(set, atom, NodeData.StringData(_), "e",
         lexicals)(ParseInput(text, lex), 0).tree)
@@ -124,21 +125,25 @@ class CompileSuite extends FunSuite {
     assertEquals(parse(arithmetic, "(1)"), lit(1))
   }
 
-  // The named leaf vocabulary `where` terms bind to — Impls' leaves
-  // on the def side; a plain term map here at the engine level.
+  // The leaf vocabulary `where` terms bind to, keyed by the terms'
+  // refs — Impls' leaves on the def side; a plain term map here at
+  // the engine level.
   private val lexicals = Map(
-    "number" -> LexicalTerm(
+    lexicalRefs("number") -> LexicalTerm(
       parser = Some(token("int")(t => NodeData.IntData(t.text.toInt))),
       check = _.isInstanceOf[NodeData.IntData]))
 
   // A token-reading term whose data is a ref, and `value` — a
   // check-only term (no token production) accepting everything but a
   // ref, the way the workbench's `value` excludes InternalNodeRef.
+  // `cell` isn't a registered builtin: its constraint carries the
+  // term's ref directly (a declared term binds the same way).
+  private val cellRef = ExternalNodeReference("test:cell", 0, 1)
   private val cellLexicals = Map(
-    "cell" -> LexicalTerm(
+    cellRef -> LexicalTerm(
       parser = Some(token("word")(_ => NodeData.InternalNodeRef(1))),
       check = _.isInstanceOf[NodeData.InternalNodeRef]),
-    "value" -> LexicalTerm(
+    lexicalRefs("value") -> LexicalTerm(
       parser = None,
       check = !_.isInstanceOf[NodeData.InternalNodeRef]))
 
@@ -200,7 +205,8 @@ class CompileSuite extends FunSuite {
   test("a check-only where term constrains operator operands") {
     val set = RuleSet(
       rules = List(
-        aRule("c means c where c: cell"),
+        aRule("c means c where c: cell").copy(where = List(
+          Constraint(List("c"), "cell", Some(cellRef)))),
         aRule("(a) means a"),
         aRule("a + b means add(a, b) where a, b: value")),
       tiers = List(Tier(List(readPattern("a + b")))))
@@ -222,7 +228,8 @@ class CompileSuite extends FunSuite {
     // fails the piece and recovery gaps the rule.
     val set = RuleSet(
       rules = List(
-        aRule("c means c where c: cell"),
+        aRule("c means c where c: cell").copy(where = List(
+          Constraint(List("c"), "cell", Some(cellRef)))),
         aRule("a + b means add(a, b)"),
         aRule("pick a done means got(a) where a: value")),
       tiers = List(Tier(List(readPattern("a + b")))))

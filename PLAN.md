@@ -34,19 +34,25 @@ node), `Language.parseSpanned`, and span-derived path hints into
    `isDocLanguage` parse branches deleted. `lang:` docs get spans,
    provenance-tracked text commits, and incremental `textSyntax`
    sessions like every compiled language.
-3. **Ref-based `where`-term binding.** `where` terms bind by name
-   today — `Constraint.term: String`, `sl(c.term)` in the doc,
-   `lexicals` keyed `String` — while placeholder terms already have
-   anchored refs. `Constraint.term: ExternalNodeReference` + a
-   ref-keyed `lexicals` + `erl` in `constraint` nodes + name resolution
-   at print/commit is the consistent shape, and a prerequisite for
-   authored productions (item 3): once `blocks` is a declared
-   vocabulary term, its `d: blocks` bindings must be by identity or a
-   rename breaks every dialect. `surface` becomes
-   `Option[ExternalNodeReference]` here too. The other name-keyed
-   tables retire as their owners land — `impls.views` with item 1's
-   derived views, `impls.lexicons` with authored lexicons, `builtin`
-   input parsers with self-description — each noted at its step.
+3. **Ref-based `where`-term binding** (landed). `Constraint` carries
+   `termRef: Option[ExternalNodeReference]` beside its printed name —
+   the `Meaning` tag+ref pattern — and `lexicals` is keyed by the
+   terms' anchored refs (`lexicalRefs`, `opelan:foundation/lexical`,
+   in `ambientRefs`). `constraint` nodes encode `erl(ref)`, which the
+   doc canonicalizes through its imports section like any external
+   ref; decode resolves the ref's name back through ambient terms,
+   imported vocabularies, or the anchored node's own text, and still
+   accepts old `sl(name)` encodings. Read/commit resolve names to refs
+   through the same resolver meanings use (ambient builtins first,
+   then the doc's vocabulary); `boundLexicals` and `ruleIssues` fall
+   back to `lexicalRefs.get` for constraints built ref-less, so
+   hand-written rules still compile. `surface` is
+   `Option[ExternalNodeReference]` — the `d: blocks` bindings of
+   authored productions (item 3) now bind by identity, surviving
+   renames. The other name-keyed tables retire as their owners land —
+   `impls.views` with item 1's derived views, `impls.lexicons` with
+   authored lexicons, `builtin` input parsers with self-description —
+   each noted at its step.
 4. **Session → hints.** Session commits emit `spanned` trees so expr/
    sheet text edits get provenance-grade matching too; `commitContent`'s
    reconciler becomes the pure fallback.

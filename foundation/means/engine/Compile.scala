@@ -11,7 +11,7 @@ import opelan.foundation.means._
 //   compileRules(exprRules, leafAtom, termTag, "expr", lexicals)
 //
 // A named `where` term, as compileRules sees it: `where` binds a
-// placeholder to one by name. `parser` is the term's token-level
+// placeholder to one by its anchored ref. `parser` is the term's token-level
 // production — a sequence placeholder bound to it reads the
 // production's token. A *check-only* term has none (`value`): it
 // reads no token, so a bound placeholder still parses an expression
@@ -57,7 +57,8 @@ def compileRules(
     atom: Parser,
     tag: String => NodeData,
     name: RuleName,
-    lexicals: Map[String, LexicalTerm] = Map.empty): Parser = {
+    lexicals: Map[ExternalNodeReference, LexicalTerm] = Map.empty
+    ): Parser = {
   // `self` is the parser placeholders recurse through — a `rule`-named
   // parser, so recursion memoizes and records the call for invalidation.
   // The
@@ -84,11 +85,14 @@ def compileRules(
     lexicals.values.toList.flatMap(t => t.parser.filter(_ => t.operand))
 
   // This rule's `where` constraints resolved to leaf terms — a
-  // placeholder's bound production when the constraint names a term
-  // `lexicals` knows, the constraint dropped otherwise.
+  // placeholder's bound production when the constraint's term ref is
+  // one `lexicals` knows (the stored ref first, else the name's
+  // registered ref), the constraint dropped otherwise.
   def boundLexicals(theRule: Rule): Map[String, LexicalTerm] =
-    theRule.where.flatMap(c => lexicals.get(c.term).toList.flatMap(t =>
-      c.placeholders.map(_ -> t))).toMap
+    theRule.where.flatMap(c =>
+      c.termRef.orElse(lexicalRefs.get(c.term)).toList.flatMap(ref =>
+        lexicals.get(ref).toList.flatMap(t =>
+          c.placeholders.map(_ -> t)))).toMap
 
   // A literal-led rule whose placeholders are all `where`-bound to
   // *token-reading* terms is lexical, not an operator — `-n means

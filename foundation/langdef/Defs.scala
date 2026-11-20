@@ -2,6 +2,7 @@ package opelan.foundation.langdef
 
 import opelan.foundation.document._
 import opelan.foundation.language.Language
+import opelan.foundation.means.lexicalRefs
 
 // The meta-language definition: the type all `lang:` documents carry.
 // Its syntax isn't a rule set — the def-doc format IS
@@ -71,7 +72,7 @@ val docLanguageDef = LanguageDef(
   // The doc's own surface grammar: no rules — the `document`
   // production (the outline + means lines, DocGrammar.scala) is the
   // whole surface, rooted by `surface` like markdown's `blocks`.
-  syntax = Some(SyntaxDef("doc", surface = Some("document"))),
+  syntax = Some(SyntaxDef("doc", surface = Some(lexicalRefs("document")))),
   views = List(
     ViewBinding("edit", "def-view"),
     ViewBinding("summary", "summary-view")),

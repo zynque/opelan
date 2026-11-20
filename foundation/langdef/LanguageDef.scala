@@ -44,14 +44,14 @@ enum NodeShape {
 // operand rules against the builtin leaf vocabulary. A syntax with no
 // rules parses nothing — the whole input reads as a gap.
 //
-// `surface` names the `where` production the document's text surface
-// roots at when it isn't expression-shaped — markdown's `blocks` —
-// so a whole document is one parse of a declared production rather
-// than a code-side parser.
+// `surface` is the ref of the `where` production the document's text
+// surface roots at when it isn't expression-shaped — markdown's
+// `blocks` — so a whole document is one parse of a declared production
+// rather than a code-side parser.
 case class SyntaxDef(
     lexicon: String,
     rules: Option[RuleSet] = None,
-    surface: Option[String] = None)
+    surface: Option[ExternalNodeReference] = None)
 
 // A derived view bound to a builtin: view "eval" → builtin "expr-eval",
 // with optional settings the builtin reads (the sheet's currency).

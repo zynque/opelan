@@ -67,7 +67,9 @@ class RuleReadSuite extends FunSuite {
   test("where clause with several groups and multi-word kinds") {
     val r = read("ref:c,r means cell(c, r) where c, r: whole number; x: text")
     assertEquals(r.where, List(
-      Constraint(List("c", "r"), "whole number"),
+      Constraint(List("c", "r"), "whole number",
+        lexicalRefs.get("whole number")),
+      // `text` isn't a registered builtin term — name only.
       Constraint(List("x"), "text")))
     assertEquals(r.pattern.placeholders, List("c", "r"))
   }

@@ -40,7 +40,7 @@ class LangDefDocSuite extends FunSuite {
     val imported = importEntries(doc).map(_._2)
     assert(imported.contains(metaRef("definition").get))
     assert(imported.forall(r => Set(langDefTypeRef.documentUrl,
-      "opelan:foundation/arithmetic",
+      "opelan:foundation/arithmetic", "opelan:foundation/lexical",
       "opelan:foundation/placeholders")(r.documentUrl)))
   }
 
