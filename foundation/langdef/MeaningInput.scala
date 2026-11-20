@@ -92,7 +92,10 @@ private def meaningSyntax(
           arg => phraseMeaning(arg, placeholders, set, atom, tag,
             s.lexicon, tokens, lexicals))
           .getOrElse(toTerm(tree, names)),
-        doc, docUrl, meaningId))
+        doc, docUrl, meaningId),
+      // `meaningNode` builds the field's node — its shape isn't the
+      // parse tree's, so no spans align.
+      toSpanned = _ => None)
   }
 
 // A committed meaning's detached form: the `meaning` node holding the

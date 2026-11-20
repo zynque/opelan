@@ -53,9 +53,19 @@ node), `Language.parseSpanned`, and span-derived path hints into
    `impls.views` with item 1's derived views, `impls.lexicons` with
    authored lexicons, `builtin` input parsers with self-description —
    each noted at its step.
-4. **Session → hints.** Session commits emit `spanned` trees so expr/
-   sheet text edits get provenance-grade matching too; `commitContent`'s
-   reconciler becomes the pure fallback.
+4. **Session → hints** (landed). `TextSyntax.toSpanned` reports the
+   parse's spans when `toContent` keeps the tree's shape (the
+   restructuring meaning-input syntax returns None); `TextEdited`
+   commits the session's `content`/`spannedContent` through
+   `applyTrackedContent` — provenance-carried hints, `commitContent`'s
+   reconciler as fallback — and `applyTrackedText` is the same call
+   with `parse`/`unspanned`. Two machinery fixes this surfaced:
+   `commitAt`'s `graft` lets a hint inside a freshly inserted subtree
+   reclaim a freed node (a construct moved under a new parent keeps
+   its identity — `pasteNode` + rematch, never stolen while attached),
+   and `stamp` re-claims characters whose chain's innermost node the
+   commit detached (a dropped hint otherwise leaves ownership pointing
+   at a former node).
 
 ## Known gaps
 

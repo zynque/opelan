@@ -6,8 +6,8 @@ import opelan.foundation.document.store._
 import opelan.foundation.document.typed._
 import opelan.foundation.langdef.{autoUpdateEnabled, setAutoUpdate}
 import opelan.foundation.language.{
-  GapRetry, TextSession, applyDocContent, applyDocText, applyTrackedText,
-  docText, gapCount}
+  GapRetry, TextSession, applyDocContent, applyDocText, applyTrackedContent,
+  applyTrackedText, docText, gapCount}
 import opelan.ui.editor.{DocPush, EditorOutput, SelectTarget}
 import opelan.ui.fp.Update
 import TypedDocInput._
@@ -87,12 +87,20 @@ private def step(m: TypedDocModel, input: TypedDocInput): Update[TypedDocModel, 
     // A text edit is total: apply returns a new document (with gaps
     // where the text doesn't fit) or an error that only touches status.
     // A language with an incremental syntax reparses through the pane's
-    // text session, so the work follows the size of the edit.
+    // text session, so the work follows the size of the edit; the
+    // session's spans hint the commit with the edit's provenance, the
+    // reconciler falling back where they don't reach.
     case TextEdited(t) =>
       val session = languageForDoc(m.doc, m.store).flatMap(_.textSyntax)
         .map(syn => m.textSession.fold(TextSession.start(syn, t))(_.retext(syn, t)))
       val (applied, provenance) = session match {
-        case Some(s) => (applyDocContent(m.doc, langFor(m), s.content), None)
+        case Some(s) => s.spannedContent match {
+          case Some(spanned) =>
+            applyTrackedContent(m.doc, langFor(m), m.text, m.provenance,
+              t, s.content, spanned)
+          case None =>
+            (applyDocContent(m.doc, langFor(m), s.content), None)
+        }
         case None =>
           applyTrackedText(m.doc, langFor(m), m.text, m.provenance, t)
       }

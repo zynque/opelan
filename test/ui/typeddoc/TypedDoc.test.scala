@@ -7,7 +7,7 @@ import opelan.foundation.document._
 import opelan.foundation.document.store._
 import opelan.foundation.document.typed._
 import opelan.foundation.document.Detached._
-import opelan.foundation.langdef.doc.langDefDoc
+import opelan.foundation.langdef.doc.{langDefDoc, metaConsOf}
 import opelan.ui.editor.{
   DocPush, EditorInput, EditorOutput, SelectTarget, SyncedEntry, SyncedHistory}
 
@@ -92,9 +92,52 @@ class TypedDocSuite extends munit.FunSuite {
     assert(u1.state.textSession.isDefined)
     val u2 = typedDocUpdate(u1.state, TypedDocInput.TextEdited("1 + 2 * 3"))
     assertEquals(u2.state.textSession.map(_.session.text), Some("1 + 2 * 3"))
-    // the same document a whole-text parse commits
-    assertEquals(Right(u2.state.doc), opelan.foundation.language.applyDocText(
-      u1.state.doc, opelan.examples.registryForDoc, "1 + 2 * 3"))
+    // the same content a whole-text parse commits (ids differ — the
+    // session's span hints keep more of them)
+    assertEquals(
+      exprFromDocument(u2.state.doc, contentId(u2.state.doc).get),
+      opelan.foundation.language.applyDocText(
+        u1.state.doc, opelan.examples.registryForDoc, "1 + 2 * 3")
+        .flatMap(d => exprFromDocument(d, contentId(d).get)))
+  }
+
+  test("TextEdited hints the commit through the session's spans") {
+    val u1 = typedDocUpdate(init, TypedDocInput.TextEdited("1 + 2"))
+    val cid = contentId(u1.state.doc).get
+    val List(one, two) = u1.state.doc.childrenOf(cid)
+    val u2 = typedDocUpdate(u1.state, TypedDocInput.TextEdited("1 + 2 * 3"))
+    // `2` moved from `add`'s second operand to `mul`'s first — its
+    // characters' provenance keeps its node anyway.
+    val cid2 = contentId(u2.state.doc).get
+    val mul = u2.state.doc.childrenOf(cid2)(1)
+    assertEquals(u2.state.doc.childrenOf(cid2).head, one)
+    assertEquals(u2.state.doc.childrenOf(mul).head, two)
+    assert(u2.state.provenance.isDefined)
+  }
+
+  // The session-path counterpart of ResolveSuite's tracked edit: a
+  // rule typed in front of `a * b` never steals its definition node —
+  // the merged line splits back out with its identity intact.
+  test("a means line typed in front keeps the old rule through the session") {
+    import opelan.examples.expr.exprDef
+    def definitionIds(doc: Document[NodeData]): Set[Int] =
+      contentId(doc).toList.flatMap(cid =>
+        doc.subtreeIds(cid).filter(id =>
+          metaConsOf(doc, id).contains("definition"))).toSet
+    val m = typedDocUpdate(init, TypedDocInput.Load(langDefDoc(exprDef))).state
+    val before = definitionIds(m.doc)
+    val line = m.text.linesIterator.find(_.contains("a * b means")).get
+    val indent = line.takeWhile(_ == ' ')
+    val at = m.text.indexOf(line) + indent.length
+    val rule = "a // b means div(a, b)\n" + indent
+    val end = (1 to rule.length).foldLeft(m) { (state, k) =>
+      val t = m.text.substring(0, at) + rule.take(k) +
+        m.text.substring(at)
+      typedDocUpdate(state, TypedDocInput.TextEdited(t)).state
+    }
+    val after = definitionIds(end.doc)
+    assertEquals(after.size, before.size + 1)
+    assert(before.subsetOf(after), s"lost ids: ${before -- after}")
   }
 
   test("TextEdited leaves gaps where text does not fit") {

@@ -27,12 +27,15 @@ private def claim(
 // Every unowned character's chain as the deepest covering node,
 // post-order: children offer first, a node offers only what its
 // children left. A retained node (one already owning characters
-// somewhere) offers nothing.
+// somewhere) offers nothing. A character whose chain's innermost node
+// the commit detached is unowned again — whatever survives under the
+// root now produces it.
 private[language] def stamp(
     doc: Document[NodeData], rootId: Int,
     spanned: SpannedTree[NodeData],
     owners: Vector[List[Int]]): Vector[List[Int]] = {
   val owned = owners.iterator.flatMap(identity).toSet
+  val live = doc.subtreeIds(rootId).toSet
   def go(t: SpannedTree[NodeData], path: List[Int],
       os: Vector[List[Int]]): Vector[List[Int]] = {
     val deeper = t.children.zipWithIndex.foldLeft(os) {
@@ -42,7 +45,8 @@ private[language] def stamp(
       if (owned(id)) deeper
       else (t.data.span.from until t.data.span.to.min(os.length))
         .foldLeft(deeper)((o, i) =>
-          if (o(i).nonEmpty) o else o.updated(i, claim(doc, id, owned)))
+          if (o(i).headOption.exists(live)) o
+          else o.updated(i, claim(doc, id, owned)))
     }
   }
   go(spanned, Nil, owners)
@@ -76,18 +80,37 @@ def applyTrackedText(
     before: String,
     provenance: Option[TextProvenance],
     text: String): (Either[String, Document[NodeData]], Option[TextProvenance]) =
-  languageFor(doc).flatMap(l => l.parseSpanned(text).map(l -> _)) match {
-    case Some((lang, spanned)) =>
+  languageFor(doc).flatMap(l => l.parseSpanned(text)) match {
+    case Some(spanned) =>
+      applyTrackedContent(doc, languageFor, before, provenance, text,
+        unspanned(spanned), spanned)
+    case _ => (applyDocText(doc, languageFor, text), None)
+  }
+
+// The tracked commit with the parse already in hand — a text session's
+// `content`/`spannedContent` are the same tree, so the session's
+// incremental work isn't reparsed. `provenance` names `before`'s
+// characters; re-derived from `doc` when it doesn't.
+def applyTrackedContent(
+    doc: Document[NodeData],
+    languageFor: Document[NodeData] => Option[Language],
+    before: String,
+    provenance: Option[TextProvenance],
+    text: String,
+    content: DetachedNode[NodeData],
+    spanned: SpannedTree[NodeData]): (Either[String, Document[NodeData]], Option[TextProvenance]) =
+  languageFor(doc) match {
+    case Some(lang) =>
       val current = provenance
         .filter(p => (p.doc eq doc) && p.text == before)
         .getOrElse(deriveProvenance(doc, languageFor, lang, before))
       val next = current.retext(text)
-      val applied = applyDocContent(doc, languageFor, unspanned(spanned),
+      val applied = applyDocContent(doc, languageFor, content,
         next.hints(spanned))
       applied match {
         case Right(d) => (applied,
           contentId(d).map(cid => next.adopt(d, cid, spanned)))
         case Left(_)  => (applied, None)
       }
-    case _ => (applyDocText(doc, languageFor, text), None)
+    case _ => (applyDocContent(doc, languageFor, content), None)
   }

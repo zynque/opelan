@@ -134,9 +134,9 @@ private def commitAt(
               case (child, i, Some((cid, false))) =>
                 commitAt(cid, child, d, hints, path :+ i)
                   .map(next => (next, ids :+ cid))
-              case (child, _, None) =>
-                insertNode(child, nodeId, d.childrenOf(nodeId).length, d)
-                  .map(next => (next, ids :+ (next.nodes.length - 1)))
+              case (child, i, None) =>
+                graft(child, path :+ i, nodeId, d, hints, externalData)
+                  .map { case (next, id) => (next, ids :+ id) }
             }
           }
         }
@@ -146,6 +146,45 @@ private def commitAt(
               else updateNodeChildIds(nodeId, newIds, d3)
       } yield d4
   }
+
+// Insert `child` under `parentId`. A hint inside a fresh subtree still
+// reaches a node the commit freed — a construct moved under a new
+// parent keeps its identity, and its children rematch like a retained
+// node's. A hint naming a node still attached somewhere (matched, or a
+// live child even of a former node) is left to insert whole — nothing
+// is stolen.
+private def graft(
+    child: DetachedNode[NodeData], path: List[Int], parentId: Int,
+    d: Document[NodeData], hints: Map[List[Int], Int],
+    externalData: Int => Option[NodeData])
+    : Either[String, (Document[NodeData], Int)] =
+  if (!child.children.indices.exists(j => hints.contains(path :+ j)))
+    insertNode(child, parentId, d.childrenOf(parentId).length, d)
+      .map(d2 => (d2, d2.nodes.length - 1))
+  else
+    insertNode(DetachedNode(child.data, Nil), parentId,
+        d.childrenOf(parentId).length, d)
+      .flatMap { d2 =>
+        val parent = d2.nodes.length - 1
+        child.children.indices.foldLeft[
+            Either[String, Document[NodeData]]](Right(d2)) {
+          (acc, j) => acc.flatMap { dd =>
+            val grandchild = child.children(j)
+            hints.get(path :+ j).filter(n =>
+              dd.getNode(n).flatMap(_.parentId)
+                .forall(p => !dd.childrenOf(p).contains(n)) &&
+              externalData(n).contains(grandchild.data)
+            ) match {
+              case Some(n) =>
+                pasteNode(n, parent, dd.childrenOf(parent).length, dd)
+                  .flatMap(commitAt(n, grandchild, _, hints, path :+ j))
+              case None =>
+                graft(grandchild, path :+ j, parent, dd, hints,
+                  externalData).map(_._1)
+            }
+          }
+        }.map((_, parent))
+      }
 
 // How many leaves two subtrees share, as multisets — the likeness a
 // data-only match ranks candidates by.

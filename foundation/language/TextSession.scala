@@ -1,8 +1,9 @@
 package opelan.foundation.language
 
 import opelan.foundation.document._
-import opelan.foundation.grammar.{Grammar, ParseSession, ParseTree, RuleName, toDetached}
-import opelan.foundation.grammar.{Edit => TextEdit}
+import opelan.foundation.grammar.{
+  Edit => TextEdit, Grammar, ParseSession, ParseTree, RuleName, SpannedTree,
+  spanned, toDetached}
 
 // What changed between two syntaxes: the rules whose definitions
 // differ (callers keep every result those rules didn't produce), and a
@@ -23,7 +24,13 @@ case class TextSyntax(
     grammar: Grammar,
     key: Any,
     changedSince: TextSyntax => Option[SyntaxChange] = _ => None,
-    toContent: ParseTree => DetachedNode[NodeData] = toDetached)
+    toContent: ParseTree => DetachedNode[NodeData] = toDetached,
+    // The same parse reporting each node's span, when `toContent`'s
+    // output is the tree's own shape — a restructuring `toContent`
+    // can't report spans aligned to content paths and returns None.
+    // The text surface's provenance hints commits with it.
+    toSpanned: ParseTree => Option[SpannedTree[NodeData]] =
+      t => Some(spanned(t)))
 
 // A text surface's parse carried across edits (*Incremental*). Each new
 // text is applied as one edit against the session's own text, so a
@@ -33,6 +40,11 @@ case class TextSyntax(
 case class TextSession(syntax: TextSyntax, session: ParseSession) {
 
   def content: DetachedNode[NodeData] = syntax.toContent(session.tree)
+
+  // `content` with spans, when the syntax's content is the tree's own
+  // shape — the commit's provenance hints.
+  def spannedContent: Option[SpannedTree[NodeData]] =
+    syntax.toSpanned(session.tree)
 
   // Rule bodies the last parse ran — the work the edit cost.
   def evaluations: Int = session.evaluations
