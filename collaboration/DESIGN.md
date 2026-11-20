@@ -99,7 +99,7 @@ Consequences:
   resume; rebuilding them from actor-tagged history is future work.
 - *Navigation is local.* Clicking a version moves the editor's view only
   — a `DocViewed` output, distinct from `DocChanged`, that sends
-  nothing to peers. The pin survives incoming remote edits via
+  nothing to peers. The checked-out version survives incoming remote edits via
   hash-stable version identity, so browsing isn't disturbed while a
   peer types.
 - *Editing a checked-out version forks.* A jump into history followed by
@@ -123,7 +123,7 @@ Consequences:
   Three classes of change touch a document, and only one is the user's:
   synchronous in-cursor edits (typing, shortcuts, mechanical
   refactorings) are the user's actor and land on their undo stack;
-  background edits — the auto-update cascade accepting pins, an LLM
+  background edits — the auto-update cascade bumping version pins, an LLM
   pass — are authored by a *non-user actor* and arrive like any remote
   change, through the same merge path rather than a privileged channel
   that mutates the document underneath the user; ephemeral state

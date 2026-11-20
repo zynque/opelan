@@ -24,7 +24,7 @@ drive the workbench), `PLAN.md` (current state and next steps), and
 | [`foundation/`](foundation/DESIGN.md) | the pure core: documents, versions, grammars, languages, views — and the *Never broken* gaps convention |
 | [`foundation/document/`](foundation/document/DESIGN.md) | the persistent document tree, `NodeData`, `Outline`/`Serial` formats |
 | [`foundation/document/typed/`](foundation/document/typed/DESIGN.md) | typed-document layout, imports, *everything by reference*, `commitContent` |
-| [`foundation/document/store/`](foundation/document/store/DESIGN.md) | the versioned `Store`, names as projections, pins and pending updates |
+| [`foundation/document/store/`](foundation/document/store/DESIGN.md) | the versioned `Store`, names as projections, version pins and pending updates |
 | [`foundation/version/`](foundation/version/DESIGN.md) | the version DAG, LSCA merge base, the two-layer history model |
 | [`foundation/grammar/`](foundation/grammar/DESIGN.md) | scannerless recovering combinators, lexicons, incremental packrat parsing |
 | [`foundation/language/`](foundation/language/DESIGN.md) | the `Language` trait, text surface, `TextSession`/`InputSessions`/`GapRetry` |
@@ -205,7 +205,7 @@ shadows an inherited rule. Narrowing is by non-import: a layer's usable
 vocabulary is exactly the constructs it imports plus what it declares.
 "This lower rule needs changing" is a signal the layer below wasn't
 general enough — the fix is to generalize it there and publish a new
-version; dependents' `url@version` pins hold them on the old one until
+version; dependents' `url@version` refs pin them to the old one until
 they accept the pending update (or auto-update) — see
 [`foundation/document/store`](foundation/document/store/DESIGN.md) — so
 adopting it is opt-in by construction.

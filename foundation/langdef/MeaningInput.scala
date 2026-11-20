@@ -83,7 +83,7 @@ private def meaningSyntax(
             if lex == s.lexicon && ph == placeholders &&
                lexiconSignature(before) == lexiconSignature(set) =>
           Some(SyntaxChange(
-            syntaxChanges(SyntaxDef(lex, Some(before)), s),
+            syntaxChanges(s.copy(rules = Some(before)), s),
             retagBy(beforeTags, tag)))
         case _ => None
       },

@@ -145,15 +145,10 @@ private lazy val paraParser: Parser = (in, pos) => {
 
 // The `blocks` production: consecutive `* t` items group under `list`,
 // then headings, then a paragraph of whatever's left — the
-// `markdown` node.
+// `markdown` node. The syntax's `surface` names it, so the compiled
+// grammar roots a document parse here.
 lazy val blocksTerm: LexicalTerm = LexicalTerm(
   Some(many(markdownTag(MarkdownTag))(choice(
     some(markdownTag(ListTag))(blockSeq("* t")),
     blockSeq("# t"), blockSeq("## t"), paraParser))),
   _ => true)
-
-// The document's text surface — the `blocks` production's tree, the
-// content a text commit stores.
-def markdownParse(text: String): DetachedNode[NodeData] =
-  toDetached(
-    blocksTerm.parser.get(ParseInput(text, markdownTokens), 0).tree)

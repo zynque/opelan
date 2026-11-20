@@ -82,11 +82,11 @@ per-document sessions that ride on it:
   Views ask the input grammar through it (`Language.renderWith`), so a
   gap is reparsed only when the syntax changed and the change either
   touched a consulted rule or can't name its rules; otherwise the failed
-  attempt stands — reused content is migrated (term tags re-pin) —
+  attempt stands — reused content is migrated (term tags re-pinned to the new version) —
   sound because the consulted set is closed under calls, so a change
   disjoint from it replays identically. After each update the pane
   re-remembers its gaps (`rememberInputGaps` in
   [`../langdef`](../langdef/DESIGN.md)) against the current store and
   drops attempts for texts no longer present. What moves a stored
-  document's input grammar is a pin bump, so healing follows the
+  document's input grammar is a version-pin bump, so healing follows the
   accept-update gesture, not the dependency's save.

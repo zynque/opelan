@@ -4,6 +4,46 @@ What doesn't yet work and what comes next.
 
 **Current Focus:** Reducing the examples so that they consist of only dialect documents expressed in terms of foundational constructs provided by the platform and contain no custom Scala code
 
+## In flight — one compiled-grammar parse path
+
+Every document surface should parse through a compiled `Grammar` — no
+ad-hoc parsers — so spans, incremental sessions, and provenance-tracked
+node identity apply uniformly. This lands the *Document-level `self`*
+half of item 3 early and closes on the *Self-Description* question
+(item 2).
+
+Done: character-level provenance replaced line identity —
+`TextProvenance` (per-character frozen claiming chains, valid only for
+the `doc` they index), `SpannedTree` (each parsed node's span on the
+node), `Language.parseSpanned`, and span-derived path hints into
+`commitContent`; `LineIdentity` deleted.
+
+1. **Surface designation** (landed). `SyntaxDef` names the production
+   rooting the document text surface (`"blocks"` for markdown);
+   `parse`, `parseSpanned`, and `textSyntax` root there;
+   `Impls.textParser` and `markdownParse` delete; markdown gains
+   incremental sessions.
+2. **`lang:` doc grammar.** A line/outline lexicon and an `indentBlock`
+   combinator, plus document productions in the meta-language's impls —
+   `defDocParse`/`DefDocSpans`/`RuleSpans`/`RuleSpanTerms` and the
+   `isDocLanguage` parse branches delete; spans and sessions come free.
+3. **Ref-based `where`-term binding.** `where` terms bind by name
+   today — `Constraint.term: String`, `sl(c.term)` in the doc,
+   `lexicals` keyed `String` — while placeholder terms already have
+   anchored refs. `Constraint.term: ExternalNodeReference` + a
+   ref-keyed `lexicals` + `erl` in `constraint` nodes + name resolution
+   at print/commit is the consistent shape, and a prerequisite for
+   authored productions (item 3): once `blocks` is a declared
+   vocabulary term, its `d: blocks` bindings must be by identity or a
+   rename breaks every dialect. `surface` becomes
+   `Option[ExternalNodeReference]` here too. The other name-keyed
+   tables retire as their owners land — `impls.views` with item 1's
+   derived views, `impls.lexicons` with authored lexicons, `builtin`
+   input parsers with self-description — each noted at its step.
+4. **Session → hints.** Session commits emit `spanned` trees so expr/
+   sheet text edits get provenance-grade matching too; `commitContent`'s
+   reconciler becomes the pure fallback.
+
 ## Known gaps
 
 - **Demo rough edges:** History does not show updates when the sheet document is updated to pull in the updates to the sheets & expression dialect.
@@ -11,7 +51,7 @@ What doesn't yet work and what comes next.
   made before first sync contact resolve last-writer-wins rather than
   merging. Edit bursts aren't coalesced. Unsynced session history isn't
   persisted.
-- **References:** References into old pinned
+- **References:** References pinned to old
   versions open read-write, and saving appends a new head rather than
   branching. Cross-document paste doesn't externalize and re-import refs.
 - **Old stores aren't migrated.** For now we make no attempt to migrate old stored documents. Anything intended to be persisted should be saved within the Scala code itself.
@@ -84,6 +124,8 @@ What doesn't yet work and what comes next.
      `ExprView`, `ExprReading`, `exprImpls.views`, and
      `exprDef.views` all delete — `LanguageDef.views` shrinks to the
      meta-language's own bootstrap bindings, then disappears.
+     The `view` entries' named builtins — the `impls.views` name-keyed
+     lookup — retire with the section.
    - *A shared leaf speller.* The functions that render a bare leaf —
      an int prints `1`, a reference prints `ref:N`, a gap prints its
      text verbatim — are dialect-neutral. Make them the foundation
@@ -154,7 +196,11 @@ What doesn't yet work and what comes next.
     - **Cycle Prevention** The editor should only show definitions below the current one
       in the DAG, but manual document editing could still result in a cycle.
     - **Self-Description** The language-definition language's own
-      syntax written a Dialect, closing the bootstrap loop.
+      syntax written a Dialect, closing the bootstrap loop. `builtin`
+      input-parser names (`impls.inputParsers` — `text`, `sheet-cell`)
+      are the last name-keyed doc binding standing here: they become
+      anchored foundation terms or `Language`-ref inputs as part of
+      closing the loop.
     - **Authored Leaf Productions** User-defined leaf kinds —
       dates, currency literals, unit suffixes — as document rules
       (`n means number(n) where n: digits`)
@@ -236,6 +282,8 @@ What doesn't yet work and what comes next.
      token productions (`text`, `number`, `ref`, `plain`) stay
      authored in `Impls.leaves` until *Authored leaf productions*
      (item 2) lands or becomes `leaf` declarations beside the rules.
+     `SyntaxDef.lexicon`'s `impls.lexicons` lookup — the named-builtin
+     binding — retires when lexicon content is authored this way too.
    - *Sheet's commit surface* (`commitLink`/`linkCellRefs`,
      positional `C4` → `InternalNodeRef`) stays an `Impls`
      interpretation — it rewrites committed structure, it isn't
@@ -249,7 +297,7 @@ What doesn't yet work and what comes next.
    `MarkdownPrint`/`MarkdownMarks` retired to foundation generics —
    and then the same single-file end state.
 4. **Pins, pending updates, change proposals, auto-update**
-   (`foundation/document/store/DESIGN.md`, *Pins select behavior*).
+   (`foundation/document/store/DESIGN.md`, *Version pins select behavior*).
    The demo's healing moment (`DEMO.md`, step 7) needs the first three
    steps, in order:
 
@@ -258,10 +306,10 @@ What doesn't yet work and what comes next.
      so references inside a gap are structural before it heals rather
      than `ref:N` text. The seed's `total / people` cell is the first
      user.
-   - *Committed healing.* Accepting a pending update bumps the pins
+   - *Committed healing.* Accepting a pending update bumps the version pins
      and, in the same edit, reparses the gaps whose failed parse
      consulted a changed rule (`GapRetry`) under the newly pinned
-     grammar, committing each one that now reads with `commitContent`.
+     grammar version, committing each one that now reads with `commitContent`.
      Constructs the healed AST uses for the first time (`div`) get an
      imports entry through `internalizeRefs`, pinned at the same
      version as the language's other entries, so one document never
@@ -269,7 +317,7 @@ What doesn't yet work and what comes next.
      An ambiguous heal (two imported rules read the gap) stores a
      deferred-choice gap rather than taking the first.
    - *Change proposals.* A pending update is presented as a proposal:
-     the document as it would be after accepting (bumped pins plus
+     the document as it would be after accepting (bumped version pins plus
      heals), shown with what would change, and recorded as a version
      only on accept. First stage: a live derivation recomputed as head
      moves, so a proposal never goes stale and needs no merge, with a

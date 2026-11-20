@@ -46,4 +46,4 @@ Sub-packages:
   imports, title, content), everything-by-reference, the imports
   machinery, and `commitContent`/`Reconcile`.
 - [`store/`](store/DESIGN.md) — the versioned `Store` keyed by URL, the
-  `refName` projection, and the pin/pending-update machinery.
+  `refName` projection, and the version-pin/pending-update machinery.

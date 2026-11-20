@@ -79,11 +79,11 @@ freshly seeded (**Reset** reseeds a used store).
    plus `a * b, a / b` on the binding list (before rules land, a copy of
    the `*` op node in the grammar's first precedence level, changed to
    `/` building `div`). Save → `lang: expression` is v1 — and the budget
-   is unchanged: its pin keeps it on `lang: sheet` v0, whose own pin
+   is unchanged: its version pin keeps it on `lang: sheet` v0, whose own version pin
    keeps it on expression v0. `lang: sheet` shows a pending update as a
    *change proposal* — accepting bumps its cell-grammar ref, and saving
    publishes `lang: sheet` v1, which pends the budget. Back on the
-   budget, its change proposal shows what accepting would do: the pins
+   budget, its change proposal shows what accepting would do: the version pins
    move to sheet v1, and the `total / people` gap, reparsed under the
    new rule, becomes the AST `div(ref total, ref people)`, its `div` a
    reference to the declaration in `lang: expression` v1 like every
@@ -101,9 +101,9 @@ freshly seeded (**Reset** reseeds a used store).
 
 **Act 3 — the substrate flex.**
 
-9. The budget's type ref is `opelan:languages/sheet@0` — a pin execution
+9. The budget's type ref is `opelan:languages/sheet@0` — a version pin that execution
    honors. The proposals accepted in step 7 were real upgrades, recorded
-   as versions — the heal included; the pinned old versions still open
+   as versions — the heal included; the old pinned versions still open
    and compute correctly, the old budget with its gap. (*Evolvable*.)
 10. Second tab → Sync → edit a price in one tab, totals update in both.
 
@@ -114,7 +114,7 @@ compiled.
 ## Scope
 
 Explicit cuts: no type system; no content migrations beyond healing
-gaps (a pending update moves pins and heals gaps; it never rewrites
+gaps (a pending update moves version pins and heals gaps; it never rewrites
 committed subtrees); change proposals are live previews with a simple
 before/after rendering, not stored branches or semantic diffs;
 auto-update is a per-document opt-in, never the default; no network

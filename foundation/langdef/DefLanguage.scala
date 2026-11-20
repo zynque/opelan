@@ -117,8 +117,13 @@ class DefLanguage(
         // retry at interpretation and heal as their rules arrive.
         val rephrased =
           rephraseRuleSet(rules, atom, termTag, s.lexicon, tokens, lexicals)
-        Grammar(phrase(compileRules(rephrased, atom, termTag, s.lexicon,
-          lexicals), Set.empty), tokens)
+        // The document's root: the `where` production the def names as
+        // its surface — `blocks` makes a whole document one parse —
+        // else the rules' `self`.
+        val start = s.surface.flatMap(lexicals.get).flatMap(_.parser)
+          .getOrElse(compileRules(
+            rephrased, atom, termTag, s.lexicon, lexicals))
+        Grammar(phrase(start, Set.empty), tokens)
       case None => Grammar(restGap, lexicon)
     }
 
@@ -174,21 +179,16 @@ class DefLanguage(
   // doc/DefDocText.scala rather than a rule set.
   override def parse(text: String): Option[DetachedNode[NodeData]] =
     if (isDocLanguage) Some(defDocParse(text))
-    // A code-side text parser outranks the compiled rules — the
-    // document-level composition isn't always expression-shaped
-    // (markdown parses through its `blocks` production).
-    else impls.textParser.map(_(text))
-      .orElse(syntax.map(g => toDetached(g(text).tree)))
+    else syntax.map(g => toDetached(g(text).tree))
 
   // The `lang:` surface's provenance: `parse` with each node's span
   // on the node (defDocParseSpanned), so a text edit carries node
   // identity through the outline and inside `means` lines
   // (foundation/language/TextProvenance). The compiled-grammar parse
-  // is spanned already — a code-side text parser can't report spans.
+  // is spanned already — every language reports spans the same way.
   override def parseSpanned(text: String): Option[SpannedTree[NodeData]] =
     if (isDocLanguage) Some(defDocParseSpanned(text))
-    else if (impls.textParser.isEmpty) syntax.map(g => spanned(g(text).tree))
-    else None
+    else syntax.map(g => spanned(g(text).tree))
 
   // lang: documents relink what text can't carry — placeholder uses and
   // term constructs pointed at their nodes — after a text-surface
@@ -209,10 +209,7 @@ class DefLanguage(
   // version bump re-pins kept content's term tags rather than
   // reparsing.
   override def textSyntax: Option[TextSyntax] =
-    // A textParser-driving language's surface parse isn't the compiled
-    // `self` (see parse) — no incremental session for it.
-    if (impls.textParser.isDefined) None
-    else for {
+    for {
       s <- languageDef.syntax
       grammar <- syntax
     } yield TextSyntax(grammar,
@@ -226,7 +223,7 @@ class DefLanguage(
             if beforeRules.map(lexiconSignature) ==
                s.rules.map(lexiconSignature) =>
           Some(SyntaxChange(
-            syntaxChanges(SyntaxDef(s.lexicon, beforeRules), s),
+            syntaxChanges(s.copy(rules = beforeRules), s),
             retagBy(beforeTags, termTag)))
         case _ => None
       })

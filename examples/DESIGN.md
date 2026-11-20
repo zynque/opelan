@@ -67,7 +67,7 @@ back as the position they name; `ref:N` remains as a raw
 The `sheet` view
 renders the computed grid; `formulas` renders each cell's expression
 instead of its value. Cells parse with the expression dialect's
-grammar, referenced by type ref — pinned, so a new `lang: expression`
+grammar, referenced by type ref — version-pinned, so a new `lang: expression`
 version reaches sheet cells when the sheet's ref bumps to it, not when
 the expression doc is saved (see
 [`../foundation/document/store/DESIGN.md`](../foundation/document/store/DESIGN.md)).

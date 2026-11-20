@@ -23,7 +23,7 @@ object MarkdownLanguage extends DefLanguage(
     makeTyped(typeRef,
       er(docTitleRef), er(docImportsRef),
       NodeData.StringData("Markdown notes"),
-      markdownParse(
+      parse(
         """# Notes
           |
           |## Groceries
@@ -32,5 +32,5 @@ object MarkdownLanguage extends DefLanguage(
           |* Bread
           |* **Good** coffee
           |
-          |Plain *italic* and **bold** runs.""".stripMargin))
+          |Plain *italic* and **bold** runs.""".stripMargin).get)
 }

@@ -39,14 +39,15 @@ transitively (inspectability, editability, history). A projection and
 deployment choice, not a different implementation — the document remains
 the truth, and shipping without it is a build-time optimization.
 
-**Pin**:
-The `version` in an `url@version#node` reference. Execution resolves
-the pinned version of a language document, so a dependency's new head
-changes a dependent only when the dependent's pins are bumped.
+**Version pin**:
+The `version` in an `url@version#node` reference — the fixed version
+of the target document the ref resolves to. Execution resolves the
+pinned version of a language document, so a dependency's new head
+changes a dependent only when the dependent's version pins are bumped.
 
 **Pending update**:
 The state of a document whose external refs pin versions behind a
-store head. It is offered as a change proposal: the pins bumped and the
+store head. It is offered as a change proposal: the version pins bumped and the
 gaps the newer languages now read healed, together as one edit.
 Accepting it makes a new version of the dependent, which may itself
 pend the layer above.
@@ -54,7 +55,7 @@ pend the layer above.
 **Change proposal**:
 A proposed new version of a document, shown to the user as what would
 change and recorded as a version only once accepted. The workbench
-proposes for pending updates (pin bumps plus heals); other actors, such
+proposes for pending updates (version-pin bumps plus heals); other actors, such
 as an LLM pass, can propose the same way.
 
 **Auto-update**:
@@ -108,7 +109,7 @@ broken* convention (Hazel's *typed holes*, made structural). Stored as
 `GapData`, spelled `?text`, bound by the foundation `gap` operand term.
 
 **Heal**:
-A gap becoming content: once the language a document pins reads the
+A gap becoming content: once the language version a document pins reads the
 gap's text, the gap is replaced by the AST it now parses to, with its
 construct uses by reference like any other content (`ref a / ref b`
 becomes `div(ref a, ref b)`, plus an imports entry for `div`). Stored
@@ -122,3 +123,15 @@ A paired conversion between two representations of the same content —
 a document tree and its text (`Outline`, `Serial`), a def and its
 `lang:` document, an AST and its document subtree — defined so the two
 directions round-trip.
+
+**Type**:
+What a node is an instance of — the declaration its data ref (its
+*type ref*) resolves to. A document's type is its root's type ref —
+the header naming the dialect — and a content node is a *construct
+use* of the type it references. Leaves carry no ref; their type is
+the literal's sort, foundational. The stored ref is the *intrinsic*
+type: singular and always present. Types a language assigns its own
+expressions — an expression's `number` — are *extrinsic*: derived by
+evaluating the language's rules, never stored. Where both senses are
+in play, "type ref" names the intrinsic one and "type of" the
+derived relation.

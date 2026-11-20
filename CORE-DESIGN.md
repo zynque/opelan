@@ -1,18 +1,15 @@
 # CORE-DESIGN.md — the minimal core
 
-The smallest complete characterization of the platform: **editable,
-computable trees, and nothing else.** Everything the wider design adds —
-text surfaces, the store and pins, versions, sync, undo — is a *surface*
-or a *service* layered over this core, deferred by construction rather
-than by rescue. Companion to `DESIGN.md` (the whole platform) and
-`GLOSSARY.md` (vocabulary); `foundation/means/DESIGN.md` is this core
-being built.
+This is a small, complete characterization of the platform: **editable,
+computable trees.** Everything the wider design adds, such as
+text surfaces, the store and version pins, history, sync, undo, etc. is layered over this core.
 
 ## Trees
 
 A document is a persistent tree of identity-stable nodes. A node's data
-is either **leaf data** (a literal — today: string, int, float) or a
-**reference** to the node declaring what this node is — its *construct*.
+is either primitive **leaf data** (string, int, float) or a
+**type reference**: a pointer to the declaration of what this node is, its
+*type*.
 
 ```
 NodeId    = opaque, stable, never reused
@@ -20,17 +17,23 @@ Node      = { id: NodeId, data: NodeData, children: [NodeId] }
 Document  = { root: NodeId, nodes: Map[NodeId, Node] }
 
 NodeData  = StringData | IntData | FloatData        -- leaves hold data
-          | InternalNodeRef | ExternalNodeRef       -- internal nodes name their construct
+          | InternalNodeRef | ExternalNodeRef       -- internal nodes name their type
 ```
 
-Refs name nodes: same-document (`InternalNodeRef`) or `url@version#node`
-across documents (`ExternalNodeRef`). Content never spells a construct
-by name — *everything by reference* — so identity, renaming, and
-cross-document composition come free (`foundation/document/typed`).
+References name nodes: same-document (`InternalNodeRef`) or `url@version#node`
+across documents (`ExternalNodeRef`). Nothing is ever referred to by name in the underlying data model, so identity, renaming, and cross-document composition come free (`foundation/document/typed`).
+
+The type reference is the node's **intrinsic type**: stored, singular, always
+present. A document's type is its root's type (the header naming the
+dialect); a content node is a *construct use* — an instance — of the
+type it references. Types a language assigns its own expressions are
+**extrinsic**: derived by evaluating the language's rules, never stored
+(`GLOSSARY.md`, *Type*). Leaves carry no ref; their type is the
+literal's sort — a foundational definition (`gap` for `GapData`).
 
 ## Definitions
 
-A **definition** is the node a ref resolves to. It denotes a pair of
+A **definition** is the node a type ref resolves to. It denotes a pair of
 interpretations over nodes of its type:
 
 ```
@@ -104,7 +107,7 @@ EditOp = SetData | InsertChild | RemoveChild | MoveChild | Splice
 - **Generic floor.** A structural editor — the tree outliner — works
   for *any* node by dispatch alone: render each node through its
   definition, recurse into children. Bootstrap needs nothing more.
-- **Derived surface.** A construct's pattern — the shape of its slots —
+- **Derived surface.** A type's pattern — the shape of its slots —
   renders as a form: a text box per leaf slot, a nested editor per
   child slot (`foundation/means`: a structural LHS is the canonical
   editor). Authored views come later as a refinement, never a
@@ -132,9 +135,9 @@ seed = { meaning terms : use, quote, literal, builtin, construct-application
 Bootstrap completes at the fixpoint: the definition language's own
 definition is a document — authored through editors derived from
 definitions, evaluated by the same `eval`. From there the deferred
-capabilities layer on in dependency order: derived per-construct
+capabilities layer on in dependency order: derived per-type
 editors, then the text surface (parse *and* print compiled from the
-same rules), then store/pins/versions, then sync. Each is a projection
+same rules), then the store, version pins, and history; then sync. Each is a projection
 or a service over an unchanged core.
 
 ## What the core is not

@@ -20,7 +20,7 @@ class MarkdownSuite extends FunSuite {
   private def tag(t: DetachedNode[NodeData]): NodeData = t.data
 
   test("markdown text parses to a block tree") {
-    val content = markdownParse(source)
+    val content = MarkdownLanguage.parse(source).get
     assertEquals(tag(content), markdownTag(MarkdownTag))
     val Seq(h1, h2, list, para) = content.children
     // Blocks store the surface constructs the definitions declare —
@@ -44,7 +44,7 @@ class MarkdownSuite extends FunSuite {
   }
 
   test("an unmatched star stays literal text") {
-    val content = markdownParse("2 * 3\n")
+    val content = MarkdownLanguage.parse("2 * 3\n").get
     val Seq(para) = content.children
     assertEquals(tag(para), markdownTag(ParaTag))
     // `2 ` a text run, `*` a stray marker kept verbatim, ` ` and `3`

@@ -27,10 +27,12 @@ val markdownDef = LanguageDef(
   // `list`, `para`, `bold`, `italic` and the `h1`/`h2`/`item` meanings
   // are ambient placeholders — no vocabulary section encodes.
   vocabulary = vocabularyFrom(markdownRules),
-  // The `definitions` the lang: doc shows — parsed through the impls'
-  // `blocks`/`runs`/`plain` productions rather than the compiled
-  // `self` (the document isn't one expression).
-  syntax = Some(SyntaxDef("markdown", Some(markdownRules))),
+  // The `definitions` the lang: doc shows — `d` binds the impls'
+  // `blocks` production, and `surface` roots the compiled grammar
+  // there: a document is one `blocks` parse, headings/lists/paragraphs
+  // inside it through the `runs`/`plain` terms.
+  syntax = Some(SyntaxDef("markdown", Some(markdownRules),
+    surface = Some("blocks"))),
   views = List(
     // `edit` binds the source-text builtin — the sidebar's edit tile
     // shows what the editor holds; the pane's edit view is the impls'
@@ -41,10 +43,9 @@ val markdownDef = LanguageDef(
 
 // The code-side semantics the def names — kept beside it. `blocks`,
 // `runs`, `plain` are the productions the `where` clauses bind
-// (MarkdownParse.scala builds them from the rules); "print" is the
-// document's text surface (docText renders it unlisted); `textParser`
-// the commit path — `blocks` itself; `editSurface` the editor's marks
-// plus the live preview pane.
+// (MarkdownProductions.scala builds them from the rules); "print" is the
+// document's text surface (docText renders it unlisted); `editSurface`
+// the editor's marks plus the live preview pane.
 val markdownImpls = Impls(
   lexicons = Map("markdown" -> markdownLexicon),
   leaves = Map("plain" -> plainLeaf),
@@ -55,7 +56,6 @@ val markdownImpls = Impls(
     "print" -> ((doc, id, ctx) =>
       ViewTree.block(markdownLines(doc, id).map(ViewTree.txt)*)),
     "markdown-preview" -> ((doc, id, ctx) => markdownPreview(doc, id))),
-  textParser = Some(markdownParse),
   editSurface = Some(
     EditSurface(markdownLineMarks, preview = Some("preview"))))
 

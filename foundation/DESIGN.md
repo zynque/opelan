@@ -13,7 +13,7 @@ Packages:
 - [`document/`](document/DESIGN.md) — the persistent document tree, its
   node data, and the `Outline`/`Serial` formats
 - [`document/store/`](document/store/DESIGN.md) — the versioned
-  document store, name projection, and pin/pending-update machinery
+  document store, name projection, and version-pin/pending-update machinery
 - [`document/typed/`](document/typed/DESIGN.md) — typed-document layout,
   imports, everything-by-reference, and the commit reconcile
 - [`version/`](version/DESIGN.md) — the version DAG and LSCA merge base

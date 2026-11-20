@@ -52,8 +52,9 @@ private[langdef] def encodeDef(
     n(pending("name"), sl(d.name)))
   val doc2 = add(doc1, cid, List(
     d.syntax.map(s => n(pending("syntax"),
-      sl(s.lexicon) +:
-        s.rules.toList.map(rulesNode(_, d.typeRef.documentUrl, pending))*)),
+      (List(sl(s.lexicon)) ++
+        s.surface.toList.map(p => n(pending("surface"), sl(p))) ++
+        s.rules.toList.map(rulesNode(_, d.typeRef.documentUrl, pending)))*)),
     Some(n(pending("views"), d.views.map(viewNode)*)),
     d.inputParser.map(cp => n(pending("inputs"), inputsNode(cp)))).flatten*)._1
   val linked = linkRuleUses(doc2, cid)

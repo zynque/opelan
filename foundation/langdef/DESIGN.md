@@ -69,8 +69,8 @@ by its own rules (see [`../means/DESIGN.md`](../means/DESIGN.md)).
 Other pieces:
 
 - **`AutoUpdate.scala`** — the per-document `setting(auto-update, true)`
-  flag that opts a document into recorded pin bumps; the mechanism is
-  described under *Pins select behavior* in
+  flag that opts a document into recorded version-pin bumps; the mechanism is
+  described under *Version pins select behavior* in
   [`../document/store/DESIGN.md`](../document/store/DESIGN.md).
 - **`InputGrammar.scala`** — a def's input grammar: how text committed
   in a projected input becomes content. A builtin parser runs as named;

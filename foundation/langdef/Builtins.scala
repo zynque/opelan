@@ -44,11 +44,6 @@ case class Impls(
     // (markdown's `blocks`/`runs` — the document's block sequence and a
     // line's inline runs).
     productions: Map[String, LexicalTerm] = Map.empty,
-    // The document text surface, when it's code rather than a compiled
-    // rule set (the meta language's outline is built into DefLanguage;
-    // markdown's parse composes its `blocks` production): text →
-    // content subtree.
-    textParser: Option[String => DetachedNode[NodeData]] = None,
     // The `edit` view's free-text surface: line marks and an optional
     // preview view name.
     editSurface: Option[EditSurface] = None)

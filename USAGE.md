@@ -36,10 +36,10 @@ Toolbar also shows the document's type label ("raw document", the
 dialect name, or `unknown:` ref), plus two update controls: **Update
 (N)** appears when `N` of the document's external refs pin versions
 behind a store head — a pending update — and clicking it bumps every
-pin to its head as one ordinary, versioned edit; **auto-update** writes
+version pin to its head as one ordinary, versioned edit; **auto-update** writes
 an opt-in flag into the document so those accepts happen without the
-click (saving a dependency cascades pin bumps through every flagged
-dependent). A **broken: N** marker counts refs pinning a node that no
+click (saving a dependency cascades version-pin bumps through every flagged
+dependent). A **broken: N** marker counts refs that pin a node that no
 longer exists at the head — they can't be bumped; the tooltip lists
 them. The sidebar's seeded documents include the samples: **Expression
 sample** is a typed expression-dialect document, **Markdown notes** is
@@ -61,7 +61,7 @@ doesn't parse but mentions a cell (`B2`, `ref:N`) is kept as a gap;
 anything else is a label.
 Gap cells show in yellow. The cell grammar is `lang: expression` at
 the version the sheet's ref pins, so a gap heals (computes) once the
-sheet's pin bumps to a version that can read it — via the Update
+sheet's version pin bumps to a version that can read it — via the Update
 button or auto-update, not just by saving the definition. Computed
 values are formatted by the `sheet` view's `currency` setting in
 `lang: sheet`.

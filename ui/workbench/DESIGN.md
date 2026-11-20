@@ -22,5 +22,5 @@ pinned version at the referenced node.
 
 The save path runs the auto-update fixpoint pass (`WorkbenchDocs`):
 every `auto-update`-opted document still pinned behind a head gets its
-pins bumped as an ordinary edit — see *Pins select behavior* in
+version pins bumped as an ordinary edit — see *Version pins select behavior* in
 [`foundation/document/store`](../../foundation/document/store/DESIGN.md).

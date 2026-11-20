@@ -3,7 +3,6 @@ package opelan.examples.markdown
 import opelan.foundation.document._
 import opelan.foundation.grammar._
 import opelan.foundation.means._
-import opelan.foundation.means.engine.withLiterals
 import opelan.foundation.means.text.readRuleOrGap
 
 // A markdown document's content: a `markdown` node whose children are
@@ -56,9 +55,3 @@ val markdownRules: RuleSet = RuleSet(
     "t means para(t) where t: runs",
     "**t** means bold(t) where t: plain",
     "*t* means italic(t) where t: plain").map(readRuleOrGap))
-
-// The document lexicon — the authored `text` leaf under the markers
-// the rules spell. `markdownImpls` keeps `markdownLexicon` (the base):
-// DefLanguage composes the decoded def's own literals; direct parses
-// use this one.
-val markdownTokens = withLiterals(markdownRules, markdownLexicon)

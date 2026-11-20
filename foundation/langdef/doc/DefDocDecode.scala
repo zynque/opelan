@@ -82,7 +82,8 @@ def langDefFromDocument(
     syntax = r.section("syntax").map { sid =>
       SyntaxDef(
         r.childStr(sid, 0).getOrElse(""),
-        r.entries(sid, "definitions").headOption.map(r.ruleSetFrom))
+        r.entries(sid, "definitions").headOption.map(r.ruleSetFrom),
+        r.entries(sid, "surface").headOption.flatMap(r.childStr(_, 0)))
     },
     views = r.section("views").toList.flatMap { vid =>
       r.entries(vid, "view").map(k => ViewBinding(

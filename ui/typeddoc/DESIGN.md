@@ -36,9 +36,9 @@ mechanics:
   text surface, `InputSessions` for projected inputs, and a `GapRetry`
   for stored gaps (see
   [`foundation/language`](../../foundation/language/DESIGN.md)).
-- The pending-pin accept button and the `auto-update` toggle live here
+- The pending-update accept button and the `auto-update` toggle live here
   (`TypedDocView`, `TypedDocModel`, `TypedDocUpdate`); the save-time
-  fixpoint cascade runs in the workbench (see *Pins select behavior* in
+  fixpoint cascade runs in the workbench (see *Version pins select behavior* in
   [`foundation/document/store`](../../foundation/document/store/DESIGN.md)).
 
 This pane is the working proof of *polysyntactic* editing: several
