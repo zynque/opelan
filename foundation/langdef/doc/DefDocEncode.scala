@@ -22,7 +22,7 @@ import opelan.foundation.langdef._
 //     dialect
 //       description  "the arithmetic-expression language"
 //       name         "Expressions"
-//       syntax       "expr"  rules(…)   — the operand fallback is the
+//       syntax       "standard"  rules(…)   — the operand fallback is the
 //                              lexicon's recovery and stores nothing
 //       views        view("print", "expr-print") …
 //                    view("sheet", "sheet-grid", setting("currency", "$"))

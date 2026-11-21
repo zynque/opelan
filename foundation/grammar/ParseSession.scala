@@ -15,7 +15,7 @@ import opelan.foundation.document.NodeData
 //
 //   val s0 = ParseSession.start(grammar, "1 + 2")
 //   val s1 = s0.edit(Edit(4, 5, "20"))           // "1 + 20"
-//   val s2 = s1.changeRules(grammar2, Set("expr"))
+//   val s2 = s1.changeRules(grammar2, Set("standard"))
 //
 // Reused results keep their subtrees: nothing is copied or shifted,
 // so a node reused across reparses is the same object — and the

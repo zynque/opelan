@@ -5,7 +5,6 @@ import opelan.foundation.document.typed._
 import opelan.foundation.langdef._
 import opelan.foundation.langdef.syntax._
 import opelan.foundation.langdef.doc.{langDefDoc, metaConsOf, termRefs}
-import opelan.foundation.langdef.LeafKind._
 import opelan.foundation.means._
 import opelan.foundation.means.text._
 
@@ -13,8 +12,8 @@ import opelan.foundation.means.text._
 // document encodes. `exprDef` IS the language: ExprLanguage is
 // DefLanguage over it, so a stored lang: doc and the registry fallback
 // run the same machinery. `langDefDoc` must round-trip it through
-// `langDefFromDocument`. The def is paired with `exprImpls`, the Impls
-// bundle holding the code-side semantics it names.
+// `langDefFromDocument`. The def's `exprImpls` is empty — every
+// semantic it names is foundation-provided.
 // The language's identity ref — the URL its `lang:` document lives at.
 // A constant, not `ExprLanguage.typeRef`: the object interpreting this
 // def would otherwise be read while the def initializes.
@@ -33,10 +32,10 @@ val exprDef = LanguageDef(
   // with no vocabulary entry at all, so a decoded def needs no
   // code-side table.
   vocabulary = vocabularyFrom(exprRules),
-  // The rules carry the syntax; the operand fallback they compile
-  // over is the lexicon's recovering unrecognized run
-  // (ExprLexicon's gap kinds).
-  syntax = Some(SyntaxDef("expr", Some(exprRules))),
+  // The rules carry the syntax; "standard" selects the shared leaf
+  // vocabulary (StandardLexicon.scala) — the operand fallback they
+  // compile over is its recovering unrecognized run.
+  syntax = Some(SyntaxDef("standard", Some(exprRules))),
   // No views section — `edit`, `print`, and `eval` all derive from
   // the def: the text surface edits, the rules print and evaluate.
   views = Nil,
@@ -46,7 +45,7 @@ val exprDef = LanguageDef(
 // binding are missing, so the budget's per-person formula sits as a gap
 // until the audience adds them to the definition document.
 val demoExprDef = exprDef.copy(syntax =
-  Some(SyntaxDef("expr", Some(withoutPattern(exprRules, "a / b")))))
+  Some(SyntaxDef("standard", Some(withoutPattern(exprRules, "a / b")))))
 
 // The demo's seeded document — exprDef's own encoding minus the `a / b`
 // rule's subtree, every other node id intact, so the remaining
@@ -74,24 +73,11 @@ private def withoutPattern(set: RuleSet, text: String): RuleSet = {
     tiers = set.tiers.map(t => Tier(t.patterns.filterNot(_.key == key))))
 }
 
-// The code-side semantics the def names — kept beside it.
-val exprImpls = Impls(
-  lexicons = Map("expr" -> exprLexicon),
-  // The leaf productions `where` terms bind to — the named leaf
-  // vocabulary. Every leaf `where` doesn't bind is an operand
-  // production; bound ones are narrowing names (`where a, b: int`).
-  // Each names which token kinds it accepts and their leaf data;
-  // alternatives try in order (`number` accepts float then int).
-  leaves = {
-    val numbers = LeafDef(List("float" -> FloatLit, "int" -> IntLit))
-    Map(
-      "literal"      -> numbers,
-      "number"       -> numbers,
-      "whole number" -> LeafDef(List("int" -> IntLit)),
-      "int"          -> LeafDef(List("int" -> IntLit)),
-      "float"        -> LeafDef(List("float" -> FloatLit)),
-      "ref"          -> LeafDef(List("ref" -> RefLit("ref:"))))
-  })
+// The code-side semantics the def names: none — the "standard"
+// lexicon and the `number`/`ref` leaf vocabulary it tokenizes are
+// foundation-provided (StandardLexicon.scala, Leaves.scala's
+// standardTerms), so this def needs no impls wiring at all.
+val exprImpls = Impls()
 
 // The code-side def's reading — term anchors from `termRefs` since
 // this def's construct terms are code-built rather than decoded.

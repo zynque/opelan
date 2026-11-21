@@ -70,7 +70,7 @@ private def desugarCommitted(
   (for {
     syn   <- defined.syntax
     set   <- syn.rules
-    lex   <- impls.lexicons.get(syn.lexicon)
+    lex   <- lexiconFor(impls, syn.lexicon)
     index <- ruleIndex(doc, id)
     text  <- gapQuoteText(read.meaning)
   } yield {

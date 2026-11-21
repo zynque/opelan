@@ -33,18 +33,18 @@ class IncrementalParseSuite extends FunSuite {
   test("a rules change carries the session — a means entry drops with its caller") {
     // Under the staged rules, `(7 + 7)` doesn't fit: the number
     // operand rule is missing, so `(a)`'s sequence result is memoized
-    // against its failed `expr` call. Restoring the rule changes only
-    // `expr` — the derived literal set is untouched — and `(a)`'s
-    // entry falls with it: no stale result survives.
+    // against its failed `standard` call. Restoring the rule changes
+    // only `standard` — the derived literal set is untouched — and
+    // `(a)`'s entry falls with it: no stale result survives.
     import opelan.foundation.langdef.SyntaxDef
     import opelan.foundation.means.text.readPattern
-    val noNumber = exprDef.copy(syntax = Some(SyntaxDef("expr", Some(
+    val noNumber = exprDef.copy(syntax = Some(SyntaxDef("standard", Some(
       exprRules.copy(rules = exprRules.rules.filterNot(
         _.pattern == readPattern("n")))))))
     val staged = languageFromDef(noNumber).textSyntax.get
     val fullSyntax = languageFromDef(exprDef).textSyntax.get
     val names = fullSyntax.changedSince(staged).map(_.rules).get
-    assertEquals(names, Set(RuleName("expr")))
+    assertEquals(names, Set(RuleName("standard")))
     val s0 = ParseSession.start(staged.grammar, "(7 + 7)")
     val s1 = s0.changeRules(fullSyntax.grammar, names)
     assertEquals(normal(s1.result), full(fullSyntax.grammar, s1.text))

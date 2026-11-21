@@ -17,7 +17,7 @@ import opelan.foundation.means.text.printPattern
 //     description "the arithmetic-expression language"
 //     name "Expressions"
 //     syntax
-//       "expr"
+//       "standard"
 //       definitions
 //         a + b means add(a, b)
 //         n means n where n: number

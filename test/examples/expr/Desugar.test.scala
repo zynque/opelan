@@ -23,10 +23,10 @@ class DesugarSuite extends munit.FunSuite {
   private val lexicals = lexicalTerms(exprImpls)
 
   private def desugared(set: RuleSet): RuleSet =
-    rephraseRuleSet(set, atom, exprTag, "expr", exprTokens, lexicals)
+    rephraseRuleSet(set, atom, exprTag, "standard", exprTokens, lexicals)
 
   private def grammarFor(set: RuleSet): Parser =
-    phrase(compileRules(set, atom, exprTag, "expr",
+    phrase(compileRules(set, atom, exprTag, "standard",
       lexicals), Set.empty)
 
   private def parse(g: Parser, input: String): ParseTree =

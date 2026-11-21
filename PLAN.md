@@ -105,15 +105,18 @@ What doesn't yet work and what comes next.
      through `externalRefOf`-resolved subtrees. The last handwritten
      reader and writer in the example are gone; `dataText` moved to
      foundation for the dangling-ref display.
-   - *A shared leaf vocabulary.* `exprLexicon` and `exprImpls.leaves`
-     declare the characters a rule can't display: digits for ints and
-     floats, the `ref:` prefix, the `unrecognized` recovery run. None
-     of it is expression-specific — promote it to a named foundation
-     leaf vocabulary (`number`, `ref`, gap recovery) that a dialect
-     selects by name, as in `where n: number`. (Declaring the leaves
-     *themselves* in the document is the later *Authored leaf
-     productions* step in item 2; this stage only removes per-dialect
-     code.)
+   - *A shared leaf vocabulary.* Landed: `exprLexicon` and
+     `exprImpls.leaves` moved to foundation — `SyntaxDef("standard")`
+     selects the named leaf vocabulary
+     (`foundation/langdef/syntax/StandardLexicon.scala`: `float`,
+     `int`, `ref:`, `?`, and the `unrecognized` recovery run), and its
+     `where` terms (`number`, `whole number`, `int`, `float`,
+     `literal`, `ref`) live in `standardTerms` beside `gap`/`value`.
+     `lexiconFor` resolves a def's lexicon impls-first, then standard;
+     `exprImpls` is empty — the dialect names nothing code-side.
+     (Declaring the leaves *themselves* in the document is the later
+     *Authored leaf productions* step in item 2; this stage only
+     removes per-dialect code.)
    - *The document becomes the seed.* `exprDef` exists to generate
      `lang: expression` via `langDefDoc`; `exprRules` exists to be
      encoded into it; `exprTerms`/`exprTag`/`exprTokens` exist to
@@ -249,11 +252,13 @@ What doesn't yet work and what comes next.
      definition exists). Remaining: run-leaf stop sets are still
      hand-authored (`text` stopping at `*`, `unrecognized`'s
      exclusion — a glued `x&&b` still reads one token), and the
-     token productions (`text`, `number`, `ref`, `plain`) stay
-     authored in `Impls.leaves` until *Authored leaf productions*
-     (item 2) lands or becomes `leaf` declarations beside the rules.
-     `SyntaxDef.lexicon`'s `impls.lexicons` lookup — the named-builtin
-     binding — retires when lexicon content is authored this way too.
+     impls-authored token productions (`text`, `plain`) stay in
+     `Impls.leaves` until *Authored leaf productions*
+     (item 2) lands or becomes `leaf` declarations beside the rules —
+     `number`/`ref`/… already moved to the shared `standard`
+     vocabulary. `SyntaxDef.lexicon`'s lookup — `lexiconFor`,
+     impls-first then the standard lexicons — retires when lexicon
+     content is authored this way too.
    - *Sheet's commit surface* (`commitLink`/`linkCellRefs`,
      positional `C4` → `InternalNodeRef`) stays an `Impls`
      interpretation — it rewrites committed structure, it isn't

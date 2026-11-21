@@ -96,8 +96,11 @@ The token layer derives too (`LiteralLexicon`): the patterns' literal
 displays *are* the lexicon's literal tokens — composed over the
 authored leaf productions longest-first, reserved over the leaves —
 so `a // b means idiv(a,b)` tokenizes the moment the rule exists and
-`Impls.lexicons` shrinks to what no pattern can display (numbers,
-refs, text runs). A literal's token kind is its display; an
+the authored lexicon shrinks to what no pattern can display — the
+leaf layer: numbers, refs, and the recovery run ship as the named
+`standard` vocabulary (langdef/syntax/StandardLexicon), and a dialect
+authors its own only when it differs (markdown's text runs). A
+literal's token kind is its display; an
 *interior* literal (a placeholder each side — `a + b`'s `+`) joins
 `gapStart`, and a word-ending literal (`mod`) holds a right-edge
 word boundary. Still authored: run-leaf stop sets and the leaf

@@ -60,16 +60,16 @@ class TextSessionSuite extends FunSuite {
     val again = languageFromDef(demoExprDef).textSyntax.get
     assertEquals(again.key, s0.syntax.key)
     // Restoring a rule that adds no literal — `n means n` — changes
-    // only the expr rule: the session carries over, and still equals
+    // only the rules memo: the session carries over, and still equals
     // a full parse. A change that moves literals instead restarts:
     // tokenization moved, so no kept result is honest.
-    val noNumber = exprDef.copy(syntax = Some(SyntaxDef("expr", Some(
+    val noNumber = exprDef.copy(syntax = Some(SyntaxDef("standard", Some(
       exprRules.copy(rules = exprRules.rules.filterNot(
         _.pattern == readPattern("n")))))))
     val staged = languageFromDef(noNumber).textSyntax.get
     val full = languageFromDef(exprDef).textSyntax.get
     assertEquals(full.changedSince(staged).map(_.rules),
-      Some(Set(RuleName("expr"))))
+      Some(Set(RuleName("standard"))))
     assertEquals(full.changedSince(s0.syntax), None)
     val s1 = TextSession.start(staged, "7 + 7")
       .retext(full, "7 + 7")

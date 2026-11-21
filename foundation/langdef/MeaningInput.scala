@@ -51,7 +51,7 @@ private def meaningSyntax(
     defined = langDefFromDocument(docUrl, doc)
     s <- defined.syntax
     set <- s.rules
-    lexicon <- impls.lexicons.get(s.lexicon)
+    lexicon <- lexiconFor(impls, s.lexicon)
   } yield {
     val tag = termTagOf(defined)
     // The def's own literals (`(`, `)`, `,`) are the literal tokens —

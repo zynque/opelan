@@ -17,7 +17,7 @@ class GapRetrySuite extends FunSuite {
   test("a gap that consulted the changed rule heals") {
     val (c0, r0) = GapRetry().parse(staged, "ref:3 / ref:4")
     assert(c0.children.isEmpty && c0.data.isInstanceOf[NodeData.GapData], c0.toString)
-    assert(r0.attempts("ref:3 / ref:4").calls.contains("expr"))
+    assert(r0.attempts("ref:3 / ref:4").calls.contains("standard"))
     val (c1, _) = r0.parse(withDiv, "ref:3 / ref:4")
     assertEquals(Some(c1), languageFromDef(exprDef).parse("ref:3 / ref:4"))
   }

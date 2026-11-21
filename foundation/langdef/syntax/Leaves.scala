@@ -72,6 +72,21 @@ private def lexicalRef(name: String): ExternalNodeReference =
 // The workbench's gap leaf: the `gap` token reads as a gap.
 private val gapLeaf = LeafDef(List("gap" -> LeafKind.GapLeaf))
 
+// The standard leaf vocabulary — the productions a dialect's `where`
+// terms name (`where n: number`, `where r: ref`), tokenized by
+// standardLexicon (StandardLexicon.scala). `number` accepts float
+// then int — alternatives try in order; `whole number`/`int`/`float`/
+// `literal` are narrowing names (`where a, b: int`); `ref` binds the
+// foundation's `ref:N` leaf — an InternalNodeRef's text form.
+private val numberLeaf = LeafDef(List(
+  "float" -> LeafKind.FloatLit, "int" -> LeafKind.IntLit))
+private val intLeaf   = LeafDef(List("int"   -> LeafKind.IntLit))
+private val floatLeaf = LeafDef(List("float" -> LeafKind.FloatLit))
+private val refLeaf   = LeafDef(List("ref"   -> LeafKind.RefLit("ref:")))
+
+private def leafTerm(theLeaf: LeafDef): LexicalTerm =
+  LexicalTerm(Some(leafParser(theLeaf)), leafAccepts(theLeaf))
+
 // The `where` terms every language gets, foundation-provided. `gap` is
 // the builtin operand: the workbench's gap token stands alone as a
 // gap operand in every language with no authored rule (gaps are
@@ -89,7 +104,13 @@ val standardTerms: Map[ExternalNodeReference, LexicalTerm] =
     lexicalRefs("value") -> LexicalTerm(None, {
       case _: NodeData.InternalNodeRef | _: NodeData.SourceRef => false
       case _                                                  => true
-    }))
+    }),
+    lexicalRefs("number")       -> leafTerm(numberLeaf),
+    lexicalRefs("whole number") -> leafTerm(intLeaf),
+    lexicalRefs("int")          -> leafTerm(intLeaf),
+    lexicalRefs("float")        -> leafTerm(floatLeaf),
+    lexicalRefs("literal")      -> leafTerm(numberLeaf),
+    lexicalRefs("ref")          -> leafTerm(refLeaf))
 
 // How a token's text becomes leaf node data — the mapping a leaf
 // production's alternatives use.

@@ -78,14 +78,17 @@ class DeriveVocabularySuite extends FunSuite {
 
   test("every impls leaf names a lexical term, bound or not") {
     // Operand status is no longer derived here — which leaves stand
-    // alone is authored by lone-placeholder operand rules — so the
-    // whole leaf vocabulary is available for `where` to bind.
+    // alone is authored by lone-placeholder operand rules — so an
+    // impls-declared leaf joins the standard vocabulary for `where`
+    // to bind (number/ref are standard terms now; `plain` is the
+    // impls-only case markdown still wires).
     val impls = Impls(leaves = Map(
-      "number" -> LeafDef(List("float" -> FloatLit, "int" -> IntLit)),
-      "ref"    -> LeafDef(List("ref" -> RefLit("ref:")))))
+      "plain" -> LeafDef(List("text" -> Text))))
     val terms = lexicalTerms(impls)
-    assertEquals(terms.keySet, Set("gap", "number", "ref", "value")
+    assertEquals(terms.keySet, Set("gap", "value", "number",
+      "whole number", "int", "float", "literal", "ref", "plain")
       .map(lexicalRefs))
+    assert(terms(lexicalRefs("plain")).check(NodeData.StringData("hi")))
     assert(terms(lexicalRefs("number")).check(NodeData.IntData(3)))
     assert(terms(lexicalRefs("number")).check(NodeData.FloatData(1.5)))
     assert(!terms(lexicalRefs("number"))

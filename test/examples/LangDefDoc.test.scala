@@ -494,7 +494,7 @@ class LangDefDocSuite extends FunSuite {
         case (l, m) if l.trim.startsWith(prefix) => m.kind }
     assertEquals(kindOf("dialect"), Some("cm-meta"))
     assertEquals(kindOf("syntax"), Some("cm-meta"))
-    assertEquals(kindOf("\"expr\""), Some("cm-string"))
+    assertEquals(kindOf("\"standard\""), Some("cm-string"))
     assertEquals(kindOf("a + b"), Some("cm-rule"))
     // A rule line's spans mark `means` as a keyword and its
     // placeholders — offsets relative to the line, not the trimmed text.
@@ -532,9 +532,9 @@ class LangDefDocSuite extends FunSuite {
       s("lang: broken"),
       n(meta("dialect"),
         n(meta("description"), sl("a half-typed def")),
-        n(meta("syntax"), sl("expr"), sl("flibble"))))
-    // The damaged doc claims the expression language's URL, so it
-    // inherits exprImpls — the "expr" lexicon it names resolves.
+        n(meta("syntax"), sl("standard"), sl("flibble"))))
+    // The damaged doc claims the expression language's URL — the
+    // "standard" lexicon it names resolves foundation-side.
     val d = langDefFromDocument(
       ExprLanguage.typeRef.documentUrl, doc)
     assertEquals(d.name, "lang: broken") // falls back to the title
@@ -551,7 +551,7 @@ class LangDefDocSuite extends FunSuite {
     val cyc: Document[NodeData] = Document(0, Vector(
       Node(0, NodeData.StringData("lang: cyc"), List(1), None),
       Node(0, meta("syntax"), List(2, 3), Some(0)),
-      Node(0, NodeData.StringData("expr"), Nil, Some(1)),
+      Node(0, NodeData.StringData("standard"), Nil, Some(1)),
       Node(0, meta("term"), List(3), Some(1))))
     val d = langDefFromDocument("opelan:docs/cyc", cyc)
     assertEquals(d.syntax.map(_.rules), Some(None))

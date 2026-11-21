@@ -32,9 +32,12 @@ total, recovering parser, and every piece of the view tree carries its
 source id. Evaluation resolves refs through the
 enclosing document — a referenced cell's own subtree is evaluated,
 so formulas compose — and a visiting set reports ref cycles as gaps
-instead of diverging. `exprLexicon` is the authored leaf layer
-(`float`, `int`, `ref`, `?`, `unrecognized`); the literal tokens
-derive from the rules — `exprTokens` composes them for direct parses
+instead of diverging. The leaf layer needs no per-dialect code:
+`exprDef`'s syntax names `standard`, the shared leaf vocabulary
+(`float`, `int`, `ref`, `?`, `unrecognized` in
+`foundation/langdef/syntax/StandardLexicon`, its `where` terms
+`number`/`ref`/… in `standardTerms`), and the literal tokens derive
+from the rules — `exprTokens` composes them for direct parses
 (`foundation/means/engine/LiteralLexicon`).
 
 `ExprRules`/`ExprDef` define the dialect as `means` rules and a def —

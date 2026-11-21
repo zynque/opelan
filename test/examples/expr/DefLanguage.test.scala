@@ -68,7 +68,7 @@ class DefLanguageSuite extends FunSuite {
 
   test("a def claiming a foundational type ref inherits its impls") {
     // implsFor(exprDef) == exprImpls: a doc-decoded def for the
-    // expression type still binds the "expr" lexicon and expr views.
+    // expression type gets the same impls the registry binds.
     val edited = exprDef.copy(title = "edited")
     val l = new DefLanguage(edited, implsFor(edited))
     assert(l.parse("1 + 2").isDefined)
@@ -94,11 +94,22 @@ class DefLanguageSuite extends FunSuite {
     assertEquals(parsed.get.children.length, 2)
   }
 
-  test("a def claiming an unknown type ref binds no impls") {
+  test("the standard leaf vocabulary needs no impls") {
+    // exprImpls is empty: the "standard" lexicon and the `number`/`ref`
+    // leaves resolve foundation-side — even a def claiming an unknown
+    // type ref parses the shared vocabulary.
     val foreign = exprDef.copy(
       typeRef = ExternalNodeReference("opelan:languages/unknown", 0, 0))
+    assert(new DefLanguage(foreign, implsFor(foreign))
+      .parse("1 + 2").isDefined)
+  }
+
+  test("a def naming an unknown lexicon binds no grammar") {
+    val foreign = exprDef.copy(
+      typeRef = ExternalNodeReference("opelan:languages/unknown", 0, 0),
+      syntax = exprDef.syntax.map(_.copy(lexicon = "foreign")))
     val l = new DefLanguage(foreign, implsFor(foreign))
-    assertEquals(l.parse("1 + 2"), None)          // "expr" lexicon unbound
+    assertEquals(l.parse("1 + 2"), None)          // "foreign" lexicon unbound
     // The derived views read the def itself, not impls — `print` and
     // `eval` still answer, though no lexicon means no compiled
     // grammar and so no `edit`.

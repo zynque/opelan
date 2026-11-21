@@ -103,7 +103,7 @@ class DefLanguage(
   private lazy val syntax: Option[Grammar] =
     for {
       s <- languageDef.syntax
-      lexicon <- impls.lexicons.get(s.lexicon)
+      lexicon <- lexiconFor(impls, s.lexicon)
     } yield s.rules match {
       // Rules compile over the lexicon's recovery as their operand
       // atom, under the lexicon's name — the `named`/`use` shape a

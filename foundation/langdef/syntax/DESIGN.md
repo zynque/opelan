@@ -16,3 +16,7 @@ invalidates.
   in [`../../grammar/DESIGN.md`](../../grammar/DESIGN.md).
 - **`Leaves`** — the leaf vocabulary helpers `where` terms resolve
   against.
+- **`StandardLexicon`** — the named leaf vocabulary a `SyntaxDef`
+  selects (`syntax "standard"`): number/ref/gap token kinds plus the
+  recovery run, impls-free. `lexiconFor` resolves a def's lexicon
+  name impls-first, then standard.
