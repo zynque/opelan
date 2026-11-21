@@ -21,7 +21,7 @@ val allLanguages: List[Language] =
 // from a document inherits the impls of the language whose type ref it
 // claims, so a stored lang: doc keeps working semantics.
 val foundation: List[(LanguageDef, Impls)] = List(
-  exprDef        -> exprImpls,
+  decodedExprDef -> exprImpls,
   sheetDef       -> sheetImpls,
   markdownDef    -> markdownImpls,
   docLanguageDef -> docImpls)

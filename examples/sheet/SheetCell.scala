@@ -1,6 +1,6 @@
 package opelan.examples.sheet
 
-import opelan.examples.expr.codeExprReading
+import opelan.examples.expr.exprReading
 import opelan.foundation.document._
 import opelan.foundation.means.engine.{evalNode, printViewWith, valueText, leafView}
 import opelan.foundation.view.ViewTree
@@ -55,7 +55,7 @@ private def evalCell(
 def cellText(
     doc: Document[NodeData], cellId: Int,
     nameOf: ExternalNodeReference => Option[String] = (_ => None),
-    reading: RuleReading = codeExprReading)
+    reading: RuleReading = exprReading)
     : String =
   doc.getNode(cellId) match {
     case Some(node) if node.childIds.isEmpty => node.data match {

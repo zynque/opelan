@@ -1,7 +1,7 @@
 package opelan.examples.sheet
 
 import opelan.examples.termOf
-import opelan.examples.expr.codeExprReading
+import opelan.examples.expr.exprReading
 import opelan.foundation.document._
 import opelan.foundation.view.ViewTree._
 import opelan.foundation.langdef.{RuleReading, ViewContext}
@@ -31,7 +31,7 @@ def sheetView(
     ctx: ViewContext = ViewContext()): DetachedNode[NodeData] = {
   val d = resolveGridRefs(healGaps(doc, sheetId, ctx.parseInput), sheetId)
   val currency = ctx.settings.get("currency")
-  val reading = ctx.reading.getOrElse(codeExprReading)
+  val reading = ctx.reading.getOrElse(exprReading)
   grid((List(deleteControlsRow(d, sheetId)) ++
       d.childrenOf(sheetId).map(r =>
         rowView(d, sheetId, r, isHRow(d, r), currency, reading,
@@ -46,7 +46,7 @@ def formulasView(
     ctx: ViewContext = ViewContext()): DetachedNode[NodeData] = {
   val d = healGaps(doc, sheetId, ctx.parseInput)
   grid(d.childrenOf(sheetId).map(r =>
-    formulaRow(d, r, isHRow(d, r), ctx.reading.getOrElse(codeExprReading), ctx.termName))*)
+    formulaRow(d, r, isHRow(d, r), ctx.reading.getOrElse(exprReading), ctx.termName))*)
 }
 
 private def isHRow(doc: Document[NodeData], rowId: Int): Boolean =

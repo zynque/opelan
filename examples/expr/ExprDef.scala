@@ -1,19 +1,16 @@
 package opelan.examples.expr
 
 import opelan.foundation.document._
-import opelan.foundation.document.typed._
 import opelan.foundation.langdef._
 import opelan.foundation.langdef.syntax._
-import opelan.foundation.langdef.doc.{langDefDoc, metaConsOf, termRefs}
-import opelan.foundation.means._
-import opelan.foundation.means.text._
+import opelan.foundation.langdef.doc.{langDefDoc, langDefFromDocument}
 
 // The expression language's definition as data — what its `lang:`
-// document encodes. `exprDef` IS the language: ExprLanguage is
-// DefLanguage over it, so a stored lang: doc and the registry fallback
-// run the same machinery. `langDefDoc` must round-trip it through
-// `langDefFromDocument`. The def's `exprImpls` is empty — every
-// semantic it names is foundation-provided.
+// document encodes. The document is the seed (PLAN, *The document
+// becomes the seed*): `exprDef` is only the recipe `langDefDoc`
+// encodes into it, and everything the code path needs — the def
+// ExprLanguage interprets, the rules, the term anchors — decodes
+// from `exprDoc`, exactly as a stored version is read.
 // The language's identity ref — the URL its `lang:` document lives at.
 // A constant, not `ExprLanguage.typeRef`: the object interpreting this
 // def would otherwise be read while the def initializes.
@@ -41,37 +38,15 @@ val exprDef = LanguageDef(
   views = Nil,
   inputParser = None)
 
-// The demo's starting point for lang: expression: the `/` rule and its
-// binding are missing, so the budget's per-person formula sits as a gap
-// until the audience adds them to the definition document.
-val demoExprDef = exprDef.copy(syntax =
-  Some(SyntaxDef("standard", Some(withoutPattern(exprRules, "a / b")))))
+// The seed document — `exprDef`'s encoding, built once. The language
+// interprets its decode, not the recipe.
+val exprDoc: Document[NodeData] = langDefDoc(exprDef)
 
-// The demo's seeded document — exprDef's own encoding minus the `a / b`
-// rule's subtree, every other node id intact, so the remaining
-// declarations (`+`, `*`, `-`) keep exprDef's anchors: one anchor space
-// across both encodings of the language (a `/` node lands only once the
-// user commits the rule, anchored at its new piece in the updated doc).
-lazy val demoExprDoc: Document[NodeData] = {
-  val doc = langDefDoc(exprDef)
-  val ruleId = doc.nodes.indices.find(id =>
-    metaConsOf(doc, id).contains("definition") &&
-    doc.subtreeIds(id).exists(k =>
-      doc.getNode(k).exists(_.data == NodeData.StringData("/"))))
-    .getOrElse(sys.error("exprDef encodes no / definition"))
-  doc.getNode(ruleId).flatMap(_.parentId)
-    .flatMap(p => updateNodeChildIds(p,
-      doc.childrenOf(p).filterNot(_ == ruleId), doc).toOption)
-    .getOrElse(doc)
-}
-
-// A rule set minus one pattern — its rule and every binding entry.
-private def withoutPattern(set: RuleSet, text: String): RuleSet = {
-  val key = readPattern(text).key
-  set.copy(
-    rules = set.rules.filterNot(_.pattern.key == key),
-    tiers = set.tiers.map(t => Tier(t.patterns.filterNot(_.key == key))))
-}
+// The definition as the seed document reads it — what a stored
+// lang: expression decodes to. ExprLanguage interprets this; the term
+// anchors are the document's own node ids.
+val decodedExprDef: LanguageDef =
+  langDefFromDocument(exprTypeRef.documentUrl, exprDoc)
 
 // The code-side semantics the def names: none — the "standard"
 // lexicon and the `number`/`ref` leaf vocabulary it tokenizes are
@@ -79,9 +54,11 @@ private def withoutPattern(set: RuleSet, text: String): RuleSet = {
 // standardTerms), so this def needs no impls wiring at all.
 val exprImpls = Impls()
 
-// The code-side def's reading — term anchors from `termRefs` since
-// this def's construct terms are code-built rather than decoded.
-val codeExprReading = RuleReading(exprRules, termRefs(exprDef))
+// The seed def's reading — the decoded rules and the term anchors the
+// document declares, plus the ambient foundation refs.
+val exprReading: RuleReading =
+  ruleReading(decodedExprDef).getOrElse(
+    throw new IllegalStateException("seed exprDef carries no rules"))
 
 // Construct identities of the language. Code names a term ("*") only
 // to look up its vocabulary entry in the canonical encoding; documents
@@ -94,12 +71,11 @@ val codeExprReading = RuleReading(exprRules, termRefs(exprDef))
 // resolve to their names through the document resolver
 // (ViewContext.termName).
 lazy val exprTerms: Map[String, ExternalNodeReference] =
-  ambientRefs ++ termRefs(exprDef)
+  exprReading.terms
 
 // Node data applying a construct, inline — a document imports it when
 // the tree is inserted (see makeTyped / internalizeRefs). A construct
 // the language doesn't declare keeps its name as a gap — the same
 // fallback DefLanguage.termTag gives.
 def exprTag(term: String): NodeData =
-  exprTerms.get(term).map(NodeData.ExternalNodeRef(_))
-    .getOrElse(NodeData.GapData(term))
+  exprReading.tag(term)

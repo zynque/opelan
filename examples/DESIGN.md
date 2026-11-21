@@ -19,7 +19,7 @@ an old store with untyped `lang:` docs falls back to the registry.
 
 ## Expression dialect (`expr/`)
 
-`ExprLanguage`, `ExprDef`/`ExprRules`/`ExprLexicon` — the
+`ExprLanguage`, `ExprDef`/`ExprRules` — the
 demonstration dialect. It has int and float
 literals (integer arithmetic stays integral, division and floats are
 decimal, and displayed values drop float noise — `valueText`'s
@@ -40,8 +40,12 @@ instead of diverging. The leaf layer needs no per-dialect code:
 from the rules — `exprTokens` composes them for direct parses
 (`foundation/means/engine/LiteralLexicon`).
 
-`ExprRules`/`ExprDef` define the dialect as `means` rules and a def —
-`ExprLanguage` IS `DefLanguage(exprDef)`. There is no AST and no
+`ExprRules`/`ExprDef` are the recipe `langDefDoc` encodes into
+`exprDoc` — the seed document (`PLAN`, *The document becomes the
+seed*). `ExprLanguage` IS `DefLanguage(decodedExprDef)` — the def as
+the document reads it — and `exprTerms`/`exprTag`/`exprReading`/
+`demoExprDef` all decode from documents, so a stored `lang:
+expression` and the built-in run one path. There is no AST and no
 tree↔code codec: parses and tests work on `NodeData` trees directly,
 and `exprTag`/`exprTerms` map a construct name to the ref its
 definition declares. The 28-input battery holding

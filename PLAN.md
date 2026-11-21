@@ -117,13 +117,14 @@ What doesn't yet work and what comes next.
      (Declaring the leaves *themselves* in the document is the later
      *Authored leaf productions* step in item 2; this stage only
      removes per-dialect code.)
-   - *The document becomes the seed.* `exprDef` exists to generate
-     `lang: expression` via `langDefDoc`; `exprRules` exists to be
-     encoded into it; `exprTerms`/`exprTag`/`exprTokens` exist to
-     serve the code path. Invert the direction: the seed ships the
-     document as data — encoded at build time or stored serialized —
-     and code that needs the rules, lexicon, or term anchors decodes
-     the document, exactly as a stored version is read today.
+   - *The document becomes the seed.* Landed: `exprDoc` is the
+     `lang: expression` document as data (encoded once at build by
+     `langDefDoc`), and everything the code path needs decodes it —
+     `decodedExprDef` is the def `ExprLanguage` interprets,
+     `exprTerms`/`exprTag`/`exprReading` anchor at the document's own
+     node ids, and `demoExprDef` decodes the staged `demoExprDoc`
+     rather than a code-side rule-set copy. `exprDef`/`exprRules`
+     remain only as the recipe the encode consumes.
    - *Drop the registry fallback.* `ExprLanguage` the object, its
      `sampleDoc`, and the `allLanguages`/`foundation` registry
      entries exist so a store holding no `lang:` doc can still
