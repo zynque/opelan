@@ -17,7 +17,7 @@ def ruleView(rule: Rule, verbosity: Verbosity = Verbosity.Verbose)
   flow(spansView(ruleSpans(rule, verbosity))*)
 
 // A rule field's display children — what an `input` shows while it
-// sits unedited. A phrase-spelled meaning keeps the flat text its
+// sits unedited. A meaning displayed as a phrase keeps the flat text its
 // language-aware projection supplies; the caller chooses.
 def patternView(pattern: Pattern): List[DetachedNode[NodeData]] =
   spansView(pieceSpans(pattern.pieces))

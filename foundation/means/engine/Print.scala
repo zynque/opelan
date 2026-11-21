@@ -76,7 +76,7 @@ def printWith(
 }
 
 // A meaning term as the detached tree `printWith` renders — the
-// projection of a stored meaning back toward phrase spelling
+// projection of a stored meaning back toward phrase display
 // (foundation/means/DESIGN.md, *Phrases desugar at entry*): `use`/`source`/`builtin` operands
 // are name leaves, `quote` its stored subtree, and a construct the
 // data a parse would emit over the argument trees.

@@ -29,7 +29,7 @@ case class Pattern(pieces: List[Piece]) {
     pieces.collect { case Piece.Placeholder(name, _) => name }
 
   // A construct-application pattern — `square(a, b)`, `a * b`, `-n` —
-  // the token-spine spelling of a tree pattern matching that
+  // the token-spine display of a tree pattern matching that
   // construct: it declares the construct under its literal name and
   // binds its children to the placeholders positionally. `ref:c,r` is
   // not one (`ref:` isn't followed by `(`); `(a)` is punctuation, not

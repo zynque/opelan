@@ -31,7 +31,7 @@ val RunsTag = "runs"
 val BoldTag = "bold"
 val ItalicTag = "italic"
 
-// The authored leaf layer — what no rule pattern spells. The marker
+// The authored leaf layer — what no rule pattern displays. The marker
 // tokens (`#`, `##`, `*`, `**`) derive from the rules' literals at
 // composition (LiteralLexicon.withLiterals, longest-first). `text`
 // is a run stopping at `*` — the only markup opener inside a run —

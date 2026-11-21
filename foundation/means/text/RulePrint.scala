@@ -14,8 +14,8 @@ enum Role {
 
 case class Styled(text: String, role: Role)
 
-// Verbose spells the keyword `means` and shows `where`; terse spells it
-// `=>` and elides `where` behind a marker — hidden, never absent. Terse
+// Verbose displays the keyword `means` and shows `where`; terse displays
+// it as `=>` and elides `where` behind a marker — hidden, never absent. Terse
 // output is a display projection: it does not round-trip the constraints.
 def ruleSpans(rule: Rule, verbosity: Verbosity): List[Styled] = {
   val keyword = if (verbosity == Verbosity.Verbose) "means" else "=>"
@@ -34,9 +34,9 @@ def printRule(rule: Rule, verbosity: Verbosity = Verbosity.Verbose): String =
 def printPattern(pattern: Pattern): String =
   pieceSpans(pattern.pieces).map(_.text).mkString
 
-// A meaning's canonical spelling — the constructor form; a quoted
-// phrase prints as its stored text (the projection surfaces that
-// display phrase spellings go through `printWith` instead).
+// A meaning's canonical display — the constructor form; a quoted
+// phrase prints as its stored text (the projection surfaces displaying
+// phrases go through `printWith` instead).
 def printMeaning(meaning: Meaning): String =
   meaningSpans(meaning).map(_.text).mkString
 
@@ -76,7 +76,7 @@ private[text] def meaningSpans(meaning: Meaning): List[Styled] =
 }
 
 // A quoted subtree's text — decoded trees carry no source span, only
-// data. A quoted gap prints its bare text: the canonical spelling
+// data. A quoted gap prints its bare text: the canonical display
 // re-reads to the same gap (views mark the `?` separately).
 private def quoteText(t: opelan.foundation.grammar.ParseTree): String =
   t.data match {

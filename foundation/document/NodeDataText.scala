@@ -14,7 +14,7 @@ package opelan.foundation.document
 //     src:5   source      ?text         gap
 //     bare    string
 //
-// The syntaxes differ only in ref spelling; scalars are shared.
+// The syntaxes differ only in ref display; scalars are shared.
 object NodeDataText {
 
   // -- outline syntax -------------------------------------------------

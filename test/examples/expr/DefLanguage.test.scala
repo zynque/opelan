@@ -99,6 +99,10 @@ class DefLanguageSuite extends FunSuite {
       typeRef = ExternalNodeReference("opelan:languages/unknown", 0, 0))
     val l = new DefLanguage(foreign, implsFor(foreign))
     assertEquals(l.parse("1 + 2"), None)          // "expr" lexicon unbound
-    assert(l.render("print", hand.sampleDoc).isLeft)
+    // The derived views read the def itself, not impls — `print` and
+    // `eval` still answer, though no lexicon means no compiled
+    // grammar and so no `edit`.
+    assertEquals(l.views, List("print", "eval"))
+    assert(l.render("print", hand.sampleDoc).isRight)
   }
 }

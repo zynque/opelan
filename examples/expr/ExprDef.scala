@@ -7,7 +7,6 @@ import opelan.foundation.langdef.syntax._
 import opelan.foundation.langdef.doc.{langDefDoc, metaConsOf, termRefs}
 import opelan.foundation.langdef.LeafKind._
 import opelan.foundation.means._
-import opelan.foundation.means.engine.{evalView, printViewWith, semanticsOf}
 import opelan.foundation.means.text._
 
 // The expression language's definition as data — what its `lang:`
@@ -38,9 +37,9 @@ val exprDef = LanguageDef(
   // over is the lexicon's recovering unrecognized run
   // (ExprLexicon's gap kinds).
   syntax = Some(SyntaxDef("expr", Some(exprRules))),
-  views = List(
-    ViewBinding("print", "expr-print"),
-    ViewBinding("eval", "expr-eval")),
+  // No views section — `edit`, `print`, and `eval` all derive from
+  // the def: the text surface edits, the rules print and evaluate.
+  views = Nil,
   inputParser = None)
 
 // The demo's starting point for lang: expression: the `/` rule and its
@@ -92,14 +91,11 @@ val exprImpls = Impls(
       "int"          -> LeafDef(List("int" -> IntLit)),
       "float"        -> LeafDef(List("float" -> FloatLit)),
       "ref"          -> LeafDef(List("ref" -> RefLit("ref:"))))
-  },
-  views = Map(
-    "expr-print" -> ((doc, id, ctx) =>
-      printViewWith(exprReading(ctx).rules, exprReading(ctx).tag,
-        exprViewLeaf, ctx.termName)(doc, id)),
-    "expr-eval"  -> ((doc, id, ctx) =>
-      evalView(exprReading(ctx).semantics, exprReading(ctx).terms,
-        ctx.termName)(doc, id))))
+  })
+
+// The code-side def's reading — term anchors from `termRefs` since
+// this def's construct terms are code-built rather than decoded.
+val codeExprReading = RuleReading(exprRules, termRefs(exprDef))
 
 // Construct identities of the language. Code names a term ("*") only
 // to look up its vocabulary entry in the canonical encoding; documents

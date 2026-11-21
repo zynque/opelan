@@ -45,7 +45,7 @@ import opelan.foundation.means.text.printPattern
 // its canonical `pattern means meaning [where]` text (phrase meanings
 // project back through the defined language's own printer, as the def
 // view's meaning field does), everything else as its outline payload —
-// import-entry refs resolved to their external spelling so the id they
+// import-entry refs resolved to their external display so the id they
 // hold doesn't matter.
 def defDocLines(
     doc: Document[NodeData], url: String, rootId: Int,

@@ -35,7 +35,7 @@ class RuleReadSuite extends FunSuite {
     assertEquals(r.meaning.reference, None)
   }
 
-  test("=> is the terse spelling of means") {
+  test("=> is the terse display of means") {
     assertEquals(read("a * b => mul(a, b)"), read("a * b means mul(a, b)"))
   }
 
@@ -49,7 +49,7 @@ class RuleReadSuite extends FunSuite {
     assertEquals(read("(a) means a").meaning, use("a"))
   }
 
-  test("builtins spelled like constructs read as builtin terms") {
+  test("builtins displayed like constructs read as builtin terms") {
     assertEquals(read("a means use(a)").meaning, use("a"))
     assertEquals(read("a means source(a)").meaning, source("a"))
   }

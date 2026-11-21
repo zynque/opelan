@@ -18,7 +18,7 @@ Untyped documents are "raw".
 
 ## Everything by reference
 
-Content never spells a dialect construct by name. A node applying `mul`
+Content never displays a dialect construct by name. A node applying `mul`
 (or `vocabulary`, `term`, `row`) has as its data an `InternalNodeRef` to
 an import entry. That entry is an `ExternalNodeRef` to the construct's
 declaration in its `lang:` document — the first meaning-position node

@@ -55,7 +55,8 @@ private[langdef] def encodeDef(
       (List(sl(s.lexicon)) ++
         s.surface.toList.map(r => n(pending("surface"), erl(r))) ++
         s.rules.toList.map(rulesNode(_, d.typeRef.documentUrl, pending)))*)),
-    Some(n(pending("views"), d.views.map(viewNode)*)),
+    Option.when(d.views.nonEmpty)(
+      n(pending("views"), d.views.map(viewNode)*)),
     d.inputParser.map(cp => n(pending("inputs"), inputsNode(cp)))).flatten*)._1
   val linked = linkRuleUses(doc2, cid)
   val termIds =

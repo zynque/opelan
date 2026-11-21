@@ -32,7 +32,7 @@ val exprRules = RuleSet(
   examples = List(Example("1 + 2 * 3", "1 + (2 * 3)")))
 
 // The document lexicon — the authored leaves plus the literals the
-// rules spell, longest-first. `exprImpls` keeps `exprLexicon` (the
+// rules display, longest-first. `exprImpls` keeps `exprLexicon` (the
 // base): DefLanguage composes the decoded def's own literals at
 // interpretation — a stored rule line is all a new literal needs.
 val exprTokens: Lexicon = withLiterals(exprRules, exprLexicon)

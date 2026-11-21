@@ -5,7 +5,7 @@ import opelan.foundation.document._
 import opelan.foundation.document.typed._
 import opelan.foundation.document.Detached._
 import opelan.foundation.language.applyDocText
-import opelan.foundation.means.engine.{evalNode, printWith, semanticsOf}
+import opelan.foundation.means.engine.{evalNode, leafText, printWith, semanticsOf}
 import opelan.foundation.view.ViewTree
 import Expr._
 
@@ -58,7 +58,7 @@ class ExprSuite extends munit.FunSuite {
   // sibling — the same rule set and tiers drive the document's `print`
   // view).
   private def printExpr(e: Expr): String =
-    printWith(exprRules, exprTag, exprPrintLeaf)(exprToDetached(e))
+    printWith(exprRules, exprTag, leafText)(exprToDetached(e))
 
   test("print uses minimal parentheses") {
     assertEquals(printExpr(sample), "1 + 2 - (3 - 4)")
@@ -139,7 +139,7 @@ class ExprSuite extends munit.FunSuite {
 
   test("the derived print view prints text the rules read back") {
     // printViewWith derives minimal-parentheses printing from the rule
-    // set; each input's flattened view is its own respelling.
+    // set; each input's flattened view is its own display.
     val expected = List(
       "1 + 2 - 3"   -> "1 + 2 - 3",
       "(1 + 2) * 3" -> "(1 + 2) * 3",

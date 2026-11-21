@@ -63,7 +63,7 @@ private def sameIdentity(a: Rule, b: Rule): Boolean =
     case _                  => false
   }
 
-// Rule comparison by compiled meaning, not by pin or spelling:
+// Rule comparison by compiled meaning, not by pin or display:
 // placeholders compare by position (canonicalRule — a rename compiles
 // identically), and a version bump re-pins a meaning's references to a
 // newer reading of the same nodes — the rules it compiles to are

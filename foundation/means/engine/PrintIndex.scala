@@ -67,7 +67,7 @@ private[means] case class PrintIndex(
     val candidates = builders.getOrElse(key, Nil)
     // A node that declares its own construct prints through that
     // rule before one whose meaning merely coincides — the `%` in
-    // `a % means a / 100` doesn't swallow `/`'s own spelling.
+    // `a % means a / 100` doesn't swallow `/`'s own display.
     candidates.find(r =>
       r.pattern.constructForm.exists(_._2.length == arity)).orElse(
         candidates.find(_.meaning.arguments.length == arity))

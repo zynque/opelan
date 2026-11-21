@@ -17,7 +17,7 @@ import opelan.foundation.grammar._
 // with the rule's placeholders as operand atoms, so the committed
 // meaning is term nodes — `use` placeholders, constructs by ref,
 // `quote` concrete content — never a template to reparse. A
-// `build`/`use` spelling (`div(a, b)`, `literal(neg(n))`) reads
+// `build`/`use` display (`div(a, b)`, `literal(neg(n))`) reads
 // through the meta reader instead. Commits go through the pane's
 // per-input session, so a re-edit reparses in proportion to the
 // keystroke, and a language change carries the session like any
@@ -54,7 +54,7 @@ private def meaningSyntax(
     lexicon <- impls.lexicons.get(s.lexicon)
   } yield {
     val tag = termTagOf(defined)
-    // The def's own literals (`(`, `)`, `,`) are the spelled tokens —
+    // The def's own literals (`(`, `)`, `,`) are the literal tokens —
     // the authored lexicon supplies only the leaf layer.
     val tokens = withLiterals(set, lexicon)
     val atom = unrecognized(tokens.gapStart, tokens.gapRun)

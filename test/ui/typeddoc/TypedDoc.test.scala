@@ -29,9 +29,10 @@ class TypedDocSuite extends munit.FunSuite {
     assertEquals(editorInput(m), EditorInput.SyncDocument(m.pushedDoc))
   }
 
-  test("SwitchView selects the text surface") {
-    val u = typedDocUpdate(init, TypedDocInput.SwitchView(DocView.Text))
-    assertEquals(u.state.view, DocView.Text)
+  test("SwitchView selects a derived view") {
+    val u = typedDocUpdate(
+      init, TypedDocInput.SwitchView(DocView.Derived("print")))
+    assertEquals(u.state.view, DocView.Derived("print"))
   }
 
   test("editor edits update the mirrored doc but are not pushed back") {
@@ -407,7 +408,8 @@ class TypedDocSuite extends munit.FunSuite {
       opelan.foundation.langdef.setAutoUpdate(init.doc, true).toOption.get
     val m = init.copy(doc = flagged, store = bumpedStore)
     // Any input — a view switch suffices — triggers the recorded accept.
-    val u = typedDocUpdate(m, TypedDocInput.SwitchView(DocView.Text))
+    val u = typedDocUpdate(
+      m, TypedDocInput.SwitchView(DocView.Derived("eval")))
     assertEquals(
       typeRefOf(u.state.doc).map(_.documentVersionId), Some(1))
   }

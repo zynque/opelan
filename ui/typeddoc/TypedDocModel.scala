@@ -7,13 +7,12 @@ import opelan.foundation.language.{
 import opelan.ui.editor.{DocPush, EditorOutput, SelectTarget, SyncedHistory}
 
 // Which surface fills the pane: the generic structural editor, the
-// CodeMirror text surface over the document's text, or one of the
-// language's derived views shown alone (the "app" surface — the
-// spreadsheet without the machinery). Derived views also stay live in
-// the sidebar while editing.
+// The structural editor ("raw tree"), or one of the language's
+// derived views shown alone — `edit` being the marked text surface
+// (the app surface without the machinery). Derived views also stay
+// live in the sidebar while editing.
 enum DocView {
   case Editor
-  case Text
   case Derived(name: String)
 }
 

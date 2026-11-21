@@ -7,9 +7,12 @@ import opelan.foundation.langdef.doc._
 import opelan.foundation.langdef.syntax._
 import opelan.foundation.means.RuleSet
 import opelan.foundation.means.engine.{
-  compileRules, lexiconSignature, rephraseRuleSet, withLiterals}
+  compileRules, evalView, lexiconSignature, printViewWith,
+  rephraseRuleSet, leafView, withLiterals}
+import opelan.foundation.langdef.view.{defSummary, defView}
 import opelan.foundation.language.{
-  GapRetry, InputSessions, Language, SyntaxChange, TextSyntax}
+  EditSurface, GapRetry, InputSessions, Language, SyntaxChange,
+  TextSyntax, grammarMarks}
 import opelan.foundation.view.ViewTree
 
 // A Language interpreted from a LanguageDef — the bootstrap mechanism:
@@ -33,37 +36,36 @@ class DefLanguage(
   def typeRef = languageDef.typeRef
   def name = languageDef.name
 
-  // lang: language's own surfaces are bootstrap scaffolding: a def doc
-  // interpreted as the meta language gets `edit` and `summary` whether
-  // the stored document advertises them or not — a store seeded before
-  // the rename still says `def`/`print` — so an old store's menu reads
-  // like a fresh one's.
+  // lang: language's own surfaces derive like every language's — the
+  // meta doc's stored views section is ignored, so a store seeded
+  // before the rename (still saying `def`/`print`/`summary`) gets the
+  // current menu regardless.
   private def isDocLanguage =
     languageDef.typeRef.documentUrl == langDefTypeRef.documentUrl &&
       languageDef.typeRef.nodeId == langDefTypeRef.nodeId
 
-  // A stored meta doc's view entries under their current names: `def`
-  // reads as `edit` (keeping the stored builtin); `print` is dropped —
-  // `summary` supersedes it and comes from the code bindings below.
-  private def docViewBinding(v: ViewBinding): Option[ViewBinding] =
-    v.name match {
-      case "def"   => Some(v.copy(name = "edit"))
-      case "print" => None
-      case _       => Some(v)
-    }
+  // A def whose document is a single expression tree — rules and no
+  // `surface` production — gets the standard derived pair: `print`
+  // (rule-derived printing) and `eval` (rule-derived evaluation).
+  // A surface-rooted document (markdown's `blocks`) doesn't read as
+  // one expression, so the pair doesn't derive for it.
+  private lazy val expressionDialect: Boolean =
+    languageDef.syntax.exists(s =>
+      s.rules.isDefined && s.surface.isEmpty)
 
-  // The view bindings the meta language presents: decoded ones
-  // renamed, then any bootstrap binding the stored doc lacks — so the
-  // menu and the renders agree.
-  private lazy val docViewBindings: List[ViewBinding] = {
-    val renamed = languageDef.views.flatMap(docViewBinding)
-    renamed ++ docLanguageDef.views.filterNot(b =>
-      renamed.exists(_.name == b.name))
-  }
+  private lazy val derivedViews: List[String] =
+    List(Option.when(syntax.isDefined)("edit"),
+      Option.when(expressionDialect)("print"),
+      Option.when(expressionDialect)("eval")).flatten
 
+  // The menu derives from the def: `edit` wherever the document has a
+  // text surface, `print`/`eval` for an expression dialect, then the
+  // declared view entries minus the names the derived set covers —
+  // a declared binding still outranks its derived default at render.
   def views =
-    if (isDocLanguage) docViewBindings.map(_.name)
-    else languageDef.views.map(_.name)
+    if (isDocLanguage) List("edit", "eval")
+    else derivedViews ++
+      languageDef.views.map(_.name).filterNot(derivedViews.contains)
 
   // The def's document is its encoding — the same bytes a lang: doc
   // holds in the store.
@@ -108,7 +110,7 @@ class DefLanguage(
       // hand-written grammar memoizes by. `phrase` supplies the
       // to-EOF recovery.
       case Some(rules) =>
-        // The patterns spell the literal tokens — `a // b`'s `//`
+        // The patterns display the literal tokens — `a // b`'s `//`
         // tokenizes as soon as its rule exists (LiteralLexicon).
         val tokens = withLiterals(rules, lexicon)
         val atom = unrecognized(tokens.gapStart, tokens.gapRun)
@@ -139,45 +141,77 @@ class DefLanguage(
   override def renderWith(
       view: String, doc: Document[NodeData], retry: GapRetry,
       docUrl: Option[String] = None)
-      : Either[String, DetachedNode[NodeData]] =
-    // "print" isn't a listed view — it's the lang: doc's text surface
-    // (docText): the content as an outline of `means` lines.
-    if (isDocLanguage && view == "print")
-      contentId(doc).toRight(s"$name: typed document has no content")
+      : Either[String, DetachedNode[NodeData]] = {
+    lazy val ctx = viewCtx(retry, docUrl)
+    if (isDocLanguage) view match {
+      // "print" isn't a listed view — it's the lang: doc's text
+      // surface (docText): the content as an outline of `means` lines.
+      case "print" => contentId(doc)
+        .toRight(s"$name: typed document has no content")
         .map(id => ViewTree.block(defDocLines(
           doc, docUrl.getOrElse(""), id, resolveDef).map(ViewTree.txt)*))
-    else {
-      val bindings =
-        if (isDocLanguage) docViewBindings else languageDef.views
-      bindings.find(_.name == view).map(vb => (vb, vb.settings)) match {
-        case Some((vb, settings)) =>
-          impls.views.get(vb.builtin) match {
-            case None => Left(s"$name: unknown builtin view '${vb.builtin}'")
-            case Some(b) => runBuiltin(b, settings, doc, retry, docUrl)
-          }
+      // The meta language's bootstrap pair: the decoded definition
+      // laid out readably, and the summary standing in for `eval`
+      // until examples land.
+      case "edit" => contentId(doc).toRight(noContent)
+        .map(id => defView(doc, id, ctx))
+      case "eval" => contentId(doc).toRight(noContent)
+        .map(id => defSummary(doc, id, ctx))
+      case _ => Left(s"$name has no '$view' view")
+    }
+    else languageDef.views.find(_.name == view) match {
+      case Some(vb) => impls.views.get(vb.builtin) match {
+        case None => Left(s"$name: unknown builtin view '${vb.builtin}'")
+        case Some(b) => runBuiltin(b, vb.settings, doc, retry, docUrl)
+      }
+      case None => view match {
+        // The `edit` tile is the document's own text surface — the
+        // same render `raw text` showed — while the pane edits through
+        // `editSurface`'s marked editor.
+        case "edit" if syntax.isDefined =>
+          renderWith("print", doc, retry, docUrl).map(t =>
+            ViewTree.block(ViewTree.flatten(t).split("\n", -1)
+              .map(ViewTree.txt)*))
+        case "print" if expressionDialect => contentId(doc)
+          .toRight(noContent).map(id =>
+            printViewWith(reading.rules, reading.tag, leafView,
+              termName)(doc, id))
+        case "eval" if expressionDialect => contentId(doc)
+          .toRight(noContent).map(id =>
+            evalView(reading.semantics, reading.terms, termName)(
+              doc, id))
         // An unlisted builtin is still renderable by its own name —
         // `print` renders a language's text surface (docText) without
         // claiming a slot in the view menu.
-        case None => impls.views.get(view) match {
+        case _ => impls.views.get(view) match {
           case Some(b) => runBuiltin(b, Map.empty, doc, retry, docUrl)
           case None    => Left(s"$name has no '$view' view")
         }
       }
     }
+  }
+
+  private def noContent = s"$name: typed document has no content"
+
+  private def viewCtx(retry: GapRetry, docUrl: Option[String]) =
+    ViewContext(Map.empty, inputs.parse(retry), interpretDef, docUrl,
+      termName, viewDialect)
 
   private def runBuiltin(
       b: BuiltinView, settings: Map[String, String],
       doc: Document[NodeData], retry: GapRetry, docUrl: Option[String])
       : Either[String, DetachedNode[NodeData]] =
-    contentId(doc)
-      .toRight(s"$name: typed document has no content")
-      .map(id => b(doc, id, ViewContext(
-        settings, inputs.parse(retry), interpretDef, docUrl, termName,
-        viewDialect)))
+    contentId(doc).toRight(noContent).map(id => b(doc, id,
+      viewCtx(retry, docUrl).copy(settings = settings)))
 
   private lazy val viewDialect: Option[LanguageDef] =
     if (languageDef.syntax.flatMap(_.rules).isDefined) Some(languageDef)
     else inputs.dialect
+
+  // The def's own rules and term anchors — `print` and `eval` derive
+  // from them (Some whenever `expressionDialect` holds).
+  private lazy val reading: RuleReading =
+    ruleReading(languageDef).get
 
   // Total like every recovering grammar: Some whenever a syntax exists —
   // and always for the meta language, whose text form is the format in
@@ -230,9 +264,12 @@ class DefLanguage(
         case _ => None
       })
 
-  // The `edit` view's editor surface, when the impls name one (the
-  // meta language's rule/gap marks, markdown's construct marks).
-  override def editSurface = impls.editSurface
+  // The `edit` view's editor surface: the impls' marks when it names
+  // one (the meta language's rule/gap marks, markdown's construct
+  // marks), else marks derived from the compiled grammar — leaf
+  // payloads, gaps, unmatched runs.
+  override def editSurface = impls.editSurface.orElse(
+    syntax.map(g => EditSurface(grammarMarks(g))))
 
   override def parseInput(text: String): Option[DetachedNode[NodeData]] =
     inputs.parse(GapRetry())(text)

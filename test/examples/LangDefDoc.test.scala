@@ -322,7 +322,7 @@ class LangDefDocSuite extends FunSuite {
     // the stored meaning is the desugared term tree.
     assertEquals(rule.meaning.tag, "/")
     assertEquals(rule.meaning.arguments.map(_.tag), List("use", "quote"))
-    // And the edit view projects the authored spelling back through
+    // And the edit view projects the authored display back through
     // the language's own printer, not the constructor's.
     val view = defView(updated, contentId(updated).get)
     val text = opelan.foundation.view.ViewTree.flatten(view)

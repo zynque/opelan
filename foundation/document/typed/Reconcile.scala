@@ -66,7 +66,7 @@ private def commitAt(
       // many leaves they share, best pairs first, and only when they
       // share some: a sibling inserted beside unchanged ones must not
       // take a neighbor's id by position, and a literal piece
-      // respelled (`*` → `//`) is a different piece. Former children
+      // re-displayed (`*` → `//`) is a different piece. Former children
       // (cut, still parented here — ids are never reused) are
       // candidates after the live ones: a commit that drops a child
       // and the next that restores it keep its identity.

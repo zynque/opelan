@@ -9,14 +9,14 @@ import opelan.foundation.grammar._
 //
 //   pattern means meaning [where a, b: term; c: term]
 //
-// `=>` is accepted wherever `means` is — the terse spelling. The text is
+// `=>` is accepted wherever `means` is — the terse display. The text is
 // parsed by RuleGrammar, which always produces a tree; this turns the
 // tree into a Rule, or says what's missing. Callers decide how to keep
 // malformed text (a document decoder will hold it as a gap rule, per
 // *Never broken*).
 //
-// `phrase` reads a meaning that isn't a `build`/`use` spelling — the
-// spellings only a language-aware reader can interpret. It gets the
+// `phrase` reads a meaning that isn't a `build`/`use` display — the
+// displays only a language-aware reader can interpret. It gets the
 // pattern's bound placeholder names and the phrase's text; the default
 // keeps the text as a quoted gap, the context-free reading.
 def readRule(
@@ -73,7 +73,7 @@ def readRuleOrGap(text: String): Rule =
 // The gap rule itself, for decoders keeping a slot they can't read.
 val gapRule: Rule = Rule(Pattern(Nil), Meaning.gap(""))
 
-// A meaning field's own text: the `build`/`use` spellings read as
+// A meaning field's own text: the `build`/`use` displays read as
 // terms — the rest is phrase text for the caller's language-aware
 // reader (None here). Nested arguments that are themselves phrases go
 // through the same `phrase`.
@@ -140,7 +140,7 @@ private def readMeaning(t: ParseTree, phrase: String => Meaning,
         if (ruleTag(arguments) != "arguments") Nil
         else arguments.children(0) :: arguments.children(1).children.map(_.children(1))
       val tag = t.children(0).text
-      // A meaning-language builtin spelled like a construct — `source(a)`
+      // A meaning-language builtin displayed like a construct — `source(a)`
       // — takes name-leaf operands; a construct takes meaning terms and
       // binds its term's reference on read: meanings only ever
       // reference, they never declare.

@@ -11,17 +11,18 @@ import opelan.ui.fp.Dsl._
 import opelan.ui.text.CodeMirror
 
 // Pure view: a toolbar choosing the editing surface, a split body — the
-// structural editor / text surface on the left, the language's live derived
-// views in the sidebar on the right — and a status bar. The editor mount
-// and text surface stay mounted in every mode; hiding with display:none
-// keeps the child's DOM — and its focus/edit state — intact. The text
-// surface remounts only when textEpoch changes (external doc edits).
+// structural editor on the left, the language's live derived views in
+// the sidebar on the right — and a status bar. The editor mount stays
+// mounted in every mode; hiding with display:none keeps the child's
+// DOM — and its focus/edit state — intact. The `edit` derived view
+// mounts the marked text surface (remounting only when textEpoch
+// changes — external doc edits); the bare `raw text` surface it
+// replaced is gone, `edit` being the same surface decorated.
 def typedDocView(m: TypedDocModel): View[TypedDocInput] =
   el("div", style("height: 100%; display: flex; flex-direction: column;"))(
     toolbar(m),
     el("div", style("flex: 1; display: flex; min-height: 0;"))(
       editorPane(m),
-      textPane(m),
       derivedPane(m),
       typedDocSidebar(m)),
     statusBar(m))
@@ -29,13 +30,6 @@ def typedDocView(m: TypedDocModel): View[TypedDocInput] =
 private def editorPane(m: TypedDocModel): View[TypedDocInput] =
   el("div", style("flex: 1; overflow: auto;" + hidden(m.view != DocView.Editor)))(
     mount)
-
-private def textPane(m: TypedDocModel): View[TypedDocInput] =
-  el("div", style("flex: 1; overflow: auto;" + hidden(m.view != DocView.Text)))(
-    managed(s"cm-${m.textEpoch}") { (el, emit) =>
-      CodeMirror.mount(el, m.text, t => emit(TypedDocInput.TextEdited(t)))
-      ()
-    })
 
 // A derived view fills the pane — the app surface alone, no editor.
 // The bar carries the two navigations out: Raw tree shows this
@@ -78,13 +72,14 @@ private def derivedPane(m: TypedDocModel): View[TypedDocInput] = {
       if (name == "edit") editPane(m) else derivedBody(name, m))))
 }
 
-// The `edit` view is a language's free-text editing surface when its
-// impls declare one: the document's text (the same surface `raw text`
-// commits) in a decorated editor — keystrokes commit through TextEdited
-// and the decorations paint what each line read as (lang: constructs
-// and gaps, markdown's markup). A surface may also name a preview
-// view rendered beside the editor, live; a language with no edit
-// surface falls back to the view's own tree.
+// The `edit` view is a language's free-text editing surface: the
+// document's text in a decorated editor — keystrokes commit through
+// TextEdited and the decorations paint what each line read as (the
+// impls' marks when it names them — lang:'s constructs and gaps,
+// markdown's markup — else the grammar-derived leaf/gap marks). A
+// surface may also name a preview view rendered beside the editor,
+// live; a language with no edit surface falls back to the view's own
+// tree.
 private def editPane(m: TypedDocModel): View[TypedDocInput] = {
   val lang = languageForDoc(m.doc, m.store)
   lang.flatMap(_.editSurface) match {
@@ -140,8 +135,7 @@ private def toolbar(m: TypedDocModel): View[TypedDocInput] =
     style("padding: 6px 10px; border-bottom: 1px solid #ddd; background: #f9f9f9; " +
       "font-family: Arial, sans-serif; font-size: 12px;"))(
     Vector(
-      viewButton("raw tree", DocView.Editor, m),
-      viewButton("raw text", DocView.Text, m)) ++
+      viewButton("raw tree", DocView.Editor, m)) ++
       languageForDoc(m.doc, m.store).toList.flatMap(l =>
         l.views.map(v => viewButton(v, DocView.Derived(v), m))) ++
       Vector(

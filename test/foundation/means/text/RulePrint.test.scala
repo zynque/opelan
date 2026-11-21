@@ -32,7 +32,7 @@ class RulePrintSuite extends FunSuite {
     }
   }
 
-  test("terse spells => and hides where behind a marker") {
+  test("terse displays => and hides where behind a marker") {
     val r = read("a + b means add(a, b) where a, b: number")
     assertEquals(printRule(r, Verbosity.Terse), "a + b => add(a, b) …")
     assertEquals(printRule(read("-a means neg(a)"), Verbosity.Terse),

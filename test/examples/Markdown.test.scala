@@ -56,7 +56,7 @@ class MarkdownSuite extends FunSuite {
   }
 
   test("the def's text surface shows the definitions") {
-    // `lang: markdown`'s raw text — the `definitions` the rules spell.
+    // `lang: markdown`'s raw text — the `definitions` the rules display.
     val text = docText(MarkdownLanguage.langDoc, registryForDoc)
     assert(text.contains("# t means h1(t)"), text)
     assert(text.contains("## t means h2(t)"), text)

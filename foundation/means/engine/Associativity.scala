@@ -9,7 +9,7 @@ import opelan.foundation.means._
 // default — `a + b + c` reads `(a + b) + c` — until an example shows
 // a different grouping. A witness is an example whose input chains
 // the rule's literals at top level — `a ^ b ^ c` — and whose expected
-// spells the grouping: `a ^ (b ^ c)` selects Right, `(a ^ b) ^ c`
+// displays the grouping: `a ^ (b ^ c)` selects Right, `(a ^ b) ^ c`
 // confirms Left. Anything else witnesses nothing — an example that
 // merely holds as written (`a + b + c means a + b + c`) is ambiguous
 // between grouping and not grouping, so Non stays code-side until a
@@ -22,7 +22,7 @@ def operatorAssoc(set: RuleSet, theRule: Rule): Associativity =
     .getOrElse(Associativity.Left)
 
 // One example's verdict on `theRule`, or None when it doesn't
-// witness: the rule's literals — joined as a chain spells them —
+// witness: the rule's literals — joined into the chain they display —
 // must appear exactly twice outside parentheses in the input, giving the
 // three operands the expected regroups.
 private def witness(theRule: Rule, e: Example): Option[Associativity] = {

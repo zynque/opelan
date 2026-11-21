@@ -7,11 +7,12 @@ import opelan.ui.fp._
 import opelan.ui.fp.Dsl._
 import opelan.ui.view._
 
-// The live right-hand column: every derived view the document's language
-// provides, stacked and re-rendered on each document change — print on
-// top, eval below for the expression language. Views render through the
-// single view-tree interpreter: gaps show as chips, and fragments tagged
-// with SourceRef provenance select their producing node when clicked.
+// The live right-hand column: every view the document's language
+// provides, stacked and re-rendered on each document change — `edit`
+// on top (the source text), the language's own below. Views render
+// through the single view-tree interpreter: gaps show as chips, and
+// fragments tagged with SourceRef provenance select their producing
+// node when clicked.
 def typedDocSidebar(m: TypedDocModel): View[TypedDocInput] = {
   val sections = languageForDoc(m.doc, m.store).toList.flatMap(lang =>
     lang.views.map(v => section(lang, v, m)))

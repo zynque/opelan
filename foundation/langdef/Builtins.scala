@@ -4,7 +4,6 @@ import opelan.foundation.document._
 import opelan.foundation.document.Detached._
 import opelan.foundation.grammar.Lexicon
 import opelan.foundation.langdef.syntax._
-import opelan.foundation.langdef.view._
 import opelan.foundation.langdef.doc.{defDocLineMarks, documentTerm}
 import opelan.foundation.language.EditSurface
 import opelan.foundation.means.engine.LexicalTerm
@@ -72,7 +71,13 @@ case class ViewContext(
     // The definition a view interprets constructs by — the rendered
     // def when it has rules, else the def its input grammar pins — so
     // an authored `a // b` evaluates and prints wherever it reads.
-    dialect: Option[LanguageDef] = None)
+    dialect: Option[LanguageDef] = None) {
+
+  // The dialect's rules and term anchors — what a view reads
+  // constructs by (the derived `eval`/`print`, a sheet's cells).
+  // None where the host resolves no dialect or the dialect has none.
+  lazy val reading: Option[RuleReading] = dialect.flatMap(ruleReading)
+}
 
 val docImpls = Impls(
   // The `lang:` surface's grammar: `document` is the outline
@@ -80,9 +85,6 @@ val docImpls = Impls(
   // its lexicon the rule grammar's — `means` lines tokenize under it.
   lexicons = Map("doc" -> ruleLexicon),
   productions = Map("document" -> documentTerm),
-  views = Map(
-    "def-view"     -> ((doc, id, ctx) => defView(doc, id, ctx)),
-    "summary-view" -> ((doc, id, ctx) => defSummary(doc, id, ctx))),
   // "text": the committed string becomes the node's StringData — how a
   // def doc's projected inputs (rule lines and friends) write back.
   inputParsers = Map("text" -> (t => sl(t))),

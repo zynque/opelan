@@ -1,6 +1,6 @@
 package opelan.examples.expr
 
-import opelan.foundation.means.engine.printWith
+import opelan.foundation.means.engine.{leafText, printWith}
 import Expr._
 
 // The expression language's parse surface: literals, precedence,
@@ -15,7 +15,7 @@ class ExprParseSuite extends munit.FunSuite {
   // The derived printer over the encoded AST — printWith reads the
   // rule set backwards, the tiers supplying minimal parentheses.
   private def printExpr(e: Expr): String =
-    printWith(exprRules, exprTag, exprPrintLeaf)(exprToDetached(e))
+    printWith(exprRules, exprTag, leafText)(exprToDetached(e))
 
   test("parses literals and left-associative operator chains") {
     assertEquals(parse("42"), Lit(42))

@@ -95,14 +95,14 @@ private def ruleLine(
 
 // The meaning field's display children: a meaning carrying `quote`
 // terms keeps the flat text its phrase projection supplies; a canonical
-// spelling shows styled spans — the constructor tag and `use` names
+// display shows styled spans — the constructor tag and `use` names
 // highlight until the field is edited.
 private def meaningDisplay(
     d: LanguageDef, r: Rule): List[DetachedNode[NodeData]] =
   if (hasQuote(r.meaning)) List(txt(meaningFieldText(d, r)))
   else meaningView(r.meaning)
 
-// A stored meaning's field text: `printMeaning`'s canonical spelling,
+// A stored meaning's field text: `printMeaning`'s canonical display,
 // except a meaning carrying `quote` terms — concrete content only a
 // phrase desugars to — which projects back through the language's own
 // printer, so `a / 100` reads as authored, not `div(a, 100)`. A

@@ -34,12 +34,10 @@ val markdownDef = LanguageDef(
   // inside it through the `runs`/`plain` terms.
   syntax = Some(SyntaxDef("markdown", Some(markdownRules),
     surface = Some(lexicalRefs("blocks")))),
-  views = List(
-    // `edit` binds the source-text builtin — the sidebar's edit tile
-    // shows what the editor holds; the pane's edit view is the impls'
-    // edit surface. `preview` renders the formatted document.
-    ViewBinding("edit", "print"),
-    ViewBinding("preview", "markdown-preview")),
+  // `edit` derives — its tile renders the text surface through the
+  // impls' `print` builtin, and the pane's editor is the impls'
+  // marked edit surface with `preview` beside it.
+  views = List(ViewBinding("preview", "markdown-preview")),
   inputParser = None)
 
 // The code-side semantics the def names — kept beside it. `blocks`,

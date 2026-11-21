@@ -13,12 +13,12 @@ notation is an ordinary grammar, ahead of full self-description.
   placeholder), and `phrase` (a phrase in the defined language, taken
   raw). It always produces a tree — total parsing, gaps included.
 - **`RuleRead`** — turns a `RuleGrammar` tree into a `Rule`. `=>` is
-  accepted wherever `means` is — the terse spelling.
+  accepted wherever `means` is — the terse display.
 - **`RulePrint`** — rule text as role-tagged spans (`Role`: keyword,
   literal, placeholder, constructor tag, constraint term, marker, …), so
   a highlighting surface and plain text come from one source. Span roles
   are how a surface italicizes placeholders the way math italicizes
-  variables; `Verbosity` selects the spelling level.
+  variables; `Verbosity` selects the display level.
 - **`RuleView`** — the spans' view projection: styled roles become
   `styled:role` elements (whole lines via `ruleView`, field displays via
   `patternView`/`meaningView`/`whereView`), so the surfaces that show

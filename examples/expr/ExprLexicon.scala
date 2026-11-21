@@ -3,7 +3,7 @@ package opelan.examples.expr
 import opelan.foundation.grammar._
 
 // The expression syntax's authored leaf layer — what no rule pattern
-// can spell. The literal tokens (`+ - * / ( )`) derive from the
+// can display. The literal tokens (`+ - * / ( )`) derive from the
 // rules themselves where they compile (LiteralLexicon.withLiterals);
 // `exprTokens` is the composed lexicon direct parsing uses.
 //

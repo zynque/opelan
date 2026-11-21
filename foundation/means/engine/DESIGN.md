@@ -6,7 +6,7 @@ combinator compositions.
 
 ## A meaning is a term, evaluated (`MeaningApply`, `Desugar`)
 
-The meaning spellings are surface forms of one shape: a meaning is a
+The meaning displays are surface forms of one shape: a meaning is a
 tree over a small vocabulary — `add(a, b)` constructs a node, a bare `a`
 is `use(a)`, a bound-value reference, and `source`/`builtin`/`literal`
 are further meaning builtins. The meaning tree is the program; the
@@ -23,7 +23,7 @@ constructs. Evaluation-time meanings (`add(a, b) means builtin num-add`)
 are the same form — one evaluation story for parse-time and eval-time
 layers alike.
 
-A phrase spelling desugars when it is *read* (`Desugar.scala`): it
+A displayed phrase desugars when it is *read* (`Desugar.scala`): it
 parses through the language's own rules, and the parsed tree becomes
 meaning terms — placeholders as `use`, the language's constructs as
 construct terms by reference, concrete content as `quote` — so at apply
@@ -93,11 +93,11 @@ the operand fallback is the lexicon's (`Lexicon.gapStart`/`gapRun`),
 so nothing but rules is authored.
 
 The token layer derives too (`LiteralLexicon`): the patterns' literal
-spellings *are* the lexicon's literal tokens — composed over the
+displays *are* the lexicon's literal tokens — composed over the
 authored leaf productions longest-first, reserved over the leaves —
 so `a // b means idiv(a,b)` tokenizes the moment the rule exists and
-`Impls.lexicons` shrinks to what no pattern can spell (numbers,
-refs, text runs). A literal's token kind is its spelling; an
+`Impls.lexicons` shrinks to what no pattern can display (numbers,
+refs, text runs). A literal's token kind is its display; an
 *interior* literal (a placeholder each side — `a + b`'s `+`) joins
 `gapStart`, and a word-ending literal (`mod`) holds a right-edge
 word boundary. Still authored: run-leaf stop sets and the leaf

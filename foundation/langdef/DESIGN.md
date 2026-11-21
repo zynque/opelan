@@ -56,7 +56,7 @@ itself through that definition's own vocabulary, resolved through the
 name→ref at commit). Ambient terms and resolved imports between them
 cover every case the `vocabulary` section ever served, so the format
 has no vocabulary section at all. `a`
-spells `use(a)` — an operand
+stores `use(a)` — an operand
 ref to the pattern's placeholder node — so a rule survives renames on
 either side. Rules compile to the recovering combinators of
 [`foundation/grammar`](../grammar/DESIGN.md) — the implementation layer

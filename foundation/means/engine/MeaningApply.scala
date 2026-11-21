@@ -97,7 +97,7 @@ private def bound(
 
 // A `literal` operand evaluated to leaf data: a bound placeholder's
 // name is its node's data, `neg(t)` negates a numeric value. Value
-// terms spell like constructs but never materialize a node — the first
+// terms display like constructs but never materialize a node — the first
 // step of meanings evaluating (DESIGN.md, *A meaning is a term,
 // evaluated*), scoped to leaves at parse time.
 private def valueTerm(

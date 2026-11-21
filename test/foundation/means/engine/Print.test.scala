@@ -119,7 +119,7 @@ class PrintSuite extends FunSuite {
 
   // The round-trip set: like `set` but the parentheses rule means `a` —
   // grouping is surface-only and leaves no node, so minimal parentheses
-  // the printer adds are absorbed on reparse. The prefix is spelled
+  // the printer adds are absorbed on reparse. The prefix is displayed
   // `- a` (unglued) because the lexicon's sym tokens are runs —
   // glued output like `--1` would lex as one token (a tokenization
   // constraint, not a precedence one). A keyword-led construct

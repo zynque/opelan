@@ -86,7 +86,7 @@ private def removeColumn(
 // Rewrite the positional field (row index or column letters) of every
 // `ref` construct under `sheetId`: positions past `at` shift by `delta`
 // to keep naming the same cells; a position equal to a removed index
-// (`delta` = -1) dangles — its column spells "REF", out of grid.
+// (`delta` = -1) dangles — its column displays "REF", out of grid.
 private def shiftRefs(
     doc: Document[NodeData], sheetId: Int, at: Int,
     isRow: Boolean, delta: Int): Document[NodeData] =

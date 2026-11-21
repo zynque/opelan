@@ -7,7 +7,7 @@ import opelan.foundation.document.typed.sameNode
 // binds a placeholder to a term — `n: number`, `d: blocks` — and the
 // binding's identity is the term's ref, so the document stores
 // `erl(ref)` and a constraint keeps its meaning however the name is
-// spelled or renamed (foundation/langdef/PLAN, *Ref-based `where`-term
+// displayed or renamed (foundation/langdef/PLAN, *Ref-based `where`-term
 // binding*). Impls declare their leaf productions and productions by
 // name today; the registry anchors each name so the ref-keyed
 // `lexicals` table and the document encoding bind by identity. Ids are

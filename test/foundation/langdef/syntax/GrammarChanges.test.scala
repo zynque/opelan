@@ -112,7 +112,7 @@ class GrammarChangesSuite extends FunSuite {
       names("expr", "means:'( a ')", "means:'[ a ']"))
   }
 
-  test("a code-side placeholder rename can't pair — both spellings report") {
+  test("a code-side placeholder rename can't pair — both displays report") {
     val before = RuleSet(List(codeRule("(a) means a")))
     val after = RuleSet(List(codeRule("(x) means x")))
     assertEquals(

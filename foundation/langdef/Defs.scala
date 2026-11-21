@@ -73,9 +73,10 @@ val docLanguageDef = LanguageDef(
   // production (the outline + means lines, DocGrammar.scala) is the
   // whole surface, rooted by `surface` like markdown's `blocks`.
   syntax = Some(SyntaxDef("doc", surface = Some(lexicalRefs("document")))),
-  views = List(
-    ViewBinding("edit", "def-view"),
-    ViewBinding("summary", "summary-view")),
+  // No views section — a def doc's `edit` (the marked text surface,
+  // the definition laid out in the sidebar) and `eval` (the summary
+  // placeholder) derive from the syntax like every language's.
+  views = Nil,
   // Projected inputs in a def doc — rule lines, binding patterns,
   // example lines — commit their text as a plain string leaf; the
   // recovering decode (readRuleOrGap & co.) turns it back into content.

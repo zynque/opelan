@@ -36,7 +36,7 @@ type LexicalRule = (String, Int) => Scan
 // rules-based def stores no operand fallback: the lexicon, which owns
 // the kinds, supplies the recovery.
 case class Lexicon(
-    // Rule names are the spelled-out token kinds — `TokenKind` wraps
+    // Rule names are the token kinds as displayed — `TokenKind` wraps
     // them where a token is produced or a kind is referenced.
     rules: List[(String, LexicalRule)],
     gapStart: Set[TokenKind] = Set.empty,

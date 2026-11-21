@@ -65,7 +65,7 @@ def phrase(p: Parser, stops: Set[TokenKind]): Parser =
   }
 
 // A sign fused with a numeric literal: "+4" / "-4" — sign and number
-// must be adjacent, one lexical piece. The `means` spelling of the
+// must be adjacent, one lexical piece. The `means` display of the
 // same production: `-n means literal(neg(n)) where n: number` (the
 // placeholder's glue is the adjacency — SequenceRule).
 def signum: Parser =

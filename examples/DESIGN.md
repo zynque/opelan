@@ -90,7 +90,7 @@ cells that use it — the app recovers like the documents it is made of.
 `MarkdownLanguage` — a document type for a small markdown subset:
 `#`/`##` headings, `* ` list items, paragraphs, and `*italic*`/`**bold**`
 inline runs — driven by its `definitions` like every other `lang:` doc.
-`markdownRules` spells them: `# t means h1(t)`, `* t means item(t)`,
+`markdownRules` displays them: `# t means h1(t)`, `* t means item(t)`,
 `*t* means italic(t)`, and so on, with `where` constraints binding the
 impls' productions. `markdownParse` composes them to document level:
 `blocks` (the block sequence), `runs` (a line's inline spans), and

@@ -4,7 +4,7 @@ import opelan.foundation.grammar._
 import opelan.foundation.means._
 
 // A rule set's literals, derived: `a + b means add(a, b)` already
-// spells `+` — the lexicon's literal tokens are the patterns' literal
+// displays `+` — the lexicon's literal tokens are the patterns' literal
 // pieces, longest-first, so an authored rule line is all a literal
 // needs (`a // b` tokenizes as soon as its definition exists). Leaf
 // productions (number, ref, text) stay authored — a pattern never
@@ -22,17 +22,17 @@ import opelan.foundation.means._
 // none, scanning only ever starts at token boundaries.
 //
 // Ordered choice, longest first: `##` precedes `#`, `**` precedes
-// `*`. Derived literals precede the authored rules — a literal is a
-// reserved spelling, so a `ref`-spelled literal wins over the `ref:`
+// `*`. Derived literals precede the authored rules — a literal's
+// display is reserved, so a `ref` literal wins over the `ref:`
 // leaf at its own boundary (a collision to name, not to hide).
 
-// Every literal spelling in `set`, in order of first appearance.
+// Every literal in `set`, in order of first appearance.
 def literalsOf(set: RuleSet): List[String] =
   set.rules.flatMap(_.pattern.pieces).collect {
     case Piece.Literal(text, _) => text
   }.distinct
 
-// Literal spellings between two placeholders in some pattern — the
+// Literals between two placeholders in some pattern — the
 // operator position: `a + b`'s `+`, `a is not b`'s `is`. A stray one
 // at operand position begins a gap run.
 def infixLiteralsOf(set: RuleSet): Set[String] =
@@ -45,7 +45,7 @@ def infixLiteralsOf(set: RuleSet): Set[String] =
     }.collect { case Piece.Literal(text, _) => text }
   }.toSet
 
-// What `set` contributes to its lexicon: the spelled literals and
+// What `set` contributes to its lexicon: the literals and
 // which of them open gap runs. The part of tokenization a rules edit
 // can move — an incremental session may carry memoized results only
 // while this signature is unchanged (a moved literal can have mis-
@@ -53,10 +53,10 @@ def infixLiteralsOf(set: RuleSet): Set[String] =
 def lexiconSignature(set: RuleSet): (List[String], Set[String]) =
   (literalsOf(set), infixLiteralsOf(set))
 
-// Lexicon entries for the spelled literals, longest first — the
-// token kind is the spelling itself.
-def literalRules(spelled: List[String]): List[(String, LexicalRule)] =
-  spelled.sortBy(-_.length).map(text => text -> literalRule(text))
+// Lexicon entries for the literals, longest first — the
+// token kind is the literal itself.
+def literalRules(literals: List[String]): List[(String, LexicalRule)] =
+  literals.sortBy(-_.length).map(text => text -> literalRule(text))
 
 // `exactly(text)`, plus a right word boundary when the literal ends
 // in a letter or digit (`if` must not tokenize `iffy`).
@@ -71,8 +71,8 @@ def literalRule(text: String): LexicalRule = {
   }
 }
 
-// `base` plus the literals `set` spells — derived first (reserved
-// spellings), then the authored rules. `gapStart` gains the infix
+// `base` plus the literals `set` displays — derived first (their
+// display reserved), then the authored rules. `gapStart` gains the infix
 // literals; `gapRun` stays authored — a gap never ran over an
 // operator.
 def withLiterals(set: RuleSet, base: Lexicon): Lexicon =

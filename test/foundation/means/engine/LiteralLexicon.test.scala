@@ -6,7 +6,7 @@ import opelan.foundation.means.text.readRuleOrGap
 import munit.FunSuite
 
 // The derived token layer (LiteralLexicon.scala): a rule's literal
-// spellings are the lexicon's literal tokens — `a // b` needs no
+// displays are the lexicon's literal tokens — `a // b` needs no
 // pre-configured marker table — longest-first, reserved over the
 // authored leaves, and infix literals carry gap-start eligibility.
 class LiteralLexiconSuite extends FunSuite {
@@ -24,7 +24,7 @@ class LiteralLexiconSuite extends FunSuite {
       List("(", ")", "#", "##", "mod"))
   }
 
-  test("literalRules — longest first; the kind is the spelling") {
+  test("literalRules — longest first; the kind is the literal") {
     val rules = literalRules(literalsOf(set))
     assertEquals(rules.map(_._1), List("mod", "##", "(", ")", "#"))
     assert(rules.forall { case (k, _) => k.nonEmpty })

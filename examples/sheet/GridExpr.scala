@@ -11,7 +11,7 @@ import opelan.foundation.document.typed._
 // document: each `ref` node under `rootId` becomes an
 // `InternalNodeRef` leaf naming the cell it resolves to — keeping its
 // id, so provenance survives — or a gap leaf showing the name it
-// spelled when the target sits outside the grid. The projected document
+// displayed when the target sits outside the grid. The projected document
 // is what the derived views evaluate and print: `evalNode` follows the
 // internal refs, and its visiting set reports ref cycles as gaps.
 
@@ -43,7 +43,7 @@ private def refCellTarget(
     target     <- cellAt(doc, sheetId, row, col)
   } yield target
 
-// The name a `ref` node spells ("Z99") — for display when the target
+// The name a `ref` node displays ("Z99") — shown when the target
 // sits outside the grid.
 def refNodeName(doc: Document[NodeData], refId: Int): Option[String] =
   refPosition(doc, refId).map { case (row, col) => cellRefName(row, col) }

@@ -106,7 +106,7 @@ without an input grammar projects read-only views.
 Text or structure that doesn't fit its language yet, kept verbatim in
 the document so later edits heal it instead of failing — the *Never
 broken* convention (Hazel's *typed holes*, made structural). Stored as
-`GapData`, spelled `?text`, bound by the foundation `gap` operand term.
+`GapData`, displayed `?text`, bound by the foundation `gap` operand term.
 
 **Heal**:
 A gap becoming content: once the language version a document pins reads the

@@ -36,10 +36,10 @@ examples:
   8 - 3 - 2   means (8 - 3) - 2
 ```
 
-**The keyword is itself a verbosity choice.** The verbose spelling is
+**The keyword is itself a verbosity choice.** The verbose display is
 lowercase `means`, emphasized by highlighting rather than capitals; the
-terse spelling is `=>` (`a + b => add(a, b)`). Both read back as the
-same rule — which spelling a surface shows is a detail-level setting
+terse display is `=>` (`a + b => add(a, b)`). Both read back as the
+same rule — which display a surface shows is a detail-level setting
 (see *Zoom navigation* in the root [`DESIGN.md`](../../DESIGN.md)), not
 a difference in content. The reader and printer live in
 [`text/`](text/DESIGN.md): rules print as role-tagged spans (keyword,
@@ -48,7 +48,7 @@ highlighting surface and plain text come from one source. A
 `Rule(pattern, meaning, where)` (`Rule.scala`) has a pattern of literal
 and placeholder pieces; a meaning reads as a constructor (`add(a, b)`),
 a bare placeholder (`(a) means a`), or a phrase in the same language
-(`a % means a / 100`) — surface spellings of one form, the meaning term
+(`a % means a / 100`) — surface displays of one form, the meaning term
 below. A rule set adds binding-list tiers and worked examples. A rule's
 shape (leaf, closed, prefix, postfix, infix — `Shape.scala`) is derived
 from its pattern's edges, and `ruleIssues`/`ruleSetIssues` (in
@@ -90,7 +90,7 @@ stored in a `lang:` document:
 [`../langdef/DESIGN.md`](../langdef/DESIGN.md).
 
 **Phrases desugar at entry — projectional all the way.** A phrase
-spelling like `a % means a / 100` is not stored as text to reparse
+display like `a % means a / 100` is not stored as text to reparse
 later. In a `lang:` document the meaning field is an input whose grammar
 is the language being defined: the phrase parses as it is entered — its
 placeholder names recognized against the rule's own pattern (each

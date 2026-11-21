@@ -16,15 +16,16 @@ class DefDocTextSuite extends FunSuite {
   private def textOf(doc: Document[NodeData]): String =
     docText(doc, langFor)
 
-  test("the text surface spells meta constructs by name and rules as means lines") {
+  test("the text surface displays meta constructs by name and rules as means lines") {
     val text = textOf(langDefDoc(exprDef))
     assert(text.contains("dialect"), text)
     assert(text.contains("definitions"), text)
     assert(text.contains("a + b means add(a, b)"), text)
     assert(text.contains("+n means literal(n) where n: number"), text)
     assert(text.contains("binding"), text)
-    assert(text.contains("view\n"), text)
-    assert(text.contains(""""expr-print""""), text)
+    // exprDef declares no views — `edit`/`print`/`eval` derive — so
+    // no views section encodes.
+    assert(!text.contains("view"), text)
     assert(!text.contains("ref:opelan:languages/language"), text)
   }
 

@@ -62,34 +62,38 @@ What doesn't yet work and what comes next.
    
    Steps, in dependency order:
 
-   - *Views derive from the definition, not a views section.* A
-     `lang:` document needs no `views:` list: a rule's pattern is the
-     construct's editing surface and its meaning is the
-     interpretation. From the decoded def alone, `DefLanguage`
-     derives the standard set — `edit` when the def has a text syntax
-     (the CodeMirror surface, line marks supplied by the compiled
-     grammar), `eval` when the rules carry meanings.
-     For now, a dialect doc itself for it's `eval` view uses the current summary as a placeholder (no separate 'summary' button).
-     `raw tree` continues to be always available. The
-     mechanics are three moves: `ViewContext` learns to read the host
-     dialect's rules and term anchors (today `ExprReading` does it
-     per-example); `eval` becomes a foundation builtin that
-     every dialect gets (today `expr-print`/`expr-eval` are named
-     per-dialect); and an `editSurface` derives from the compiled
-     rules — gap spans, construct spans, unknown runs as marks (the
-     rule-level subset of item 3's *Derived edit-surface marks*,
-     pulled forward). `edit` becomes the default view where it
-     exists, the `raw text` pane is removed from every document (it
-     returns later as a plain-text mode inside the editor), and
-     `ExprView`, `ExprReading`, `exprImpls.views`, and
-     `exprDef.views` all delete — `LanguageDef.views` shrinks to the
-     meta-language's own bootstrap bindings, then disappears.
-     The `view` entries' named builtins — the `impls.views` name-keyed
-     lookup — retire with the section.
-   - *A shared leaf speller.* The functions that render a bare leaf —
-     an int prints `1`, a reference prints `ref:N`, a gap prints its
-     text verbatim — are dialect-neutral. Make them the foundation
-     default a language overrides only when it differs.
+   - *Views derive from the definition, not a views section.* Landed:
+     `DefLanguage.views` derives the standard set from the def alone —
+     `edit` wherever a text syntax compiles (its tile renders the
+     text surface; the pane edits through `editSurface`), and
+     `print`/`eval` for a def whose document is a single expression
+     (rules and no `surface` production). A declared `views:` entry
+     still outranks its derived default at render, and unlisted
+     builtins remain renderable by name (`print` stays the `docText`
+     surface for markdown). `eval` is a foundation builtin over
+     `ViewContext.reading` — the host dialect's `RuleReading`
+     (rules + term anchors) replacing per-example `ExprReading`; the
+     shared leaf rendering moved to foundation as `leafView`/`leafText`.
+     `editSurface` derives gap/leaf/unmatched marks from the compiled
+     grammar when impls name none (the rule-level subset of item 3's
+     *Derived edit-surface marks*, pulled forward). `edit` is the
+     default view, `raw text` is gone (it returns later as a
+     plain-text mode inside the editor), and `ExprView`,
+     `ExprReading`, `exprImpls.views`, `exprDef.views`, and the meta
+     language's own views section are all deleted — a dialect doc's
+     `eval` renders the summary placeholder for now (no separate
+     `summary` button; a stored meta doc's stale `def`/`print`/
+     `summary` entries are ignored outright). Remaining: the
+     `views:` section itself stays for genuinely custom views
+     (markdown `preview`, sheet `sheet`/`formulas`) until views
+     become authored — `LanguageDef.views` and the `impls.views`
+     name-keyed lookup retire with it.
+   - *A shared leaf view.* Landed: `leafView`/`leafText` in
+     `foundation/means/engine/LeafView.scala` — an int prints `1`, a
+     reference prints `ref:N`, a gap prints its text verbatim (or `?`
+     when empty, so it reparses), a string unquoted so gap text
+     reparses as the same unrecognized run. The derived views and the
+     sheet both use them; a dialect overrides only when it differs.
    - *The sheet reads trees, not a Scala AST.* `Sheet.scala` still
      classifies cell text through `Expr` and `ExprDoc`'s
      AST↔document codec. A gap is already `GapData` in the tree and a
@@ -97,7 +101,7 @@ What doesn't yet work and what comes next.
      node data directly retires `Expr.scala` and `ExprDoc.scala` —
      the last handwritten reader and writer in the example.
    - *A shared leaf vocabulary.* `exprLexicon` and `exprImpls.leaves`
-     declare the characters a rule can't spell: digits for ints and
+     declare the characters a rule can't display: digits for ints and
      floats, the `ref:` prefix, the `unrecognized` recovery run. None
      of it is expression-specific — promote it to a named foundation
      leaf vocabulary (`number`, `ref`, gap recovery) that a dialect
@@ -184,7 +188,7 @@ What doesn't yet work and what comes next.
    `flatRuns`, `withinLine`, `spaceLeaf`, `strayLeaf`, `inlineSkip`),
    `MarkdownPrint` (`markdownLines`), and `MarkdownMarks`
    (`markdownLineMarks`); expression's `Expr`/`ExprDoc` tree↔AST
-   codec and `exprViewLeaf`/`exprPrintLeaf` leaf spellers. The target:
+   codec and `exprViewLeaf`/`exprPrintLeaf` leaf renderers. The target:
    an example is its dialect document's data (rules, lexicon,
    vocabulary), the `Impls` wiring, and its views/eval — nothing that
    reads or writes text by hand. In order:
@@ -223,8 +227,8 @@ What doesn't yet work and what comes next.
      settings the pattern language declares (*Patterns as Editors*,
      item 2). An unmatched marker paints
      nothing because no rule claimed it — the marks *are* the parse.
-   - *A shared leaf speller* (lands with expression via item 1).
-     `exprViewLeaf`/`exprPrintLeaf` collapse to a foundation default
+   - *A shared leaf view* (landed via item 1). `exprViewLeaf`/
+     `exprPrintLeaf` collapsed to a foundation default
      (ints, floats, `ref:N`, verbatim/`?` gaps, `NodeDataText.show`
      fallback); a language overrides only when it differs.
    - *Retire the `Expr` codec* (lands via item 1's sheet step).
@@ -238,7 +242,7 @@ What doesn't yet work and what comes next.
      scaffolding.
    - *Lexicons, partly.* Landed for literals:
      `LiteralLexicon.withLiterals` composes the patterns' literal
-     spellings over the authored lexicon — longest-first, reserved
+     displays over the authored lexicon — longest-first, reserved
      over the leaves, infix literals carrying gap-start — so a rule
      line is all a literal needs (`a // b` tokenizes as soon as its
      definition exists). Remaining: run-leaf stop sets are still

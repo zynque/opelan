@@ -69,12 +69,12 @@ class ResolveSuite extends FunSuite {
     val d = SheetLanguage.langDoc
     val l = languageForDoc(d, seededStore)
     assert(l.isDefined)
-    // `edit` and `summary` are the code-supplied meta surfaces — a
-    // stored lang: language doc needn't declare them
+    // `edit` and `eval` are the derived meta surfaces — a stored
+    // lang: language doc needn't declare them
     // (DefLanguage.isDocLanguage).
-    assertEquals(l.get.views, List("edit", "summary"))
+    assertEquals(l.get.views, List("edit", "eval"))
     assert(l.get.render("edit", d).isRight)
-    assert(l.get.render("summary", d).isRight)
+    assert(l.get.render("eval", d).isRight)
   }
 
   test("a meta doc stored under the old view names reads as the new") {
@@ -82,9 +82,9 @@ class ResolveSuite extends FunSuite {
       views = List(ViewBinding("def", "def-view"))))
     val store = Store.empty.put(langDefTypeRef.documentUrl, legacy)._1
     val l = languageForRef(langDefTypeRef, store).get
-    assertEquals(l.views, List("edit", "summary"))
+    assertEquals(l.views, List("edit", "eval"))
     assert(l.render("edit", legacy).isRight)
-    assert(l.render("summary", legacy).isRight)
+    assert(l.render("eval", legacy).isRight)
   }
 
   test("DocLanguage is itself described by a lang: doc") {
