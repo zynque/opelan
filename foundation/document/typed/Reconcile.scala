@@ -158,7 +158,7 @@ private def graft(
     d: Document[NodeData], hints: Map[List[Int], Int],
     externalData: Int => Option[NodeData])
     : Either[String, (Document[NodeData], Int)] =
-  if (!child.children.indices.exists(j => hints.contains(path :+ j)))
+  if (!hints.keys.exists(k => k.startsWith(path) && k.length > path.length))
     insertNode(child, parentId, d.childrenOf(parentId).length, d)
       .map(d2 => (d2, d2.nodes.length - 1))
   else

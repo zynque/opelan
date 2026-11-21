@@ -51,11 +51,10 @@ private[doc] def lineAt(in: ParseInput, pos: Int): Option[LineEntry] = {
       case n  => n
     }
     val line = in.input.substring(i, eol)
+    val indent = line.takeWhile(c => c == ' ' || c == '\t').length
     if (line.trim.nonEmpty)
       found = Some(LineEntry(
-        line.takeWhile(c => c == ' ' || c == '\t').length,
-        dataOf(line.trim), line.trim, i, eol,
-        i + line.takeWhile(c => c == ' ' || c == '\t').length))
+        indent, dataOf(line.trim), line.trim, i, eol, i + indent))
     i = eol + 1
   }
   found

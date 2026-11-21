@@ -183,7 +183,7 @@ class DefLanguage(
   // and always for the meta language, whose text form is the format in
   // doc/DefDocText.scala rather than a rule set.
   override def parse(text: String): Option[DetachedNode[NodeData]] =
-    syntax.map(g => toDetached(g(text).tree))
+    parseSpanned(text).map(unspanned)
 
   // `parse` with each node's span on the node — a text edit carries
   // node identity through the surface

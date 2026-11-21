@@ -4,7 +4,7 @@ import opelan.foundation.document._
 import opelan.foundation.document.typed._
 import opelan.foundation.langdef._
 import opelan.foundation.langdef.view.{meaningFieldText, whereFieldText}
-import opelan.foundation.means.Rule
+import opelan.foundation.means.{lexicalTermOf, Rule}
 import opelan.foundation.means.text.printPattern
 
 // The text surface of a `lang:` document (foundation/language,
@@ -60,9 +60,14 @@ def defDocLines(
           d, ruleFromDoc(doc, url, 0, termIds, resolve, id)))
       case Some(name) =>
         ("  " * depth + name) :: doc.childrenOf(id).flatMap(lines(_, depth + 1))
+      // A lexical ref in a payload position (the `surface` entry)
+      // prints its registered name — the decode's `lexicalRefs`
+      // fallback resolves it back.
       case None =>
         ("  " * depth + externalRefOf(doc, id)
-          .map(r => NodeDataText.show(NodeData.ExternalNodeRef(r)))
+          .map(r => lexicalTermOf(r)
+            .map(n => NodeDataText.show(NodeData.StringData(n)))
+            .getOrElse(NodeDataText.show(NodeData.ExternalNodeRef(r))))
           .getOrElse(doc.getNode(id).map(n => NodeDataText.show(n.data))
             .getOrElse("?"))) ::
           doc.childrenOf(id).flatMap(lines(_, depth + 1))

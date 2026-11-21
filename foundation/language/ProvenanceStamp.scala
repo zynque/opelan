@@ -27,9 +27,10 @@ private def claim(
 // Every unowned character's chain as the deepest covering node,
 // post-order: children offer first, a node offers only what its
 // children left. A retained node (one already owning characters
-// somewhere) offers nothing. A character whose chain's innermost node
-// the commit detached is unowned again — whatever survives under the
-// root now produces it.
+// somewhere) offers nothing — a detached node's chains stay pointed
+// at it so a later commit can restore its identity. A character whose
+// chain's innermost node the commit detached is unowned again only
+// for a new node — whatever survives un-retained now produces it.
 private[language] def stamp(
     doc: Document[NodeData], rootId: Int,
     spanned: SpannedTree[NodeData],

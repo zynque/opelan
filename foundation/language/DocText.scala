@@ -28,20 +28,15 @@ def docText(
 // Typed documents with a language parser rewrite only the content
 // subtree — in place, keeping the ids of whatever did not change
 // (commitContent) — while the root, type, and imports are preserved,
-// and constructs the parse wrote inline are imported.
-//
-// `hints` — the document node each parsed node (by child-index path
-// below the content root) continues, when a host has tracked the text
-// surface's provenance — commitContent honors them where the parse
-// builds the same construct.
+// and constructs the parse wrote inline are imported. A host with
+// provenance hints commits through applyDocContent instead.
 def applyDocText(
     doc: Document[NodeData],
     languageFor: Document[NodeData] => Option[Language],
-    text: String,
-    hints: Map[List[Int], Int] = Map.empty): Either[String, Document[NodeData]] =
-  languageFor(doc).flatMap(l => l.parse(text).map(l -> _)) match {
-    case Some((_, content)) =>
-      replaceContent(doc, content, languageFor, hints)
+    text: String): Either[String, Document[NodeData]] =
+  languageFor(doc).flatMap(l => l.parse(text)) match {
+    case Some(content) =>
+      replaceContent(doc, content, languageFor)
     case None =>
       if (isTyped(doc))
         contentId(doc) match {
@@ -74,8 +69,7 @@ private def replaceContent(
     doc: Document[NodeData],
     content: DetachedNode[NodeData],
     languageFor: Document[NodeData] => Option[Language],
-    hints: Map[List[Int], Int] = Map.empty)
-    : Either[String, Document[NodeData]] = {
+    hints: Map[List[Int], Int] = Map.empty): Either[String, Document[NodeData]] = {
   val inserted = contentId(doc) match {
     case Some(cid) => commitContent(cid, content, doc, hints)
     case None =>
