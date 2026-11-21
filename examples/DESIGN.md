@@ -1,6 +1,6 @@
 # `examples/` — design
 
-The demonstration dialects and the language registry — the first
+The demonstration dialects and language resolution — the first
 *layers* above the core (see *Towers* in the root
 [`DESIGN.md`](../DESIGN.md)).
 
@@ -8,18 +8,18 @@ The demonstration dialects and the language registry — the first
 
 `languageForRef` looks up the type ref's URL in the document store, and
 if the document there is a `lang:` document, that document *is* the
-dialect. Otherwise it falls back to the code registry (`allLanguages`:
-`ExprLanguage`, `SheetLanguage`, `MarkdownLanguage`, and `DocLanguage` —
-the code-resident
-dialect that `lang:` documents are themselves typed by, defined in
+dialect. Otherwise it falls back to the code registry (`allLanguages`)
+— whose only resident is `DocLanguage`, the code-resident dialect that
+`lang:` documents are themselves typed by, defined in
 [`../foundation/langdef/Defs.scala`](../foundation/langdef/DESIGN.md);
-that is where the regress stops). Malformed defs degrade to gaps:
-missing refs, cyclic grammars, and cyclic documents are all guarded, and
-an old store with untyped `lang:` docs falls back to the registry.
+that is where the regress stops. Every other dialect exists only as a
+stored `lang:` document. Malformed defs degrade to gaps:
+missing refs, cyclic grammars, and cyclic documents are all guarded,
+and a URL holding no def-typed doc resolves to nothing.
 
 ## Expression dialect (`expr/`)
 
-`ExprLanguage`, `ExprDef`/`ExprRules` — the
+`ExprDef`/`ExprRules`, `DemoExpr` — the
 demonstration dialect. It has int and float
 literals (integer arithmetic stays integral, division and floats are
 decimal, and displayed values drop float noise — `valueText`'s
@@ -42,16 +42,17 @@ from the rules — `exprTokens` composes them for direct parses
 
 `ExprRules`/`ExprDef` are the recipe `langDefDoc` encodes into
 `exprDoc` — the seed document (`PLAN`, *The document becomes the
-seed*). `ExprLanguage` IS `DefLanguage(decodedExprDef)` — the def as
+seed*). The language is `DefLanguage(decodedExprDef)` — the def as
 the document reads it — and `exprTerms`/`exprTag`/`exprReading`/
-`demoExprDef` all decode from documents, so a stored `lang:
-expression` and the built-in run one path. There is no AST and no
-tree↔code codec: parses and tests work on `NodeData` trees directly,
+`demoExprDef`/`exprSampleDoc` all decode from documents, so a stored
+`lang: expression` and the built-in run one path. There is no AST and
+no tree↔code codec: parses and tests work on `NodeData` trees directly,
 and `exprTag`/`exprTerms` map a construct name to the ref its
 definition declares. The 28-input battery holding
-a constructed `DefLanguage(exprDef)` identical to the singleton (parse,
-print, eval) checks the construction path of the definition machinery
-(see [`test/`](../test/DESIGN.md)). Code knows an example dialect's
+a constructed `DefLanguage(exprDef)` identical to the interpreted seed
+(parse, print, eval) checks the construction path of the definition
+machinery (see [`test/`](../test/DESIGN.md)). Code knows an example
+dialect's
 constructs by the ids its canonical encoding assigns (`termRefs`,
 `exprTerms`, `sheetTerms`).
 
@@ -93,8 +94,8 @@ View settings are data in the def doc (`view(name, builtin,
 setting(key, value)…)`); the sheet's `currency` setting formats computed
 values. A gap or cycle in a referenced cell propagates only to the
 cells that use it — the app recovers like the documents it is made of.
-`sampleDoc` seeds the demo's household budget (the expression dialect's
-`sampleDoc` seeds the sidebar's expression sample).
+`sampleDoc` seeds the demo's household budget (`exprSampleDoc` seeds
+the sidebar's expression sample).
 
 ## Markdown dialect (`markdown/`)
 

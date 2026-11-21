@@ -1,7 +1,8 @@
 package opelan.examples
 
 import opelan.examples.sheet.{SheetLanguage, sheetDef}
-import opelan.examples.expr.{ExprLanguage, demoExprDoc, exprDef}
+import opelan.examples.expr.{
+  decodedExprDef, demoExprDoc, exprDef, exprDoc, exprTypeRef}
 import opelan.foundation.document._
 import opelan.foundation.document.store._
 import opelan.foundation.langdef.{
@@ -11,14 +12,26 @@ import opelan.foundation.langdef.doc.{
 import munit.FunSuite
 
 // Store-first language resolution: a type ref names a def doc, and the
-// stored document *is* the language. The Scala registry and the
-// code-resident DocLanguage remain as fallbacks.
+// stored document *is* the language. The code-resident registry holds
+// only the bootstrap root, DocLanguage.
 class ResolveSuite extends FunSuite {
 
-  private val seededStore =
-    List(ExprLanguage, SheetLanguage, DocLanguage)
-      .foldLeft(Store.empty)((s, l) =>
-        s.put(l.typeRef.documentUrl, l.langDoc)._1)
+  // Each language URL seeded with its definition document — the
+  // document data is the language now, no registry needed.
+  private def seeded(docs: (String, Document[NodeData])*): Store =
+    docs.foldLeft(Store.empty)((s, e) => s.put(e._1, e._2)._1)
+
+  private val seededStore = seeded(
+    exprTypeRef.documentUrl      -> exprDoc,
+    sheetDef.typeRef.documentUrl -> SheetLanguage.langDoc,
+    langDefTypeRef.documentUrl   -> DocLanguage.langDoc)
+
+  // The demo seed: lang: expression staged without `/`, so a `/`
+  // reference sits as a healable gap.
+  private val stagedStore = seeded(
+    exprTypeRef.documentUrl      -> demoExprDoc,
+    sheetDef.typeRef.documentUrl -> SheetLanguage.langDoc,
+    langDefTypeRef.documentUrl   -> DocLanguage.langDoc)
 
   test("a stored def doc resolves to a live language") {
     val l = languageForRef(SheetLanguage.typeRef, seededStore)
@@ -34,14 +47,14 @@ class ResolveSuite extends FunSuite {
   test("resolution reads the pinned version — a save pends, doesn't retarget") {
     val edited = exprDef.copy(name = "Expressions v2")
     val s2 = seededStore.put(
-      ExprLanguage.typeRef.documentUrl, langDefDoc(edited))._1
+      exprTypeRef.documentUrl, langDefDoc(edited))._1
     // The ref pins v0; the v1 edit resolves only after the pin bumps.
     assertEquals(
-      languageForRef(ExprLanguage.typeRef, s2).map(_.name),
-      Some(ExprLanguage.name))
+      languageForRef(exprTypeRef, s2).map(_.name),
+      Some(decodedExprDef.name))
     assertEquals(
       languageForRef(
-        ExprLanguage.typeRef.copy(documentVersionId = 1), s2).map(_.name),
+        exprTypeRef.copy(documentVersionId = 1), s2).map(_.name),
       Some("Expressions v2"))
     // The untouched def still resolves too.
     assertEquals(
@@ -49,16 +62,13 @@ class ResolveSuite extends FunSuite {
       Some(sheetDef.name))
   }
 
-  test("registry fallback for missing or non-def docs") {
-    assertEquals(
-      languageForRef(ExprLanguage.typeRef, Store.empty),
-      Some(ExprLanguage))
+  test("no registry fallback — missing or non-def docs don't resolve") {
+    assertEquals(languageForRef(exprTypeRef, Store.empty), None)
     val bogus = Store.empty.put(
       "opelan:languages/int-expression",
       buildDocument[NodeData](
         DetachedNode.leaf(NodeData.StringData("bogus"))))._1
-    assertEquals(
-      languageForRef(ExprLanguage.typeRef, bogus), Some(ExprLanguage))
+    assertEquals(languageForRef(exprTypeRef, bogus), None)
   }
 
   test("DocLanguage resolves the meta ref even unseeded") {
@@ -102,10 +112,7 @@ class ResolveSuite extends FunSuite {
     import opelan.foundation.view.ViewTree
     // Seeded like the demo: lang: expression v0 staged without `/`,
     // so every pin to it lands on the staged grammar.
-    val staged = List(ExprLanguage, SheetLanguage, DocLanguage)
-      .foldLeft(Store.empty)((s, l) => s.put(
-        l.typeRef.documentUrl,
-        if (l == ExprLanguage) demoExprDoc else l.langDoc)._1)
+    val staged = stagedStore
     val budget = SheetLanguage.sampleDoc
     def perPerson(st: Store, b: Document[NodeData]) =
       languageForDoc(b, st).get
@@ -121,7 +128,7 @@ class ResolveSuite extends FunSuite {
       Some(NodeData.GapData("D5 / B6")))
     // Saving `/` as expression v1: pins unchanged — still a gap.
     val fixed = staged.put(
-      ExprLanguage.typeRef.documentUrl, ExprLanguage.langDoc)._1
+      exprTypeRef.documentUrl, exprDoc)._1
     assert(perPerson(fixed, budget).contains("?D5 / B6"), perPerson(fixed, budget))
     // lang: sheet accepts: its input-grammar ref bumps to expression v1.
     val sheetDoc = fixed.get("opelan:languages/sheet", 0).get
@@ -141,10 +148,7 @@ class ResolveSuite extends FunSuite {
     import opelan.foundation.means.text.readRuleOrGap
     // Seeded like the workbench: lang: expression v0 is the staged
     // demo def — no `/`, no `div` declared.
-    val staged = List(ExprLanguage, SheetLanguage, DocLanguage)
-      .foldLeft(Store.empty)((s, l) => s.put(
-        l.typeRef.documentUrl,
-        if (l == ExprLanguage) demoExprDoc else l.langDoc)._1)
+    val staged = stagedStore
     val budget = SheetLanguage.sampleDoc
     val cell = "D5 // B6"
     def read(st: Store, b: Document[NodeData]) =
@@ -159,7 +163,7 @@ class ResolveSuite extends FunSuite {
       s.copy(rules = s.rules.map(rs => rs.copy(rules =
         rs.rules :+ readRuleOrGap("a // b means div(a, b)"))))))
     val s1 = staged.put(
-      ExprLanguage.typeRef.documentUrl, langDefDoc(v1))._1
+      exprTypeRef.documentUrl, langDefDoc(v1))._1
     assertEquals(read(s1, budget), before)
 
     // lang: sheet accepts: its input-grammar ref bumps to expression v1.
@@ -200,10 +204,7 @@ class ResolveSuite extends FunSuite {
     import opelan.foundation.language.{
       InputSessions, Language, applyDocText, docText}
     import opelan.foundation.view.ViewTree
-    val staged = List(ExprLanguage, SheetLanguage, DocLanguage)
-      .foldLeft(Store.empty)((s, l) => s.put(
-        l.typeRef.documentUrl,
-        if (l == ExprLanguage) demoExprDoc else l.langDoc)._1)
+    val staged = stagedStore
     // Authored as the workbench does: Enter at the end of the
     // `(a) means a` line, then the new line typed keystroke by
     // keystroke — every state commits. Node ids of existing rules
@@ -218,7 +219,7 @@ class ResolveSuite extends FunSuite {
       text.substring(0, end) + "\n" + rule.take(k) + text.substring(end))
     val v1 = typed.foldLeft(demoExprDoc)((d, t) =>
       applyDocText(d, langFor, t).toOption.get)
-    val s1 = staged.put(ExprLanguage.typeRef.documentUrl, v1)._1
+    val s1 = staged.put(exprTypeRef.documentUrl, v1)._1
     val sheetDoc = s1.get("opelan:languages/sheet", 0).get
     val s2 = s1.put("opelan:languages/sheet",
       acceptUpdates(sheetDoc, s1).get)._1
@@ -245,10 +246,7 @@ class ResolveSuite extends FunSuite {
     import opelan.foundation.language.{
       Language, TextProvenance, applyTrackedText, docText}
     import opelan.foundation.view.ViewTree
-    val staged = List(ExprLanguage, SheetLanguage, DocLanguage)
-      .foldLeft(Store.empty)((s, l) => s.put(
-        l.typeRef.documentUrl,
-        if (l == ExprLanguage) demoExprDoc else l.langDoc)._1)
+    val staged = stagedStore
     val langFor: Document[NodeData] => Option[Language] =
       _ => Some(DocLanguage)
     val text = docText(demoExprDoc, langFor)
@@ -265,7 +263,7 @@ class ResolveSuite extends FunSuite {
         val (applied, next) = applyTrackedText(d, langFor, before, identity, t)
         (applied.toOption.get, t, next)
     }
-    val s1 = staged.put(ExprLanguage.typeRef.documentUrl, v1)._1
+    val s1 = staged.put(exprTypeRef.documentUrl, v1)._1
     val sheetDoc = s1.get("opelan:languages/sheet", 0).get
     val s2 = s1.put("opelan:languages/sheet",
       acceptUpdates(sheetDoc, s1).get)._1

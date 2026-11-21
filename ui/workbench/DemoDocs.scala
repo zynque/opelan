@@ -2,37 +2,37 @@ package opelan.ui.workbench
 
 import opelan.foundation.document._
 import opelan.foundation.document.store._
-import opelan.foundation.langdef.{placeholderDoc, placeholderUrl}
+import opelan.foundation.langdef.{
+  docLanguageDef, langDefTypeRef, placeholderDoc, placeholderUrl}
 import opelan.foundation.langdef.doc.langDefDoc
-import opelan.examples.allLanguages
-import opelan.examples.expr.{demoExprDoc, ExprLanguage}
-import opelan.examples.markdown.MarkdownLanguage
-import opelan.examples.sheet.SheetLanguage
+import opelan.examples.expr.{demoExprDoc, exprSampleDoc, exprTypeRef}
+import opelan.examples.markdown.{markdownDef, markdownTypeRef, MarkdownLanguage}
+import opelan.examples.sheet.{sheetDef, sheetTypeRef, SheetLanguage}
 
 // The demo's opening lineup, seeded into a store that doesn't already
-// have it. Each registered language's descriptive document is seeded at
-// the URL its typeRef names — so following a document's type ref lands
-// on a real node (act 2's "under the hood" beat) — and the two samples
-// are the documents built on them. lang: expression is seeded staged,
-// without
+// have it. Each language's `lang:` document is seeded at the URL its
+// typeRef names — so following a document's type ref lands on a real
+// node (act 2's "under the hood" beat) — and the samples are the
+// documents built on them. lang: expression is seeded staged, without
 // `/`, so the budget's per-person gap heals when the audience adds it.
 //
 // Seeding never overwrites: a URL the store already holds is left
 // alone, so a returning user's edited documents are safe.
 private[workbench] val seedDocs: List[(String, Document[NodeData])] =
-  allLanguages.map(l => l.typeRef.documentUrl -> seedDocOf(l)) :+
+  List(
+    exprTypeRef.documentUrl       -> demoExprDoc,
+    sheetTypeRef.documentUrl      -> langDefDoc(sheetDef),
+    markdownTypeRef.documentUrl   -> langDefDoc(markdownDef),
+    langDefTypeRef.documentUrl    -> langDefDoc(docLanguageDef),
     // The placeholder registry — placeholder refs name themselves
     // through it (foundation/langdef/PlaceholderTerms.scala).
-    (placeholderUrl -> placeholderDoc) :+
+    placeholderUrl -> placeholderDoc,
     // The URL slug sorts after household-budget so the budget stays the
     // first-opened document; the doc's own title supplies the sidebar
     // label ("Expression sample").
-    (Store.urlForName("Sample expression") -> ExprLanguage.sampleDoc) :+
-    (Store.urlForName("Markdown notes") -> MarkdownLanguage.sampleDoc) :+
-    (Store.urlForName("Household budget") -> SheetLanguage.sampleDoc)
-
-private def seedDocOf(l: opelan.foundation.language.Language): Document[NodeData] =
-  if (l.eq(ExprLanguage)) demoExprDoc else l.langDoc
+    Store.urlForName("Sample expression") -> exprSampleDoc,
+    Store.urlForName("Markdown notes") -> MarkdownLanguage.sampleDoc,
+    Store.urlForName("Household budget") -> SheetLanguage.sampleDoc)
 
 // The seeds `store` is missing.
 private[workbench] def missingSeeds(

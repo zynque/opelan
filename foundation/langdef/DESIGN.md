@@ -36,7 +36,7 @@ another dialect by ref, which is how the sheet's cells parse with
 `lang: expression`. `DefDocEncode`/`DefDocDecode`/`DefDocReader` (in
 [`doc/`](doc/DESIGN.md)) implement the def↔document format, with sets
 sorted so encoding is deterministic. A constructed `DefLanguage(exprDef)`
-is held identical to the `ExprLanguage` singleton (parse, print, and
+is held identical to the interpreted seed decode (parse, print, and
 eval) on a 28-input battery, checking the construction path of the
 definition machinery (see
 [`test/`](../../test/DESIGN.md)).

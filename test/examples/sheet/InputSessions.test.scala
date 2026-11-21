@@ -1,9 +1,10 @@
 package opelan.examples.sheet
 
 import opelan.examples.languageFromDef
-import opelan.examples.expr.{ExprLanguage, demoExprDef, exprDef}
+import opelan.examples.expr.{demoExprDef, exprDef, exprDoc, exprTypeRef}
 import scala.util.Random
 import opelan.foundation.document._
+import opelan.foundation.document.store._
 import opelan.foundation.langdef.InputParserDef
 import opelan.foundation.language.{InputSessions, TextSession}
 import munit.FunSuite
@@ -13,7 +14,11 @@ import munit.FunSuite
 // re-editing an input reruns only part of the grammar.
 class InputSessionsSuite extends FunSuite {
 
-  private val sheet = languageFromDef(sheetDef)
+  // The sheet's input grammar names lang: expression by ref — the seed
+  // store supplies the document it resolves to.
+  private val seeded =
+    Store.empty.put(exprTypeRef.documentUrl, exprDoc)._1
+  private val sheet = languageFromDef(sheetDef, seeded)
 
   test("property: committed inputs match whole parses under random edits") {
     val random = new Random(11)
@@ -38,7 +43,8 @@ class InputSessionsSuite extends FunSuite {
     val (_, c0) = sheet.commitInput(7, text, InputSessions()).get
     val edited = text.replace("(ref:7 * 7)", "(ref:7 * 8)")
     val (_, c1) = sheet.commitInput(7, edited, c0).get
-    val fresh = TextSession.start(ExprLanguage.textSyntax.get, edited)
+    val fresh =
+      TextSession.start(languageFromDef(exprDef).textSyntax.get, edited)
     assert(c1.sessions(7).evaluations * 4 < fresh.evaluations,
       s"${c1.sessions(7).evaluations} vs ${fresh.evaluations}")
   }

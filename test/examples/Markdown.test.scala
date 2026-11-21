@@ -4,7 +4,8 @@ import opelan.examples.markdown._
 import opelan.foundation.document._
 import opelan.foundation.document.store.Store
 import opelan.foundation.document.typed.contentId
-import opelan.foundation.language.{applyDocText, docText}
+import opelan.foundation.langdef.doc.langDefDoc
+import opelan.foundation.language.{applyDocText, docText, Language}
 import opelan.foundation.view.ViewTree
 import munit.FunSuite
 
@@ -12,6 +13,13 @@ import munit.FunSuite
 // holds, the `blocks`/`runs` productions they parse through, the live
 // preview, and store-first resolution of the def document.
 class MarkdownSuite extends FunSuite {
+
+  // Resolution goes through the store: the lang: markdown def doc is
+  // seeded under its type-ref URL.
+  private val seeded = Store.empty
+    .put(markdownTypeRef.documentUrl, langDefDoc(markdownDef))._1
+  private val langFor: Document[NodeData] => Option[Language] =
+    d => languageForDoc(d, seeded)
 
   private val source =
     "# Notes\n\n## Groceries\n\n* Apples\n* **Good** bread\n\n" +
@@ -57,7 +65,7 @@ class MarkdownSuite extends FunSuite {
 
   test("the def's text surface shows the definitions") {
     // `lang: markdown`'s raw text — the `definitions` the rules display.
-    val text = docText(MarkdownLanguage.langDoc, registryForDoc)
+    val text = docText(MarkdownLanguage.langDoc, langFor)
     assert(text.contains("# t means h1(t)"), text)
     assert(text.contains("## t means h2(t)"), text)
     assert(text.contains("* t means item(t)"), text)
@@ -67,14 +75,14 @@ class MarkdownSuite extends FunSuite {
 
   test("the language's text surface round-trips") {
     val doc = MarkdownLanguage.sampleDoc
-    val text = docText(doc, registryForDoc)
+    val text = docText(doc, langFor)
     assert(text.contains("# Notes"), text)
     assert(text.contains("* **Good** coffee"), text)
     // A commit of the printed text lands the same content, and an edit
     // keeps the ids of the subtrees it didn't touch.
     val edited = applyDocText(
-      doc, registryForDoc, text.replace("Apples", "Pears")).toOption.get
-    assertEquals(docText(edited, registryForDoc),
+      doc, langFor, text.replace("Apples", "Pears")).toOption.get
+    assertEquals(docText(edited, langFor),
       text.replace("Apples", "Pears"))
     val cid = contentId(doc).get
     val kept = doc.childrenOf(cid).zip(contentId(edited)

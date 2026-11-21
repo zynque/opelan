@@ -1,6 +1,6 @@
 package opelan.ui.typeddoc
 
-import opelan.examples.expr.ExprLanguage
+import opelan.examples.expr.{exprDoc, exprTypeRef}
 import opelan.foundation.document._
 import opelan.foundation.document.store._
 import opelan.foundation.document.typed._
@@ -18,7 +18,7 @@ class TypedDocUpdatesSuite extends munit.FunSuite {
     assertEquals(u.state.pushMode, DocPush.Synced(h))
     assertEquals(
       editorInput(u.state),
-      EditorInput.SyncDocument(d, None, DocPush.Synced(h)))
+      EditorInput.SyncDocument(d, None, DocPush.Synced(h), u.state.store))
     // no DocChanged echo — the push came from the session owner
     assert(u.out.forall(o => !o.isInstanceOf[TypedDocOutput.DocChanged]))
   }
@@ -27,8 +27,8 @@ class TypedDocUpdatesSuite extends munit.FunSuite {
   // pins all target v0 while v1 is head.
   private def bumpedStore: Store =
     Store.empty
-      .put(ExprLanguage.typeRef.documentUrl, ExprLanguage.langDoc)._1
-      .put(ExprLanguage.typeRef.documentUrl,
+      .put(exprTypeRef.documentUrl, exprDoc)._1
+      .put(exprTypeRef.documentUrl,
         langDefDoc(opelan.examples.expr.exprDef.copy(name = "v2")))._1
 
   test("AcceptUpdates bumps the doc's pinned refs to their heads") {

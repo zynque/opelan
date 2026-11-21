@@ -1,7 +1,9 @@
 package opelan.ui.typeddoc
 
-import opelan.examples.registryForDoc
-import opelan.examples.expr.ExprLanguage
+import opelan.examples.languageForDoc
+import opelan.examples.expr.{exprDoc, exprSampleDoc, exprTypeRef}
+import opelan.foundation.document.store._
+import opelan.foundation.langdef.{DocLanguage, placeholderDoc, placeholderUrl}
 import opelan.foundation.language.docText
 import opelan.ui.editor.{DocumentEditor, EditorInput}
 import opelan.ui.fp._
@@ -22,12 +24,23 @@ object TypedDoc extends Component[TypedDocInput, TypedDocOutput] {
   type State = TypedDocModel
 
   def init: State = {
-    val d = ExprLanguage.sampleDoc
+    // The placeholder state before the workbench pushes its real store:
+    // seed everything the sample's type ref needs — the expression def
+    // doc, the meta def it is typed by, and the placeholder registry its
+    // constructs resolve through — so resolution never leans on the
+    // DocLanguage fallback for this doc's own dependencies.
+    val store = List(
+        exprTypeRef.documentUrl -> exprDoc,
+        DocLanguage.typeRef.documentUrl -> DocLanguage.langDoc,
+        placeholderUrl -> placeholderDoc)
+      .foldLeft(Store.empty)((s, e) => s.put(e._1, e._2)._1)
+    val d = exprSampleDoc
     TypedDocModel(
       doc = d,
       pushedDoc = d,
-      text = docText(d, registryForDoc),
-      status = "Expression sample loaded")
+      text = docText(d, d2 => languageForDoc(d2, store)),
+      status = "Expression sample loaded",
+      store = store)
   }
 
   def update(state: State, input: TypedDocInput): Update[State, TypedDocOutput, TypedDocInput] =

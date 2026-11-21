@@ -31,7 +31,9 @@ class TypedDocTextSuite extends munit.FunSuite {
     val u = typedDocUpdate(m, TypedDocInput.FromEditor(EditorOutput.DocChanged(edited)))
     assertEquals(u.state.doc, edited)
     assertEquals(u.state.pushedDoc, m.pushedDoc)
-    assertEquals(editorInput(u.state), EditorInput.SyncDocument(m.pushedDoc))
+    assertEquals(
+      editorInput(u.state),
+      EditorInput.SyncDocument(m.pushedDoc, store = u.state.store))
     assert(u.out.contains(TypedDocOutput.DocChanged(edited)))
   }
 

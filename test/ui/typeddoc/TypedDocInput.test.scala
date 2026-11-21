@@ -1,6 +1,6 @@
 package opelan.ui.typeddoc
 
-import opelan.examples.expr.ExprLanguage
+import opelan.examples.expr.{exprDoc, exprTypeRef}
 import opelan.examples.termOf
 import opelan.examples.sheet.{RefTag, SheetLanguage, sheetTerms}
 import opelan.foundation.document._
@@ -8,8 +8,16 @@ import opelan.foundation.document.store._
 
 class TypedDocInputSuite extends munit.FunSuite {
 
+  // Sheet docs need both defs: the sheet language itself, and the
+  // expression language its cell input grammar references by ref.
+  private val seeded = Store.empty
+    .put(exprTypeRef.documentUrl, exprDoc)._1
+    .put(SheetLanguage.typeRef.documentUrl, SheetLanguage.langDoc)._1
+
   test("CommitInputText rewrites the node in place and pushes the doc") {
-    val m = typedDocUpdate(init, TypedDocInput.Load(SheetLanguage.sampleDoc)).state
+    val m = typedDocUpdate(
+      init.copy(store = seeded),
+      TypedDocInput.Load(SheetLanguage.sampleDoc)).state
     val price = cellId(m.doc, 1, 2) // Apples' price
     val u = typedDocUpdate(m, TypedDocInput.CommitInputText(price, "1.50"))
     assertEquals(
@@ -19,7 +27,9 @@ class TypedDocInputSuite extends munit.FunSuite {
   }
 
   test("an input commit keeps the ids of unchanged subtrees") {
-    val m = typedDocUpdate(init, TypedDocInput.Load(SheetLanguage.sampleDoc)).state
+    val m = typedDocUpdate(
+      init.copy(store = seeded),
+      TypedDocInput.Load(SheetLanguage.sampleDoc)).state
     val total = cellId(m.doc, 1, 3) // Apples' line total = qty * price
     val refs = m.doc.childrenOf(total)
     val u = typedDocUpdate(
@@ -42,8 +52,6 @@ class TypedDocInputSuite extends munit.FunSuite {
   test("re-committing an input reparses through its session") {
     // Seeded def docs make the sheet a DefLanguage, whose input grammar
     // reads through lang: expression's incremental syntax.
-    val seeded = List(ExprLanguage, SheetLanguage).foldLeft(Store.empty)(
-      (s, l) => s.put(l.typeRef.documentUrl, l.langDoc)._1)
     val m = typedDocUpdate(
       init.copy(store = seeded), TypedDocInput.Load(SheetLanguage.sampleDoc)).state
     val total = cellId(m.doc, 1, 3)
@@ -68,7 +76,9 @@ class TypedDocInputSuite extends munit.FunSuite {
   }
 
   test("an unchanged CommitInputText is a no-op") {
-    val m = typedDocUpdate(init, TypedDocInput.Load(SheetLanguage.sampleDoc)).state
+    val m = typedDocUpdate(
+      init.copy(store = seeded),
+      TypedDocInput.Load(SheetLanguage.sampleDoc)).state
     val price = cellId(m.doc, 1, 2)
     val u = typedDocUpdate(m, TypedDocInput.CommitInputText(price, "1.2"))
     assertEquals(u.state, m)

@@ -1,5 +1,6 @@
 package opelan.examples.expr
 
+import opelan.foundation.langdef.Impls
 import opelan.foundation.langdef.syntax.lexicalTerms
 import opelan.foundation.means.text.ruleSetIssues
 
@@ -9,6 +10,6 @@ import opelan.foundation.means.text.ruleSetIssues
 class ExprRulesSuite extends munit.FunSuite {
 
   test("the expression rule set is well formed") {
-    assertEquals(ruleSetIssues(exprRules, lexicalTerms(exprImpls).keySet), Nil)
+    assertEquals(ruleSetIssues(exprRules, lexicalTerms(Impls()).keySet), Nil)
   }
 }

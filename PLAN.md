@@ -100,7 +100,7 @@ What doesn't yet work and what comes next.
      formula, an `InternalNodeRef` leaf the ref probe wants);
      the sheet splits into `SheetView` (grid rendering) and
      `SheetCell` (cell display); `sampleDoc` parses its expression; and
-     tests build expected trees through `ExprLanguage.parse` or
+     tests build expected trees through the interpreted def's parse or
      `Detached`/`exprTag` builders and compare committed shapes
      through `externalRefOf`-resolved subtrees. The last handwritten
      reader and writer in the example are gone; `dataText` moved to
@@ -120,26 +120,29 @@ What doesn't yet work and what comes next.
    - *The document becomes the seed.* Landed: `exprDoc` is the
      `lang: expression` document as data (encoded once at build by
      `langDefDoc`), and everything the code path needs decodes it —
-     `decodedExprDef` is the def `ExprLanguage` interprets,
+     `decodedExprDef` is the def the interpreted language uses,
      `exprTerms`/`exprTag`/`exprReading` anchor at the document's own
      node ids, and `demoExprDef` decodes the staged `demoExprDoc`
      rather than a code-side rule-set copy. `exprDef`/`exprRules`
      remain only as the recipe the encode consumes.
-   - *Drop the registry fallback.* `ExprLanguage` the object, its
-     `sampleDoc`, and the `allLanguages`/`foundation` registry
-     entries exist so a store holding no `lang:` doc can still
-     resolve the dialect. With the document seeded, `storedLanguage`
-     is the only interpretation path needed; the registry keeps just
-     the meta-language bootstrap (`DocLanguage`). The demo fixtures —
-     `demoExprDoc`'s staged definition (no `/`, for the heal beat)
-     and the sample expression — move to the seed layer as document
-     data. The expression type ref's URL stays: stored documents
-     name it.
+   - *Drop the registry fallback.* Landed: `ExprLanguage` the object
+     is gone — the demo fixtures moved to the seed layer as document
+     data (`demoExprDoc`'s staged definition and `exprSampleDoc`),
+     `allLanguages` keeps just the meta-language bootstrap
+     (`DocLanguage`), and `foundation`'s expression impls entry went
+     with it (the def names nothing code-side). `storedLanguage` is
+     the only interpretation path: a type-ref URL holding no
+     def-typed doc resolves to nothing. `SheetLanguage`'s fixture
+     resolve seeds `exprDoc` so its input grammar finds `lang:
+     expression`; the pane's `init` seeds it too, and the workbench
+     pushes the full store as before. The expression type ref's URL
+     stays: stored documents name it.
 
-   End state: `examples/expr/` is one file — the `lang: expression`
-   document wrapped in a Scala val — and `Expr.scala`, `ExprDoc`,
-   `ExprView`, `ExprReading`, `ExprRules`, `ExprLexicon`, `ExprDef`,
-   and `ExprLanguage` are gone or reduced to seed fixtures.
+   End state: `examples/expr/` is the seed document plus its recipe —
+   `ExprDef`/`ExprRules` (what `langDefDoc` encodes into `exprDoc`)
+   and `DemoExpr` (the demo fixtures) — and `Expr.scala`, `ExprDoc`,
+   `ExprView`, `ExprReading`, `ExprLexicon`, and `ExprLanguage` are
+   gone.
    Expression goes first because its whole surface already compiles
    from rules; markdown still needs the authored-productions
    machinery of item 3 before it can follow the same path.
@@ -242,7 +245,7 @@ What doesn't yet work and what comes next.
      fallback); a language overrides only when it differs.
    - *Retire the `Expr` codec* (landed via item 1's sheet step).
      `Expr.scala`/`ExprDoc.scala` deleted outright — tests build
-     trees through `ExprLanguage.parse` and read values via
+     trees through the interpreted def's parse and read values via
      `evalNode`/`printWith`; the sheet's `Expr.Gap`/`Expr.Ref` reads
      became `GapData`/`InternalNodeRef` checks on the parse tree.
    - *Lexicons, partly.* Landed for literals:

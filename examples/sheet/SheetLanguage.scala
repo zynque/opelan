@@ -1,7 +1,7 @@
 package opelan.examples.sheet
 
 import opelan.examples.{languageForRef, languageFromDef}
-import opelan.examples.expr.exprTag
+import opelan.examples.expr.{exprDoc, exprTag, exprTypeRef}
 import opelan.foundation.document._
 import opelan.foundation.document.store._
 import opelan.foundation.document.typed._
@@ -13,9 +13,14 @@ import opelan.foundation.langdef.doc._
 // adds only the seeded sample document; rendering, the cell input
 // grammar (the expression language, by pinned ref), and input sessions
 // come from DefLanguage.
+// The fixture's resolution store — the cell input grammar names
+// lang: expression by ref, and the seed document IS that language.
+private val exprStore: Store =
+  Store.empty.put(exprTypeRef.documentUrl, exprDoc)._1
+
 object SheetLanguage extends DefLanguage(
     sheetDef, sheetImpls,
-    ref => languageForRef(ref, Store.empty),
+    ref => languageForRef(ref, exprStore),
     dd => Some(languageFromDef(dd))) {
 
   // The demo's app: a small household budget. Cells are positional;

@@ -1,7 +1,8 @@
 package opelan.examples.expr
 
-import opelan.examples.registryForDoc
+import opelan.examples.{languageForDoc, languageFromDef}
 import opelan.foundation.document._
+import opelan.foundation.document.store._
 import opelan.foundation.document.typed._
 import opelan.foundation.document.Detached._
 import opelan.foundation.language.applyDocText
@@ -10,8 +11,15 @@ import opelan.foundation.view.ViewTree
 
 class ExprSuite extends munit.FunSuite {
 
+  // The language the seed document reads back — decodedExprDef
+  // interpreted, exactly what a stored lang: expression resolves to.
+  private val lang = languageFromDef(decodedExprDef)
+  private val seeded =
+    Store.empty.put(exprTypeRef.documentUrl, exprDoc)._1
+  private def langFor(d: Document[NodeData]) = languageForDoc(d, seeded)
+
   private def parse(input: String): DetachedNode[NodeData] =
-    ExprLanguage.parse(input).getOrElse(fail(s"no parse: $input"))
+    lang.parse(input).getOrElse(fail(s"no parse: $input"))
 
   // The derived evaluator's contract: evalNode over the document a
   // parse commits — a ref names a real node id in the same document.
@@ -80,36 +88,36 @@ class ExprSuite extends munit.FunSuite {
       printWith(exprRules, exprTag, leafText)(sl("hello")), "hello")
   }
 
-  test("ExprLanguage evaluates a typed document's content") {
-    val doc = ExprLanguage.sampleDoc
-    assertEquals(registryForDoc(doc), Some(ExprLanguage))
+  test("the seeded language evaluates a typed document's content") {
+    val doc = exprSampleDoc
+    assert(languageForDoc(doc, seeded).isDefined)
     assertEquals(
-      ExprLanguage.render("eval", doc).map(ViewTree.flatten),
+      lang.render("eval", doc).map(ViewTree.flatten),
       Right("4"))
     assertEquals(
-      ExprLanguage.render("print", doc).map(ViewTree.flatten),
+      lang.render("print", doc).map(ViewTree.flatten),
       Right("1 + 2 - (3 - 4)"))
   }
 
   test("rendered views keep gaps as gap nodes") {
-    val doc = applyDocText(ExprLanguage.sampleDoc, registryForDoc, "1 + abc").toOption.get
+    val doc = applyDocText(exprSampleDoc, langFor, "1 + abc").toOption.get
     assertEquals(
-      gaps(ExprLanguage.render("eval", doc).toOption.get), List("abc"))
+      gaps(lang.render("eval", doc).toOption.get), List("abc"))
     assertEquals(
-      gaps(ExprLanguage.render("print", doc).toOption.get), List("abc"))
+      gaps(lang.render("print", doc).toOption.get), List("abc"))
   }
 
   test("view trees tag emitted pieces with their source nodes") {
-    val doc = ExprLanguage.sampleDoc
+    val doc = exprSampleDoc
     val cid = contentId(doc).get
     assertEquals(
-      ExprLanguage.render("eval", doc),
+      lang.render("eval", doc),
       Right(ViewTree.from(cid, ViewTree.txt("4"))))
     // A gap blocking eval points at the node holding it.
-    val gappy = applyDocText(ExprLanguage.sampleDoc, registryForDoc, "1 + abc").toOption.get
+    val gappy = applyDocText(exprSampleDoc, langFor, "1 + abc").toOption.get
     val gapId = gappy.nodes.indexWhere(_.data == NodeData.GapData("abc"))
     assertEquals(
-      ExprLanguage.render("eval", gappy),
+      lang.render("eval", gappy),
       Right(ViewTree.from(gapId, ViewTree.gap("abc"))))
   }
 
@@ -131,9 +139,9 @@ class ExprSuite extends munit.FunSuite {
       "8 / 4 / 2"   -> "8 / 4 / 2")
     expected.foreach { case (t, printed) =>
       val doc =
-        applyDocText(ExprLanguage.sampleDoc, registryForDoc, t).toOption.get
+        applyDocText(exprSampleDoc, langFor, t).toOption.get
       assertEquals(
-        ExprLanguage.render("print", doc).map(ViewTree.flatten),
+        lang.render("print", doc).map(ViewTree.flatten),
         Right(printed), s"print: $t")
     }
   }
@@ -144,8 +152,8 @@ class ExprSuite extends munit.FunSuite {
       case _                    => Nil
     }) ++ t.children.flatMap(gaps)
 
-  test("ExprLanguage reports documents without expression content") {
+  test("the language reports documents without expression content") {
     val raw = beginDocument(s("root"))
-    assert(ExprLanguage.render("eval", raw).isLeft)
+    assert(lang.render("eval", raw).isLeft)
   }
 }

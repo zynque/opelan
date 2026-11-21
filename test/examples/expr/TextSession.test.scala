@@ -9,8 +9,8 @@ import munit.FunSuite
 
 // The text surface's incremental parse: whatever the edits, a session's
 // content equals the language's full parse of the current text — for
-// the Scala expression language and the interpreted one alike — and a
-// small edit reruns only part of the grammar.
+// the recipe def and the seed-document decode alike — and a small edit
+// reruns only part of the grammar.
 class TextSessionSuite extends FunSuite {
 
   private val interpreted = languageFromDef(exprDef)
@@ -23,7 +23,8 @@ class TextSessionSuite extends FunSuite {
     assertEquals(textEdit("same", "same"), Edit(4, 4, ""))
   }
 
-  List[(String, Language)]("ExprLanguage" -> ExprLanguage,
+  List[(String, Language)](
+    "DefLanguage(decodedExprDef)" -> languageFromDef(decodedExprDef),
     "DefLanguage(exprDef)" -> interpreted).foreach { (label, lang) =>
     test(s"property: $label sessions match full parses under random edits") {
       val random = new Random(7)

@@ -1,8 +1,9 @@
 package opelan.ui.typeddoc
 
-import opelan.examples.expr.ExprLanguage
+import opelan.examples.expr.exprTypeRef
 import opelan.examples.sheet.{SheetLanguage, sheetDef}
 import opelan.foundation.document._
+import opelan.foundation.document.store._
 import opelan.foundation.document.typed._
 import opelan.foundation.document.Detached._
 import opelan.foundation.langdef.doc.langDefDoc
@@ -11,15 +12,22 @@ import opelan.ui.editor.{
 
 class TypedDocSuite extends munit.FunSuite {
 
+  // init's doc plus the sheet def — the resolution context the
+  // load-a-sheet-doc tests need.
+  private val seeded = init.store
+    .put(sheetDef.typeRef.documentUrl, langDefDoc(sheetDef))._1
+
   test("init loads a typed expression sample") {
     val m = init
-    assertEquals(typeRefOf(m.doc), Some(ExprLanguage.typeRef))
+    assertEquals(typeRefOf(m.doc), Some(exprTypeRef))
     assertEquals(m.view, DocView.Editor)
   }
 
   test("children mounts the document editor with the pushed document") {
     val m = init
-    assertEquals(editorInput(m), EditorInput.SyncDocument(m.pushedDoc))
+    assertEquals(
+      editorInput(m),
+      EditorInput.SyncDocument(m.pushedDoc, store = m.store))
   }
 
   test("SwitchView selects a derived view") {
@@ -48,7 +56,8 @@ class TypedDocSuite extends munit.FunSuite {
 
   test("Load keeps a derived view the new language also offers") {
     val m = typedDocUpdate(
-      init, TypedDocInput.SwitchView(DocView.Derived("sheet"))).state
+      init.copy(store = seeded),
+      TypedDocInput.SwitchView(DocView.Derived("sheet"))).state
     val u = typedDocUpdate(m, TypedDocInput.Load(SheetLanguage.sampleDoc))
     assertEquals(u.state.view, DocView.Derived("sheet"))
   }
@@ -59,7 +68,9 @@ class TypedDocSuite extends munit.FunSuite {
     val u = typedDocUpdate(m, TypedDocInput.Load(d))
     assertEquals(u.state.doc, d)
     assertEquals(u.state.pushedDoc, d)
-    assertEquals(editorInput(u.state), EditorInput.SyncDocument(d))
+    assertEquals(
+      editorInput(u.state),
+      EditorInput.SyncDocument(d, store = u.state.store))
   }
 
   test("Load after a synced push resets to a fresh document") {
@@ -70,7 +81,9 @@ class TypedDocSuite extends munit.FunSuite {
     val d2: Document[NodeData] = beginDocument(NodeData.StringData("other"))
     val u = typedDocUpdate(m, TypedDocInput.Load(d2))
     assertEquals(u.state.pushMode, DocPush.Open)
-    assertEquals(editorInput(u.state), EditorInput.SyncDocument(d2))
+    assertEquals(
+      editorInput(u.state),
+      EditorInput.SyncDocument(d2, store = u.state.store))
   }
 
   test("Load with a selection pushes it through to the editor") {
@@ -82,6 +95,7 @@ class TypedDocSuite extends munit.FunSuite {
     assertEquals(u.state.pushedSelect, Some(SelectTarget(target)))
     assertEquals(
       editorInput(u.state),
-      EditorInput.SyncDocument(d, Some(SelectTarget(target))))
+      EditorInput.SyncDocument(
+        d, Some(SelectTarget(target)), store = u.state.store))
   }
 }

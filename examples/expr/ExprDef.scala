@@ -8,12 +8,11 @@ import opelan.foundation.langdef.doc.{langDefDoc, langDefFromDocument}
 // The expression language's definition as data — what its `lang:`
 // document encodes. The document is the seed (PLAN, *The document
 // becomes the seed*): `exprDef` is only the recipe `langDefDoc`
-// encodes into it, and everything the code path needs — the def
-// ExprLanguage interprets, the rules, the term anchors — decodes
-// from `exprDoc`, exactly as a stored version is read.
-// The language's identity ref — the URL its `lang:` document lives at.
-// A constant, not `ExprLanguage.typeRef`: the object interpreting this
-// def would otherwise be read while the def initializes.
+// encodes into it, and everything the code path needs — the def the
+// runtime interprets, the rules, the term anchors — decodes from
+// `exprDoc`, exactly as a stored version is read.
+// The language's identity ref — the URL its `lang:` document lives
+// at — a constant the recipe, the seed, and the decoded def share.
 val exprTypeRef =
   ExternalNodeReference("opelan:languages/int-expression", 0, 0)
 
@@ -43,16 +42,11 @@ val exprDef = LanguageDef(
 val exprDoc: Document[NodeData] = langDefDoc(exprDef)
 
 // The definition as the seed document reads it — what a stored
-// lang: expression decodes to. ExprLanguage interprets this; the term
-// anchors are the document's own node ids.
+// lang: expression decodes to. The interpreted language (a DefLanguage
+// over this) is built at the point of use, the same way a stored
+// version is; the term anchors are the document's own node ids.
 val decodedExprDef: LanguageDef =
   langDefFromDocument(exprTypeRef.documentUrl, exprDoc)
-
-// The code-side semantics the def names: none — the "standard"
-// lexicon and the `number`/`ref` leaf vocabulary it tokenizes are
-// foundation-provided (StandardLexicon.scala, Leaves.scala's
-// standardTerms), so this def needs no impls wiring at all.
-val exprImpls = Impls()
 
 // The seed def's reading — the decoded rules and the term anchors the
 // document declares, plus the ambient foundation refs.

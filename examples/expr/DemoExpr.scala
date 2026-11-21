@@ -1,9 +1,25 @@
 package opelan.examples.expr
 
+import opelan.examples.languageFromDef
 import opelan.foundation.document._
+import opelan.foundation.document.typed.makeTyped
 import opelan.foundation.langdef._
-import opelan.foundation.langdef.doc.{langDefFromDocument, metaConsOf}
+import opelan.foundation.langdef.doc.{
+  docImportsRef, docTitleRef, langDefFromDocument, metaConsOf}
 import opelan.foundation.means.text.printPattern
+
+// The sidebar's expression sample: (1 + 2) - (3 - 4)  ==  4, parsed
+// by the seeded def.
+lazy val exprSampleDoc: Document[NodeData] =
+  makeTyped(
+    exprTypeRef,
+    NodeData.ExternalNodeRef(docTitleRef),
+    NodeData.ExternalNodeRef(docImportsRef),
+    NodeData.StringData("Expression sample"),
+    languageFromDef(decodedExprDef)
+      .parse("1 + 2 - (3 - 4)")
+      .getOrElse(throw new IllegalStateException(
+        "expression sample failed to parse")))
 
 // The demo's seeded document — exprDoc minus the `a / b` rule's
 // subtree and its binding-tier entry, every other node id intact, so
@@ -17,10 +33,7 @@ lazy val demoExprDoc: Document[NodeData] = {
     .find(_.constructForm.exists(_._1 == "/"))
     .map(printPattern)
     .getOrElse(throw new IllegalStateException("exprRules has no / pattern"))
-  val ruleId = doc.nodes.indices.find(id =>
-    metaConsOf(doc, id).contains("definition") &&
-    doc.subtreeIds(id).exists(k =>
-      doc.getNode(k).exists(_.data == NodeData.StringData("/"))))
+  val ruleId = definitionWithLiteral(doc, "/")
     .getOrElse(throw new IllegalStateException(
       "exprDef encodes no / definition"))
   (for {
@@ -44,6 +57,23 @@ lazy val demoExprDoc: Document[NodeData] = {
 // to the definition document.
 lazy val demoExprDef: LanguageDef =
   langDefFromDocument(exprTypeRef.documentUrl, demoExprDoc)
+
+// The `definition` node whose `pattern` declares a `literal` piece
+// carrying `literal` — found by structure, so a stray `/` string
+// anywhere else in a definition can't be mistaken for the rule.
+private def definitionWithLiteral(
+    doc: Document[NodeData], literal: String): Option[Int] =
+  doc.nodes.indices.find { id =>
+    metaConsOf(doc, id).contains("definition") &&
+    doc.childrenOf(id).exists { pid =>
+      metaConsOf(doc, pid).contains("pattern") &&
+      doc.childrenOf(pid).exists(k =>
+        metaConsOf(doc, k).contains("literal") &&
+        doc.childrenOf(k).exists(cid =>
+          doc.getNode(cid).exists(
+            _.data == NodeData.StringData(literal))))
+    }
+  }
 
 // The `binding`/`tier` string child carrying `patternText` — the
 // binding entry matching the staged-out rule, removed along with its

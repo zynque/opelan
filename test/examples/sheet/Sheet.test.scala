@@ -1,8 +1,9 @@
 package opelan.examples.sheet
 
-import opelan.examples.{registryForDoc, termOf}
+import opelan.examples.{languageForDoc, termOf}
 import opelan.examples.expr.{exprTag, exprTerms}
 import opelan.foundation.document._
+import opelan.foundation.document.store._
 import opelan.foundation.document.typed._
 import opelan.foundation.view.ViewTree
 
@@ -18,7 +19,12 @@ class SheetSuite extends munit.FunSuite {
     SheetLanguage.render(view, doc).map(ViewTree.flatten)
 
   test("sampleDoc is a typed sheet document") {
-    assertEquals(registryForDoc(doc), Some(SheetLanguage))
+    // The type ref resolves through the store to the lang: sheet
+    // definition document.
+    val seeded = Store.empty.put(
+      sheetDef.typeRef.documentUrl, SheetLanguage.langDoc)._1
+    assertEquals(
+      languageForDoc(doc, seeded).map(_.name), Some(sheetDef.name))
     // The content root applies lang: sheet's `sheet` construct by ref,
     // through the imports section — no "sheet" string in the document.
     assertEquals(termOf(sheetTerms, doc, sheetId), Some(SheetTag))

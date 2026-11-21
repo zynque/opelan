@@ -4,7 +4,7 @@ import opelan.collaboration.automerge.ChangeInfo
 import opelan.foundation.document._
 import opelan.foundation.document.store._
 import opelan.foundation.document.typed._
-import opelan.examples.expr.ExprLanguage
+import opelan.examples.expr.exprTypeRef
 import opelan.examples.sheet.SheetLanguage
 import opelan.ui.fx._
 import opelan.ui.typeddoc.{TypedDocInput, TypedDocOutput}
@@ -65,7 +65,7 @@ class WorkbenchUpdateSuite extends munit.FunSuite {
     // each language's type ref resolves to its definition doc at v0 —
     // lang: expression staged without `/` for the demo
     assertEquals(
-      st.resolve(ExprLanguage.typeRef).map(_._1),
+      st.resolve(exprTypeRef).map(_._1),
       Some(opelan.examples.expr.demoExprDoc))
     assertEquals(
       st.resolve(SheetLanguage.typeRef).map(_._1), Some(SheetLanguage.langDoc))

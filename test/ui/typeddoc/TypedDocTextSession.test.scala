@@ -15,7 +15,7 @@ class TypedDocTextSessionSuite extends munit.FunSuite {
     // the same content a whole-text parse commits (ids differ — the
     // session's span hints keep more of them)
     val whole = opelan.foundation.language.applyDocText(
-      u1.state.doc, opelan.examples.registryForDoc, "1 + 2 * 3")
+      u1.state.doc, langFor(u1.state), "1 + 2 * 3")
       .toOption.get
     assertEquals(
       shapeOf(u2.state.doc, contentId(u2.state.doc).get),

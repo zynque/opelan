@@ -1,6 +1,5 @@
 package opelan.examples
 
-import opelan.examples.expr._
 import opelan.examples.markdown._
 import opelan.examples.sheet._
 import opelan.foundation.document._
@@ -10,18 +9,16 @@ import opelan.foundation.langdef._
 import opelan.foundation.langdef.doc._
 import opelan.foundation.language.Language
 
-// The assembled world: the concrete languages the demo knows about.
-// DocLanguage is the bootstrap root — it resolves the meta type ref
-// that every `lang:` document carries.
-val allLanguages: List[Language] =
-  List(ExprLanguage, SheetLanguage, MarkdownLanguage, DocLanguage)
+// The code-resident registry — just the bootstrap root. DocLanguage
+// resolves the meta type ref that every `lang:` document carries;
+// every other dialect exists only as a stored lang: document.
+val allLanguages: List[Language] = List(DocLanguage)
 
 // The foundational languages, each paired with the implementations its
 // def names. This list is the only built-in registry: a def decoded
 // from a document inherits the impls of the language whose type ref it
 // claims, so a stored lang: doc keeps working semantics.
 val foundation: List[(LanguageDef, Impls)] = List(
-  decodedExprDef -> exprImpls,
   sheetDef       -> sheetImpls,
   markdownDef    -> markdownImpls,
   docLanguageDef -> docImpls)
@@ -33,13 +30,13 @@ def implsFor(d: LanguageDef): Impls =
   }.getOrElse(Impls())
 
 // Registry resolution — no store: a language ref finds a code-defined
-// language by document URL and node id.
+// language by document URL and node id. The match ignores the pinned
+// version: bootstrap DocLanguage is the meta definition whatever
+// version the ref names, the same tolerance `pinnedOrHead` gives a
+// stored doc whose pinned version isn't recorded.
 def registryForRef(ref: ExternalNodeReference): Option[Language] =
   allLanguages.find(l =>
     l.typeRef.documentUrl == ref.documentUrl && l.typeRef.nodeId == ref.nodeId)
-
-def registryForDoc(doc: Document[NodeData]): Option[Language] =
-  typeRefOf(doc).flatMap(registryForRef)
 
 // Store-first language resolution — the bootstrap step: a language's
 // type ref names its definition *document*, and when the store holds a
@@ -49,7 +46,8 @@ def registryForDoc(doc: Document[NodeData]): Option[Language] =
 // def doc appends a head without retargeting dependents (a pin bump is
 // the accept-update gesture); head is the fallback when the pinned
 // version isn't stored. A URL with no def-typed doc falls through to
-// the registry, which is also where DocLanguage itself bottoms out.
+// the registry — whose only resident is the bootstrap: DocLanguage
+// answers the meta ref every `lang:` document carries.
 def languageForRef(
     ref: ExternalNodeReference, store: Store,
     seen: Set[String] = Set.empty): Option[Language] =

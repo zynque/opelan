@@ -1,6 +1,6 @@
 package opelan.ui.typeddoc
 
-import opelan.examples.expr.ExprLanguage
+import opelan.examples.expr.exprTypeRef
 import opelan.foundation.document._
 import opelan.foundation.document.typed._
 import opelan.foundation.document.Detached._
@@ -18,7 +18,7 @@ class TypedDocActionsSuite extends munit.FunSuite {
       editorInput(u.state),
       EditorInput.SyncDocument(
         m.doc, Some(SelectTarget(target, focus = false)),
-        DocPush.Merge("Select")))
+        DocPush.Merge("Select"), u.state.store))
     assertEquals(u.state.view, DocView.Editor)
   }
 
@@ -39,7 +39,7 @@ class TypedDocActionsSuite extends munit.FunSuite {
 
   test("GoToDefinition follows the document's type ref") {
     val u = typedDocUpdate(init, TypedDocInput.GoToDefinition)
-    assert(u.out.contains(TypedDocOutput.FollowRef(ExprLanguage.typeRef)))
+    assert(u.out.contains(TypedDocOutput.FollowRef(exprTypeRef)))
   }
 
   test("GoToDefinition on an untyped document reports it") {

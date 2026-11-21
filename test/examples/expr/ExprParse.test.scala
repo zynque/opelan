@@ -1,5 +1,6 @@
 package opelan.examples.expr
 
+import opelan.examples.languageFromDef
 import opelan.foundation.document._
 import opelan.foundation.document.Detached._
 import opelan.foundation.means.engine.{leafText, printWith}
@@ -7,12 +8,13 @@ import opelan.foundation.means.engine.{leafText, printWith}
 // The expression language's parse surface: literals, precedence,
 // parentheses, signum, and the whole recovery contract — asserted on
 // the document trees the def'd language produces (DefLanguage over
-// exprDef — ExprLanguage; the seeded demo document drops `/`, see
-// demoExprDoc).
+// decodedExprDef; the seeded demo document drops `/`, see demoExprDoc).
 class ExprParseSuite extends munit.FunSuite {
 
+  private val lang = languageFromDef(decodedExprDef)
+
   private def parse(input: String): DetachedNode[NodeData] =
-    ExprLanguage.parse(input).getOrElse(fail(s"no parse: $input"))
+    lang.parse(input).getOrElse(fail(s"no parse: $input"))
 
   // Expected trees spelled the encoding's own way — a construct
   // displays as its term's ref, a leaf holds its data.

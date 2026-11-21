@@ -1,7 +1,8 @@
 package opelan.examples
 
 import opelan.examples.sheet.{SheetLanguage, sheetDef}
-import opelan.examples.expr.{ExprLanguage, demoExprDoc, exprDef, exprImpls, exprRules}
+import opelan.examples.expr.{
+  demoExprDoc, exprDef, exprDoc, exprRules, exprTypeRef}
 import opelan.foundation.document._
 import opelan.foundation.grammar.RuleName
 import opelan.foundation.document.store._
@@ -18,9 +19,9 @@ import opelan.foundation.document.Detached._
 import munit.FunSuite
 
 // The def-doc format: encoding and reading must round-trip, and the
-// seeded lang: docs (ExprLanguage.langDoc / SheetLanguage.langDoc)
-// must decode back to the in-memory defs they describe (plus the term
-// identities the encoding assigns — withTermRefs).
+// seeded lang: docs (exprDoc / SheetLanguage.langDoc) must decode back
+// to the in-memory defs they describe (plus the term identities the
+// encoding assigns — withTermRefs).
 class LangDefDocSuite extends FunSuite {
 
   // A meta construct, written inline (makeTyped imports it).
@@ -468,13 +469,13 @@ class LangDefDocSuite extends FunSuite {
     assertEquals(
       back.inputParser,
       Some(InputParserDef.Language(
-        ExprLanguage.typeRef, InputFallback.Label)))
+        exprTypeRef, InputFallback.Label)))
   }
 
   test("the seeded lang docs decode to their defs") {
     assertEquals(
       langDefFromDocument("opelan:languages/int-expression",
-        ExprLanguage.langDoc),
+        exprDoc),
       withTermRefs(exprDef))
     assertEquals(
       langDefFromDocument("opelan:languages/sheet",
@@ -536,7 +537,7 @@ class LangDefDocSuite extends FunSuite {
     // The damaged doc claims the expression language's URL — the
     // "standard" lexicon it names resolves foundation-side.
     val d = langDefFromDocument(
-      ExprLanguage.typeRef.documentUrl, doc)
+      exprTypeRef.documentUrl, doc)
     assertEquals(d.name, "lang: broken") // falls back to the title
     assertEquals(d.syntax.map(_.rules), Some(None))
     // A rule-less syntax parses nothing — total, not thrown.
@@ -558,7 +559,10 @@ class LangDefDocSuite extends FunSuite {
   }
 
   test("sheet input parsing goes through the language ref") {
-    val defed = languageFromDef(sheetDef)
+    // The sheet's input grammar names lang: expression by ref — the
+    // seed store supplies the document it resolves to.
+    val seeded = Store.empty.put(exprTypeRef.documentUrl, exprDoc)._1
+    val defed = languageFromDef(sheetDef, seeded)
     val inputs = List("Apples", "4", "1.5", "ref:5", "ref:1 * 2",
       "?stuck", "", "a b", "1 +")
     inputs.foreach { t =>
@@ -568,12 +572,14 @@ class LangDefDocSuite extends FunSuite {
   }
 
   test("DefLanguage(sheetDef) renders identically to SheetLanguage") {
+    val seeded = Store.empty.put(exprTypeRef.documentUrl, exprDoc)._1
+    val defed = languageFromDef(sheetDef, seeded)
     val doc = SheetLanguage.sampleDoc
     assertEquals(
-      languageFromDef(sheetDef).render("sheet", doc),
+      defed.render("sheet", doc),
       SheetLanguage.render("sheet", doc))
     assertEquals(
-      languageFromDef(sheetDef).render("formulas", doc),
+      defed.render("formulas", doc),
       SheetLanguage.render("formulas", doc))
   }
 }

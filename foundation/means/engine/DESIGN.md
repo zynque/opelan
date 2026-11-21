@@ -53,7 +53,8 @@ reasons:
   combinators (gaps instead of failure), and `precedenceTable` already
   shows the pattern: an operator table is one meta-combinator, not a
   format feature. Compiling rules to the same combinators makes parity
-  with `ExprLanguage` a matter of producing the same composition.
+  with the expression dialect a matter of producing the same
+  composition.
 
 Rules split by shape. An *operator-shaped* rule — placeholders at one or
 both edges, on the binding list (`a + b`, `-a`, `a %`, `a ^ b`) — joins
