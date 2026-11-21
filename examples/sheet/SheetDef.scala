@@ -48,10 +48,16 @@ val sheetImpls = Impls(
   views = Map(
     "sheet-grid"     -> ((doc, id, ctx) => sheetView(doc, id, ctx)),
     "sheet-formulas" -> ((doc, id, ctx) => formulasView(doc, id, ctx))),
-  inputParsers = Map("sheet-cell" -> parseCellText),
   refName = Some(isCellRefName),
   commitLink = Some(linkCellRefs),
   action = Some(sheetAction))
+
+// Kind names — keys into sheetTerms, never stored.
+val SheetTag = "sheet"
+val RowTag = "row"
+val HRowTag = "hrow"
+val RefTag = "ref"
+val ColumnTag = "column"
 
 // Construct identities of the language. Code names a term ("hrow") only
 // to look up its vocabulary entry in the canonical encoding; documents

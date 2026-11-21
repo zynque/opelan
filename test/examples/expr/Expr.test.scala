@@ -11,7 +11,7 @@ import opelan.foundation.view.ViewTree
 class ExprSuite extends munit.FunSuite {
 
   private def parse(input: String): DetachedNode[NodeData] =
-    ExprLanguage.parse(input).get
+    ExprLanguage.parse(input).getOrElse(fail(s"no parse: $input"))
 
   // The derived evaluator's contract: evalNode over the document a
   // parse commits — a ref names a real node id in the same document.

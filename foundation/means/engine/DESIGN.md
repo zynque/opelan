@@ -108,5 +108,5 @@ productions themselves (PLAN, *Surfaces as definitions*).
 Read right to left, a constructor meaning is the printer: the engine
 prints a tree back through the rule set that built it, and
 minimal-parenthesis printing follows from the binding list — replacing
-hand-written printers like `Expr.pp` (see *Read left to right* in
+hand-written precedence printers (see *Read left to right* in
 [`../DESIGN.md`](../DESIGN.md)).

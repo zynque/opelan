@@ -81,7 +81,7 @@ class SheetSuite extends munit.FunSuite {
     val noGrammar = ViewTree.flatten(sheetView(doc, sid))
     assert(noGrammar.split("\n")(6).contains("?D5 / B6"), noGrammar)
     val healed = ViewTree.flatten(
-      sheetView(doc, sid, ViewContext(parseInput = t => Some(parseCellText(t)))))
+      sheetView(doc, sid, ViewContext(parseInput = SheetLanguage.parseInput)))
     assertEquals(healed.split("\n")(6), "per person\t\t\t8.1")
     // the document itself still holds the gap
     assert(doc.getNode(cellId(6, 3)).exists(_.data.isInstanceOf[NodeData.GapData]))
@@ -122,26 +122,31 @@ class SheetSuite extends munit.FunSuite {
     assertEquals(cellText(doc, cellId(1, 3)), "B2 * C2")
   }
 
-  test("parseCellText covers the cell grammar") {
-    assertEquals(parseCellText("Oranges").data, NodeData.StringData("Oranges"))
-    assertEquals(parseCellText("5").data, NodeData.IntData(5))
-    assertEquals(parseCellText("2.50").data, NodeData.FloatData(2.5))
-    assertEquals(parseCellText("?oops").data, NodeData.GapData("oops"))
-    assertEquals(parseCellText("?").data, NodeData.GapData(""))
-    assertEquals(parseCellText("").data, NodeData.StringData(""))
+  test("the cell input grammar covers labels, literals, gaps, and formulas") {
+    assertEquals(parseCell("Oranges").data, NodeData.StringData("Oranges"))
+    assertEquals(parseCell("5").data, NodeData.IntData(5))
+    assertEquals(parseCell("2.50").data, NodeData.FloatData(2.5))
+    assertEquals(parseCell("?oops").data, NodeData.GapData("oops"))
+    assertEquals(parseCell("?").data, NodeData.GapData(""))
+    assertEquals(parseCell("").data, NodeData.StringData(""))
     // unparsed text that mentions a cell is a formula-in-waiting: a gap
-    assertEquals(parseCellText("ref:1 % ref:2").data, NodeData.GapData("ref:1 % ref:2"))
-    assertEquals(parseCellText("D4 % E2").data, NodeData.GapData("D4 % E2"))
-    assertEquals(parseCellText("2 % people").data, NodeData.StringData("2 % people"))
+    assertEquals(parseCell("ref:1 % ref:2").data, NodeData.GapData("ref:1 % ref:2"))
+    assertEquals(parseCell("D4 % E2").data, NodeData.GapData("D4 % E2"))
+    assertEquals(parseCell("2 % people").data, NodeData.StringData("2 % people"))
     assertEquals(
-      parseCellText("ref:5 * 2").data, exprTag("*"))
+      parseCell("ref:5 * 2").data, exprTag("*"))
   }
+
+  // The language's cell input surface: InputGrammar over the expression
+  // dialect, linkCellRefs applied (DefLanguage.parseInput).
+  private def parseCell(text: String): DetachedNode[NodeData] =
+    SheetLanguage.parseInput(text).getOrElse(fail(s"no parse: $text"))
 
   test("a committed cell edit rewrites the node in place, keeping refs") {
     // Commit "3" over Apples' qty (4): the node keeps its id, so the
     // line-total ref still resolves — now to 3.
     val edited = replaceNodeContent(
-      cellId(1, 1), parseCellText("3"), doc).toOption.get
+      cellId(1, 1), parseCell("3"), doc).toOption.get
     assert(edited.getNode(cellId(1, 1)).exists(_.data == NodeData.IntData(3)))
     val rows = SheetLanguage.render("sheet", edited)
       .map(ViewTree.flatten).toOption.get.split("\n")
@@ -152,7 +157,7 @@ class SheetSuite extends munit.FunSuite {
     // A formula cell edited to a new formula: same node, new children.
     val cid = cellId(1, 3)
     val edited = replaceNodeContent(
-      cid, linkCellRefs(parseCellText("B3 + 1")), doc)
+      cid, parseCell("B3 + 1"), doc)
       .flatMap(internalizeRefs(_, cid)).toOption.get
     val node = edited.getNode(cid).get
     assertEquals(termOf(exprTerms, edited, cid), Some("+"))
@@ -171,10 +176,11 @@ class SheetSuite extends munit.FunSuite {
   test("a committed cell name becomes a ref construct") {
     // Typing "B2" commits a gap the commit link materializes as
     // `ref > column("B"), row(2)` — the reference structure, stored.
-    assertEquals(parseCellText("B2").data, NodeData.GapData("B2"))
+    // The input grammar runs the link itself, so the ref is what lands.
+    assertEquals(parseCell("B2").data, sheetTag(RefTag))
     val cid = cellId(6, 3)
     val edited = replaceNodeContent(
-      cid, linkCellRefs(parseCellText("B2")), doc).toOption.get
+      cid, parseCell("B2"), doc).toOption.get
     val refNode = edited.getNode(cid).get
     assertEquals(termOf(sheetTerms, edited, cid), Some(RefTag))
     // ref(column("B"), row(2)) — the semantics, stored.
@@ -192,7 +198,7 @@ class SheetSuite extends munit.FunSuite {
   test("cell names in a committed formula become ref constructs") {
     val cid = cellId(6, 3)
     val edited = replaceNodeContent(
-      cid, linkCellRefs(parseCellText("B2 * C2")), doc)
+      cid, parseCell("B2 * C2"), doc)
       .flatMap(internalizeRefs(_, cid)).toOption.get
     val node = edited.getNode(cid).get
     assertEquals(termOf(exprTerms, edited, cid), Some("*"))
@@ -208,7 +214,7 @@ class SheetSuite extends munit.FunSuite {
     // as the ref construct, displayed as a gap until the grid grows.
     val cid = cellId(6, 3)
     val edited = replaceNodeContent(
-      cid, linkCellRefs(parseCellText("Z99")), doc).toOption.get
+      cid, parseCell("Z99"), doc).toOption.get
     assertEquals(termOf(sheetTerms, edited, cid), Some(RefTag))
     val rows = SheetLanguage.render("sheet", edited)
       .map(ViewTree.flatten).toOption.get.split("\n")

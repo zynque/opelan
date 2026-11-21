@@ -95,15 +95,16 @@ What doesn't yet work and what comes next.
      reparses as the same unrecognized run. The derived views and the
      sheet both use them; a dialect overrides only when it differs.
    - *The sheet reads trees, not a Scala AST.* Landed: `Expr.scala`
-     and `ExprDoc.scala` deleted — `parseCellText` classifies the
-     parse tree's data directly (a `GapData` root is the unreadable
-     formula, an `InternalNodeRef` leaf the cell-ref probe
-     `mentionsCell` wants), `sampleDoc` parses its expression, and
+     and `ExprDoc.scala` deleted — the cell input grammar classifies
+     the parse tree's data directly (a `GapData` root is the unreadable
+     formula, an `InternalNodeRef` leaf the ref probe wants);
+     the sheet splits into `SheetView` (grid rendering) and
+     `SheetCell` (cell display); `sampleDoc` parses its expression; and
      tests build expected trees through `ExprLanguage.parse` or
      `Detached`/`exprTag` builders and compare committed shapes
      through `externalRefOf`-resolved subtrees. The last handwritten
-     reader and writer in the example are gone; the leaf-speller's
-     `dataText` moved to foundation for the dangling-ref display.
+     reader and writer in the example are gone; `dataText` moved to
+     foundation for the dangling-ref display.
    - *A shared leaf vocabulary.* `exprLexicon` and `exprImpls.leaves`
      declare the characters a rule can't display: digits for ints and
      floats, the `ref:` prefix, the `unrecognized` recovery run. None

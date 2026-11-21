@@ -25,5 +25,6 @@ object ExprLanguage extends DefLanguage(
       er(docTitleRef),
       er(docImportsRef),
       NodeData.StringData("Expression sample"),
-      parse("1 + 2 - (3 - 4)").get)
+      parse("1 + 2 - (3 - 4)").getOrElse(
+        throw new IllegalStateException("expression sample failed to parse")))
 }

@@ -12,7 +12,7 @@ import opelan.foundation.means.engine.{leafText, printWith}
 class ExprParseSuite extends munit.FunSuite {
 
   private def parse(input: String): DetachedNode[NodeData] =
-    ExprLanguage.parse(input).get
+    ExprLanguage.parse(input).getOrElse(fail(s"no parse: $input"))
 
   // Expected trees spelled the encoding's own way — a construct
   // displays as its term's ref, a leaf holds its data.

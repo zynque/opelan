@@ -19,17 +19,17 @@ an old store with untyped `lang:` docs falls back to the registry.
 
 ## Expression dialect (`expr/`)
 
-`ExprLanguage`, `Expr`/`ExprDoc`, `ExprLexicon`/`ExprRules`,
-`ExprView` — the demonstration dialect. It has int and float
+`ExprLanguage`, `ExprDef`/`ExprRules`/`ExprLexicon` — the
+demonstration dialect. It has int and float
 literals (integer arithmetic stays integral, division and floats are
 decimal, and displayed values drop float noise — `valueText`'s
 rule); `+`, `-`, `*`, `/` with precedence-aware printing; `ref:N`
 references stored as `InternalNodeRef` (so "go to definition" is the
-ordinary ref jump); and grouping by tree structure. It provides
-`print` and `eval` views and a total, recovering parser. Both views
-are derived from the rule set — `printViewWith` and `evalView`
-(`foundation/means/engine`) — and every piece of the view tree
-carries its source id. Evaluation resolves refs through the
+ordinary ref jump); and grouping by tree structure. Its `edit`,
+`print`, and `eval` views derive from the def's rules —
+`printViewWith` and `evalView` (`foundation/means/engine`) — over a
+total, recovering parser, and every piece of the view tree carries its
+source id. Evaluation resolves refs through the
 enclosing document — a referenced cell's own subtree is evaluated,
 so formulas compose — and a visiting set reports ref cycles as gaps
 instead of diverging. `exprLexicon` is the authored leaf layer
@@ -38,7 +38,10 @@ derive from the rules — `exprTokens` composes them for direct parses
 (`foundation/means/engine/LiteralLexicon`).
 
 `ExprRules`/`ExprDef` define the dialect as `means` rules and a def —
-`ExprLanguage` IS `DefLanguage(exprDef)`. The 28-input battery holding
+`ExprLanguage` IS `DefLanguage(exprDef)`. There is no AST and no
+tree↔code codec: parses and tests work on `NodeData` trees directly,
+and `exprTag`/`exprTerms` map a construct name to the ref its
+definition declares. The 28-input battery holding
 a constructed `DefLanguage(exprDef)` identical to the singleton (parse,
 print, eval) checks the construction path of the definition machinery
 (see [`test/`](../test/DESIGN.md)). Code knows an example dialect's
@@ -47,7 +50,8 @@ constructs by the ids its canonical encoding assigns (`termRefs`,
 
 ## Sheet dialect (`sheet/`)
 
-`Sheet`, `SheetLanguage` — the demo app: a typed document whose content
+`SheetView`/`SheetCell`, `SheetDef`/`SheetLanguage` — the demo app: a
+typed document whose content
 subtree is `sheet > row/hrow > cell`. Label cells (plain string leaves)
 pass through; every other cell is read as an expression and evaluated.
 Cells name each other A1-style (`D5` = column D, row 5), and the

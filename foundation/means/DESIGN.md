@@ -2,8 +2,9 @@
 
 Today a language's meaning is scattered: the grammar maps `"*"` to the
 tag `"mul"` inside a combinator tree, the vocabulary separately declared
-`mul` as `Fixed(2)`, `Expr.pp` re-encodes precedence for printing, and
-eval matches `Mul` in Scala — four artifacts held together by a string.
+`mul` as `Fixed(2)`, a pretty-printer re-encodes precedence for printing,
+and eval matches on a Scala enum — four artifacts held together by a
+string.
 Authoring one requires knowing parser combinators (`Signum`,
 `Unrecognized`, `Phrase`, stop sets), much of which is recovery
 machinery leaking into the definition.
@@ -79,7 +80,7 @@ Read left to right, a rule is a production; its meaning references an
 existing term — foundational definition or declared construct — and
 its arity; read right to left, a constructor
 meaning is the printer — minimal-parenthesis printing follows from the
-binding list, replacing hand-written `Expr.pp`. Several surfaces may
+binding list, replacing a hand-written pretty-printer. Several surfaces may
 mean the same tree (`a × b`, `a times b`, `product of a, b` all `means
 mul(a, b)`), so choosing a notation means choosing which rule set prints
 the view — *Polysyntactic* as data.
