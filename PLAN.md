@@ -4,69 +4,6 @@ What doesn't yet work and what comes next.
 
 **Current Focus:** Reducing the examples so that they consist of only dialect documents expressed in terms of foundational constructs provided by the platform and contain no custom Scala code
 
-## In flight — one compiled-grammar parse path
-
-Every document surface should parse through a compiled `Grammar` — no
-ad-hoc parsers — so spans, incremental sessions, and provenance-tracked
-node identity apply uniformly. This lands the *Document-level `self`*
-half of item 3 early and closes on the *Self-Description* question
-(item 2).
-
-Done: character-level provenance replaced line identity —
-`TextProvenance` (per-character frozen claiming chains, valid only for
-the `doc` they index), `SpannedTree` (each parsed node's span on the
-node), `Language.parseSpanned`, and span-derived path hints into
-`commitContent`; `LineIdentity` deleted.
-
-1. **Surface designation** (landed). `SyntaxDef` names the production
-   rooting the document text surface (`"blocks"` for markdown);
-   `parse`, `parseSpanned`, and `textSyntax` root there;
-   `Impls.textParser` and `markdownParse` delete; markdown gains
-   incremental sessions.
-2. **`lang:` doc grammar** (landed). `document` — an outline
-   production: a line absorbs the non-blank lines indented deeper than
-   it (the root absorbs all lines, as `defDocParse`'s `spanBlock` did),
-   and a string line under `definitions` runs `ruleGrammar` on the
-   bounded line text, its `definition` encoding stamped by
-   `ruleSpannedChildren`/`RuleSpanTerms` (retained — the means-line
-   adapter's decode machinery, not a parser). `docLanguageDef.syntax`
-   roots at `surface = "document"`; `defDocParse`/`DefDocSpans` and the
-   `isDocLanguage` parse branches deleted. `lang:` docs get spans,
-   provenance-tracked text commits, and incremental `textSyntax`
-   sessions like every compiled language.
-3. **Ref-based `where`-term binding** (landed). `Constraint` carries
-   `termRef: Option[ExternalNodeReference]` beside its printed name —
-   the `Meaning` tag+ref pattern — and `lexicals` is keyed by the
-   terms' anchored refs (`lexicalRefs`, `opelan:foundation/lexical`,
-   in `ambientRefs`). `constraint` nodes encode `erl(ref)`, which the
-   doc canonicalizes through its imports section like any external
-   ref; decode resolves the ref's name back through ambient terms,
-   imported vocabularies, or the anchored node's own text, and still
-   accepts old `sl(name)` encodings. Read/commit resolve names to refs
-   through the same resolver meanings use (ambient builtins first,
-   then the doc's vocabulary); `boundLexicals` and `ruleIssues` fall
-   back to `lexicalRefs.get` for constraints built ref-less, so
-   hand-written rules still compile. `surface` is
-   `Option[ExternalNodeReference]` — the `d: blocks` bindings of
-   authored productions (item 3) now bind by identity, surviving
-   renames. The other name-keyed tables retire as their owners land —
-   `impls.views` with item 1's derived views, `impls.lexicons` with
-   authored lexicons, `builtin` input parsers with self-description —
-   each noted at its step.
-4. **Session → hints** (landed). `TextSyntax.toSpanned` reports the
-   parse's spans when `toContent` keeps the tree's shape (the
-   restructuring meaning-input syntax returns None); `TextEdited`
-   commits the session's `content`/`spannedContent` through
-   `applyTrackedContent` — provenance-carried hints, `commitContent`'s
-   reconciler as fallback — and `applyTrackedText` is the same call
-   with `parse`/`unspanned`. Two machinery fixes this surfaced:
-   `commitAt`'s `graft` lets a hint inside a freshly inserted subtree
-   reclaim a freed node (a construct moved under a new parent keeps
-   its identity — `pasteNode` + rematch, never stolen while attached),
-   and `stamp` re-claims characters whose chain's innermost node the
-   commit detached (a dropped hint otherwise leaves ownership pointing
-   at a former node).
-
 ## Known gaps
 
 - **Demo rough edges:** History does not show updates when the sheet document is updated to pull in the updates to the sheets & expression dialect.
@@ -265,10 +202,15 @@ node), `Language.parseSpanned`, and span-derived path hints into
      keeps intra-line spaces as content. Meta construct, encode/
      decode, `lexicalTerms` reading from the decoded def, and
      `Impls.productions` reduced to a bootstrap fallback.
-   - *Document-level `self`.* With `blocks` declared, `d means d
-     where d: blocks` compiles the whole document — `DefLanguage`'s
-     `textParser` shortcut retires and `textSyntax` returns, giving
-     markdown the incremental sessions the expression dialect has.
+   - *Document-level `self`.* Landed: `SyntaxDef.surface` names the
+     production rooting the document text surface (`"blocks"` for
+     markdown, `document` for `lang:` docs), `textParser` and every
+     ad-hoc document parser are gone, `parse`/`parseSpanned`/
+     `textSyntax` root at the surface for every compiled-grammar
+     language, and `where`-term bindings — including `surface` —
+     anchor by ref. Markdown and `lang:` docs have the incremental
+     sessions and provenance-tracked commits the expression dialect
+     has.
    - *Production-aware derived printing.* `printWith` already walks
      rules backwards inside a line; extend it over the declared
      productions — `list`/`some`/`many` nodes emit children
