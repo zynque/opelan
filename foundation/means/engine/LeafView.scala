@@ -28,7 +28,10 @@ def leafText(data: NodeData): String = data match {
   case other                       => dataText(other)
 }
 
-private def dataText(data: NodeData): String = data match {
+// The surface text of arbitrary node data — strings unquoted, so gap
+// text reparses as the same unrecognized run. What a node no construct
+// claims contributes wherever its display text is needed.
+def dataText(data: NodeData): String = data match {
   case NodeData.StringData(s) => s
   case other                  => NodeDataText.show(other)
 }

@@ -94,12 +94,16 @@ What doesn't yet work and what comes next.
      when empty, so it reparses), a string unquoted so gap text
      reparses as the same unrecognized run. The derived views and the
      sheet both use them; a dialect overrides only when it differs.
-   - *The sheet reads trees, not a Scala AST.* `Sheet.scala` still
-     classifies cell text through `Expr` and `ExprDoc`'s
-     AST↔document codec. A gap is already `GapData` in the tree and a
-     reference already `InternalNodeRef`; teaching the sheet to check
-     node data directly retires `Expr.scala` and `ExprDoc.scala` —
-     the last handwritten reader and writer in the example.
+   - *The sheet reads trees, not a Scala AST.* Landed: `Expr.scala`
+     and `ExprDoc.scala` deleted — `parseCellText` classifies the
+     parse tree's data directly (a `GapData` root is the unreadable
+     formula, an `InternalNodeRef` leaf the cell-ref probe
+     `mentionsCell` wants), `sampleDoc` parses its expression, and
+     tests build expected trees through `ExprLanguage.parse` or
+     `Detached`/`exprTag` builders and compare committed shapes
+     through `externalRefOf`-resolved subtrees. The last handwritten
+     reader and writer in the example are gone; the leaf-speller's
+     `dataText` moved to foundation for the dangling-ref display.
    - *A shared leaf vocabulary.* `exprLexicon` and `exprImpls.leaves`
      declare the characters a rule can't display: digits for ints and
      floats, the `ref:` prefix, the `unrecognized` recovery run. None
@@ -231,15 +235,11 @@ What doesn't yet work and what comes next.
      `exprPrintLeaf` collapsed to a foundation default
      (ints, floats, `ref:N`, verbatim/`?` gaps, `NodeDataText.show`
      fallback); a language overrides only when it differs.
-   - *Retire the `Expr` codec* (lands via item 1's sheet step).
-     `evalNode` already evaluates document trees through
-     `semanticsOf`; `exprToDetached`/`exprFromDetached` is a
-     hand-written reader — tests build trees through
-     `ExprLanguage.parse` or a vocabulary-derived builder and read
-     values via `evalNode`/`valueText`; the sheet's `Expr.Gap` reads
-     become `GapData`/`StringData` checks. `Expr.scala`/
-     `ExprDoc.scala` delete, or `Expr` survives as pure test
-     scaffolding.
+   - *Retire the `Expr` codec* (landed via item 1's sheet step).
+     `Expr.scala`/`ExprDoc.scala` deleted outright — tests build
+     trees through `ExprLanguage.parse` and read values via
+     `evalNode`/`printWith`; the sheet's `Expr.Gap`/`Expr.Ref` reads
+     became `GapData`/`InternalNodeRef` checks on the parse tree.
    - *Lexicons, partly.* Landed for literals:
      `LiteralLexicon.withLiterals` composes the patterns' literal
      displays over the authored lexicon — longest-first, reserved

@@ -1,7 +1,7 @@
 package opelan.examples.sheet
 
 import opelan.examples.termOf
-import opelan.examples.expr.{Expr, ExprLanguage, codeExprReading, exprFromDetached, exprToDetached}
+import opelan.examples.expr.{ExprLanguage, codeExprReading}
 import opelan.foundation.document._
 import opelan.foundation.means.engine.{evalNode, printViewWith, valueText, leafView}
 import opelan.foundation.view.ViewTree
@@ -185,23 +185,23 @@ def cellText(
 // text that doesn't parse but mentions a cell (`B2`, `ref:N`) is a
 // formula the grammar can't read yet, kept as a gap; anything else is
 // a label — in a sheet, plain text is a string value, not an error.
-def parseCellText(text: String): DetachedNode[NodeData] =
-  if (text.startsWith("?")) DetachedNode.leaf(NodeData.GapData(text.drop(1)))
-  else if (text.trim.isEmpty) DetachedNode.leaf(NodeData.StringData(""))
-  else exprOf(text) match {
-    case _: Expr.Gap if mentionsCell(text) => DetachedNode.leaf(NodeData.GapData(text))
-    case _: Expr.Gap => DetachedNode.leaf(NodeData.StringData(text))
-    case e            => exprToDetached(e)
-  }
-
+//
 // The code-side cell grammar reads through the full expression def
 // (every rule incl. `/`); a store-resolved grammar — the def doc the
 // sheet's input ref pins — is what ViewContext.parseInput hands
 // healGaps, so the demo's staged def gates what heals live.
-private def exprOf(text: String): Expr =
-  ExprLanguage.parse(text).map(exprFromDetached(_))
-    .getOrElse(Expr.Gap(text))
+def parseCellText(text: String): DetachedNode[NodeData] =
+  if (text.startsWith("?")) DetachedNode.leaf(NodeData.GapData(text.drop(1)))
+  else if (text.trim.isEmpty) DetachedNode.leaf(NodeData.StringData(""))
+  else ExprLanguage.parse(text) match {
+    case Some(t) if !t.data.isInstanceOf[NodeData.GapData] => t
+    case _ if mentionsCell(text) =>
+      DetachedNode.leaf(NodeData.GapData(text))
+    case _ => DetachedNode.leaf(NodeData.StringData(text))
+  }
 
 private def mentionsCell(text: String): Boolean =
   text.split("\\s+").exists(w =>
-    isCellRefName(w) || exprOf(w).isInstanceOf[Expr.Ref])
+    isCellRefName(w) || ExprLanguage.parse(w).exists(t =>
+      t.children.isEmpty &&
+        t.data.isInstanceOf[NodeData.InternalNodeRef]))

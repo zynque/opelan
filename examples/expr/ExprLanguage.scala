@@ -25,8 +25,5 @@ object ExprLanguage extends DefLanguage(
       er(docTitleRef),
       er(docImportsRef),
       NodeData.StringData("Expression sample"),
-      exprToDetached(
-        Expr.Sub(
-          Expr.Add(Expr.Lit(1), Expr.Lit(2)),
-          Expr.Sub(Expr.Lit(3), Expr.Lit(4)))))
+      parse("1 + 2 - (3 - 4)").get)
 }

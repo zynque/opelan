@@ -1,7 +1,7 @@
 package opelan.examples.sheet
 
 import opelan.examples.termOf
-import opelan.examples.expr.gapText
+import opelan.foundation.means.engine.dataText
 import opelan.foundation.document._
 import opelan.foundation.document.typed._
 
@@ -27,7 +27,7 @@ def resolveGridRefs(
           DetachedNode.leaf(NodeData.InternalNodeRef(target))
         case None =>
           DetachedNode.leaf(NodeData.GapData(refNodeName(d, id)
-            .getOrElse(d.getNode(id).map(n => gapText(n.data))
+            .getOrElse(d.getNode(id).map(n => dataText(n.data))
               .getOrElse("ref"))))
       }
       commitContent(id, content, d).getOrElse(d)

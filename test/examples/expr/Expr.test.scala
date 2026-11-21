@@ -7,101 +7,77 @@ import opelan.foundation.document.Detached._
 import opelan.foundation.language.applyDocText
 import opelan.foundation.means.engine.{evalNode, leafText, printWith, semanticsOf}
 import opelan.foundation.view.ViewTree
-import Expr._
 
 class ExprSuite extends munit.FunSuite {
 
-  // (1 + 2) - (3 - 4)  ==  4
-  val sample = Sub(Add(Lit(1), Lit(2)), Sub(Lit(3), Lit(4)))
+  private def parse(input: String): DetachedNode[NodeData] =
+    ExprLanguage.parse(input).get
 
-  // The derived evaluator's contract stated against Expr trees:
-  // evalNode over the document the AST encodes to — a ref names a real
-  // node id in the same document.
-  private def eval(e: Expr): Either[(String, Int), NodeData] = {
-    val doc = buildDocument(exprToDetached(e))
+  // The derived evaluator's contract: evalNode over the document a
+  // parse commits — a ref names a real node id in the same document.
+  private def eval(text: String): Either[(String, Int), NodeData] = {
+    val doc = buildDocument(parse(text))
     evalNode(semanticsOf(exprRules), exprTerms,
       doc, doc.rootId, Set(doc.rootId))
   }
 
+  // (1 + 2) - (3 - 4)  ==  4
   test("eval computes integer results") {
-    assertEquals(eval(sample), Right(NodeData.IntData(4)))
-    assertEquals(eval(Lit(-7)), Right(NodeData.IntData(-7)))
-    assertEquals(
-      eval(Sub(Sub(Lit(1), Lit(2)), Lit(3))), Right(NodeData.IntData(-4)))
+    assertEquals(eval("1 + 2 - (3 - 4)"), Right(NodeData.IntData(4)))
+    assertEquals(eval("-7"), Right(NodeData.IntData(-7)))
+    assertEquals(eval("1 - 2 - 3"), Right(NodeData.IntData(-4)))
   }
 
   test("eval keeps integers integral and floats decimal") {
-    assertEquals(eval(Mul(Lit(4), Lit(5))), Right(NodeData.IntData(20)))
-    assertEquals(eval(Mul(Lit(4), FLit(1.2))), Right(NodeData.FloatData(4.8)))
-    assertEquals(eval(Add(Lit(1), FLit(0.5))), Right(NodeData.FloatData(1.5)))
+    assertEquals(eval("4 * 5"), Right(NodeData.IntData(20)))
+    assertEquals(eval("4 * 1.2"), Right(NodeData.FloatData(4.8)))
+    assertEquals(eval("1 + 0.5"), Right(NodeData.FloatData(1.5)))
   }
 
   test("division produces a float and fails at zero") {
-    assertEquals(eval(Div(Lit(8), Lit(2))), Right(NodeData.FloatData(4.0)))
-    assert(eval(Div(Lit(1), Lit(0))).isLeft)
+    assertEquals(eval("8 / 2"), Right(NodeData.FloatData(4.0)))
+    assert(eval("1 / 0").isLeft)
   }
 
   test("refs evaluate through the document") {
-    // add(ref, 1) — post-order ids: the ref leaf is id 0, the literal
+    // ref:1 + 1 — post-order ids: the ref leaf is id 0, the literal
     // sibling id 1, the add root id 2. The ref evaluates the literal.
-    assertEquals(eval(Add(Ref(1), Lit(1))), Right(NodeData.IntData(2)))
-    assert(eval(Ref(7)).isLeft)
+    assertEquals(eval("ref:1 + 1"), Right(NodeData.IntData(2)))
+    assert(eval("ref:7").isLeft)
     // A ref to itself reports a cycle rather than diverging.
-    assert(eval(Ref(0)).isLeft)
+    assert(eval("ref:0").isLeft)
   }
 
   test("eval is blocked by gaps") {
-    assert(eval(Add(Lit(1), Gap("x"))).isLeft)
+    assert(eval("1 + x").isLeft)
   }
 
-  // The derived printer over the encoded AST (printViewWith's string
+  // The derived printer over the parsed tree (printViewWith's string
   // sibling — the same rule set and tiers drive the document's `print`
   // view).
-  private def printExpr(e: Expr): String =
-    printWith(exprRules, exprTag, leafText)(exprToDetached(e))
+  private def printExpr(text: String): String =
+    printWith(exprRules, exprTag, leafText)(parse(text))
 
   test("print uses minimal parentheses") {
-    assertEquals(printExpr(sample), "1 + 2 - (3 - 4)")
-    assertEquals(printExpr(Sub(Sub(Lit(1), Lit(2)), Lit(3))), "1 - 2 - 3")
-    assertEquals(printExpr(Add(Lit(1), Add(Lit(2), Lit(3)))), "1 + (2 + 3)")
-    assertEquals(printExpr(Lit(42)), "42")
-    assertEquals(printExpr(Gap("")), "?")
-    assertEquals(printExpr(Add(Lit(1), Gap("foo"))), "1 + foo")
+    assertEquals(printExpr("1 + 2 - (3 - 4)"), "1 + 2 - (3 - 4)")
+    assertEquals(printExpr("1 - 2 - 3"), "1 - 2 - 3")
+    assertEquals(printExpr("1 + (2 + 3)"), "1 + (2 + 3)")
+    assertEquals(printExpr("42"), "42")
+    assertEquals(printExpr(""), "?")
+    assertEquals(printExpr("1 + foo"), "1 + foo")
   }
 
   test("print respects * and / precedence") {
+    assertEquals(printExpr("2 + 3 * 4"), "2 + 3 * 4")
+    assertEquals(printExpr("(2 + 3) * 4"), "(2 + 3) * 4")
+    assertEquals(printExpr("8 * 2 / (4 * 1)"), "8 * 2 / (4 * 1)")
+    assertEquals(printExpr("1.5 * 2"), "1.5 * 2")
+    assertEquals(printExpr("ref:9"), "ref:9")
+  }
+
+  test("a node no rule claims displays as leaf text") {
     assertEquals(
-      printExpr(Add(Lit(2), Mul(Lit(3), Lit(4)))), "2 + 3 * 4")
-    assertEquals(
-      printExpr(Mul(Add(Lit(2), Lit(3)), Lit(4))), "(2 + 3) * 4")
-    assertEquals(
-      printExpr(Div(Mul(Lit(8), Lit(2)), Mul(Lit(4), Lit(1)))),
-      "8 * 2 / (4 * 1)")
-    assertEquals(printExpr(Mul(FLit(1.5), Lit(2))), "1.5 * 2")
-    assertEquals(printExpr(Ref(9)), "ref:9")
-  }
-
-  test("fromDocument reads back what toDetached wrote") {
-    val doc = buildDocument(exprToDetached(sample))
-    assertEquals(exprFromDocument(doc, doc.rootId), Right(sample))
-  }
-
-  test("fromDocument reads non-expression nodes as gaps") {
-    val doc = buildDocument(sl("hello"))
-    assertEquals(exprFromDocument(doc, doc.rootId), Right(Gap("hello")))
-  }
-
-  test("fromDocument reads a wrong-arity operator as a gap") {
-    val doc = buildDocument(n(s(Expr.AddTag), il(1)))
-    assertEquals(exprFromDocument(doc, doc.rootId), Right(Gap(Expr.AddTag)))
-  }
-
-  test("toDetached/fromDocument round-trip refs and floats") {
-    val e = Mul(Add(FLit(1.5), Ref(3)), Div(Lit(8), Lit(2)))
-    val doc = buildDocument(exprToDetached(e))
-    assertEquals(exprFromDocument(doc, doc.rootId), Right(e))
-    assert(doc.nodes.exists(_.data.isInstanceOf[NodeData.InternalNodeRef]))
-    assert(doc.nodes.exists(_.data.isInstanceOf[NodeData.FloatData]))
+      printWith(exprRules, exprTag, leafText)(sl("hello")), "hello")
   }
 
   test("ExprLanguage evaluates a typed document's content") {

@@ -1,7 +1,7 @@
 package opelan.examples.sheet
 
 import opelan.examples.{registryForDoc, termOf}
-import opelan.examples.expr.{Expr, exprTag, exprTerms}
+import opelan.examples.expr.{exprTag, exprTerms}
 import opelan.foundation.document._
 import opelan.foundation.document.typed._
 import opelan.foundation.view.ViewTree
@@ -134,7 +134,7 @@ class SheetSuite extends munit.FunSuite {
     assertEquals(parseCellText("D4 % E2").data, NodeData.GapData("D4 % E2"))
     assertEquals(parseCellText("2 % people").data, NodeData.StringData("2 % people"))
     assertEquals(
-      parseCellText("ref:5 * 2").data, exprTag(Expr.MulTag))
+      parseCellText("ref:5 * 2").data, exprTag("*"))
   }
 
   test("a committed cell edit rewrites the node in place, keeping refs") {
@@ -155,7 +155,7 @@ class SheetSuite extends munit.FunSuite {
       cid, linkCellRefs(parseCellText("B3 + 1")), doc)
       .flatMap(internalizeRefs(_, cid)).toOption.get
     val node = edited.getNode(cid).get
-    assertEquals(termOf(exprTerms, edited, cid), Some(Expr.AddTag))
+    assertEquals(termOf(exprTerms, edited, cid), Some("+"))
     // `add` was already imported (the total row uses it) — reused.
     assertEquals(importEntries(edited), importEntries(doc))
     assertEquals(node.childIds.length, 2)
@@ -195,7 +195,7 @@ class SheetSuite extends munit.FunSuite {
       cid, linkCellRefs(parseCellText("B2 * C2")), doc)
       .flatMap(internalizeRefs(_, cid)).toOption.get
     val node = edited.getNode(cid).get
-    assertEquals(termOf(exprTerms, edited, cid), Some(Expr.MulTag))
+    assertEquals(termOf(exprTerms, edited, cid), Some("*"))
     assertEquals(
       node.childIds.map(termOf(sheetTerms, edited, _)),
       List(Some(RefTag), Some(RefTag)))

@@ -1,6 +1,6 @@
 package opelan.ui.typeddoc
 
-import opelan.examples.expr.{Expr, ExprLanguage, exprFromDocument}
+import opelan.examples.expr.{ExprLanguage, exprTag}
 import opelan.examples.termOf
 import opelan.examples.sheet.{RefTag, SheetLanguage, sheetDef, sheetTerms}
 import opelan.foundation.document._
@@ -14,6 +14,22 @@ import opelan.ui.editor.{
 class TypedDocSuite extends munit.FunSuite {
 
   private def init: TypedDocModel = TypedDoc.init
+
+  // A node's committed shape for cross-document comparison: construct
+  // tags resolved through their import entries (each doc's ids differ),
+  // leaves as their data.
+  private def shapeOf(
+      d: Document[NodeData], id: Int): DetachedNode[NodeData] =
+    DetachedNode(
+      externalRefOf(d, id).map(NodeData.ExternalNodeRef(_))
+        .getOrElse(d.getNode(id).get.data),
+      d.childrenOf(id).map(shapeOf(d, _)))
+
+  private def bin(tag: String, children: DetachedNode[NodeData]*) =
+    n(exprTag(tag), children*)
+
+  private def gapExpr(t: String): DetachedNode[NodeData] =
+    DetachedNode.leaf(NodeData.GapData(t))
 
   private def editorInput(m: TypedDocModel): EditorInput =
     TypedDoc.children(m).head.input.asInstanceOf[EditorInput]
@@ -85,7 +101,7 @@ class TypedDocSuite extends munit.FunSuite {
     assertEquals(u.state.text, "1 + 2")
     assertEquals(u.state.textEpoch, m.textEpoch)
     val content = contentId(u.state.doc).get
-    assertEquals(exprFromDocument(u.state.doc, content), Right(Expr.Add(Expr.Lit(1), Expr.Lit(2))))
+    assertEquals(shapeOf(u.state.doc, content), bin("+", il(1), il(2)))
   }
 
   test("TextEdited reparses through a carried text session") {
@@ -95,11 +111,12 @@ class TypedDocSuite extends munit.FunSuite {
     assertEquals(u2.state.textSession.map(_.session.text), Some("1 + 2 * 3"))
     // the same content a whole-text parse commits (ids differ — the
     // session's span hints keep more of them)
+    val whole = opelan.foundation.language.applyDocText(
+      u1.state.doc, opelan.examples.registryForDoc, "1 + 2 * 3")
+      .toOption.get
     assertEquals(
-      exprFromDocument(u2.state.doc, contentId(u2.state.doc).get),
-      opelan.foundation.language.applyDocText(
-        u1.state.doc, opelan.examples.registryForDoc, "1 + 2 * 3")
-        .flatMap(d => exprFromDocument(d, contentId(d).get)))
+      shapeOf(u2.state.doc, contentId(u2.state.doc).get),
+      shapeOf(whole, contentId(whole).get))
   }
 
   test("TextEdited hints the commit through the session's spans") {
@@ -145,8 +162,8 @@ class TypedDocSuite extends munit.FunSuite {
     val u = typedDocUpdate(init, TypedDocInput.TextEdited("1 + abc"))
     val content = contentId(u.state.doc).get
     assertEquals(
-      exprFromDocument(u.state.doc, content),
-      Right(Expr.Add(Expr.Lit(1), Expr.Gap("abc"))))
+      shapeOf(u.state.doc, content),
+      bin("+", il(1), gapExpr("abc")))
     assert(u.state.status.contains("gap"))
   }
 
@@ -257,10 +274,10 @@ class TypedDocSuite extends munit.FunSuite {
     assert(session.evaluations * 4 < fresh.evaluations,
       s"${session.evaluations} vs ${fresh.evaluations}")
     assertEquals(
-      exprFromDocument(u2.state.doc, total).map(_.toString),
-      exprFromDocument(
+      shapeOf(u2.state.doc, total),
+      shapeOf(
         typedDocUpdate(m, TypedDocInput.CommitInputText(total, edited))
-          .state.doc, total).map(_.toString))
+          .state.doc, total))
   }
 
   test("a text edit keeps the ids of unchanged content") {
