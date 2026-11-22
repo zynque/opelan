@@ -16,29 +16,55 @@ import opelan.foundation.view.ViewTree._
 // form a DAG*, Never Broken). Refs resolve through the document; a
 // ref cycle is a gap.
 //
-//   evalNode(semanticsOf(set), terms, doc, id, Set(id))
+//   evalNode(semanticsOf(set, terms), terms, doc, id, Set(id))
+
+// A term's dispatch identity: its anchor's node address — (document
+// url, node id), version-insensitive like `sameNode` — or, when
+// nothing anchors it, its authored name (a code-side rule over a
+// construct no vocabulary declares). Construct uses dispatch by
+// reference; a name only ever selects a rule that has no anchor.
+type TermKey = Either[String, (String, Int)]
+
+private def refKey(r: ExternalNodeReference): TermKey =
+  Right((r.documentUrl, r.nodeId))
+
+// The key a named term dispatches under: its anchor's ref through the
+// terms table, else the bare name.
+private def nameKey(
+    terms: Map[String, ExternalNodeReference], name: String): TermKey =
+  terms.get(name).map(refKey).getOrElse(Left(name))
+
+// The key a meaning's construct dispatches under: its own anchored
+// `reference` first (a rule read from a document), then the name's
+// anchor in the terms table, else the bare tag.
+private def meaningKey(
+    terms: Map[String, ExternalNodeReference], m: Meaning): TermKey =
+  m.reference.orElse(terms.get(m.tag)).map(refKey)
+    .getOrElse(Left(m.tag))
 
 // The eval half of a set: its semantics rules keyed by the construct
 // they evaluate, the derived layers, and the rules whose evaluation
 // would revisit themselves — the closing edges.
 case class Semantics(
-    rules: Map[String, List[Rule]],
-    layers: Map[String, Int],
-    cyclic: Set[String])
+    rules: Map[TermKey, List[Rule]],
+    layers: Map[TermKey, Int],
+    cyclic: Set[TermKey])
 
-def semanticsOf(set: RuleSet): Semantics = {
+def semanticsOf(
+    set: RuleSet,
+    terms: Map[String, ExternalNodeReference]): Semantics = {
   val rules = set.rules.flatMap(r =>
-    constructForm(r.pattern).map(_._1 -> r))
+    constructForm(r.pattern).map(f => nameKey(terms, f._1) -> r))
     .groupBy(_._1).map { case (t, rs) => t -> rs.map(_._2) }
   val deps = rules.view.mapValues(rs =>
-    rs.flatMap(r => meaningConstructs(r.meaning)).toSet).toMap
-  val layers = scala.collection.mutable.Map.empty[String, Int]
-  val cyclic = scala.collection.mutable.Set.empty[String]
-  def layer(tag: String, path: List[String]): Int =
-    if (path.contains(tag)) { cyclic += tag; 0 }
-    else layers.getOrElseUpdate(tag,
-      deps.getOrElse(tag, Set.empty)
-        .map(t => layer(t, tag :: path)).foldLeft(0)(_ max _) + 1)
+    rs.flatMap(r => meaningKeys(terms, r.meaning)).toSet).toMap
+  val layers = scala.collection.mutable.Map.empty[TermKey, Int]
+  val cyclic = scala.collection.mutable.Set.empty[TermKey]
+  def layer(key: TermKey, path: List[TermKey]): Int =
+    if (path.contains(key)) { cyclic += key; 0 }
+    else layers.getOrElseUpdate(key,
+      deps.getOrElse(key, Set.empty)
+        .map(k => layer(k, key :: path)).foldLeft(0)(_ max _) + 1)
   rules.keys.foreach(layer(_, Nil))
   Semantics(rules, layers.toMap, cyclic.toSet)
 }
@@ -49,25 +75,33 @@ def semanticsOf(set: RuleSet): Semantics = {
 private def constructForm(p: Pattern): Option[(String, List[String])] =
   p.constructForm
 
-// The construct tags a meaning's evaluation may consult — every
-// non-builtin tag, transitively. A `quote` holds concrete content,
-// no bindings.
-private def meaningConstructs(m: Meaning): Set[String] =
-  (if (Meaning.isBuiltin(m.tag)) Set.empty[String] else Set(m.tag)) ++
-    m.arguments.flatMap(meaningConstructs).toSet
+// The dispatch keys a meaning's evaluation may consult — every
+// non-builtin construct, transitively. A `quote` holds concrete
+// content, no bindings.
+private def meaningKeys(
+    terms: Map[String, ExternalNodeReference], m: Meaning): Set[TermKey] =
+  (if (Meaning.isBuiltin(m.tag)) Set.empty[TermKey]
+   else Set(meaningKey(terms, m))) ++
+    m.arguments.flatMap(meaningKeys(terms, _)).toSet
 
-// The tag a node applies — its construct's term name through the
-// import entry (examples/Terms.termOf, kept local so the engine stays
-// in foundation). `nameOf` names refs the table misses — a construct
-// declared in another definition's document resolves through its own
-// vocabulary when the caller hands one down (ViewContext.termName).
-private def termOf(
+// The keys a node's construct may dispatch under, and the name it
+// displays with: its ref first — version-insensitive, `sameNode`'s
+// notion — then the name the ref resolves to through the terms table
+// or the host's resolver (`ViewContext.termName`), so a rule whose
+// construct declares no anchor still matches by name.
+private def nodeKeys(
     terms: Map[String, ExternalNodeReference],
     nameOf: ExternalNodeReference => Option[String],
-    doc: Document[NodeData], id: Int): Option[String] =
-  externalRefOf(doc, id).flatMap(r =>
-    terms.collectFirst { case (t, tr) if sameNode(tr, r) => t }
-      .orElse(nameOf(r)))
+    doc: Document[NodeData],
+    id: Int): (List[TermKey], Option[String]) =
+  externalRefOf(doc, id) match {
+    case Some(r) =>
+      val name =
+        terms.collectFirst { case (t, tr) if sameNode(tr, r) => t }
+          .orElse(nameOf(r))
+      (refKey(r) :: name.map(n => Left(n): TermKey).toList, name)
+    case None => (Nil, None)
+  }
 
 // A node's value: a numeric leaf is itself; an `InternalNodeRef` leaf
 // evaluates the target's subtree (visiting catches ref cycles); a gap
@@ -95,36 +129,38 @@ def evalNode(
         case NodeData.StringData(s)   => Left((s, id))
         case other                    => Left((NodeDataText.show(other), id))
       }
-      else termOf(terms, nameOf, doc, id) match {
-        case Some(tag) if semantics.cyclic(tag) => Left(("cycle", id))
-        case Some(tag) if semantics.rules.contains(tag) =>
-          // A name may declare several arities (`+n` beside `a + b`):
-          // the node's child count selects the rule.
-          semantics.rules(tag).find(r => constructForm(r.pattern)
-            .exists(_._2.length == node.childIds.length)) match {
-            case Some(rule) => evalRule(rule, tag, semantics,
-              terms, doc, id, visiting, nameOf)
-            case None       => Left((tag, id))
-          }
-        case Some(tag) =>
-          // The floor by name: `add`'s term resolves to the
-          // foundational definition its ref names (bridge until vocab
-          // entries can import the foundational entries directly).
-          foundationRefs.get(tag).flatMap(foundationalOf) match {
-            case Some(d) =>
-              evalChildren(semantics, terms, doc, node.childIds, visiting, nameOf)
-                .flatMap(vs => d.eval(vs).left.map(_ -> id))
-            case None => Left((tag, id))
-          }
-        case None =>
-          // A construct whose ref IS a foundational entry's —
-          // documents authored against a def that imports the floor.
-          externalRefOf(doc, id).flatMap(foundationalOf) match {
-            case Some(d) =>
-              evalChildren(semantics, terms, doc, node.childIds, visiting, nameOf)
-                .flatMap(vs => d.eval(vs).left.map(_ -> id))
-            case None => Left((NodeDataText.show(node.data), id))
-          }
+      else {
+        val (keys, name) = nodeKeys(terms, nameOf, doc, id)
+        val label = name.getOrElse(NodeDataText.show(node.data))
+        keys.find(k =>
+          semantics.cyclic(k) || semantics.rules.contains(k)) match {
+          case Some(key) if semantics.cyclic(key) => Left(("cycle", id))
+          case Some(key) =>
+            // A name may declare several arities (`+n` beside
+            // `a + b`): the node's child count selects the rule.
+            semantics.rules(key).find(r => constructForm(r.pattern)
+              .exists(_._2.length == node.childIds.length)) match {
+              case Some(rule) => evalRule(rule, label, semantics,
+                terms, doc, id, visiting, nameOf)
+              case None       => Left((label, id))
+            }
+          case None =>
+            // A construct whose ref IS a foundational entry's —
+            // documents authored against a def that imports the
+            // floor — else the floor by name (the bridge until vocab
+            // entries can import the foundational entries directly).
+            val primitive = externalRefOf(doc, id)
+              .flatMap(foundationalOf)
+              .orElse(keys.collectFirst { case Left(n) => n }
+                .flatMap(foundationRefs.get).flatMap(foundationalOf))
+            primitive match {
+              case Some(d) =>
+                evalChildren(semantics, terms, doc, node.childIds,
+                  visiting, nameOf)
+                  .flatMap(vs => d.eval(vs).left.map(_ -> id))
+              case None => Left((label, id))
+            }
+        }
       }
   }
 
@@ -132,7 +168,7 @@ def evalNode(
 // children positionally, each evaluated first — the meaning then
 // evaluates over the bound values.
 private def evalRule(
-    rule: Rule, tag: String,
+    rule: Rule, label: String,
     semantics: Semantics,
     terms: Map[String, ExternalNodeReference],
     doc: Document[NodeData], id: Int,
@@ -146,7 +182,7 @@ private def evalRule(
           evalChildren(semantics, terms, doc, node.childIds, visiting, nameOf)
             .flatMap(vs => evalTerm(semantics, terms,
               rule.meaning, names.zip(vs).toMap, doc, id, visiting, nameOf))
-        case _ => Left((tag, id))
+        case _ => Left((label, id))
       }
     case None => Left(("missing", id))
   }
@@ -187,31 +223,34 @@ private def evalTerm(
           d.isInstanceOf[NodeData.FloatData])
         .toRight(("quote", at))
     case tag if Meaning.isBuiltin(tag) => Left((tag, at))
-    case tag if semantics.cyclic(tag) => Left(("cycle", at))
-    case tag => semantics.rules.getOrElse(tag, Nil).find(r =>
-      constructForm(r.pattern)
-        .exists(_._2.length == m.arguments.length)) match {
-      case Some(rule) =>
-        evalArgs(semantics, terms, m.arguments, env, doc, at, visiting, nameOf)
-          .flatMap(vs => constructForm(rule.pattern) match {
-            case Some((_, names)) =>
-              evalTerm(semantics, terms,
-                rule.meaning, names.zip(vs).toMap, doc, at, visiting,
-                nameOf)
-            case _ => Left((tag, at))
-          })
-      case None =>
-        val primitive = m.reference.orElse(terms.get(tag))
-          .flatMap(foundationalOf)
-          .orElse(foundationRefs.get(tag).flatMap(foundationalOf))
-        primitive match {
-          case Some(d) =>
-            evalArgs(semantics, terms, m.arguments, env, doc, at,
-              visiting, nameOf).flatMap(vs =>
-                d.eval(vs).left.map(_ -> at))
-          case None => Left((tag, at))
-        }
-    }
+    case tag =>
+      val key = meaningKey(terms, m)
+      if (semantics.cyclic(key)) Left(("cycle", at))
+      else semantics.rules.getOrElse(key, Nil).find(r =>
+        constructForm(r.pattern)
+          .exists(_._2.length == m.arguments.length)) match {
+        case Some(rule) =>
+          evalArgs(semantics, terms, m.arguments, env, doc, at,
+            visiting, nameOf)
+            .flatMap(vs => constructForm(rule.pattern) match {
+              case Some((_, names)) =>
+                evalTerm(semantics, terms,
+                  rule.meaning, names.zip(vs).toMap, doc, at, visiting,
+                  nameOf)
+              case _ => Left((tag, at))
+            })
+        case None =>
+          val primitive = m.reference.orElse(terms.get(tag))
+            .flatMap(foundationalOf)
+            .orElse(foundationRefs.get(tag).flatMap(foundationalOf))
+          primitive match {
+            case Some(d) =>
+              evalArgs(semantics, terms, m.arguments, env, doc, at,
+                visiting, nameOf).flatMap(vs =>
+                  d.eval(vs).left.map(_ -> at))
+            case None => Left((tag, at))
+          }
+      }
   }
 
 private def evalChildren(

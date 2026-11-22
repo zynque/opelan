@@ -12,7 +12,7 @@ import opelan.foundation.means.engine.{Semantics, semanticsOf}
 // document — else a code-side definition supplies them.
 case class RuleReading(
     rules: RuleSet, terms: Map[String, ExternalNodeReference]) {
-  lazy val semantics: Semantics = semanticsOf(rules)
+  lazy val semantics: Semantics = semanticsOf(rules, terms)
 
   def tag(term: String): NodeData =
     terms.get(term).map(NodeData.ExternalNodeRef(_))

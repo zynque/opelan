@@ -1,6 +1,6 @@
 package opelan.examples.markdown
 
-import opelan.examples.termOf
+import opelan.examples.isTerm
 import opelan.foundation.document._
 import opelan.foundation.document.DetachedNode
 
@@ -11,31 +11,31 @@ import opelan.foundation.document.DetachedNode
 // degrades to its outline payload.
 def markdownLines(
     doc: Document[NodeData], contentId: Int): List[String] =
-  if (termOf(markdownTerms, doc, contentId).contains(MarkdownTag))
+  if (isTerm(markdownTerms, MarkdownTag, doc, contentId))
     doc.childrenOf(contentId).flatMap(blockLines(doc, _))
   else List(doc.getNode(contentId)
     .map(n => NodeDataText.show(n.data)).getOrElse(""))
 
 private def blockLines(doc: Document[NodeData], id: Int): List[String] =
-  termOf(markdownTerms, doc, id) match {
-    case Some(H1Tag)   => List("# " + inlineText(doc, id))
-    case Some(H2Tag)   => List("## " + inlineText(doc, id))
-    case Some(ListTag) =>
-      doc.childrenOf(id).map(item => "* " + inlineText(doc, item))
-    case _ if doc.childrenOf(id).isEmpty =>
-      List(doc.getNode(id)
-        .map(n => NodeDataText.show(n.data)).getOrElse(""))
-    case _             => List(inlineText(doc, id))
-  }
+  if (isTerm(markdownTerms, H1Tag, doc, id))
+    List("# " + inlineText(doc, id))
+  else if (isTerm(markdownTerms, H2Tag, doc, id))
+    List("## " + inlineText(doc, id))
+  else if (isTerm(markdownTerms, ListTag, doc, id))
+    doc.childrenOf(id).map(item => "* " + inlineText(doc, item))
+  else if (doc.childrenOf(id).isEmpty)
+    List(doc.getNode(id)
+      .map(n => NodeDataText.show(n.data)).getOrElse(""))
+  else List(inlineText(doc, id))
 
 private def inlineText(doc: Document[NodeData], id: Int): String =
   doc.childrenOf(id).map(k =>
-    termOf(markdownTerms, doc, k) match {
-      case Some(RunsTag)   => inlineText(doc, k)
-      case Some(BoldTag)   => "**" + inlineText(doc, k) + "**"
-      case Some(ItalicTag) => "*" + inlineText(doc, k) + "*"
-      case _ => doc.getNode(k).map(_.data).collect {
-        case NodeData.StringData(s) => s
-        case d => NodeDataText.show(d)
-      }.getOrElse("")
-    }).mkString
+    if (isTerm(markdownTerms, RunsTag, doc, k)) inlineText(doc, k)
+    else if (isTerm(markdownTerms, BoldTag, doc, k))
+      "**" + inlineText(doc, k) + "**"
+    else if (isTerm(markdownTerms, ItalicTag, doc, k))
+      "*" + inlineText(doc, k) + "*"
+    else doc.getNode(k).map(_.data).collect {
+      case NodeData.StringData(s) => s
+      case d => NodeDataText.show(d)
+    }.getOrElse("")).mkString

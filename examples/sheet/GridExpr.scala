@@ -1,6 +1,6 @@
 package opelan.examples.sheet
 
-import opelan.examples.termOf
+import opelan.examples.isTerm
 import opelan.foundation.means.engine.dataText
 import opelan.foundation.document._
 import opelan.foundation.document.typed._
@@ -20,7 +20,7 @@ import opelan.foundation.document.typed._
 def resolveGridRefs(
     doc: Document[NodeData], rootId: Int): Document[NodeData] =
   doc.preorder(rootId).map(_._1).foldLeft(doc) { (d, id) =>
-    if (!termOf(sheetTerms, d, id).contains(RefTag)) d
+    if (!isTerm(sheetTerms, RefTag, d, id)) d
     else {
       val content = refCellTarget(d, id) match {
         case Some(target) =>
@@ -51,7 +51,7 @@ def refNodeName(doc: Document[NodeData], refId: Int): Option[String] =
 // (row, column) a `ref` node names — zero-based — read from its field
 // children; None when the node isn't a legible ref construct.
 def refPosition(doc: Document[NodeData], refId: Int): Option[(Int, Int)] =
-  if (!termOf(sheetTerms, doc, refId).contains(RefTag)) None
+  if (!isTerm(sheetTerms, RefTag, doc, refId)) None
   else for {
     col <- field(doc, refId, 0).flatMap(leafString(doc, _))
          .map(ls => ls.toUpperCase.foldLeft(0)((n, ch) => n * 26 + (ch - 'A' + 1)) - 1)

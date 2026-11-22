@@ -1,6 +1,6 @@
 package opelan.examples.sheet
 
-import opelan.examples.termOf
+import opelan.examples.isTerm
 import opelan.foundation.document._
 import opelan.foundation.document.Detached._
 import opelan.foundation.document.typed._
@@ -51,14 +51,14 @@ private def insertRow(
 private def removeRow(
     doc: Document[NodeData], sheetId: Int,
     rowId: Int): Option[Document[NodeData]] =
-  termOf(sheetTerms, doc, rowId)
-    .filter(Set(RowTag, HRowTag)(_))
-    .flatMap { _ =>
-      val index = doc.childrenOf(sheetId).indexOf(rowId)
-      cutNode(rowId, doc).toOption
-        .map(d => shiftRefs(d, sheetId, at = index,
-          isRow = true, delta = -1))
-    }
+  if (!isTerm(sheetTerms, RowTag, doc, rowId) &&
+      !isTerm(sheetTerms, HRowTag, doc, rowId)) None
+  else {
+    val index = doc.childrenOf(sheetId).indexOf(rowId)
+    cutNode(rowId, doc).toOption
+      .map(d => shiftRefs(d, sheetId, at = index,
+        isRow = true, delta = -1))
+  }
 
 private def insertColumn(
     doc: Document[NodeData], sheetId: Int,

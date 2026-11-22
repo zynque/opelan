@@ -22,7 +22,7 @@ class EvalSuite extends munit.FunSuite {
     RuleSet(rules.map(readRuleOrGap).toList)
 
   private def eval(rules: RuleSet, doc: Document[NodeData], id: Int) =
-    evalNode(semanticsOf(rules), terms, doc, id, Set(id))
+    evalNode(semanticsOf(rules, terms), terms, doc, id, Set(id))
 
   private val numOps = set("a + b means add(a, b)", "a * b means mul(a, b)",
     "a - b means sub(a, b)", "a / b means div(a, b)")
@@ -95,7 +95,7 @@ class EvalSuite extends munit.FunSuite {
 
   test("a semantics cycle renders as a gap") {
     val rules = set("loop(a) means ring(a)", "ring(a) means loop(a)")
-    assert(semanticsOf(rules).cyclic.nonEmpty)
+    assert(semanticsOf(rules, terms).cyclic.nonEmpty)
     val d = buildDocument(app("ring", il(1)))
     assert(eval(rules, d, d.rootId).isLeft)
   }

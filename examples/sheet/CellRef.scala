@@ -1,6 +1,6 @@
 package opelan.examples.sheet
 
-import opelan.examples.termOf
+import opelan.examples.isTerm
 import opelan.foundation.document._
 import opelan.foundation.document.Detached._
 
@@ -58,7 +58,7 @@ def cellRefTree(row: Int, col: Int): DetachedNode[NodeData] =
 def enclosingSheet(doc: Document[NodeData], id: Int): Option[Int] =
   LazyList.iterate(Option(id))(_.flatMap(doc.parentOf))
     .takeWhile(_.isDefined).flatten
-    .find(n => termOf(sheetTerms, doc, n).contains(SheetTag))
+    .find(n => isTerm(sheetTerms, SheetTag, doc, n))
 
 // The cell at (row, col) — zero-based — in a sheet's grid.
 def cellAt(

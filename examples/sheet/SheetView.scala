@@ -1,6 +1,6 @@
 package opelan.examples.sheet
 
-import opelan.examples.termOf
+import opelan.examples.isTerm
 import opelan.examples.expr.exprReading
 import opelan.foundation.document._
 import opelan.foundation.view.ViewTree._
@@ -50,7 +50,7 @@ def formulasView(
 }
 
 private def isHRow(doc: Document[NodeData], rowId: Int): Boolean =
-  termOf(sheetTerms, doc, rowId).contains(HRowTag)
+  isTerm(sheetTerms, HRowTag, doc, rowId)
 
 // The controls row above the header: a blank over the left
 // row-delete column, then a circular − above each column.
