@@ -1,7 +1,7 @@
 package opelan.examples.sheet
 
-import opelan.examples.languageFromDef
-import opelan.examples.expr.{demoExprDef, exprDef, exprDoc, exprTypeRef}
+import opelan.examples.{demoExprDef, languageFromDef}
+import opelan.examples.expr.{decodedExprDef, exprDoc, exprTypeRef}
 import scala.util.Random
 import opelan.foundation.document._
 import opelan.foundation.document.store._
@@ -44,14 +44,14 @@ class InputSessionsSuite extends FunSuite {
     val edited = text.replace("(ref:7 * 7)", "(ref:7 * 8)")
     val (_, c1) = sheet.commitInput(7, edited, c0).get
     val fresh =
-      TextSession.start(languageFromDef(exprDef).textSyntax.get, edited)
+      TextSession.start(languageFromDef(decodedExprDef).textSyntax.get, edited)
     assert(c1.sessions(7).evaluations * 4 < fresh.evaluations,
       s"${c1.sessions(7).evaluations} vs ${fresh.evaluations}")
   }
 
   test("a language change between commits carries the session and heals") {
     val staged = languageFromDef(demoExprDef).textSyntax.get
-    val withDiv = languageFromDef(exprDef)
+    val withDiv = languageFromDef(decodedExprDef)
     val (c0, inputs) = InputSessions().parse(1, staged, "ref:3 / ref:4")
     assert(c0.data.isInstanceOf[NodeData.GapData], c0.toString)
     val (c1, _) = inputs.parse(1, withDiv.textSyntax.get, "ref:3 / ref:4")

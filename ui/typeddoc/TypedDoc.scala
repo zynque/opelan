@@ -1,7 +1,7 @@
 package opelan.ui.typeddoc
 
-import opelan.examples.languageForDoc
-import opelan.examples.expr.{exprDoc, exprSampleDoc, exprTypeRef}
+import opelan.examples.{exprSampleDoc, languageForDoc}
+import opelan.examples.expr.{exprDoc, exprTypeRef}
 import opelan.foundation.document.store._
 import opelan.foundation.langdef.{DocLanguage, placeholderDoc, placeholderUrl}
 import opelan.foundation.language.docText

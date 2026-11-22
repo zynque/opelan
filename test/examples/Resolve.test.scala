@@ -1,8 +1,7 @@
 package opelan.examples
 
 import opelan.examples.sheet.{SheetLanguage, sheetDef}
-import opelan.examples.expr.{
-  decodedExprDef, demoExprDoc, exprDef, exprDoc, exprTypeRef}
+import opelan.examples.expr.{decodedExprDef, exprDoc, exprTypeRef}
 import opelan.foundation.document._
 import opelan.foundation.document.store._
 import opelan.foundation.langdef.{
@@ -45,7 +44,7 @@ class ResolveSuite extends FunSuite {
   }
 
   test("resolution reads the pinned version — a save pends, doesn't retarget") {
-    val edited = exprDef.copy(name = "Expressions v2")
+    val edited = decodedExprDef.copy(name = "Expressions v2")
     val s2 = seededStore.put(
       exprTypeRef.documentUrl, langDefDoc(edited))._1
     // The ref pins v0; the v1 edit resolves only after the pin bumps.
@@ -143,7 +142,6 @@ class ResolveSuite extends FunSuite {
   // expression v1 reaches cells only through the same two bumps —
   // the sheet def's input-grammar pin, then the budget's type-ref pin.
   test("an authored alternate notation reaches cells after both pin bumps") {
-    import opelan.examples.expr.{demoExprDef, exprRules}
     import opelan.foundation.langdef.SyntaxDef
     import opelan.foundation.means.text.readRuleOrGap
     // Seeded like the workbench: lang: expression v0 is the staged

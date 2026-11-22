@@ -29,7 +29,7 @@ class TypedDocUpdatesSuite extends munit.FunSuite {
     Store.empty
       .put(exprTypeRef.documentUrl, exprDoc)._1
       .put(exprTypeRef.documentUrl,
-        langDefDoc(opelan.examples.expr.exprDef.copy(name = "v2")))._1
+        langDefDoc(opelan.examples.expr.decodedExprDef.copy(name = "v2")))._1
 
   test("AcceptUpdates bumps the doc's pinned refs to their heads") {
     val m = init.copy(store = bumpedStore)

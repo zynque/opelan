@@ -123,8 +123,10 @@ What doesn't yet work and what comes next.
      `decodedExprDef` is the def the interpreted language uses,
      `exprTerms`/`exprTag`/`exprReading` anchor at the document's own
      node ids, and `demoExprDef` decodes the staged `demoExprDoc`
-     rather than a code-side rule-set copy. `exprDef`/`exprRules`
-     remain only as the recipe the encode consumes.
+     rather than a code-side rule-set copy. The seed is the
+     `lang: expression` text itself — what the editor surface shows —
+     parsed at load through `DocLanguage`/`applyDocText`; the
+     `exprDef`/`exprRules`/`exprTokens` recipe is deleted.
    - *Drop the registry fallback.* Landed: `ExprLanguage` the object
      is gone — the demo fixtures moved to the seed layer as document
      data (`demoExprDoc`'s staged definition and `exprSampleDoc`),
@@ -138,11 +140,12 @@ What doesn't yet work and what comes next.
      pushes the full store as before. The expression type ref's URL
      stays: stored documents name it.
 
-   End state: `examples/expr/` is the seed document plus its recipe —
-   `ExprDef`/`ExprRules` (what `langDefDoc` encodes into `exprDoc`)
-   and `DemoExpr` (the demo fixtures) — and `Expr.scala`, `ExprDoc`,
-   `ExprView`, `ExprReading`, `ExprLexicon`, and `ExprLanguage` are
-   gone.
+   End state: `examples/expr/` is one file — `Expr.scala`, the
+   `lang: expression` text parsed into its document at load plus the
+   decoded accessors — the demo fixtures live with the seed layer
+   (`examples/DemoExpr.scala`), and `ExprDef`, `ExprRules`,
+   `ExprDoc`, `ExprView`, `ExprReading`, `ExprLexicon`, and
+   `ExprLanguage` are gone.
    Expression goes first because its whole surface already compiles
    from rules; markdown still needs the authored-productions
    machinery of item 3 before it can follow the same path.

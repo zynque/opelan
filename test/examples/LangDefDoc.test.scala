@@ -2,7 +2,7 @@ package opelan.examples
 
 import opelan.examples.sheet.{SheetLanguage, sheetDef}
 import opelan.examples.expr.{
-  demoExprDoc, exprDef, exprDoc, exprRules, exprTypeRef}
+  decodedExprDef, exprDoc, exprReading, exprTypeRef}
 import opelan.foundation.document._
 import opelan.foundation.grammar.RuleName
 import opelan.foundation.document.store._
@@ -27,14 +27,31 @@ class LangDefDocSuite extends FunSuite {
   // A meta construct, written inline (makeTyped imports it).
   private def meta(name: String): NodeData = er(metaRef(name).get)
 
-  test("exprDef round-trips through the document encoding") {
-    val url = exprDef.typeRef.documentUrl
-    val doc = langDefDoc(exprDef)
-    assertEquals(langDefFromDocument(url, doc), withTermRefs(exprDef))
+  // A def stripped of document anchors — vocabulary refs, rule ids,
+  // meaning references — so defs whose identities live in differently
+  // numbered documents compare by content.
+  private def unanchored(d: LanguageDef): LanguageDef =
+    d.copy(
+      vocabulary = d.vocabulary.map(t => t.copy(ref = None)),
+      syntax = d.syntax.map(s => s.copy(rules = s.rules.map(set =>
+        set.copy(rules = set.rules.map(r => r.copy(
+          id = None, meaning = unanchorRefs(r.meaning),
+          where = r.where.map(c => c.copy(termRef = None)))))))))
+
+  private def unanchorRefs(m: Meaning): Meaning =
+    m.copy(reference = None,
+      arguments = m.arguments.map(unanchorRefs))
+
+  test("decodedExprDef round-trips through the document encoding") {
+    val url = decodedExprDef.typeRef.documentUrl
+    val doc = langDefDoc(decodedExprDef)
+    assertEquals(
+      unanchored(langDefFromDocument(url, doc)),
+      unanchored(decodedExprDef))
   }
 
   test("constructs are stored by reference, never by name") {
-    val doc = langDefDoc(exprDef)
+    val doc = langDefDoc(decodedExprDef)
     val strings = doc.nodes.map(_.data).collect { case NodeData.StringData(t) => t }.toSet
     assert(!strings.contains("vocabulary") && !strings.contains("term"), strings)
     // Every meta construct use goes through the imports section.
@@ -49,18 +66,18 @@ class LangDefDocSuite extends FunSuite {
     // Each `definition` node carries `pattern` + `meaning` sections —
     // the
     // line's text is a projection, not the storage.
-    val doc = langDefDoc(exprDef)
+    val doc = langDefDoc(decodedExprDef)
     val ruleIds = ruleNodeIds(doc)
-    assertEquals(ruleIds.length, exprRules.rules.length)
+    assertEquals(ruleIds.length, exprReading.rules.rules.length)
     ruleIds.foreach { id =>
       val parts = doc.childrenOf(id).flatMap(metaConsOf(doc, _))
       assert(parts.contains("pattern") && parts.contains("meaning"),
         parts.mkString(","))
     }
     assertEquals(
-      langDefFromDocument(exprDef.typeRef.documentUrl, doc)
+      langDefFromDocument(decodedExprDef.typeRef.documentUrl, doc)
         .syntax.get.rules,
-      withTermRefs(exprDef).syntax.get.rules)
+      withTermRefs(decodedExprDef).syntax.get.rules)
   }
 
   test("foundational imports decode to the foundation's refs without a section") {
@@ -68,10 +85,10 @@ class LangDefDocSuite extends FunSuite {
     // terms the ambient layer already names — they resolve through
     // ambientRefs/ambientTermOf, so a decoded `add` IS the
     // foundational `add`, no stored entries involved.
-    val doc = langDefDoc(exprDef)
+    val doc = langDefDoc(decodedExprDef)
     assert(
       !doc.nodes.indices.exists(metaConsOf(doc, _).contains("vocabulary")))
-    val d = langDefFromDocument(exprDef.typeRef.documentUrl, doc)
+    val d = langDefFromDocument(decodedExprDef.typeRef.documentUrl, doc)
     // Ambient refs never appear in the decoded vocabulary — the
     // rules' meanings still decode to the foundational tags.
     assert(d.vocabulary.flatMap(_.ref)
@@ -91,7 +108,7 @@ class LangDefDocSuite extends FunSuite {
     // reference — relinks to the foundation's term through the
     // ambient floor, the link `linkCommitted` applies after a
     // text-surface commit.
-    val doc = langDefDoc(exprDef)
+    val doc = langDefDoc(decodedExprDef)
     val cid = contentId(doc).get
     val addUse = doc.subtreeIds(cid)
       .filter(id => metaConsOf(doc, id).contains("meaning"))
@@ -107,8 +124,8 @@ class LangDefDocSuite extends FunSuite {
   test("rule meanings reference their declaring nodes by identity") {
     // `a / b means div(a, b)` decodes to a construct whose reference
     // is the foundational `div` entry — the by-reference encoding.
-    val doc = langDefDoc(exprDef)
-    val d = langDefFromDocument(exprDef.typeRef.documentUrl, doc)
+    val doc = langDefDoc(decodedExprDef)
+    val d = langDefFromDocument(decodedExprDef.typeRef.documentUrl, doc)
     val div = d.syntax.get.rules.get.rules
       .find(_.meaning.tag == "div").get.meaning
     assertEquals(div.reference, Some(foundationRefs("div")))
@@ -121,17 +138,17 @@ class LangDefDocSuite extends FunSuite {
     // `pair` is locally declared (its pattern is a construct
     // application), so it has a renameable local entry — the
     // arithmetic terms are foundational references, not local terms.
-    val localRules = exprRules.copy(rules =
-      exprRules.rules :+ readRuleOrGap("pair(a, b) means pair(a, b)"))
-    val local = exprDef.copy(
-      vocabulary = exprDef.vocabulary :+
+    val localRules = exprReading.rules.copy(rules =
+      exprReading.rules.rules :+ readRuleOrGap("pair(a, b) means pair(a, b)"))
+    val local = decodedExprDef.copy(
+      vocabulary = decodedExprDef.vocabulary :+
         NodeTerm("pair", NodeShape.Fixed(2)),
-      syntax = exprDef.syntax.map(s => s.copy(rules = Some(localRules))))
+      syntax = decodedExprDef.syntax.map(s => s.copy(rules = Some(localRules))))
     val doc = langDefDoc(local)
     val pairId = termRefs(withTermRefs(local))("pair").nodeId
     val renamed = updateNodeData(pairId, s("couple"), doc).toOption.get
     val d = langDefFromDocument(
-      exprDef.typeRef.documentUrl, renamed)
+      decodedExprDef.typeRef.documentUrl, renamed)
     assert(d.syntax.get.rules.get.rules
       .exists(_.meaning.tag == "couple"))
   }
@@ -139,8 +156,8 @@ class LangDefDocSuite extends FunSuite {
   test("renaming a pattern placeholder renames its meaning uses") {
     // `use` operands point at the piece node, so the name they decode
     // to follows the placeholder's name leaf.
-    val doc = langDefDoc(exprDef)
-    val url = exprDef.typeRef.documentUrl
+    val doc = langDefDoc(decodedExprDef)
+    val url = decodedExprDef.typeRef.documentUrl
     val div = langDefFromDocument(url, doc)
       .syntax.get.rules.get.rules.find(_.meaning.tag == "div").get
     // The operand `a` of div(a, b) carries the `a` piece's node id.
@@ -155,15 +172,15 @@ class LangDefDocSuite extends FunSuite {
   }
 
   test("decoded rules carry their node ids") {
-    val doc = langDefDoc(exprDef)
-    val rules = langDefFromDocument(exprDef.typeRef.documentUrl, doc)
+    val doc = langDefDoc(decodedExprDef)
+    val rules = langDefFromDocument(decodedExprDef.typeRef.documentUrl, doc)
       .syntax.get.rules.get.rules
     assert(rules.forall(_.id.isDefined))
   }
 
   test("a placeholder rename keeps the session — node ids survive renames") {
-    val url = exprDef.typeRef.documentUrl
-    val doc = langDefDoc(exprDef)
+    val url = decodedExprDef.typeRef.documentUrl
+    val doc = langDefDoc(decodedExprDef)
     val d0 = langDefFromDocument(url, doc)
     // The `(a)` rule's `use` operand points at its placeholder piece —
     // rename the piece's name leaf, as the use-rename test does.
@@ -187,7 +204,7 @@ class LangDefDocSuite extends FunSuite {
   }
 
   test("the edit view projects rule fields as inputs bound to their nodes") {
-    val doc = langDefDoc(exprDef)
+    val doc = langDefDoc(decodedExprDef)
     val bound = inputSourceIds(defView(doc, contentId(doc).get)).toSet
     // A structured definition binds pattern and meaning inputs to their
     // own
@@ -203,8 +220,8 @@ class LangDefDocSuite extends FunSuite {
   }
 
   test("a rule line commits as structured nodes through commitMetaInput") {
-    val url = exprDef.typeRef.documentUrl
-    val doc = langDefDoc(exprDef)
+    val url = decodedExprDef.typeRef.documentUrl
+    val doc = langDefDoc(decodedExprDef)
     val ruleId = ruleNodeIds(doc)(2) // a / b means div(a, b)
     val content = commitMetaInput(doc, url, ruleId,
       "a % b means add(a, b)").get._1
@@ -238,15 +255,15 @@ class LangDefDocSuite extends FunSuite {
   }
 
   test("a meaning field commits as terms through the language's own rules") {
-    val url = exprDef.typeRef.documentUrl
-    val doc = langDefDoc(exprDef)
+    val url = decodedExprDef.typeRef.documentUrl
+    val doc = langDefDoc(decodedExprDef)
     val ruleId = ruleNodeIds(doc)(4) // a - b means sub(a, b)
     val meaningId = doc.childrenOf(ruleId)
       .find(metaConsOf(doc, _).contains("meaning")).get
     val patternId = doc.childrenOf(ruleId)
       .find(metaConsOf(doc, _).contains("pattern")).get
     val content = commitMetaInput(doc, url, meaningId,
-      "a / 100", impls = implsFor(exprDef)).get._1
+      "a / 100", impls = implsFor(decodedExprDef)).get._1
     val updated = commitContent(meaningId, content, doc).toOption.get
     val rule = langDefFromDocument(url, updated)
       .syntax.get.rules.get.rules(4)
@@ -279,17 +296,17 @@ class LangDefDocSuite extends FunSuite {
   }
 
   test("a meaning field re-edit reparses through its input session") {
-    val url = exprDef.typeRef.documentUrl
-    val doc = langDefDoc(exprDef)
+    val url = decodedExprDef.typeRef.documentUrl
+    val doc = langDefDoc(decodedExprDef)
     val meaningId = doc.childrenOf(ruleNodeIds(doc)(4))
       .find(metaConsOf(doc, _).contains("meaning")).get
     val (c0, s0) = commitMetaInput(doc, url, meaningId,
-      "a / 100", impls = implsFor(exprDef)).get
+      "a / 100", impls = implsFor(decodedExprDef)).get
     assert(s0.sessions.contains(meaningId))
     // A second commit carries the session — re-edit reparses in
     // proportion to the keystroke.
     val (c1, s1) = commitMetaInput(doc, url, meaningId,
-      "a / 200", s0, implsFor(exprDef)).get
+      "a / 200", s0, implsFor(decodedExprDef)).get
     assert(s1.sessions.contains(meaningId))
     val updated = commitContent(meaningId, c1, doc).toOption.get
     val rule = langDefFromDocument(url, updated)
@@ -299,8 +316,8 @@ class LangDefDocSuite extends FunSuite {
   }
 
   test("a malformed rule line commit lands as a gap rule") {
-    val url = exprDef.typeRef.documentUrl
-    val doc = langDefDoc(exprDef)
+    val url = decodedExprDef.typeRef.documentUrl
+    val doc = langDefDoc(decodedExprDef)
     val ruleId = ruleNodeIds(doc).last // any rule slot serves the commit
     val content =
       commitMetaInput(doc, url, ruleId, "means only").get._1
@@ -311,11 +328,11 @@ class LangDefDocSuite extends FunSuite {
   }
 
   test("a phrase meaning commits desugared — terms, not reparse") {
-    val url = exprDef.typeRef.documentUrl
-    val doc = langDefDoc(exprDef)
+    val url = decodedExprDef.typeRef.documentUrl
+    val doc = langDefDoc(decodedExprDef)
     val ruleId = ruleNodeIds(doc)(4) // a - b means sub(a, b)
     val content = commitMetaInput(doc, url, ruleId,
-      "a % means a / 100", impls = implsFor(exprDef)).get._1
+      "a % means a / 100", impls = implsFor(decodedExprDef)).get._1
     val updated = commitContent(ruleId, content, doc).toOption.get
     val rule = langDefFromDocument(url, updated)
       .syntax.get.rules.get.rules(4)
@@ -331,11 +348,11 @@ class LangDefDocSuite extends FunSuite {
   }
 
   test("a phrase the set can't read stays a quoted gap and heals on arrival") {
-    val url = exprDef.typeRef.documentUrl
+    val url = decodedExprDef.typeRef.documentUrl
     val doc = demoExprDoc // the seeded encoding: no `/` rule yet
     val pctId = ruleNodeIds(doc)(1)   // a * b means mul(a, b)
     val pct = commitMetaInput(doc, url, pctId,
-      "a % means a / 100", impls = implsFor(exprDef)).get._1
+      "a % means a / 100", impls = implsFor(decodedExprDef)).get._1
     val withPct = commitContent(pctId, pct, doc).toOption.get
     // The unparseable phrase stores as a quoted gap — `a / 100`
     // keeps its text and prints back marked as a gap.
@@ -349,7 +366,7 @@ class LangDefDocSuite extends FunSuite {
     val subId = ruleNodeIds(withPct)(3) // a - b means sub(a, b)
     val withDiv = commitContent(subId,
       commitMetaInput(withPct, url, subId,
-        "a / b means div(a, b)", impls = implsFor(exprDef)).get._1,
+        "a / b means div(a, b)", impls = implsFor(decodedExprDef)).get._1,
       withPct).toOption.get
     val d2 = langDefFromDocument(url, withDiv)
     val parsed = languageFromDef(d2).parse("5 %").get
@@ -382,16 +399,16 @@ class LangDefDocSuite extends FunSuite {
   // doc's URL is the language it defines — and a way to interpret it.
   private def checkCtx: ViewContext = ViewContext(
     interpretDef = d => Some(languageFromDef(d)),
-    docUrl = Some(exprDef.typeRef.documentUrl))
+    docUrl = Some(decodedExprDef.typeRef.documentUrl))
 
   test("a worked example that holds renders unmarked") {
-    val doc = langDefDoc(exprDef)
+    val doc = langDefDoc(decodedExprDef)
     val view = defView(doc, contentId(doc).get, checkCtx)
     assert(!gapChips(view).exists(_.startsWith("reads as")))
   }
 
   test("a worked example that fails marks itself with what it read as") {
-    val doc = langDefDoc(exprDef)
+    val doc = langDefDoc(decodedExprDef)
     val input = stringLeafId(doc, "1 + 2 * 3")
     val broken = updateNodeData(input, s("1 - 2 * 3"), doc).toOption.get
     val view = defView(broken, contentId(broken).get, checkCtx)
@@ -401,7 +418,7 @@ class LangDefDocSuite extends FunSuite {
 
   test("without an interpretation context examples stay unmarked") {
     // Never Broken: no way to check means no claim of failure.
-    val doc = langDefDoc(exprDef)
+    val doc = langDefDoc(decodedExprDef)
     val view = defView(doc, contentId(doc).get)
     assert(!gapChips(view).exists(_.startsWith("reads as")))
   }
@@ -419,11 +436,11 @@ class LangDefDocSuite extends FunSuite {
     // Never Broken for rules too: a malformed definition becomes a gap
     // rule
     // that never applies, and the rest of the set still compiles.
-    val doc = langDefDoc(exprDef)
+    val doc = langDefDoc(decodedExprDef)
     val ruleId = ruleNodeIds(doc)(2) // a / b means div(a, b)
     val broken = updateNodeChildIds(
       ruleId, doc.childrenOf(ruleId).tail, doc).toOption.get
-    val d = langDefFromDocument(exprDef.typeRef.documentUrl, broken)
+    val d = langDefFromDocument(decodedExprDef.typeRef.documentUrl, broken)
     assert(d.syntax.get.rules.get.rules.exists(_.pattern.pieces.isEmpty))
     assert(languageFromDef(d).parse("1 + 2").isDefined)
   }
@@ -431,11 +448,11 @@ class LangDefDocSuite extends FunSuite {
   test("a text-form definition still decodes — the transitional encoding") {
     // A `definition` node whose first child is a string reads through
     // readRuleOrGap, as docs written before the structured form did.
-    val doc = langDefDoc(exprDef)
+    val doc = langDefDoc(decodedExprDef)
     val ruleId = ruleNodeIds(doc)(2)
     val texty = commitContent(ruleId,
       n(meta("definition"), sl("a / b means div(a, b)")), doc).toOption.get
-    val d = langDefFromDocument(exprDef.typeRef.documentUrl, texty)
+    val d = langDefFromDocument(decodedExprDef.typeRef.documentUrl, texty)
     assert(d.syntax.get.rules.get.rules.map(r => printRule(r))
       .contains("a / b means div(a, b)"))
   }
@@ -446,15 +463,15 @@ class LangDefDocSuite extends FunSuite {
     // a def doc stores their placeholder refs, and both directions —
     // metaNameOf at decode, ambientRefs at commit — run through the
     // registry, not through a stored vocabulary entry.
-    val doc = langDefDoc(exprDef)
+    val doc = langDefDoc(decodedExprDef)
     val ruleIds = doc.nodes.indices.filter(id =>
       !isImportEntry(doc, id) &&
       externalRefOf(doc, id).contains(metaRef("definition").get))
     assert(ruleIds.nonEmpty)
     assert(ruleIds.forall(id => metaConsOf(doc, id).contains("definition")))
     assertEquals(
-      langDefFromDocument(exprDef.typeRef.documentUrl, doc).vocabulary.map(_.name),
-      exprDef.vocabulary.map(_.name))
+      langDefFromDocument(decodedExprDef.typeRef.documentUrl, doc).vocabulary.map(_.name),
+      decodedExprDef.vocabulary.map(_.name))
   }
 
   test("sheetDef round-trips, including the input language ref") {
@@ -473,10 +490,12 @@ class LangDefDocSuite extends FunSuite {
   }
 
   test("the seeded lang docs decode to their defs") {
+    // exprDoc parses from text, so its node ids follow parse order
+    // rather than the canonical encoding's — compare by content.
     assertEquals(
-      langDefFromDocument("opelan:languages/int-expression",
-        exprDoc),
-      withTermRefs(exprDef))
+      unanchored(langDefFromDocument("opelan:languages/int-expression",
+        exprDoc)),
+      unanchored(withTermRefs(decodedExprDef)))
     assertEquals(
       langDefFromDocument("opelan:languages/sheet",
         SheetLanguage.langDoc),
@@ -484,9 +503,9 @@ class LangDefDocSuite extends FunSuite {
   }
 
   test("the def text surface's line marks paint what each line read as") {
-    val doc = langDefDoc(exprDef)
+    val doc = langDefDoc(decodedExprDef)
     val text = defDocLines(
-      doc, exprDef.typeRef.documentUrl, contentId(doc).get).mkString("\n")
+      doc, decodedExprDef.typeRef.documentUrl, contentId(doc).get).mkString("\n")
     val marks = defDocLineMarks(text)
     assertEquals(marks.length, text.split("\n", -1).length)
     val byLine = text.split("\n", -1).zip(marks)
@@ -524,8 +543,8 @@ class LangDefDocSuite extends FunSuite {
 
   test("encoding is deterministic") {
     assertEquals(
-      render(langDefDoc(exprDef)),
-      render(langDefDoc(exprDef)))
+      render(langDefDoc(decodedExprDef)),
+      render(langDefDoc(decodedExprDef)))
   }
 
   test("a damaged def doc still decodes — unknown grammar nodes become gaps") {

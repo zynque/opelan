@@ -3,7 +3,7 @@ package opelan.examples.expr
 import opelan.foundation.document._
 import opelan.foundation.grammar._
 import opelan.foundation.langdef.Impls
-import opelan.foundation.langdef.syntax.lexicalTerms
+import opelan.foundation.langdef.syntax.{lexicalTerms, standardLexicon}
 import opelan.foundation.means._
 import opelan.foundation.means.engine._
 import opelan.foundation.means.text._
@@ -17,6 +17,11 @@ import Detached._
 // content — and evaluation only ever sees terms. A phrase the set
 // can't yet read stays a quoted gap until `rephraseRuleSet` heals it.
 class DesugarSuite extends munit.FunSuite {
+
+  // The decoded rule set — the seed document's — plus the leaf
+  // vocabulary its "standard" lexicon names.
+  private val exprRules = exprReading.rules
+  private val exprTokens = withLiterals(exprRules, standardLexicon)
 
   private val percent = readRuleOrGap("a % means a / 100")
   private val atom =

@@ -8,7 +8,7 @@ import opelan.foundation.means._
 // shaped rules join the operator table in binding-list order; every
 // other rule compiles to a sequence and serves as an operand.
 //
-//   compileRules(exprRules, leafAtom, termTag, "standard", lexicals)
+//   compileRules(rules, leafAtom, termTag, "standard", lexicals)
 //
 // A named `where` term, as compileRules sees it: `where` binds a
 // placeholder to one by its anchored ref. `parser` is the term's token-level

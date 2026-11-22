@@ -1,7 +1,7 @@
 package opelan.foundation.langdef.doc
 
 import munit.FunSuite
-import opelan.examples.expr.exprDef
+import opelan.examples.expr.decodedExprDef
 import opelan.foundation.document._
 import opelan.foundation.document.typed._
 import opelan.foundation.langdef._
@@ -61,7 +61,7 @@ class DefDocSpansSuite extends FunSuite {
   }
 
   test("text typed in front of a rule keeps the rule's node") {
-    val doc = langDefDoc(exprDef)
+    val doc = langDefDoc(decodedExprDef)
     val text = textOf(doc)
     val line = text.linesIterator.find(_.contains("a * b means")).get
     val indent = line.takeWhile(_ == ' ')
@@ -72,7 +72,7 @@ class DefDocSpansSuite extends FunSuite {
   }
 
   test("a literal keeps its node while an original character survives") {
-    val doc = langDefDoc(exprDef)
+    val doc = langDefDoc(decodedExprDef)
     val updated = edited(doc,
       textOf(doc).replace("a * b means", "a ** b means"))
     assertEquals(literalIds(updated, "**"), literalIds(doc, "*"))
@@ -80,7 +80,7 @@ class DefDocSpansSuite extends FunSuite {
   }
 
   test("a retyped literal is a new piece; its rule keeps its node") {
-    val doc = langDefDoc(exprDef)
+    val doc = langDefDoc(decodedExprDef)
     val updated = edited(doc,
       textOf(doc).replace("a * b means", "a // b means"))
     assertEquals(definitionIds(updated, "a // b"), definitionIds(doc, "a * b"))
@@ -91,7 +91,7 @@ class DefDocSpansSuite extends FunSuite {
   }
 
   test("an inserted piece is new while the moved piece keeps its node") {
-    val doc = langDefDoc(exprDef)
+    val doc = langDefDoc(decodedExprDef)
     val updated = edited(doc,
       textOf(doc).replace("a * b means", "a // b a * b means"))
     assertEquals(literalIds(updated, "*"), literalIds(doc, "*"))

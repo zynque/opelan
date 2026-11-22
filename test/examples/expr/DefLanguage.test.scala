@@ -1,6 +1,6 @@
 package opelan.examples.expr
 
-import opelan.examples.{implsFor, languageFromDef}
+import opelan.examples.{exprSampleDoc, implsFor, languageFromDef}
 import opelan.foundation.document._
 import opelan.foundation.document.typed._
 import opelan.foundation.langdef._
@@ -8,12 +8,13 @@ import opelan.foundation.langdef.doc._
 import opelan.foundation.means.text.readRuleOrGap
 import munit.FunSuite
 
-// A language described as the recipe data behaves like the one the
-// seed document decodes to — a constructed DefLanguage(exprDef)
-// against DefLanguage(decodedExprDef) across the recovery contract.
+// A directly-constructed DefLanguage over the seed's decode behaves
+// like the resolved interpretation — DefLanguage(decodedExprDef)
+// against languageFromDef(decodedExprDef) across the recovery
+// contract.
 class DefLanguageSuite extends FunSuite {
 
-  private val lang: LanguageDef = exprDef
+  private val lang: LanguageDef = decodedExprDef
   private val defed = new DefLanguage(lang, implsFor(lang))
   private val hand = languageFromDef(decodedExprDef)
 
@@ -67,9 +68,10 @@ class DefLanguageSuite extends FunSuite {
   }
 
   test("a def claiming a foundational type ref inherits its impls") {
-    // implsFor(exprDef) is empty: a doc-decoded def for the expression
-    // type needs no code-side impls — its vocabulary is foundation's.
-    val edited = exprDef.copy(title = "edited")
+    // implsFor(decodedExprDef) is empty: a doc-decoded def for the
+    // expression type needs no code-side impls — its vocabulary is
+    // foundation's.
+    val edited = decodedExprDef.copy(title = "edited")
     val l = new DefLanguage(edited, implsFor(edited))
     assert(l.parse("1 + 2").isDefined)
     assert(l.render("print", exprSampleDoc).isRight)
@@ -79,7 +81,7 @@ class DefLanguageSuite extends FunSuite {
     // The `a // b` rough edge: the literal needs no pre-configured
     // token table — its rule line in the def document is enough
     // (LiteralLexicon). The decode path proves it end to end.
-    val edited = exprDef.copy(syntax = exprDef.syntax.map(s =>
+    val edited = decodedExprDef.copy(syntax = decodedExprDef.syntax.map(s =>
       s.copy(rules = s.rules.map(r => r.copy(rules =
         r.rules :+ readRuleOrGap("a // b means fdiv(a, b)"))))))
     val doc = langDefDoc(edited)
@@ -98,16 +100,16 @@ class DefLanguageSuite extends FunSuite {
     // The expression def binds no impls: the "standard" lexicon and
     // the `number`/`ref` leaves resolve foundation-side — even a def
     // claiming an unknown type ref parses the shared vocabulary.
-    val foreign = exprDef.copy(
+    val foreign = decodedExprDef.copy(
       typeRef = ExternalNodeReference("opelan:languages/unknown", 0, 0))
     assert(new DefLanguage(foreign, implsFor(foreign))
       .parse("1 + 2").isDefined)
   }
 
   test("a def naming an unknown lexicon binds no grammar") {
-    val foreign = exprDef.copy(
+    val foreign = decodedExprDef.copy(
       typeRef = ExternalNodeReference("opelan:languages/unknown", 0, 0),
-      syntax = exprDef.syntax.map(_.copy(lexicon = "foreign")))
+      syntax = decodedExprDef.syntax.map(_.copy(lexicon = "foreign")))
     val l = new DefLanguage(foreign, implsFor(foreign))
     assertEquals(l.parse("1 + 2"), None)          // "foreign" lexicon unbound
     // The derived views read the def itself, not impls — `print` and

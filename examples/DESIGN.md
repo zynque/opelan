@@ -33,28 +33,37 @@ source id. Evaluation resolves refs through the
 enclosing document — a referenced cell's own subtree is evaluated,
 so formulas compose — and a visiting set reports ref cycles as gaps
 instead of diverging. The leaf layer needs no per-dialect code:
-`exprDef`'s syntax names `standard`, the shared leaf vocabulary
+the def's syntax names `standard`, the shared leaf vocabulary
 (`float`, `int`, `ref`, `?`, `unrecognized` in
 `foundation/langdef/syntax/StandardLexicon`, its `where` terms
 `number`/`ref`/… in `standardTerms`), and the literal tokens derive
-from the rules — `exprTokens` composes them for direct parses
-(`foundation/means/engine/LiteralLexicon`).
+from the rules — `withLiterals` composes them where a direct parse
+needs the table (`foundation/means/engine/LiteralLexicon`).
 
-`ExprRules`/`ExprDef` are the recipe `langDefDoc` encodes into
-`exprDoc` — the seed document (`PLAN`, *The document becomes the
-seed*). The language is `DefLanguage(decodedExprDef)` — the def as
-the document reads it — and `exprTerms`/`exprTag`/`exprReading`/
-`demoExprDef`/`exprSampleDoc` all decode from documents, so a stored
-`lang: expression` and the built-in run one path. There is no AST and
-no tree↔code codec: parses and tests work on `NodeData` trees directly,
-and `exprTag`/`exprTerms` map a construct name to the ref its
-definition declares. The 28-input battery holding
-a constructed `DefLanguage(exprDef)` identical to the interpreted seed
+`exprDoc` is the seed document — the `lang: expression` text itself,
+the same outline the editor surface renders (`dialect` /
+`description` / `name` / `syntax` / `definitions` lines), parsed at
+load through `DocLanguage` by `applyDocText` on a typed skeleton —
+the same commit a stored document's text edit takes (`PLAN`, *The
+document becomes the seed*). There is no recipe: `exprDoc` is not
+encoded from code-side data, it *is* the document. The language is
+`DefLanguage(decodedExprDef)` — the def as the document reads it —
+and `exprTerms`/`exprTag`/`exprReading`/`demoExprDef`/`exprSampleDoc`
+all decode from documents, so a stored `lang: expression` and the
+built-in run one path. There is no AST and no tree↔code codec:
+parses and tests work on `NodeData` trees directly, and
+`exprTag`/`exprTerms` map a construct name to the ref its definition
+declares. The 28-input battery holding a constructed
+`DefLanguage(decodedExprDef)` identical to the interpreted seed
 (parse, print, eval) checks the construction path of the definition
 machinery (see [`test/`](../test/DESIGN.md)). Code knows an example
-dialect's
-constructs by the ids its canonical encoding assigns (`termRefs`,
-`exprTerms`, `sheetTerms`).
+dialect's constructs by the ids its canonical encoding assigns
+(`termRefs`, `exprTerms`, `sheetTerms`).
+
+`DemoExpr` sits in the package root (`examples/DemoExpr.scala`):
+`exprSampleDoc` and `demoExprDoc`/`demoExprDef` are demo seed data,
+not the language — the staged `demoExprDoc` is `exprDoc` minus the
+`/` rule and its binding entry, sharing every other node id.
 
 ## Sheet dialect (`sheet/`)
 

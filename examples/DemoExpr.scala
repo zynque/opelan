@@ -1,6 +1,7 @@
-package opelan.examples.expr
+package opelan.examples
 
-import opelan.examples.languageFromDef
+import opelan.examples.expr.{
+  decodedExprDef, exprDoc, exprReading, exprTypeRef}
 import opelan.foundation.document._
 import opelan.foundation.document.typed.makeTyped
 import opelan.foundation.langdef._
@@ -29,22 +30,23 @@ lazy val exprSampleDoc: Document[NodeData] =
 // piece in the updated doc).
 lazy val demoExprDoc: Document[NodeData] = {
   val doc = exprDoc
-  val slashPattern = exprRules.tiers.flatMap(_.patterns)
+  val slashPattern = exprReading.rules.tiers.flatMap(_.patterns)
     .find(_.constructForm.exists(_._1 == "/"))
     .map(printPattern)
-    .getOrElse(throw new IllegalStateException("exprRules has no / pattern"))
+    .getOrElse(throw new IllegalStateException(
+      "decodedExprDef has no / pattern"))
   val ruleId = definitionWithLiteral(doc, "/")
     .getOrElse(throw new IllegalStateException(
-      "exprDef encodes no / definition"))
+      "decodedExprDef encodes no / definition"))
   (for {
     defsId <- doc.getNode(ruleId).flatMap(_.parentId)
-      .toRight("exprDef / definition is detached")
+      .toRight("decodedExprDef / definition is detached")
     withoutRule <- updateNodeChildIds(defsId,
       doc.childrenOf(defsId).filterNot(_ == ruleId), doc)
     patternId <- bindingPatternId(withoutRule, defsId, slashPattern)
-      .toRight("exprDef encodes no / binding")
+      .toRight("decodedExprDef encodes no / binding")
     tierId <- withoutRule.getNode(patternId).flatMap(_.parentId)
-      .toRight("exprDef / binding pattern is detached")
+      .toRight("decodedExprDef / binding pattern is detached")
     staged <- updateNodeChildIds(tierId,
       withoutRule.childrenOf(tierId).filterNot(_ == patternId), withoutRule)
   } yield staged).fold(

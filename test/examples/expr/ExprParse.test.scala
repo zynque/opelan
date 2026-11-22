@@ -30,7 +30,7 @@ class ExprParseSuite extends munit.FunSuite {
   // The derived printer over the parsed tree — printWith reads the
   // rule set backwards, the tiers supplying minimal parentheses.
   private def printTree(t: DetachedNode[NodeData]): String =
-    printWith(exprRules, exprTag, leafText)(t)
+    printWith(exprReading.rules, exprTag, leafText)(t)
 
   test("parses literals and left-associative operator chains") {
     assertEquals(parse("42"), lit(42))

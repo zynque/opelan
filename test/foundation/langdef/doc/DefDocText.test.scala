@@ -1,7 +1,7 @@
 package opelan.foundation.langdef.doc
 
 import munit.FunSuite
-import opelan.examples.expr.exprDef
+import opelan.examples.expr.decodedExprDef
 import opelan.foundation.document._
 import opelan.foundation.document.typed._
 import opelan.foundation.langdef._
@@ -17,20 +17,20 @@ class DefDocTextSuite extends FunSuite {
     docText(doc, langFor)
 
   test("the text surface displays meta constructs by name and rules as means lines") {
-    val text = textOf(langDefDoc(exprDef))
+    val text = textOf(langDefDoc(decodedExprDef))
     assert(text.contains("dialect"), text)
     assert(text.contains("definitions"), text)
     assert(text.contains("a + b means add(a, b)"), text)
     assert(text.contains("+n means literal(n) where n: number"), text)
     assert(text.contains("binding"), text)
-    // exprDef declares no views — `edit`/`print`/`eval` derive — so
+    // decodedExprDef declares no views — `edit`/`print`/`eval` derive — so
     // no views section encodes.
     assert(!text.contains("view"), text)
     assert(!text.contains("ref:opelan:languages/language"), text)
   }
 
   test("the printed text reparses to the same definition") {
-    val doc = langDefDoc(exprDef)
+    val doc = langDefDoc(decodedExprDef)
     val reapplied = applyDocText(doc, langFor, textOf(doc)).toOption.get
     assertEquals(textOf(reapplied), textOf(doc))
     assertEquals(
@@ -45,7 +45,7 @@ class DefDocTextSuite extends FunSuite {
   }
 
   test("a means line edit writes a structured definition, not a leaf string") {
-    val doc = langDefDoc(exprDef)
+    val doc = langDefDoc(decodedExprDef)
     val text = textOf(doc)
     val line = text.linesIterator.find(_.contains("a * b means")).get
     val indent = line.takeWhile(_ == ' ')
@@ -67,7 +67,7 @@ class DefDocTextSuite extends FunSuite {
   }
 
   test("a committed definition's use operands link to their pattern pieces") {
-    val doc = langDefDoc(exprDef)
+    val doc = langDefDoc(decodedExprDef)
     val updated = applyDocText(doc, langFor, textOf(doc)).toOption.get
     val cid = contentId(updated).get
     val uses = updated.subtreeIds(cid)

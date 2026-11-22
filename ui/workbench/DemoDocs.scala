@@ -5,7 +5,8 @@ import opelan.foundation.document.store._
 import opelan.foundation.langdef.{
   docLanguageDef, langDefTypeRef, placeholderDoc, placeholderUrl}
 import opelan.foundation.langdef.doc.langDefDoc
-import opelan.examples.expr.{demoExprDoc, exprSampleDoc, exprTypeRef}
+import opelan.examples.{demoExprDoc, exprSampleDoc}
+import opelan.examples.expr.exprTypeRef
 import opelan.examples.markdown.{markdownDef, markdownTypeRef, MarkdownLanguage}
 import opelan.examples.sheet.{sheetDef, sheetTypeRef, SheetLanguage}
 

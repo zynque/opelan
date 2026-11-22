@@ -4,12 +4,13 @@ import opelan.foundation.langdef.Impls
 import opelan.foundation.langdef.syntax.lexicalTerms
 import opelan.foundation.means.text.ruleSetIssues
 
-// The expression rule set the def'd language compiles
-// (examples/ExprRules) must be well formed — the issues the engine
+// The expression rule set the def'd language compiles — the seed
+// document's decode — must be well formed: the issues the engine
 // reports stay empty.
 class ExprRulesSuite extends munit.FunSuite {
 
   test("the expression rule set is well formed") {
-    assertEquals(ruleSetIssues(exprRules, lexicalTerms(Impls()).keySet), Nil)
+    assertEquals(
+      ruleSetIssues(exprReading.rules, lexicalTerms(Impls()).keySet), Nil)
   }
 }

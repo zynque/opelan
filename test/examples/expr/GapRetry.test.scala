@@ -1,6 +1,6 @@
 package opelan.examples.expr
 
-import opelan.examples.languageFromDef
+import opelan.examples.{demoExprDef, languageFromDef}
 import opelan.foundation.document._
 import opelan.foundation.grammar.RuleName
 import opelan.foundation.language.{GapRetry, SyntaxChange, TextSyntax}
@@ -12,14 +12,14 @@ import munit.FunSuite
 class GapRetrySuite extends FunSuite {
 
   private val staged = languageFromDef(demoExprDef).textSyntax.get
-  private val withDiv = languageFromDef(exprDef).textSyntax.get
+  private val withDiv = languageFromDef(decodedExprDef).textSyntax.get
 
   test("a gap that consulted the changed rule heals") {
     val (c0, r0) = GapRetry().parse(staged, "ref:3 / ref:4")
     assert(c0.children.isEmpty && c0.data.isInstanceOf[NodeData.GapData], c0.toString)
     assert(r0.attempts("ref:3 / ref:4").calls.contains("standard"))
     val (c1, _) = r0.parse(withDiv, "ref:3 / ref:4")
-    assertEquals(Some(c1), languageFromDef(exprDef).parse("ref:3 / ref:4"))
+    assertEquals(Some(c1), languageFromDef(decodedExprDef).parse("ref:3 / ref:4"))
   }
 
   test("same syntax reuses the attempt") {
@@ -66,14 +66,14 @@ class GapRetrySuite extends FunSuite {
     // `pair` is a locally-declared construct — the arithmetic terms are
     // foundational references that never re-pin — so the bump's re-pin
     // shows on the local term.
-    val localRules = exprRules.copy(rules =
-      exprRules.rules :+ readRuleOrGap("pair(a, b) means pair(a, b)"))
-    val local = exprDef.copy(
-      vocabulary = exprDef.vocabulary :+
+    val localRules = exprReading.rules.copy(rules =
+      exprReading.rules.rules :+ readRuleOrGap("pair(a, b) means pair(a, b)"))
+    val local = decodedExprDef.copy(
+      vocabulary = decodedExprDef.vocabulary :+
         NodeTerm("pair", NodeShape.Fixed(2)),
-      syntax = exprDef.syntax.map(s => s.copy(rules = Some(localRules))))
+      syntax = decodedExprDef.syntax.map(s => s.copy(rules = Some(localRules))))
     val doc = langDefDoc(local)
-    val url = exprDef.typeRef.documentUrl
+    val url = decodedExprDef.typeRef.documentUrl
     val s0 = languageFromDef(langDefFromDocument(url, doc, 0)).textSyntax.get
     val s1 = languageFromDef(langDefFromDocument(url, doc, 1)).textSyntax.get
     val ch = s1.changedSince(s0).get

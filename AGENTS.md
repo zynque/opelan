@@ -2,6 +2,7 @@
 
 ## Code style
 
+- **Simplicity**: Keep it simple. Look for the right abstractions to avoid a proliferation of special cases.
 - **Self Explanatory**: Code should be self-explanatory. If a function or variable name is not clear, consider renaming it. Extract additional functions for clarity. Comments should be used sparingly and explain why, not what.
 - **Small files**: aim for ~100 lines maximum per file. If a file grows past
   that, split it by responsibility rather than letting it sprawl.

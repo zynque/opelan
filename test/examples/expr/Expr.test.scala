@@ -1,12 +1,12 @@
 package opelan.examples.expr
 
-import opelan.examples.{languageForDoc, languageFromDef}
+import opelan.examples.{exprSampleDoc, languageForDoc, languageFromDef}
 import opelan.foundation.document._
 import opelan.foundation.document.store._
 import opelan.foundation.document.typed._
 import opelan.foundation.document.Detached._
 import opelan.foundation.language.applyDocText
-import opelan.foundation.means.engine.{evalNode, leafText, printWith, semanticsOf}
+import opelan.foundation.means.engine.{evalNode, leafText, printWith}
 import opelan.foundation.view.ViewTree
 
 class ExprSuite extends munit.FunSuite {
@@ -25,7 +25,7 @@ class ExprSuite extends munit.FunSuite {
   // parse commits — a ref names a real node id in the same document.
   private def eval(text: String): Either[(String, Int), NodeData] = {
     val doc = buildDocument(parse(text))
-    evalNode(semanticsOf(exprRules), exprTerms,
+    evalNode(exprReading.semantics, exprTerms,
       doc, doc.rootId, Set(doc.rootId))
   }
 
@@ -64,7 +64,7 @@ class ExprSuite extends munit.FunSuite {
   // sibling — the same rule set and tiers drive the document's `print`
   // view).
   private def printExpr(text: String): String =
-    printWith(exprRules, exprTag, leafText)(parse(text))
+    printWith(exprReading.rules, exprTag, leafText)(parse(text))
 
   test("print uses minimal parentheses") {
     assertEquals(printExpr("1 + 2 - (3 - 4)"), "1 + 2 - (3 - 4)")
@@ -85,7 +85,7 @@ class ExprSuite extends munit.FunSuite {
 
   test("a node no rule claims displays as leaf text") {
     assertEquals(
-      printWith(exprRules, exprTag, leafText)(sl("hello")), "hello")
+      printWith(exprReading.rules, exprTag, leafText)(sl("hello")), "hello")
   }
 
   test("the seeded language evaluates a typed document's content") {

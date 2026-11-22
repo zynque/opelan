@@ -1,6 +1,6 @@
 package opelan.ui.typeddoc
 
-import opelan.examples.expr.exprDef
+import opelan.examples.expr.decodedExprDef
 import opelan.foundation.document._
 import opelan.foundation.document.typed._
 import opelan.foundation.langdef.doc.{langDefDoc, metaConsOf}
@@ -44,7 +44,7 @@ class TypedDocTextSessionSuite extends munit.FunSuite {
       contentId(doc).toList.flatMap(cid =>
         doc.subtreeIds(cid).filter(id =>
           metaConsOf(doc, id).contains("definition"))).toSet
-    val m = typedDocUpdate(init, TypedDocInput.Load(langDefDoc(exprDef))).state
+    val m = typedDocUpdate(init, TypedDocInput.Load(langDefDoc(decodedExprDef))).state
     val before = definitionIds(m.doc)
     val line = m.text.linesIterator.find(_.contains("a * b means")).get
     val indent = line.takeWhile(_ == ' ')
