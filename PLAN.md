@@ -57,99 +57,7 @@ What doesn't yet work and what comes next.
 
 ## Next steps
 
-1. **Expression, Document Only** The expression dialect should be defined
-   as a single document with no custom Scala code.
-   
-   Steps, in dependency order:
-
-   - *Views derive from the definition, not a views section.* Landed:
-     `DefLanguage.views` derives the standard set from the def alone —
-     `edit` wherever a text syntax compiles (its tile renders the
-     text surface; the pane edits through `editSurface`), and
-     `print`/`eval` for a def whose document is a single expression
-     (rules and no `surface` production). A declared `views:` entry
-     still outranks its derived default at render, and unlisted
-     builtins remain renderable by name (`print` stays the `docText`
-     surface for markdown). `eval` is a foundation builtin over
-     `ViewContext.reading` — the host dialect's `RuleReading`
-     (rules + term anchors) replacing per-example `ExprReading`; the
-     shared leaf rendering moved to foundation as `leafView`/`leafText`.
-     `editSurface` derives gap/leaf/unmatched marks from the compiled
-     grammar when impls name none (the rule-level subset of item 3's
-     *Derived edit-surface marks*, pulled forward). `edit` is the
-     default view, `raw text` is gone (it returns later as a
-     plain-text mode inside the editor), and `ExprView`,
-     `ExprReading`, `exprImpls.views`, `exprDef.views`, and the meta
-     language's own views section are all deleted — a dialect doc's
-     `eval` renders the summary placeholder for now (no separate
-     `summary` button; a stored meta doc's stale `def`/`print`/
-     `summary` entries are ignored outright). Remaining: the
-     `views:` section itself stays for genuinely custom views
-     (markdown `preview`, sheet `sheet`/`formulas`) until views
-     become authored — `LanguageDef.views` and the `impls.views`
-     name-keyed lookup retire with it.
-   - *A shared leaf view.* Landed: `leafView`/`leafText` in
-     `foundation/means/engine/LeafView.scala` — an int prints `1`, a
-     reference prints `ref:N`, a gap prints its text verbatim (or `?`
-     when empty, so it reparses), a string unquoted so gap text
-     reparses as the same unrecognized run. The derived views and the
-     sheet both use them; a dialect overrides only when it differs.
-   - *The sheet reads trees, not a Scala AST.* Landed: `Expr.scala`
-     and `ExprDoc.scala` deleted — the cell input grammar classifies
-     the parse tree's data directly (a `GapData` root is the unreadable
-     formula, an `InternalNodeRef` leaf the ref probe wants);
-     the sheet splits into `SheetView` (grid rendering) and
-     `SheetCell` (cell display); `sampleDoc` parses its expression; and
-     tests build expected trees through the interpreted def's parse or
-     `Detached`/`exprTag` builders and compare committed shapes
-     through `externalRefOf`-resolved subtrees. The last handwritten
-     reader and writer in the example are gone; `dataText` moved to
-     foundation for the dangling-ref display.
-   - *A shared leaf vocabulary.* Landed: `exprLexicon` and
-     `exprImpls.leaves` moved to foundation — `SyntaxDef("standard")`
-     selects the named leaf vocabulary
-     (`foundation/langdef/syntax/StandardLexicon.scala`: `float`,
-     `int`, `ref:`, `?`, and the `unrecognized` recovery run), and its
-     `where` terms (`number`, `whole number`, `int`, `float`,
-     `literal`, `ref`) live in `standardTerms` beside `gap`/`value`.
-     `lexiconFor` resolves a def's lexicon impls-first, then standard;
-     `exprImpls` is empty — the dialect names nothing code-side.
-     (Declaring the leaves *themselves* in the document is the later
-     *Authored leaf productions* step in item 2; this stage only
-     removes per-dialect code.)
-   - *The document becomes the seed.* Landed: `exprDoc` is the
-     `lang: expression` document as data (encoded once at build by
-     `langDefDoc`), and everything the code path needs decodes it —
-     `decodedExprDef` is the def the interpreted language uses,
-     `exprTerms`/`exprTag`/`exprReading` anchor at the document's own
-     node ids, and `demoExprDef` decodes the staged `demoExprDoc`
-     rather than a code-side rule-set copy. The seed is the
-     `lang: expression` text itself — what the editor surface shows —
-     parsed at load through `DocLanguage`/`applyDocText`; the
-     `exprDef`/`exprRules`/`exprTokens` recipe is deleted.
-   - *Drop the registry fallback.* Landed: `ExprLanguage` the object
-     is gone — the demo fixtures moved to the seed layer as document
-     data (`demoExprDoc`'s staged definition and `exprSampleDoc`),
-     `allLanguages` keeps just the meta-language bootstrap
-     (`DocLanguage`), and `foundation`'s expression impls entry went
-     with it (the def names nothing code-side). `storedLanguage` is
-     the only interpretation path: a type-ref URL holding no
-     def-typed doc resolves to nothing. `SheetLanguage`'s fixture
-     resolve seeds `exprDoc` so its input grammar finds `lang:
-     expression`; the pane's `init` seeds it too, and the workbench
-     pushes the full store as before. The expression type ref's URL
-     stays: stored documents name it.
-
-   End state: `examples/expr/` is one file — `Expr.scala`, the
-   `lang: expression` text parsed into its document at load plus the
-   decoded accessors — the demo fixtures live with the seed layer
-   (`examples/DemoExpr.scala`), and `ExprDef`, `ExprRules`,
-   `ExprDoc`, `ExprView`, `ExprReading`, `ExprLexicon`, and
-   `ExprLanguage` are gone.
-   Expression goes first because its whole surface already compiles
-   from rules; markdown still needs the authored-productions
-   machinery of item 3 before it can follow the same path.
-2. **Dialects** `pattern means meaning`
+1. **Dialects** `pattern means meaning`
     - **Structural Definitions** Stored definitions should start with AST structure and provide text, editor, etc. projections. Definitions like 'a * b means mul(a, b) can still be used to infer the structure *and* the text, but the structure should be the primary focus. Ambiguous parsers are allowed, but produce a deferred-choice gap (the projection
       renders candidates as a dropdown) rather than silently
       first-wins.
@@ -196,14 +104,14 @@ What doesn't yet work and what comes next.
       construction. Do this together with leaf productions: leaf
       declarations become data at the same time, so the
       combinator/lexicon boundary only churns once.
-3. **Surfaces as definitions — the examples shed their code.** The
-   `means` series made expression syntax and printing data, but each
-   example still hand-writes its document-level surface: markdown's
-   `MarkdownParse` (the `blocks`/`runs`/`plain` productions,
+2. **Surfaces as definitions — the examples shed their code.** The
+   `means` series made expression syntax and printing data — the
+   expression example is now its dialect text alone — but markdown
+   still hand-writes its document-level surface: `MarkdownParse`
+   (the `blocks`/`runs`/`plain` productions,
    `flatRuns`, `withinLine`, `spaceLeaf`, `strayLeaf`, `inlineSkip`),
    `MarkdownPrint` (`markdownLines`), and `MarkdownMarks`
-   (`markdownLineMarks`); expression's `Expr`/`ExprDoc` tree↔AST
-   codec and `exprViewLeaf`/`exprPrintLeaf` leaf renderers. The target:
+   (`markdownLineMarks`). The target:
    an example is its dialect document's data (rules, lexicon,
    vocabulary), the `Impls` wiring, and its views/eval — nothing that
    reads or writes text by hand. In order:
@@ -221,15 +129,6 @@ What doesn't yet work and what comes next.
      keeps intra-line spaces as content. Meta construct, encode/
      decode, `lexicalTerms` reading from the decoded def, and
      `Impls.productions` reduced to a bootstrap fallback.
-   - *Document-level `self`.* Landed: `SyntaxDef.surface` names the
-     production rooting the document text surface (`"blocks"` for
-     markdown, `document` for `lang:` docs), `textParser` and every
-     ad-hoc document parser are gone, `parse`/`parseSpanned`/
-     `textSyntax` root at the surface for every compiled-grammar
-     language, and `where`-term bindings — including `surface` —
-     anchor by ref. Markdown and `lang:` docs have the incremental
-     sessions and provenance-tracked commits the expression dialect
-     has.
    - *Production-aware derived printing.* `printWith` already walks
      rules backwards inside a line; extend it over the declared
      productions — `list`/`some`/`many` nodes emit children
@@ -240,17 +139,8 @@ What doesn't yet work and what comes next.
      applied and each span by the rule that matched, mapping
      construct → class by convention (`.cm-<construct>`) or by
      settings the pattern language declares (*Patterns as Editors*,
-     item 2). An unmatched marker paints
+     item 1). An unmatched marker paints
      nothing because no rule claimed it — the marks *are* the parse.
-   - *A shared leaf view* (landed via item 1). `exprViewLeaf`/
-     `exprPrintLeaf` collapsed to a foundation default
-     (ints, floats, `ref:N`, verbatim/`?` gaps, `NodeDataText.show`
-     fallback); a language overrides only when it differs.
-   - *Retire the `Expr` codec* (landed via item 1's sheet step).
-     `Expr.scala`/`ExprDoc.scala` deleted outright — tests build
-     trees through the interpreted def's parse and read values via
-     `evalNode`/`printWith`; the sheet's `Expr.Gap`/`Expr.Ref` reads
-     became `GapData`/`InternalNodeRef` checks on the parse tree.
    - *Lexicons, partly.* Landed for literals:
      `LiteralLexicon.withLiterals` composes the patterns' literal
      displays over the authored lexicon — longest-first, reserved
@@ -261,7 +151,7 @@ What doesn't yet work and what comes next.
      exclusion — a glued `x&&b` still reads one token), and the
      impls-authored token productions (`text`, `plain`) stay in
      `Impls.leaves` until *Authored leaf productions*
-     (item 2) lands or becomes `leaf` declarations beside the rules —
+     (item 1) lands or becomes `leaf` declarations beside the rules —
      `number`/`ref`/… already moved to the shared `standard`
      vocabulary. `SyntaxDef.lexicon`'s lookup — `lexiconFor`,
      impls-first then the standard lexicons — retires when lexicon
@@ -269,16 +159,16 @@ What doesn't yet work and what comes next.
    - *Sheet's commit surface* (`commitLink`/`linkCellRefs`,
      positional `C4` → `InternalNodeRef`) stays an `Impls`
      interpretation — it rewrites committed structure, it isn't
-     syntax — and moves under *Sheet on rules* (item 2) when that
+     syntax — and moves under *Sheet on rules* (item 1) when that
      lands.
 
-   End state: expression's half of this is item 1 — `examples/expr/`
-   is the dialect document alone. `examples/markdown/` is
+   End state: expression's half landed — `examples/expr/` is the
+   dialect document alone. `examples/markdown/` is
    `MarkdownDoc` (the dialect data), `MarkdownDef`,
    `MarkdownLanguage`, `MarkdownView` — `MarkdownParse`/
    `MarkdownPrint`/`MarkdownMarks` retired to foundation generics —
    and then the same single-file end state.
-4. **Pins, pending updates, change proposals, auto-update**
+3. **Pins, pending updates, change proposals, auto-update**
    (`foundation/document/store/DESIGN.md`, *Version pins select behavior*).
    The demo's healing moment (`DEMO.md`, step 7) needs the first three
    steps, in order:
@@ -306,7 +196,7 @@ What doesn't yet work and what comes next.
      simple before/after rendering of the changed nodes. Later stages:
      stored proposal branches in the `Store` (today it is linear per
      url), an author field on versions so a proposal names its actor
-     (`auto-update`, `llm`; see item 5), and semantic diffs. Policy
+     (`auto-update`, `llm`; see item 4), and semantic diffs. Policy
      becomes per document: manual, propose, or auto-update (accept
      without review).
 
@@ -319,7 +209,7 @@ What doesn't yet work and what comes next.
      bump doesn't even *surface* as pending until reload. Two tabs can
      also publish divergent v1s of the same url — version ids are
      computed per tab. This is really the store-convergence half of
-     item 5: once a remote head is observable, the cascade should run
+     item 4: once a remote head is observable, the cascade should run
      against it.
    - *Content migration.* Beyond heals, accepting never rewrites
      committed structure: a cell parsed under expression v0 keeps its
@@ -341,12 +231,12 @@ What doesn't yet work and what comes next.
    - *Scan cost.* pending/broken detection walks all reachable refs on
      every render — fine at demo size, wants caching keyed on doc and
      store identity.
-5. **History and sync.** A network transport (signaling) and presence
+4. **History and sync.** A network transport (signaling) and presence
    (cursors, selections, eventually keystroke-level preview, as
    ephemeral broadcast state off the change graph); actor attribution
    on curated versions, with background changes (auto-update accepts,
    LLM edits) authored by non-user actors arriving through the merge
-   path — and LLM edits possibly as change proposals (item 4)
+   path — and LLM edits possibly as change proposals (item 3)
    (`collaboration/DESIGN.md`, *Attribution*); debounce-coalesced edit bursts,
    including per-turn coalescing for streamed collaborator edits;
    undo stacks rebuilt on resume; branch interception for
@@ -357,11 +247,11 @@ What doesn't yet work and what comes next.
    retire the whole-text reparse remote changes go through today
    (sync carries the `Serial` outline, parsed by the outline format;
    making that incremental is scaffolding the CRDT likely supersedes).
-6. **Structure and typing.** Folded into the generalized rules model
-   (item 2, *Structural rules*): a structural pattern *is* a construct's shape
+5. **Structure and typing.** Folded into the generalized rules model
+   (item 1, *Structural rules*): a structural pattern *is* a construct's shape
    — checking is matching — so typing rides the same tree-pattern
    engine rather than a separate registry.
-7. **Further roadmap:**
+6. **Further roadmap:**
    - A visual vocabulary editor and interactive diagram editing as document
      views.
    - In-workbench help: `USAGE.md` is an interim measure; per *self
