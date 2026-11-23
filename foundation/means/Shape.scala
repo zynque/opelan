@@ -24,7 +24,7 @@ enum Shape {
 def shapeOf(pattern: Pattern): Shape = {
   def isPlaceholder(piece: Piece) = piece.isInstanceOf[Piece.Placeholder]
   pattern.pieces match {
-    case List(Piece.Placeholder(_, _)) => Shape.Leaf
+    case List(Piece.Placeholder(_, _, _)) => Shape.Leaf
     case Nil                           => Shape.Closed
     case ps => (isPlaceholder(ps.head), isPlaceholder(ps.last)) match {
       case (true, true)   => Shape.Infix

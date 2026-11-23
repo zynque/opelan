@@ -106,14 +106,15 @@ private[means] case class PrintIndex(
       isOperatorPattern(r.pattern) && r.shape == Shape.Prefix &&
         levels.get(r.pattern.key).contains(pl))
 
-  // Placeholder name → the argument position it fills, so its child is
-  // the tree it prints. A name repeated (`add(a, a)`) binds the first;
-  // a pattern placeholder the meaning never names prints as a gap.
-  def argumentIndex(rule: Rule): Map[String, Int] =
+  // Placeholder slot → the argument position it fills, so its child
+  // is the tree it prints. A slot the meaning never reads prints as a
+  // gap; a slot read twice fills the first use.
+  def argumentIndex(rule: Rule): Map[Int, Int] =
     if (Meaning.isConstruct(rule.meaning))
       rule.meaning.arguments.zipWithIndex.flatMap { case (a, i) =>
         if (a.tag == "use")
-          a.arguments.headOption.flatMap(Meaning.nameOf).map(_ -> i)
+          a.arguments.headOption.toList.flatMap(o =>
+            boundIndex(rule.pattern.placeholderPieces, o).map(_ -> i))
         else None
       }.reverse.toMap
     else Map.empty

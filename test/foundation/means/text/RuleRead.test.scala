@@ -16,7 +16,8 @@ class RuleReadSuite extends FunSuite {
   test("infix rule with a constructor meaning") {
     val r = read("a + b means add(a, b)")
     assertEquals(r.pattern.pieces, List(Placeholder("a"), Literal("+"), Placeholder("b")))
-    assertEquals(r.meaning, construct("add", List(use("a"), use("b"))))
+    assertEquals(r.meaning,
+      resolveBindings(r.pattern, construct("add", List(use("a"), use("b")))))
     assertEquals(r.where, Nil)
   }
 
@@ -46,12 +47,15 @@ class RuleReadSuite extends FunSuite {
   }
 
   test("a bare placeholder meaning") {
-    assertEquals(read("(a) means a").meaning, use("a"))
+    val r = read("(a) means a")
+    assertEquals(r.meaning, resolveBindings(r.pattern, use("a")))
   }
 
   test("builtins displayed like constructs read as builtin terms") {
-    assertEquals(read("a means use(a)").meaning, use("a"))
-    assertEquals(read("a means source(a)").meaning, source("a"))
+    val useR = read("a means use(a)")
+    assertEquals(useR.meaning, resolveBindings(useR.pattern, use("a")))
+    val sourceR = read("a means source(a)")
+    assertEquals(sourceR.meaning, resolveBindings(sourceR.pattern, source("a")))
   }
 
   test("a phrase meaning in the same language") {
@@ -60,8 +64,9 @@ class RuleReadSuite extends FunSuite {
   }
 
   test("nested constructor arguments") {
-    assertEquals(read("-n means literal(neg(n))").meaning,
-      construct("literal", List(construct("neg", List(use("n"))))))
+    val r = read("-n means literal(neg(n))")
+    assertEquals(r.meaning, resolveBindings(r.pattern,
+      construct("literal", List(construct("neg", List(use("n")))))))
   }
 
   test("where clause with several groups and multi-word kinds") {

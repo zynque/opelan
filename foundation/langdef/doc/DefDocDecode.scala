@@ -5,7 +5,7 @@ import opelan.foundation.document.store._
 import opelan.foundation.document.typed._
 import opelan.foundation.langdef._
 import opelan.foundation.langdef.syntax.vocabularyFrom
-import opelan.foundation.means.{lexicalRefs, Meaning}
+import opelan.foundation.means.{lexicalRefs, Meaning, Pattern, Piece, resolveBindings}
 
 // The recovering read of a `lang:` document — the inverse of
 // DefDocEncode. Constructs are recognized by identity (which
@@ -133,14 +133,27 @@ def withTermRefs(d: LanguageDef): LanguageDef = {
     else m.copy(
       reference = ids.get(m.tag).orElse(m.reference),
       arguments = m.arguments.map(refify(pieces)))
+  // The pieces a rule's pattern pieces reference — the same piece
+  // nodes `use`/`source` operands link to.
+  def refifyPieces(pieces: Map[String, Int])(pattern: Pattern): Pattern =
+    Pattern(pattern.pieces.map {
+      case p: Piece.Placeholder =>
+        p.copy(reference = pieces.get(p.name)
+          .map(t => ExternalNodeReference(url, 0, t))
+          .orElse(p.reference))
+      case p => p
+    })
   d.copy(
     vocabulary = vocabulary,
     syntax = d.syntax.map(s => s.copy(rules = s.rules.map(set =>
       set.copy(rules = set.rules.zipWithIndex.map { case (r, i) =>
+        val pieces = ruleIds.lift(i)
+          .map(pieceIdsFor(doc, _)).getOrElse(Map.empty)
+        val pattern = refifyPieces(pieces)(r.pattern)
         r.copy(
           id = ruleIds.lift(i),
-          meaning = refify(ruleIds.lift(i)
-            .map(pieceIdsFor(doc, _)).getOrElse(Map.empty))(r.meaning))
+          pattern = pattern,
+          meaning = resolveBindings(pattern, refify(pieces)(r.meaning)))
       })))))
 }
 

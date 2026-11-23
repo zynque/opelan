@@ -43,8 +43,9 @@ def readRuleTree(
     constraints <- if (isTagged(where)) readWhere(where, resolve) else Right(Nil)
   } yield {
     val p = Pattern(pieces(tokensIn(pattern)))
-    Rule(p, readMeaning(meaning, s => phrase(p.placeholders.toSet, s),
-      resolve), constraints)
+    Rule(p, resolveBindings(p,
+      readMeaning(meaning, s => phrase(p.placeholders.toSet, s),
+        resolve)), constraints)
   }
 }
 

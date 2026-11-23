@@ -15,18 +15,31 @@ import opelan.foundation.grammar.ParseTree
 enum Piece {
   def glued: Boolean
   case Literal(text: String, glued: Boolean = false)
-  case Placeholder(name: String, glued: Boolean = false)
+  // `reference` is the placeholder's document identity — the
+  // pattern-piece node's ref once the rule is read from a document
+  // (the same ref `linkRuleUses` writes into `use`/`source` operands).
+  // It serves linking and diffing, not binding: an operand's bound
+  // slot is positional (Meaning.binding).
+  case Placeholder(name: String, glued: Boolean = false,
+      reference: Option[ExternalNodeReference] = None)
 }
 
 case class Pattern(pieces: List[Piece]) {
   // Identity modulo spacing — how the binding list names a rule.
   def key: List[String] = pieces.map {
-    case Piece.Literal(text, _)     => s"'$text"
-    case Piece.Placeholder(name, _) => name
+    case Piece.Literal(text, _)        => s"'$text"
+    case Piece.Placeholder(name, _, _) => name
   }
 
   def placeholders: List[String] =
-    pieces.collect { case Piece.Placeholder(name, _) => name }
+    placeholderPieces.map(_.name)
+
+  // The pattern's placeholder pieces in order — a construct
+  // declaration's parameter list. A placeholder's slot is its
+  // position here: `use`/`source` operands bind by it (Bindings.scala),
+  // not by name or document ref.
+  def placeholderPieces: List[Piece.Placeholder] =
+    pieces.collect { case p: Piece.Placeholder => p }
 
   // A construct-application pattern — `square(a, b)`, `a * b`, `-n` —
   // the token-spine display of a tree pattern matching that
@@ -39,13 +52,13 @@ case class Pattern(pieces: List[Piece]) {
       formArgs(rest).map(name -> _)
     // `a * b` — a binary operator construct named by its literal.
     case List(
-        Piece.Placeholder(l, _),
+        Piece.Placeholder(l, _, _),
         Piece.Literal(name, _),
-        Piece.Placeholder(r, _)) => Some((name, List(l, r)))
+        Piece.Placeholder(r, _, _)) => Some((name, List(l, r)))
     // `+n` — a unary operator construct (prefix or postfix).
-    case List(Piece.Literal(name, _), Piece.Placeholder(arg, _)) =>
+    case List(Piece.Literal(name, _), Piece.Placeholder(arg, _, _)) =>
       Some((name, List(arg)))
-    case List(Piece.Placeholder(arg, _), Piece.Literal(name, _)) =>
+    case List(Piece.Placeholder(arg, _, _), Piece.Literal(name, _)) =>
       Some((name, List(arg)))
     case _ => None
   }
@@ -53,9 +66,9 @@ case class Pattern(pieces: List[Piece]) {
   private def formArgs(rest: List[Piece]): Option[List[String]] =
     rest match {
       case Piece.Literal(")", _) :: Nil => Some(Nil)
-      case Piece.Placeholder(name, _) :: Piece.Literal(")", _) :: Nil =>
+      case Piece.Placeholder(name, _, _) :: Piece.Literal(")", _) :: Nil =>
         Some(List(name))
-      case Piece.Placeholder(name, _) :: Piece.Literal(",", _) :: tail =>
+      case Piece.Placeholder(name, _, _) :: Piece.Literal(",", _) :: tail =>
         formArgs(tail).map(name :: _)
       case _ => None
     }
@@ -80,7 +93,11 @@ case class Pattern(pieces: List[Piece]) {
 // identity once a rule is read from a document — a construct's
 // vocabulary entry, a placeholder's pattern piece; rules written in code or text
 // have none until encoded, and a placeholder resolves by name within
-// its rule. `quoted` holds a `quote` term's subtree — concrete content
+// its rule. `binding` is a bound operand's resolved slot — the
+// pattern position a `use`/`source`/`literal` operand reads, assigned
+// when the rule is read (Bindings.scala); operands built in code have
+// none and resolve against the pattern at the binding site. `quoted`
+// holds a `quote` term's subtree — concrete content
 // a phrase desugared to, stored as a parse tree whose children's offsets
 // are relative, ready to re-span onto a match. A quoted gap is the
 // stored form of a phrase the set couldn't yet read (Never Broken).
@@ -88,7 +105,8 @@ case class Meaning(
     tag: String,
     arguments: List[Meaning] = Nil,
     reference: Option[ExternalNodeReference] = None,
-    quoted: Option[ParseTree] = None)
+    quoted: Option[ParseTree] = None,
+    binding: Option[Int] = None)
 
 object Meaning {
   // The meaning-language's vocabulary — `lang:`'s own constructs, never

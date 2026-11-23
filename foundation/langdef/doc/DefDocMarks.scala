@@ -45,7 +45,7 @@ private def ruleMark(line: String, indent: Int): LineMark =
     case Left(_) => LineMark("cm-gap")
     case Right(rule) =>
       val names = rule.pattern.pieces
-        .collect { case Piece.Placeholder(name, _) => name }.distinct
+        .collect { case Piece.Placeholder(name, _, _) => name }.distinct
       val placeholders = names.flatMap(name =>
         ("\\b" + java.util.regex.Pattern.quote(name) + "\\b").r
           .findAllMatchIn(line)

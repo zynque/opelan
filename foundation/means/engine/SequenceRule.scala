@@ -49,20 +49,24 @@ def sequenceRule(
     theRule: Rule,
     expression: Parser,
     tag: String => NodeData,
-    bound: Map[String, LexicalTerm] = Map.empty,
+    bound: Map[Int, LexicalTerm] = Map.empty,
     strict: Boolean = false): Parser = {
   val pieces = theRule.pattern.pieces.toVector
+  // Piece index → the placeholder's slot — `bound` and the
+  // accumulated `bindings` key by slot position.
+  val slots = pieces.indices.map(i =>
+    i -> pieces.take(i).count(_.isInstanceOf[Piece.Placeholder])).toMap
   val closer = pieces.last match {
     case Piece.Literal(text, _) => Some(text)
     case _                      => None
   }
-  def lexical(piece: Piece): Boolean = piece match {
+  def lexicalAt(i: Int): Boolean = pieces(i) match {
     case Piece.Literal(_, _)        => true
-    case Piece.Placeholder(name, _) =>
-      bound.get(name).exists(_.parser.isDefined)
+    case p: Piece.Placeholder       =>
+      bound.get(slots(i)).exists(_.parser.isDefined)
   }
   def tight(i: Int): Boolean =
-    pieces(i).glued && lexical(pieces(i - 1)) && lexical(pieces(i))
+    pieces(i).glued && lexicalAt(i - 1) && lexicalAt(i)
   rule(sequenceRuleName(theRule)) { (in, pos) =>
     var seen = pos
     val first = scanAt(in, pos)
@@ -73,7 +77,7 @@ def sequenceRule(
       case Some(opened) =>
         val from = opened.from
         var cur = opened.to
-        var bindings = Map.empty[String, ParseTree]
+        var bindings = Map.empty[Int, ParseTree]
         var failedAt: Option[Int] = None
         var i = 1
         while (failedAt.isEmpty && i < pieces.length) {
@@ -86,8 +90,8 @@ def sequenceRule(
                 case Some(t) => cur = t.to
                 case None    => failedAt = Some(i)
               }
-            case Piece.Placeholder(name, _) =>
-              val term = bound.get(name)
+            case p: Piece.Placeholder =>
+              val term = bound.get(slots(i))
               val r = term.flatMap(_.parser)
                 .getOrElse(expression)(in, cur)
               seen = seen.max(r.examined)
@@ -99,7 +103,7 @@ def sequenceRule(
               if (violated || (tight(i) && r.applied && r.tree.from != cur))
                 failedAt = Some(i)
               else {
-                bindings += name -> r.tree
+                bindings += (slots(i) -> r.tree)
                 cur = r.position
                 if (!r.applied) failedAt = Some(i)
               }

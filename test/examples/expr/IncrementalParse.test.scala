@@ -40,7 +40,7 @@ class IncrementalParseSuite extends FunSuite {
     import opelan.foundation.means.text.readPattern
     val noNumber = decodedExprDef.copy(syntax = Some(SyntaxDef("standard", Some(
       exprReading.rules.copy(rules = exprReading.rules.rules.filterNot(
-        _.pattern == readPattern("n")))))))
+        _.pattern.key == readPattern("n").key))))))
     val staged = languageFromDef(noNumber).textSyntax.get
     val fullSyntax = languageFromDef(decodedExprDef).textSyntax.get
     val names = fullSyntax.changedSince(staged).map(_.rules).get

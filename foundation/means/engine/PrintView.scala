@@ -58,13 +58,17 @@ def printViewWith(
   def walk(node: Node[NodeData], rule: Rule,
       ctxOf: (Int, NodeData) => Int): List[DetachedNode[NodeData]] = {
     val args = argumentIndex(rule)
+    val slots = rule.pattern.pieces.indices.map(i =>
+      i -> rule.pattern.pieces.take(i)
+        .count(_.isInstanceOf[Piece.Placeholder])).toMap
     rule.pattern.pieces.zipWithIndex.foldLeft(
         List.empty[DetachedNode[NodeData]]) { case (acc, (piece, i)) =>
       piece match {
         case Piece.Literal(text, _) =>
           acc :+ txt(if (i == 0 || piece.glued) text else " " + text)
-        case Piece.Placeholder(name, _) =>
-          val child = args.get(name).flatMap(node.childIds.lift) match {
+        case p: Piece.Placeholder =>
+          val child = args.get(slots(i))
+            .flatMap(node.childIds.lift) match {
             case Some(cid) => render(cid, ctxOf(i, resolved(cid)))
             case None => gap("?")
           }

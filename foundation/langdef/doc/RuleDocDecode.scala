@@ -21,25 +21,34 @@ private[langdef] def ruleFromDoc(
     version: Int, termIds: Map[String, Int],
     resolve: ExternalNodeReference => Option[LanguageDef], id: Int): Rule =
   doc.childrenOf(id).headOption.flatMap(i => strOf(doc, i))
-    .map(t => readRuleOrGap(t).copy(id = Some(id))).getOrElse(Rule(
-      entriesOf(doc, id, "pattern").headOption
-        .map(p => Pattern(doc.childrenOf(p).map(pieceFrom(doc, _))))
-        .getOrElse(Pattern(Nil)),
-      entriesOf(doc, id, "meaning").headOption
+    .map(t => readRuleOrGap(t).copy(id = Some(id))).getOrElse {
+      val pattern = entriesOf(doc, id, "pattern").headOption
+        .map(p => Pattern(doc.childrenOf(p)
+          .map(pieceFrom(doc, url, version, _))))
+        .getOrElse(Pattern(Nil))
+      val meaning = entriesOf(doc, id, "meaning").headOption
         .flatMap(m => doc.childrenOf(m).headOption)
         .map(meaningFromDoc(doc, url, version, termIds, resolve, _))
-        .getOrElse(Meaning.gap("")),
-      entriesOf(doc, id, "where").headOption.toList.flatMap(w =>
-        entriesOf(doc, w, "constraint")
-          .flatMap(constraintFrom(doc, url, version, resolve, _))),
-      Some(id)))
+        .getOrElse(Meaning.gap(""))
+      Rule(pattern, resolveBindings(pattern, meaning),
+        entriesOf(doc, id, "where").headOption.toList.flatMap(w =>
+          entriesOf(doc, w, "constraint")
+            .flatMap(constraintFrom(doc, url, version, resolve, _))),
+        Some(id))
+    }
 
-private def pieceFrom(doc: Document[NodeData], id: Int): Piece = {
+private def pieceFrom(
+    doc: Document[NodeData], url: String,
+    version: Int, id: Int): Piece = {
   val text = doc.childrenOf(id).headOption.flatMap(strOf(doc, _))
     .getOrElse("")
   val glued = entriesOf(doc, id, "glued").nonEmpty
+  // A placeholder's piece node is its document identity — the ref the
+  // doc's link pass points `use`/`source` operands at; `ruleFromDoc`
+  // resolves those operands to the piece's slot (Bindings.scala).
   if (metaConsOf(doc, id).contains("placeholder"))
-    Piece.Placeholder(text, glued)
+    Piece.Placeholder(text, glued,
+      Some(ExternalNodeReference(url, version, id)))
   else Piece.Literal(text, glued)
 }
 

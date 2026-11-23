@@ -85,14 +85,19 @@ def compileRules(
     lexicals.values.toList.flatMap(t => t.parser.filter(_ => t.operand))
 
   // This rule's `where` constraints resolved to leaf terms — a
-  // placeholder's bound production when the constraint's term ref is
-  // one `lexicals` knows (the stored ref first, else the name's
-  // registered ref), the constraint dropped otherwise.
-  def boundLexicals(theRule: Rule): Map[String, LexicalTerm] =
+  // placeholder slot's bound production when the constraint's term
+  // ref is one `lexicals` knows (the stored ref first, else the
+  // name's registered ref), the constraint dropped otherwise. A
+  // constraint names its placeholders; the rule's own pieces resolve
+  // each name to its slot.
+  def boundLexicals(theRule: Rule): Map[Int, LexicalTerm] = {
+    val pieces = theRule.pattern.placeholderPieces
     theRule.where.flatMap(c =>
       c.termRef.orElse(lexicalRefs.get(c.term)).toList.flatMap(ref =>
         lexicals.get(ref).toList.flatMap(t =>
-          c.placeholders.map(_ -> t)))).toMap
+          c.placeholders.flatMap(n =>
+            pieces.indices.find(pieces(_).name == n).map(_ -> t))))).toMap
+  }
 
   // A literal-led rule whose placeholders are all `where`-bound to
   // *token-reading* terms is lexical, not an operator — `-n means
@@ -105,8 +110,8 @@ def compileRules(
   def operandBound(theRule: Rule): Boolean =
     isOperatorPattern(theRule.pattern) &&
       theRule.pattern.pieces.head.isInstanceOf[Piece.Literal] &&
-      theRule.pattern.placeholders.forall(n =>
-        boundLexicals(theRule).get(n).exists(_.parser.isDefined))
+      theRule.pattern.placeholderPieces.indices.forall(i =>
+        boundLexicals(theRule).get(i).exists(_.parser.isDefined))
 
   // A lone-placeholder rule bound to a leaf production is an
   // operand: the production's token applies, then the meaning —
@@ -114,21 +119,22 @@ def compileRules(
   // lone placeholder stays dead rather than recursing into itself.
   def leafOperand(theRule: Rule): Option[Parser] =
     theRule.pattern.pieces match {
-      case List(Piece.Placeholder(name, _)) =>
-        boundLexicals(theRule).get(name).flatMap(_.parser).map { bound =>
-          (in: ParseInput, pos: Int) => {
-            val parsed = bound(in, pos)
-            if (!parsed.applied) parsed
-            else parsed.copy(tree = ruleTree(theRule,
-              Map(name -> parsed.tree), in, parsed.tree.from,
-              parsed.tree.to, tag))
+      case List(p: Piece.Placeholder) =>
+        boundLexicals(theRule).get(0)
+          .flatMap(_.parser).map { bound =>
+            (in: ParseInput, pos: Int) => {
+              val parsed = bound(in, pos)
+              if (!parsed.applied) parsed
+              else parsed.copy(tree = ruleTree(theRule,
+                Map(0 -> parsed.tree), in, parsed.tree.from,
+                parsed.tree.to, tag))
+            }
           }
-        }
       case _ => None
     }
 
   def toOperator(theRule: Rule): Operator = {
-    val names = theRule.pattern.placeholders
+    val ps = theRule.pattern.placeholderPieces
     val bound = boundLexicals(theRule)
     Operator(
       name = theRule.pattern.key.mkString(" "),
@@ -143,10 +149,10 @@ def compileRules(
       build = (operands, in, from, to) =>
         // An operand bound against a `where` term is checked after
         // binding: a violation makes the whole application the gap.
-        if (names.zip(operands).exists { case (n, t) =>
-              bound.get(n).exists(lt => !lt.check(t.data)) })
+        if (ps.indices.exists(i =>
+              bound.get(i).exists(lt => !lt.check(operands(i).data))))
           gapNode(in, from, to)
-        else ruleTree(theRule, names.zip(operands).toMap,
+        else ruleTree(theRule, bindingsOf(ps, operands),
           in, from, to, tag))
   }
 

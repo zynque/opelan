@@ -181,7 +181,9 @@ private def evalRule(
         case Some((_, names)) if names.length == node.childIds.length =>
           evalChildren(semantics, terms, doc, node.childIds, visiting, nameOf)
             .flatMap(vs => evalTerm(semantics, terms,
-              rule.meaning, names.zip(vs).toMap, doc, id, visiting, nameOf))
+              rule.meaning, rule.pattern.placeholderPieces,
+              bindingsOf(rule.pattern.placeholderPieces, vs),
+              doc, id, visiting, nameOf))
         case _ => Left((label, id))
       }
     case None => Left(("missing", id))
@@ -196,26 +198,27 @@ private def evalRule(
 private def evalTerm(
     semantics: Semantics,
     terms: Map[String, ExternalNodeReference],
-    m: Meaning, env: Map[String, NodeData],
+    m: Meaning, pieces: List[Piece.Placeholder],
+    env: Map[Int, NodeData],
     doc: Document[NodeData], at: Int,
     visiting: Set[Int],
     nameOf: ExternalNodeReference => Option[String])
     : Either[(String, Int), NodeData] =
   m.tag match {
     case "use" | "source" =>
-      m.arguments.headOption.flatMap(Meaning.nameOf).flatMap(env.get)
+      m.arguments.headOption.flatMap(bindingAt(env, pieces, _))
         .toRight(("unbound", at))
     case "literal" =>
       m.arguments.headOption
         .toRight(("literal", at))
-        .flatMap(evalTerm(semantics, terms, _, env, doc, at, visiting, nameOf))
+        .flatMap(evalTerm(semantics, terms, _, pieces, env, doc, at, visiting, nameOf))
     case "builtin" =>
       m.arguments.headOption.flatMap(Meaning.nameOf)
         .flatMap(foundationRefs.get)
         .flatMap(foundationalOf)
         .toRight(("builtin", at))
         .flatMap(d => evalArgs(semantics, terms,
-          m.arguments.tail, env, doc, at, visiting, nameOf)
+          m.arguments.tail, pieces, env, doc, at, visiting, nameOf)
           .flatMap(vs => d.eval(vs).left.map(_ -> at)))
     case "quote" =>
       m.quoted.map(_.data).filter(d =>
@@ -230,13 +233,14 @@ private def evalTerm(
         constructForm(r.pattern)
           .exists(_._2.length == m.arguments.length)) match {
         case Some(rule) =>
-          evalArgs(semantics, terms, m.arguments, env, doc, at,
+          evalArgs(semantics, terms, m.arguments, pieces, env, doc, at,
             visiting, nameOf)
             .flatMap(vs => constructForm(rule.pattern) match {
               case Some((_, names)) =>
                 evalTerm(semantics, terms,
-                  rule.meaning, names.zip(vs).toMap, doc, at, visiting,
-                  nameOf)
+                  rule.meaning, rule.pattern.placeholderPieces,
+                  bindingsOf(rule.pattern.placeholderPieces, vs),
+                  doc, at, visiting, nameOf)
               case _ => Left((tag, at))
             })
         case None =>
@@ -245,7 +249,7 @@ private def evalTerm(
             .orElse(foundationRefs.get(tag).flatMap(foundationalOf))
           primitive match {
             case Some(d) =>
-              evalArgs(semantics, terms, m.arguments, env, doc, at,
+              evalArgs(semantics, terms, m.arguments, pieces, env, doc, at,
                 visiting, nameOf).flatMap(vs =>
                   d.eval(vs).left.map(_ -> at))
             case None => Left((tag, at))
@@ -270,14 +274,15 @@ private def evalChildren(
 private def evalArgs(
     semantics: Semantics,
     terms: Map[String, ExternalNodeReference],
-    args: List[Meaning], env: Map[String, NodeData],
+    args: List[Meaning], pieces: List[Piece.Placeholder],
+    env: Map[Int, NodeData],
     doc: Document[NodeData], at: Int,
     visiting: Set[Int],
     nameOf: ExternalNodeReference => Option[String])
     : Either[(String, Int), List[NodeData]] =
   args.foldRight[Either[(String, Int), List[NodeData]]](Right(Nil)) {
     (m, acc) => for {
-      v <- evalTerm(semantics, terms, m, env, doc, at, visiting, nameOf)
+      v <- evalTerm(semantics, terms, m, pieces, env, doc, at, visiting, nameOf)
       vs <- acc
     } yield v :: vs
   }

@@ -70,7 +70,7 @@ private[langdef] def patternNode(
 private def pieceNode(
     p: Piece, meta: String => NodeData): DetachedNode[NodeData] = {
   val (tag, text) = p match {
-    case Piece.Placeholder(name, _) => ("placeholder", name)
+    case Piece.Placeholder(name, _, _) => ("placeholder", name)
     case Piece.Literal(literal, _)  => ("literal", literal)
   }
   n(meta(tag), (sl(text) +:

@@ -12,7 +12,7 @@ import opelan.foundation.langdef.doc._
 import opelan.foundation.langdef.syntax._
 import opelan.foundation.langdef.view._
 import opelan.foundation.language.{InputSessions, TextSession}
-import opelan.foundation.means.Meaning
+import opelan.foundation.means.{Meaning, Pattern, Piece}
 import opelan.foundation.means.engine.{foundationRefs, foundationalOf}
 import opelan.foundation.means.text.{printPattern, printRule, readRuleOrGap}
 import opelan.foundation.document.Detached._
@@ -36,6 +36,10 @@ class LangDefDocSuite extends FunSuite {
       syntax = d.syntax.map(s => s.copy(rules = s.rules.map(set =>
         set.copy(rules = set.rules.map(r => r.copy(
           id = None, meaning = unanchorRefs(r.meaning),
+          pattern = Pattern(r.pattern.pieces.map {
+            case p: Piece.Placeholder => p.copy(reference = None)
+            case p                    => p
+          }),
           where = r.where.map(c => c.copy(termRef = None)))))))))
 
   private def unanchorRefs(m: Meaning): Meaning =

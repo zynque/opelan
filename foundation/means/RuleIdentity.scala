@@ -20,7 +20,7 @@ def canonicalRule(r: Rule): Rule = {
     case (n, i) => n -> s"p$i" }.toMap
   def ph(n: String): String = rename.getOrElse(n, n)
   def piece(p: Piece): Piece = p match {
-    case Piece.Placeholder(n, g) => Piece.Placeholder(ph(n), g)
+    case p: Piece.Placeholder    => p.copy(name = ph(p.name))
     case _                       => p
   }
   def meaning(m: Meaning): Meaning = m.tag match {

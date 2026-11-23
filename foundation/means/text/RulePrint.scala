@@ -47,7 +47,7 @@ private[text] def pieceSpans(pieces: List[Piece]): List[Styled] =
   pieces.zipWithIndex.flatMap { case (piece, i) =>
     val gap = if (i == 0 || piece.glued) Nil else List(space)
     gap :+ (piece match {
-      case Piece.Placeholder(name, _) => Styled(name, Role.Placeholder)
+      case Piece.Placeholder(name, _, _) => Styled(name, Role.Placeholder)
       case Piece.Literal(text, _)     => Styled(quoteIfNeeded(text), Role.Literal)
     })
   }

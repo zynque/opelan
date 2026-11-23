@@ -65,14 +65,32 @@ private def sameIdentity(a: Rule, b: Rule): Boolean =
 
 // Rule comparison by compiled meaning, not by pin or display:
 // placeholders compare by position (canonicalRule — a rename compiles
-// identically), and a version bump re-pins a meaning's references to a
-// newer reading of the same nodes — the rules it compiles to are
-// unchanged, so sessions carry over.
+// identically), and a version bump re-pins references — a meaning's,
+// a constraint term's, a placeholder piece's — to a newer reading of
+// the same nodes; the rules it compiles to are unchanged, so sessions
+// carry over.
 private def sameRule(a: Rule, b: Rule): Boolean = {
   val (x, y) = (canonicalRule(a), canonicalRule(b))
-  x.pattern == y.pattern && x.where == y.where &&
+  samePattern(x.pattern, y.pattern) &&
+    x.where.length == y.where.length &&
+    x.where.zip(y.where).forall(sameConstraint.tupled) &&
     sameMeaning(x.meaning, y.meaning)
 }
+
+private def samePattern(a: Pattern, b: Pattern): Boolean =
+  a.pieces.length == b.pieces.length &&
+    a.pieces.zip(b.pieces).forall(samePiece.tupled)
+
+private def samePiece(a: Piece, b: Piece): Boolean = (a, b) match {
+  case (x: Piece.Placeholder, y: Piece.Placeholder) =>
+    x.name == y.name && x.glued == y.glued &&
+      sameRef(x.reference, y.reference)
+  case _ => a == b
+}
+
+private def sameConstraint(a: Constraint, b: Constraint): Boolean =
+  a.placeholders == b.placeholders && a.term == b.term &&
+    sameRef(a.termRef, b.termRef)
 
 private def sameMeaning(a: Meaning, b: Meaning): Boolean =
   a.tag == b.tag && sameRef(a.reference, b.reference) &&

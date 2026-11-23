@@ -62,7 +62,7 @@ class TextSessionSuite extends FunSuite {
     // tokenization moved, so no kept result is honest.
     val noNumber = decodedExprDef.copy(syntax = Some(SyntaxDef("standard", Some(
       exprReading.rules.copy(rules = exprReading.rules.rules.filterNot(
-        _.pattern == readPattern("n")))))))
+        _.pattern.key == readPattern("n").key))))))
     val staged = languageFromDef(noNumber).textSyntax.get
     val full = languageFromDef(decodedExprDef).textSyntax.get
     assertEquals(full.changedSince(staged).map(_.rules),

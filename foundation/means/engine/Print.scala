@@ -59,11 +59,15 @@ def printWith(
       node: DetachedNode[NodeData], rule: Rule,
       ctxOf: (Int, NodeData) => Int): String = {
     val args = argumentIndex(rule)
+    val slots = rule.pattern.pieces.indices.map(i =>
+      i -> rule.pattern.pieces.take(i)
+        .count(_.isInstanceOf[Piece.Placeholder])).toMap
     rule.pattern.pieces.zipWithIndex.map { case (piece, i) =>
       val text = piece match {
         case Piece.Literal(text, _) => text
-        case Piece.Placeholder(name, _) =>
-          args.get(name).flatMap(node.children.lift) match {
+        case p: Piece.Placeholder =>
+          args.get(slots(i))
+            .flatMap(node.children.lift) match {
             case Some(child) => render(child, ctxOf(i, child.data))
             case None        => "?"
           }

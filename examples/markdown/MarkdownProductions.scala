@@ -58,6 +58,13 @@ private def ruleOf(pattern: String): Rule =
   markdownRules.rules.find(_.pattern.key == readPattern(pattern).key)
     .getOrElse(sys.error(s"markdown rules have no '$pattern'"))
 
+// `term` bound to the rule's placeholders — what a `where`-free
+// `boundLexicals` map looks like for the single-placeholder markdown
+// rules these productions hand-build.
+private def boundLexical(
+    rule: Rule, term: LexicalTerm): Map[Int, LexicalTerm] =
+  rule.pattern.placeholderPieces.indices.map(_ -> term).toMap
+
 // `p` must apply on the current line — its tree may not start across a
 // newline from `pos`. How a `runs` element stays on its line: marker
 // tokens skip whitespace freely, so without this a `t` would pick up
@@ -81,9 +88,9 @@ val plainTerm: LexicalTerm =
 // kept verbatim.
 private lazy val runsCore: Parser = choice(
   sequenceRule(ruleOf("**t**"), gapHere, markdownTag,
-    Map("t" -> plainTerm), strict = true),
+    boundLexical(ruleOf("**t**"), plainTerm), strict = true),
   sequenceRule(ruleOf("*t*"), gapHere, markdownTag,
-    Map("t" -> plainTerm), strict = true),
+    boundLexical(ruleOf("*t*"), plainTerm), strict = true),
   spaceLeaf, textLeaf, strayLeaf)
 
 // A flat `runs` node: `first` then `rest` repeated, all elements as
@@ -129,7 +136,7 @@ lazy val runsTerm: LexicalTerm = LexicalTerm(
 
 private def blockSeq(pattern: String): Parser =
   sequenceRule(ruleOf(pattern), gapHere, markdownTag,
-    Map("t" -> runsTerm))
+    boundLexical(ruleOf(pattern), runsTerm))
 
 // A paragraph: the same flat runs, but its first element may start
 // after the blank lines that precede it (`withinLine` would refuse
@@ -138,7 +145,8 @@ private lazy val paraParser: Parser = (in, pos) => {
   val r = flatRuns(runsCore, withinLine(runsCore))(in, pos)
   if (!r.applied) r
   else ParseResult(r.position,
-    ruleTree(ruleOf("t"), Map("t" -> r.tree), in,
+    ruleTree(ruleOf("t"),
+      bindingsOf(ruleOf("t").pattern.placeholderPieces, List(r.tree)), in,
       r.tree.from, r.position, markdownTag),
     applied = true, r.examined)
 }

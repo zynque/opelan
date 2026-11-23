@@ -28,10 +28,11 @@ import opelan.foundation.means._
 // degenerated operand becomes a gap covering the match.
 def applyMeaning(
     meaning: Meaning,
-    bindings: Map[String, ParseTree],
+    pieces: List[Piece.Placeholder],
+    bindings: Map[Int, ParseTree],
     in: ParseInput, from: Int, to: Int,
     tag: String => NodeData): ParseTree = meaning.tag match {
-  case "use" => bound(meaning, bindings) match {
+  case "use" => bound(meaning, bindings, pieces) match {
       // A bound tree that degenerated to a gap lets the gap grow
       // over the match's literals — `parentheses` does the same.
       case Some(t) if t.data.isInstanceOf[NodeData.GapData] =>
@@ -40,7 +41,7 @@ def applyMeaning(
       case None    => gapNode(in, from, to)
     }
   case "source" =>
-    bound(meaning, bindings) match {
+    bound(meaning, bindings, pieces) match {
       case Some(t) => ParseTree(NodeData.StringData(t.text),
           in.input.substring(from, to), from, to - from)
       case None    => gapNode(in, from, to)
@@ -51,7 +52,7 @@ def applyMeaning(
       case None    => gapNode(in, from, to)
     }
   case "literal" =>
-    meaning.arguments.headOption.flatMap(valueTerm(_, bindings)) match {
+    meaning.arguments.headOption.flatMap(valueTerm(_, bindings, pieces)) match {
       case Some(data) =>
         ParseTree(data, in.input.substring(from, to), from, to - from)
       case None       => gapNode(in, from, to)
@@ -61,7 +62,7 @@ def applyMeaning(
     ParseTree(
       meaning.reference.map(NodeData.ExternalNodeRef(_)).getOrElse(tag(construct)),
       in.input.substring(from, to), from, to - from,
-      meaning.arguments.map(a => argumentTree(a, bindings, in, to, tag))
+      meaning.arguments.map(a => argumentTree(a, bindings, pieces, in, to, tag))
         .map(rebased(_, from)))
   // Any other builtin tag — the meaning language grows a word this
   // build doesn't know — is a gap, not a node named after it.
@@ -79,21 +80,25 @@ def applyMeaning(
 // meaning's tree.
 def ruleTree(
     theRule: Rule,
-    bindings: Map[String, ParseTree],
+    bindings: Map[Int, ParseTree],
     in: ParseInput, from: Int, to: Int,
     tag: String => NodeData): ParseTree =
   (theRule.pattern.constructForm, theRule.meaning) match {
-    case (Some((name, params)), m) if Meaning.isConstruct(m) =>
+    case (Some((name, _)), m) if Meaning.isConstruct(m) =>
       ParseTree(tag(name), in.input.substring(from, to), from, to - from,
-        params.map(p => bindings.get(p)
-          .map(rebased(_, from)).getOrElse(gapNode(in, to, to))))
-    case _ => applyMeaning(theRule.meaning, bindings, in, from, to, tag)
+        theRule.pattern.placeholderPieces.indices.toList.map(i =>
+          bindings.get(i)
+            .map(rebased(_, from)).getOrElse(gapNode(in, to, to))))
+    case _ => applyMeaning(theRule.meaning,
+      theRule.pattern.placeholderPieces, bindings, in, from, to, tag)
   }
 
-// The tree a `use` term's operand name binds — None unbound.
+// The tree a `use` term's operand slot binds — None unbound.
 private def bound(
-    meaning: Meaning, bindings: Map[String, ParseTree]): Option[ParseTree] =
-  meaning.arguments.headOption.flatMap(Meaning.nameOf).flatMap(bindings.get)
+    meaning: Meaning,
+    bindings: Map[Int, ParseTree],
+    pieces: List[Piece.Placeholder]): Option[ParseTree] =
+  meaning.arguments.headOption.flatMap(bindingAt(bindings, pieces, _))
 
 // A `literal` operand evaluated to leaf data: a bound placeholder's
 // name is its node's data, `neg(t)` negates a numeric value. Value
@@ -101,16 +106,18 @@ private def bound(
 // step of meanings evaluating (DESIGN.md, *A meaning is a term,
 // evaluated*), scoped to leaves at parse time.
 private def valueTerm(
-    m: Meaning, bindings: Map[String, ParseTree]): Option[NodeData] =
-  Meaning.nameOf(m).flatMap(bindings.get).map(_.data).orElse(m.tag match {
+    m: Meaning, bindings: Map[Int, ParseTree],
+    pieces: List[Piece.Placeholder]): Option[NodeData] =
+  Meaning.nameOf(m).flatMap(_ =>
+    bindingAt(bindings, pieces, m)).map(_.data).orElse(m.tag match {
     case "neg" =>
-      m.arguments.headOption.flatMap(valueTerm(_, bindings)).flatMap {
+      m.arguments.headOption.flatMap(valueTerm(_, bindings, pieces)).flatMap {
         case NodeData.IntData(v)   => Some(NodeData.IntData(-v))
         case NodeData.FloatData(v) => Some(NodeData.FloatData(-v))
         case _                     => None
       }
-    case "use"    => bound(m, bindings).map(_.data)
-    case "source" => bound(m, bindings).map(t => NodeData.StringData(t.text))
+    case "use"    => bound(m, bindings, pieces).map(_.data)
+    case "source" => bound(m, bindings, pieces).map(t => NodeData.StringData(t.text))
     case _        => None
   })
 
@@ -119,11 +126,12 @@ private def valueTerm(
 // its real tree — negative relative offsets place it correctly.
 private def argumentTree(
     meaning: Meaning,
-    bindings: Map[String, ParseTree],
+    bindings: Map[Int, ParseTree],
+    pieces: List[Piece.Placeholder],
     in: ParseInput, at: Int,
     tag: String => NodeData): ParseTree = meaning.tag match {
-  case "use" => bound(meaning, bindings).getOrElse(gapNode(in, at, at))
-  case _     => applyMeaning(meaning, bindings, in, at, at, tag)
+  case "use" => bound(meaning, bindings, pieces).getOrElse(gapNode(in, at, at))
+  case _     => applyMeaning(meaning, pieces, bindings, in, at, at, tag)
 }
 
 // The tree that covers `from`..`to` — a verbatim gap.
