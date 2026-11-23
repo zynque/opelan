@@ -251,7 +251,43 @@ What doesn't yet work and what comes next.
    (item 1, *Structural rules*): a structural pattern *is* a construct's shape
    — checking is matching — so typing rides the same tree-pattern
    engine rather than a separate registry.
-6. **Further roadmap:**
+6. **Text input as structural operations** — MPS/Hazel-style hybrid
+   editing: keystrokes interpreted against the current tree emit node
+   ops directly, so identities are retained by construction instead of
+   reconstructed afterward by `commitContent`'s matching. The parser
+   demotes from the commit path to oracle plus fallback, and
+   `Reconcile`/`TextProvenance` become the ambiguous-input path. In
+   order:
+
+   - *Structural cursor.* Position as node path + slot + character
+     offset within a leaf, maintained continuously —
+     `TextProvenance`'s char→node-chain mapping made primary rather
+     than a per-commit hint.
+   - *Op algebra.* A small set of structural ops — edit-leaf-data,
+     insert-sibling, split, wrap/unwrap selection, retokenize-leaf —
+     each mapping onto existing document ops (`insertNode`,
+     `updateNodeData`, `updateNodeChildIds`); untouched nodes keep ids
+     trivially.
+   - *Keystroke interpreter.* (key, cursor, tree) → op: typing inside
+     a leaf edits its data directly; operator characters propose a
+     restructure validated by the parser-as-oracle; ambiguous input
+     reparses only the enclosing production and reconciles that
+     subtree; uninterpretable input lands in a gap — free typing is a
+     gap's text until `GapRetry` resolves it, preserving the
+     text-editor feel.
+   - *Grammar introspection.* A continuation oracle — which pieces may
+     follow at a position inside a rule application — over the
+     combinator objects (`Combinators`, `Operators`, `LexicalRules`),
+     which are introspectable data rather than opaque functions.
+   - *Parser demoted.* Whole-buffer `retext` becomes one input mode
+     among others (paste, bulk edits); `ParseSession`'s memo remains
+     for that path and for `changeRules` re-deriving stored text on
+     language evolution.
+
+   The end state intersects *Immediately typed* (open question 3):
+   per-keystroke structure is the substrate Hazelnut-style edit
+   semantics would build on.
+7. **Further roadmap:**
    - A visual vocabulary editor and interactive diagram editing as document
      views.
    - In-workbench help: `USAGE.md` is an interim measure; per *self
