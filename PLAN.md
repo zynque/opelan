@@ -54,25 +54,31 @@ platform.
 8. *Tree-native sync* (`collaboration/DESIGN.md`). Syncing `Serial` text is
    scaffolding; line-level merges renumber duplicate ids and can
    retarget refs. The destination is a tree-native CRDT.
-9. *`means` notation* (`foundation/means/DESIGN.md`): the plain-text placeholder
-   convention, how parse-time and evaluation-time meanings are marked,
-   and whether alternative notations live in one language document or
-   in layered notation documents.
+9. *`means` notation* (`foundation/means/DESIGN.md`): evolving toward
+   per-interpretation clause introductions (`evaluates to` / `prints
+   as` / `shows as` — `CORE-DESIGN.md`, *Meanings*). Open: the
+   plain-text placeholder convention, how parse-time and
+   evaluation-time meanings are marked, and whether alternative
+   notations live in one language document or in layered notation
+   documents.
 
 ## Next steps
 
 Ordering: **structure before notation** (`CORE-DESIGN.md`). A
-definition's stored form is a signature plus a meaning; its shape
-derives an editor; the structural editor is the bootstrap editor —
-the fixpoint, the definition language authored in the platform,
-closes before the text surface needs to. Notation is then a
-projection over the core, and the platform services layer on either
-side of it.
+definition's stored form is a *shape* plus a *meanings* map —
+clauses named by interpretation; two meanings carry universal
+default clauses (`eval` rebuilds the node itself, `edit` is
+shape-derived), so a definition that declares only a shape already
+evaluates and edits. The shape-derived `edit` clause is the
+bootstrap editor: the fixpoint, the definition language authored in
+the platform, closes before the text surface needs to. Notation is
+then a projection over the core, and the platform services layer on
+either side of it.
 
 ### Phase A — the structural core
 
 1. **Signatures on definitions.** A definition's stored form becomes
-   its type shape — product (a fixed tuple of typed slots), sum (a
+   its shape — product (a fixed tuple of typed slots), sum (a
    named choice of variants, membership declared on the variant), or
    list (children of one type); a slot's type is itself a def ref
    (`CORE-DESIGN.md`, *Type shapes*). `a + b` stops being the stored
@@ -93,15 +99,22 @@ side of it.
    `updateNodeData`, `updateNodeChildIds`), and a structural cursor
    (node path + slot + character offset): `TextProvenance`'s
    char→node-chain mapping made primary and maintained continuously.
-   `ui/editor`'s outliner is the generic floor this refines.
-3. **The `edit` half of the pair.** Definitions dispatch
-   `(node, gesture) → [EditOp]` beside `eval` and `render`
-   (`CORE-DESIGN.md`, *Definitions*) — the third arm of the one
-   dispatch. Per-definition editors refine the shape-derived
-   default; they are never required.
+   `ui/editor`'s outliner is the floor beneath the shape-derived
+   default — dispatch alone, no shape metadata required.
+3. **The meanings map.** The definition doc format grows `meanings`:
+   clauses named by interpretation — `eval`, `edit`, `print`, an open
+   set — each `(node, children) → I` over its carrier
+   (`CORE-DESIGN.md`, *Meanings*). The workbench's one dispatch asks
+   a node for a named meaning, `edit` by default. `eval` stays
+   privileged as the staging point: a derived clause is a term made
+   into a function *by* `eval`. The two universal defaults hold
+   everywhere — a definition declaring only a shape still evaluates
+   to itself and edits by shape; per-type `edit` clauses refine the
+   default through the chain (authored, pattern-derived,
+   shape-derived, outliner) and are never required.
 4. **Self-description — the fixpoint.** The definition language's own
-   definition authored *in the platform* through derived editors —
-   no `lang:` text syntax needed to close the loop. `builtin`
+   definition authored *in the platform* through derived `edit`
+   clauses — no `lang:` text syntax needed to close the loop. `builtin`
    input-parser names (`impls.inputParsers` — `text`, `sheet-cell`)
    become anchored foundation terms or `Language`-ref inputs here.
    Cycle prevention rides along: the editor offers definitions below
@@ -114,22 +127,31 @@ side of it.
 
 ### Phase B — notation as projection
 
-5. **Notation declarations.** `a * b means mul(a, b)` declares
-   structure *and* text over a signature — the pattern is derived,
-   not stored; an ambiguous declaration produces a deferred-choice
-   gap (the projection renders candidates as a dropdown) rather than
-   silently first-wins. Around it:
-   - *Adjustable verbosity* — terse/verbose toggle switching `means`
-     to `=>` and hiding `where` behind a marker — a display detail
-     of one content.
+5. **Notation declarations.** `means` evolves into per-interpretation
+   clause introductions — one rule contributes clauses to named
+   meanings over a signature:
+
+   ```
+   a + b
+     evaluates to add(a, b)
+     prints as a + b
+     shows as row(<a>, "+", <b>)
+   ```
+
+   — the pattern is derived, not stored; an ambiguous declaration
+   produces a deferred-choice gap (the projection renders candidates
+   as a dropdown) rather than silently first-wins. Around it:
+   - *Adjustable verbosity* — terse/verbose toggle switching
+     `means`/`evaluates to` to `=>` and hiding `where` behind a
+     marker — a display detail of one content.
    - *Patterns as editors* — the pattern language expands to visual
      affordances (dropdowns, widgets, per-element view toggles,
      alternate presentations a document can switch between) as a
-     refinement over the shape-derived editors, never a requirement.
+     refinement over the shape-derived `edit` clause, never a
+     requirement.
    - *Asserted examples* — a dialect doc's examples carry their
-     expected interpretation, rendered and checked by the
-     interpretation view; `summary` is the placeholder until this
-     lands.
+     expected result under a named meaning (`evaluates to 7`), folded
+     and checked; `summary` is the placeholder until this lands.
 6. **Text input as structural operations** — MPS/Hazel-style hybrid
    editing: keystrokes interpreted against the current tree emit
    node ops directly, so identities are retained by construction
@@ -157,8 +179,8 @@ side of it.
    `MarkdownPrint` (`markdownLines`), and `MarkdownMarks`
    (`markdownLineMarks`). The target:
    an example is its dialect document's data (rules, lexicon,
-   vocabulary), the `Impls` wiring, and its views/eval — nothing that
-   reads or writes text by hand. In order:
+   vocabulary), the `Impls` wiring, and its named meanings — nothing
+   that reads or writes text by hand. In order:
 
    - *Authored productions.* `where` terms today bind builtin leaves
      or code-side `Impls.productions` (the seam added for markdown —
@@ -319,4 +341,6 @@ side of it.
      ref from its node term, and from there on to the implementation
      (language def, grammar, builtin) through the go-to-definition
      machinery.
-   - A fuller evaluation engine beyond the expression dialect's `eval`.
+   - A fuller `eval` meaning beyond the expression dialect's clause —
+     and new named meanings (`compile`, `typecheck`, `simulate`) as
+     the open interpretation set grows.
