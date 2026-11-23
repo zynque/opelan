@@ -33,67 +33,157 @@ literal's sort — a foundational definition (`gap` for `GapData`).
 
 ## Definitions
 
-A **definition** is the node a type ref resolves to. It denotes a pair of
-interpretations over nodes of its type:
+A **definition** is the node a type reference resolves to — the type
+itself. It declares a shape and a map of named interpretations:
 
 ```
-Definition = { eval   : [Value] -> Value            -- evaluated children -> value
-             , render : Node -> View                -- the node, projected
-             , edit   : (Node, Gesture) -> [EditOp] -- gestures -> tree operations
+Definition = { shape    : Signature                 -- what instances' children are
+             , meanings : { Name -> Clause }         -- the interpretations it contributes to
              }
 ```
 
-Two kinds:
+A **meaning** is a named interpretation of nodes, folded bottom-up:
+each clause computes from the node itself plus its children's results
+under the same meaning:
 
-- **Primitive** — the pair is bound in the substrate: the glossary's
-  *foundational definitions* (arithmetic, quoting, leaf literals, view
-  elements). The irreducible seed.
-- **Derived** — the pair is computed. The definition is itself a
-  document: its *meaning* — a term in the layer below — evaluates to
-  the `eval` function, and its *pattern* derives the editor. A Lisp
-  where special forms are user-defined documents and every special form
-  carries its own editing surface.
+```
+Clause(I) = (node, children: [I]) -> I              -- the carrier I varies per meaning
+```
 
-There is exactly one dispatch in the whole system: **resolve the ref,
-ask the definition.** To evaluate a node, ask for its `eval`; to show
-or edit it, ask for its `render`/`edit`. Definitions being nodes, the
-same dispatch handles the definition language itself — that recursion
-is the design. The workbench is the fixpoint of two interpretations of
-one tree.
+Two meanings have universal default clauses, so they exist for every
+type whether or not the definition contributes one:
+
+- **`eval`** — what the node denotes as a value. Default clause: the
+  constructor applied to evaluated children — the node itself. Every
+  node denotes some tree; a clause is needed only when instances
+  *compute* (`mul` → arithmetic) rather than merely *are* content (a
+  markdown paragraph).
+- **`edit`** — the surface: a view fused with its edit behavior.
+  Default clause: shape-derived (*Type shapes*). Every node is
+  editable before anyone writes a view for it.
+
+Beyond those, names are an open set — `print`, `compile`, `typecheck`,
+`simulate`, whatever a dialect needs (*Meanings* below). A document
+lacking a name simply has no interpretation under it.
+
+Two kinds of definition:
+
+- **Primitive** — shape and clauses bound in the substrate: the
+  glossary's *foundational definitions* (arithmetic, quoting, leaf
+  literals, view elements). The irreducible seed.
+- **Derived** — the definition is itself a document; its clauses are
+  terms evaluated through the `eval` meaning — the staging point the
+  whole dispatch stands on. A Lisp where special forms are
+  user-defined documents and every special form carries its own
+  editing surface.
+
+One dispatch: **resolve the ref, ask for a named meaning** — `edit`
+by default. Definitions being nodes, the same dispatch surfaces the
+definition language itself. The workbench is the fixpoint of
+surfacing one tree.
 
 ## Type shapes
 
-A definition's signature declares what its instances' children look
+A definition's shape declares what its instances' children look
 like. Three shapes cover every type:
 
 - **Product** — a fixed tuple of typed slots (`term name, shape`). An
-  instance's children fill the slots positionally; its `eval` is a
-  function of that many arguments.
+  instance's children fill the slots positionally; its `eval` clause
+  is a function of that many arguments.
 - **Sum** — a named choice of variants (`Expr` = `Add | Mul | Lit`;
   the `Either` of typed languages). A sum declares no slots of its
   own; membership is declared on the variant — a slot typed `Expr`
   accepts any node whose type claims `Expr`, so a new dialect can add
-  a variant without editing the sum's declaration. Evaluating a sum
-  slot is just evaluating whatever filled it; a meaning that must
+  a variant without editing the sum's declaration. `eval` over a sum
+  slot just evaluates whatever filled it; a meaning that must
   inspect which variant it received uses a match construct in the
   meaning vocabulary.
 - **List** — any number of children of one type; `eval` folds them.
 
-Nodes stay uniform — `(type ref, children)`. The shape lives on the
-declaration, not the node, and a slot's type is itself a type ref, so
-the same machinery says what may fill it.
+Nodes stay uniform — `(type reference, children)`. The shape lives on
+the declaration, not the node, and a slot's type is itself a type
+reference, so the same machinery says what may fill it.
 
-The shape alone derives a default editor: a product renders its
-children's editors in sequence with slot names as labels; a sum slot
-renders as a dropdown of variants followed by the chosen variant's
-editor; a list renders add/remove/move rows. This is the
-zero-authoring floor under the richer surfaces below — a brand-new
-type is editable before anyone writes a view for it. Slots not yet
+The shape alone derives the default `edit` clause: a product renders
+its children's editors in sequence with slot names as labels; a sum
+slot renders as a dropdown of variants followed by the chosen
+variant's editor; a list renders add/remove/move rows. Slots not yet
 filled render as *unfilled-slot placeholders*: the structural
 editor's form of gap.
 
-## Evaluation
+## Meanings
 
+Every meaning is a fold: compositional and bottom-up, over a carrier
+the name defines:
+
+```
+| meaning                     | carrier             | computes
+|-----------------------------|---------------------|---------------------------
+| eval                        | Value               | what the node denotes
+| edit, preview, formulas ... | Surface             | projections you interact with
+| print                       | (prec, String)      | text — precedence rides the carrier
+| compile                     | tree of another signature | another language's terms
+| typecheck                   | Type                | the node's extrinsic type
+```
+
+Two boundaries keep the model honest:
+
+- **Clauses see the node itself,** not just folded children — a
+  surface's `handle` must emit ops on the node's id, and views carry
+  provenance back to their source node.
+- **Meanings are node-level folds.** Whole-store questions — find
+  usages, resolvers, pending-update scans — are *queries*, not
+  meanings; they don't fit the clause signature.
+
+`eval` is privileged among names: the clauses of derived definitions
+are terms, made into functions *by* `eval`. It is the interpretation
+that interprets the others — where the staging and the bootstrap
+live. `edit` is privileged differently: it is the meaning the
+workbench opens by default — the one you live in.
+
+## Surfaces — the `edit` meaning
+
+```
+Surface = { view   : Node -> View                       -- the node, projected
+          , handle : (Node, Gesture) -> [EditOp] }       -- empty: read-only
+
+EditOp  = SetData | InsertChild | RemoveChild | MoveChild | Splice
+```
+
+A surface is a projection fused with its edit behavior — what you see
+is what you edit; a read-only view is a surface whose `handle` is
+empty. A type may define several named surface meanings (markdown's
+`edit` and `preview`, the sheet's `sheet` and `formulas`); in-place
+editing and side-by-side editor+preview are the same machinery — one
+surface that embeds results, or two surfaces in two panes.
+
+Surfaces compose with `eval`: a sheet's surface calls it to display
+cell values, a preview surfaces the evaluated tree, an in-place
+editor swaps between the two on the same node.
+
+The `edit` clause for a type is resolved through a chain of defaults:
+
+- **Structural outliner** — the floor: works for any node by dispatch
+  alone, type metadata or none. Bootstrap needs nothing more.
+- **Shape-derived** — rows for products, a dropdown for sums,
+  add/remove for lists (*Type shapes*). The universal default clause.
+- **Pattern-derived** — a rule's pattern renders as a form: a text box
+  per leaf slot, a nested editor per child slot (`foundation/means`).
+- **Authored** — clauses written in the view vocabulary, per type.
+- **Text** — a surface like any other: parse and print compiled from
+  the same rules. The whole recovering-parser stack defers with it —
+  and structural editing cannot produce malformed trees, only
+  unfilled slots, so *Never broken* simplifies to slot-filling in the
+  core.
+
+Every edit produces a new document; the identity of what didn't change
+survives (`commitContent`'s reconcile is the existing form).
+
+## Evaluation — the `eval` meaning
+
+`eval` is the meaning other meanings call — surfaces to display
+results, meaning terms to compose (`a % means a / 100`), and the
+dispatch itself to turn a derived definition's clause into a function.
 Depth-first, memoized by node id, staged through the ref:
 
 ```
@@ -102,11 +192,12 @@ eval(node, memo):
     leaf(v) -> v
     Ref(r)  ->
       memo.getOrElseUpdate(node.id,
-        handler(resolve(r))(node.children.map(c => eval(c, memo))))
+        clause(resolve(r), eval)(node, node.children.map(c => eval(c, memo))))
 
-handler(def) =
-  def is primitive -> def.eval                        -- bound code
-  def is derived   -> eval(def.meaning)               -- a term -> a function
+clause(def, name) =
+  def.meanings[name] present -> the function it denotes   -- derived: eval the term
+                                                         -- primitive: bound code
+  absent                     -> name's default clause
 ```
 
 - Children are positional arguments. A `use(a)` node (a placeholder
@@ -123,61 +214,32 @@ handler(def) =
 Values are trees and literals — the meaning tree is the program, the
 produced tree is the value.
 
-## Editing
-
-An editor is the second half of the pair: a projection of the node,
-plus the map from gesture to tree operation.
-
-```
-render(node)         = resolve(node.data).render(node)   -- leaves: a literal editor
-edit(node, gesture)  = apply(resolve(node.data).edit(node, gesture), document)
-
-EditOp = SetData | InsertChild | RemoveChild | MoveChild | Splice
-```
-
-- **Generic floor.** A structural editor — the tree outliner — works
-  for *any* node by dispatch alone: render each node through its
-  definition, recurse into children. Bootstrap needs nothing more.
-- **Shape-derived default.** A type's shape derives a canonical
-  editor with no authoring — rows for products, a dropdown for sums,
-  add/remove for lists (*Type shapes* above).
-- **Derived surface.** A type's pattern — the shape of its slots —
-  renders as a form: a text box per leaf slot, a nested editor per
-  child slot (`foundation/means`: a structural LHS is the canonical
-  editor). Authored views come later as a refinement, never a
-  requirement.
-- **Text is a surface, not the core.** A purely structural editor
-  cannot produce malformed trees — only empty slots — so *Never
-  broken* simplifies to slot-filling, and the entire recovering-parser
-  stack defers with the text surface.
-
-Every edit produces a new document; the identity of what didn't change
-survives (`commitContent`'s reconcile is the existing form).
-
 ## Bootstrap
 
 The seed is the smallest set of primitives for which a definition
-document can be authored, interpreted, and edited *in the platform*:
+document can be authored, surfaced, and interpreted *in the platform*:
 
 ```
-seed = { meaning terms : use, quote, literal, builtin, construct-application
-       , signatures   : product, sum, list          -- the shape vocabulary
-       , view terms    : input, label, row, ...      -- the editor vocabulary
+seed = { eval terms    : use, quote, literal, builtin, construct-application
+       , signatures    : product, sum, list          -- the shape vocabulary
+       , surface terms : input, label, row, ...      -- the view vocabulary for `edit` clauses
        , edit ops      : the EditOp set              -- already pure
        }
 ```
 
 Bootstrap completes at the fixpoint: the definition language's own
-definition is a document — authored through editors derived from
-definitions, evaluated by the same `eval`. From there the deferred
-capabilities layer on in dependency order: derived per-type
-editors, then the text surface (parse *and* print compiled from the
-same rules), then the store, version pins, and history; then sync. Each is a projection
-or a service over an unchanged core.
+definition is a document — authored through `edit` clauses derived
+from definitions, interpreted by the same `eval`. From there the
+deferred capabilities layer on in dependency order: pattern-derived
+and authored `edit` clauses, then the text surface (parse *and*
+print compiled from the same rules), then the store, version pins,
+and history; then sync. Each is a projection or a service over an
+unchanged core.
 
 ## What the core is not
 
 No grammar, no store, no history, no sync — their absence is the point.
-The core says what a document *is* and the two things you can *do* with
-it: evaluate it and edit it. Every other capability of the platform is
-an interpretation layered over those same trees.
+The core says what a document *is* — a tree — and gives every node a
+map of named *meanings*: `edit` is the one you live in, `eval` the one
+everything composes through. Every other capability of the platform is
+a new meaning or a service layered over those same trees.

@@ -2,7 +2,11 @@
 
 What doesn't yet work and what comes next.
 
-**Current Focus:** Reducing the examples so that they consist of only dialect documents expressed in terms of foundational constructs provided by the platform and contain no custom Scala code
+**Current Focus:** Bootstrap — the platform defined in documents with
+minimal Scala: the examples reduce to dialect documents over
+foundational constructs, ordered structure-before-notation
+(`CORE-DESIGN.md`) so the definition language self-describes in the
+platform.
 
 ## Known gaps
 
@@ -57,54 +61,94 @@ What doesn't yet work and what comes next.
 
 ## Next steps
 
-1. **Dialects** `pattern means meaning`
-    - **Structural Definitions** Stored definitions should start with AST structure and provide text, editor, etc. projections. Definitions like 'a * b means mul(a, b) can still be used to infer the structure *and* the text, but the structure should be the primary focus. Ambiguous parsers are allowed, but produce a deferred-choice gap (the projection
-      renders candidates as a dropdown) rather than silently
-      first-wins.
-    - **Adjustable Verbosity in Definitions** (Terse/Verbose) toggle
-      switching `means` to `=>` and hiding `where` behind a marker
-    - **Patterns as Editors** The pattern language expands to express visual
-      affordances — dropdowns, widgets, per-element view toggles,
-      alternate presentations a document can switch between — so
-      richer editors and variants are authored *in* the definition,
-      not bound as named builtins. The pattern editor itself (a
-      `lang:` doc's `edit` view) is the first mixed text/graphical
-      instance of the same idea.
-    - **Asserted Examples** A `lang:` doc's examples carry their
-      expected interpretation, rendered and checked by the
-      interpretation view — a dialect document becomes self-testing.
-      `summary` is the placeholder until this lands.
-    - **Types in Definitions** In today's definitions 'where a, b: number'
-      only controls which *tokens* are accepted for those placeholders.
-      In some cases, it should act as a type constraint, so those placeholders
-      can be filled with any expression that matches the type. We still need
-      a way to differentiate whether a placeholder is an expression of said type, or
-      a leaf token of said type. Gaps need to be compatible with expected types.
-    - **Cycle Prevention** The editor should only show definitions below the current one
-      in the DAG, but manual document editing could still result in a cycle.
-    - **Self-Description** The language-definition language's own
-      syntax written a Dialect, closing the bootstrap loop. `builtin`
-      input-parser names (`impls.inputParsers` — `text`, `sheet-cell`)
-      are the last name-keyed doc binding standing here: they become
-      anchored foundation terms or `Language`-ref inputs as part of
-      closing the loop.
-    - **Authored Leaf Productions** User-defined leaf kinds —
-      dates, currency literals, unit suffixes — as document rules
-      (`n means number(n) where n: digits`)
-    - **Lexicon closed over at construction.** Today a parser and its
-      lexicon travel as a `Grammar` pair — sessions and syntaxes can't
-      mix them up — but every token boundary still resolves the lexicon
-      out of the parse input. The end state is a parser that takes only
-      a string and a memo table: `token`, `anyToken`, `unrecognized`,
-      literal matching, `leafParser`, and the other scanning helpers
-      receive the lexicon when the grammar is built, not on every call
-      (`ParseInput` shrinks to `(text, memo)`). `ruleGrammar`,
-      `meaningText`, `compileRules`, markdown's productions, and
-      `DefLanguage.syntax` each bind their effective lexicon once at
-      construction. Do this together with leaf productions: leaf
-      declarations become data at the same time, so the
-      combinator/lexicon boundary only churns once.
-2. **Surfaces as definitions — the examples shed their code.** The
+Ordering: **structure before notation** (`CORE-DESIGN.md`). A
+definition's stored form is a signature plus a meaning; its shape
+derives an editor; the structural editor is the bootstrap editor —
+the fixpoint, the definition language authored in the platform,
+closes before the text surface needs to. Notation is then a
+projection over the core, and the platform services layer on either
+side of it.
+
+### Phase A — the structural core
+
+1. **Signatures on definitions.** A definition's stored form becomes
+   its type shape — product (a fixed tuple of typed slots), sum (a
+   named choice of variants, membership declared on the variant), or
+   list (children of one type); a slot's type is itself a def ref
+   (`CORE-DESIGN.md`, *Type shapes*). `a + b` stops being the stored
+   form — it becomes a notation over a product signature. This
+   absorbs *Types in Definitions*: `where` today constrains which
+   tokens a placeholder accepts; a slot type says what may fill it,
+   and expression-of-type vs leaf-token is the shape itself.
+   Checking is matching — typing rides the tree-pattern engine
+   rather than a separate registry.
+2. **Structural editing.** The bootstrap editor: shape-derived, no
+   authoring required — product slots as labeled rows, a sum slot as
+   a variant dropdown plus the chosen variant's editor, a list as
+   add/remove/move rows, unfilled slots rendered as unfilled-slot
+   placeholders (the structural form of gap; *Never broken*
+   simplifies to slot-filling). Under it, the op algebra —
+   edit-leaf-data, insert-sibling, split, wrap/unwrap selection —
+   mapping onto the existing document ops (`insertNode`,
+   `updateNodeData`, `updateNodeChildIds`), and a structural cursor
+   (node path + slot + character offset): `TextProvenance`'s
+   char→node-chain mapping made primary and maintained continuously.
+   `ui/editor`'s outliner is the generic floor this refines.
+3. **The `edit` half of the pair.** Definitions dispatch
+   `(node, gesture) → [EditOp]` beside `eval` and `render`
+   (`CORE-DESIGN.md`, *Definitions*) — the third arm of the one
+   dispatch. Per-definition editors refine the shape-derived
+   default; they are never required.
+4. **Self-description — the fixpoint.** The definition language's own
+   definition authored *in the platform* through derived editors —
+   no `lang:` text syntax needed to close the loop. `builtin`
+   input-parser names (`impls.inputParsers` — `text`, `sheet-cell`)
+   become anchored foundation terms or `Language`-ref inputs here.
+   Cycle prevention rides along: the editor offers definitions below
+   the current one in the DAG, though manual structural edits can
+   still form a cycle to detect. The Scala that remains at the
+   fixpoint is substrate only: document and store ops, the dispatch
+   loop, the view runtime, the edit ops, the seed vocabulary — and
+   the grammar engine as generic machinery serving the surface
+   below.
+
+### Phase B — notation as projection
+
+5. **Notation declarations.** `a * b means mul(a, b)` declares
+   structure *and* text over a signature — the pattern is derived,
+   not stored; an ambiguous declaration produces a deferred-choice
+   gap (the projection renders candidates as a dropdown) rather than
+   silently first-wins. Around it:
+   - *Adjustable verbosity* — terse/verbose toggle switching `means`
+     to `=>` and hiding `where` behind a marker — a display detail
+     of one content.
+   - *Patterns as editors* — the pattern language expands to visual
+     affordances (dropdowns, widgets, per-element view toggles,
+     alternate presentations a document can switch between) as a
+     refinement over the shape-derived editors, never a requirement.
+   - *Asserted examples* — a dialect doc's examples carry their
+     expected interpretation, rendered and checked by the
+     interpretation view; `summary` is the placeholder until this
+     lands.
+6. **Text input as structural operations** — MPS/Hazel-style hybrid
+   editing: keystrokes interpreted against the current tree emit
+   node ops directly, so identities are retained by construction
+   instead of reconstructed afterward by `commitContent`'s matching:
+   a keystroke interpreter ((key, cursor, tree) → op — leaf edits
+   direct, operator characters propose a restructure the parser
+   validates, uninterpretable input lands in a gap until `GapRetry`
+   resolves it, preserving the text-editor feel) and a continuation
+   oracle — which pieces may follow at a position inside a rule
+   application — over the combinator objects (`Combinators`,
+   `Operators`, `LexicalRules`), which are introspectable data rather
+   than opaque functions. The parser demotes from the commit path to
+   oracle plus fallback: `Reconcile`/`TextProvenance` serve ambiguous
+   input (paste, bulk edits) and `ParseSession`'s memo remains for
+   that path and for `changeRules` re-deriving stored text on
+   language evolution. Intersects *Immediately typed* (open question
+   3): per-keystroke structure is the substrate Hazelnut-style edit
+   semantics would build on.
+7. **The text surface completes — the examples shed their code.** The
    `means` series made expression syntax and printing data — the
    expression example is now its dialect text alone — but markdown
    still hand-writes its document-level surface: `MarkdownParse`
@@ -139,7 +183,7 @@ What doesn't yet work and what comes next.
      applied and each span by the rule that matched, mapping
      construct → class by convention (`.cm-<construct>`) or by
      settings the pattern language declares (*Patterns as Editors*,
-     item 1). An unmatched marker paints
+     item 5). An unmatched marker paints
      nothing because no rule claimed it — the marks *are* the parse.
    - *Lexicons, partly.* Landed for literals:
      `LiteralLexicon.withLiterals` composes the patterns' literal
@@ -150,16 +194,32 @@ What doesn't yet work and what comes next.
      hand-authored (`text` stopping at `*`, `unrecognized`'s
      exclusion — a glued `x&&b` still reads one token), and the
      impls-authored token productions (`text`, `plain`) stay in
-     `Impls.leaves` until *Authored leaf productions*
-     (item 1) lands or becomes `leaf` declarations beside the rules —
+     `Impls.leaves` until this item's authored leaf
+     productions land or become `leaf` declarations beside the rules —
      `number`/`ref`/… already moved to the shared `standard`
      vocabulary. `SyntaxDef.lexicon`'s lookup — `lexiconFor`,
      impls-first then the standard lexicons — retires when lexicon
      content is authored this way too.
+   - *Lexicon closed over at construction.* Today a parser and its
+     lexicon travel as a `Grammar` pair — sessions and syntaxes can't
+     mix them up — but every token boundary still resolves the lexicon
+     out of the parse input. The end state is a parser that takes only
+     a string and a memo table: `token`, `anyToken`, `unrecognized`,
+     literal matching, `leafParser`, and the other scanning helpers
+     receive the lexicon when the grammar is built, not on every call
+     (`ParseInput` shrinks to `(text, memo)`). `ruleGrammar`,
+     `meaningText`, `compileRules`, markdown's productions, and
+     `DefLanguage.syntax` each bind their effective lexicon once at
+     construction. Do this together with leaf productions: leaf
+     declarations become data at the same time, so the
+     combinator/lexicon boundary only churns once.
+   - *Authored leaf productions.* User-defined leaf kinds —
+     dates, currency literals, unit suffixes — as document rules
+     (`n means number(n) where n: digits`).
    - *Sheet's commit surface* (`commitLink`/`linkCellRefs`,
      positional `C4` → `InternalNodeRef`) stays an `Impls`
      interpretation — it rewrites committed structure, it isn't
-     syntax — and moves under *Sheet on rules* (item 1) when that
+     syntax — and moves under *Sheet on rules* (item 5) when that
      lands.
 
    End state: expression's half landed — `examples/expr/` is the
@@ -168,7 +228,10 @@ What doesn't yet work and what comes next.
    `MarkdownLanguage`, `MarkdownView` — `MarkdownParse`/
    `MarkdownPrint`/`MarkdownMarks` retired to foundation generics —
    and then the same single-file end state.
-3. **Pins, pending updates, change proposals, auto-update**
+
+### Phase C — platform services
+
+8. **Pins, pending updates, change proposals, auto-update**
    (`foundation/document/store/DESIGN.md`, *Version pins select behavior*).
    The demo's healing moment (`DEMO.md`, step 7) needs the first three
    steps, in order:
@@ -196,7 +259,7 @@ What doesn't yet work and what comes next.
      simple before/after rendering of the changed nodes. Later stages:
      stored proposal branches in the `Store` (today it is linear per
      url), an author field on versions so a proposal names its actor
-     (`auto-update`, `llm`; see item 4), and semantic diffs. Policy
+     (`auto-update`, `llm`; see item 9), and semantic diffs. Policy
      becomes per document: manual, propose, or auto-update (accept
      without review).
 
@@ -209,7 +272,7 @@ What doesn't yet work and what comes next.
      bump doesn't even *surface* as pending until reload. Two tabs can
      also publish divergent v1s of the same url — version ids are
      computed per tab. This is really the store-convergence half of
-     item 4: once a remote head is observable, the cascade should run
+     item 9: once a remote head is observable, the cascade should run
      against it.
    - *Content migration.* Beyond heals, accepting never rewrites
      committed structure: a cell parsed under expression v0 keeps its
@@ -231,12 +294,12 @@ What doesn't yet work and what comes next.
    - *Scan cost.* pending/broken detection walks all reachable refs on
      every render — fine at demo size, wants caching keyed on doc and
      store identity.
-4. **History and sync.** A network transport (signaling) and presence
+9. **History and sync.** A network transport (signaling) and presence
    (cursors, selections, eventually keystroke-level preview, as
    ephemeral broadcast state off the change graph); actor attribution
    on curated versions, with background changes (auto-update accepts,
    LLM edits) authored by non-user actors arriving through the merge
-   path — and LLM edits possibly as change proposals (item 3)
+   path — and LLM edits possibly as change proposals (item 8)
    (`collaboration/DESIGN.md`, *Attribution*); debounce-coalesced edit bursts,
    including per-turn coalescing for streamed collaborator edits;
    undo stacks rebuilt on resume; branch interception for
@@ -247,47 +310,7 @@ What doesn't yet work and what comes next.
    retire the whole-text reparse remote changes go through today
    (sync carries the `Serial` outline, parsed by the outline format;
    making that incremental is scaffolding the CRDT likely supersedes).
-5. **Structure and typing.** Folded into the generalized rules model
-   (item 1, *Structural rules*): a structural pattern *is* a construct's shape
-   — checking is matching — so typing rides the same tree-pattern
-   engine rather than a separate registry.
-6. **Text input as structural operations** — MPS/Hazel-style hybrid
-   editing: keystrokes interpreted against the current tree emit node
-   ops directly, so identities are retained by construction instead of
-   reconstructed afterward by `commitContent`'s matching. The parser
-   demotes from the commit path to oracle plus fallback, and
-   `Reconcile`/`TextProvenance` become the ambiguous-input path. In
-   order:
-
-   - *Structural cursor.* Position as node path + slot + character
-     offset within a leaf, maintained continuously —
-     `TextProvenance`'s char→node-chain mapping made primary rather
-     than a per-commit hint.
-   - *Op algebra.* A small set of structural ops — edit-leaf-data,
-     insert-sibling, split, wrap/unwrap selection, retokenize-leaf —
-     each mapping onto existing document ops (`insertNode`,
-     `updateNodeData`, `updateNodeChildIds`); untouched nodes keep ids
-     trivially.
-   - *Keystroke interpreter.* (key, cursor, tree) → op: typing inside
-     a leaf edits its data directly; operator characters propose a
-     restructure validated by the parser-as-oracle; ambiguous input
-     reparses only the enclosing production and reconciles that
-     subtree; uninterpretable input lands in a gap — free typing is a
-     gap's text until `GapRetry` resolves it, preserving the
-     text-editor feel.
-   - *Grammar introspection.* A continuation oracle — which pieces may
-     follow at a position inside a rule application — over the
-     combinator objects (`Combinators`, `Operators`, `LexicalRules`),
-     which are introspectable data rather than opaque functions.
-   - *Parser demoted.* Whole-buffer `retext` becomes one input mode
-     among others (paste, bulk edits); `ParseSession`'s memo remains
-     for that path and for `changeRules` re-deriving stored text on
-     language evolution.
-
-   The end state intersects *Immediately typed* (open question 3):
-   per-keystroke structure is the substrate Hazelnut-style edit
-   semantics would build on.
-7. **Further roadmap:**
+10. **Further roadmap:**
    - A visual vocabulary editor and interactive diagram editing as document
      views.
    - In-workbench help: `USAGE.md` is an interim measure; per *self
