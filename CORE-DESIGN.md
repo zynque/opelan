@@ -205,14 +205,63 @@ clause(def, name) =
   references need no separate machinery.
 - A ref cycle returns a gap value at the edge that closes it rather
   than diverging — *Never broken* holds even in the core.
-- The memo table is the incrementality seam. This DFS is the oracle
-  form; the target re-evaluates only what a change reaches and keeps
-  result identity — the same relation the incremental parser has to
-  the full parse (`PRINCIPLES.md`). Starting with the batch form is
-  sanctioned; designing away the seam is not.
+- The memo table is the incrementality seam (*Incrementality*
+  below). This DFS is the oracle form; the target re-evaluates only
+  what a change reaches and keeps result identity — the same
+  relation the incremental parser has to the full parse
+  (`PRINCIPLES.md`). Starting with the batch form is sanctioned;
+  designing away the seam is not.
 
 Values are trees and literals — the meaning tree is the program, the
 produced tree is the value.
+
+## Incrementality
+
+Writes are commands, reads are folds — the event loop is small:
+
+```
+onGesture(g):
+  ops  = surfaceAt(selection).handle(selection, g)   -- a command, not a fold
+  doc' = apply(ops, doc)                           -- untouched ids stable
+  mark(edited spine ∪ ref-dependents ∪ def-dependents)
+  -- visible meanings re-fold their dirty cones, lazily
+```
+
+The read side needs no new machinery: a clause's result depends only
+on its node and its children's results, so a subtree change
+invalidates the path to the root and nothing else. The memo tables
+simply survive the edit.
+
+Three pieces already paid for turn out to *be* the mechanism:
+
+- **Stable ids are the memo keyspace.** Untouched subtrees keep
+  their ids, so memo entries below the dirty cone stay valid — and
+  surfaces for them keep DOM identity: selection, scroll, and focus
+  surviving a refold is the same mechanism as incrementality.
+- **Staging unifies definition changes.** A use's fold depends on its
+  type's folded clause, so def→use edges are ordinary fold edges —
+  one dependency graph, one engine.
+- **Version pins bound the invalidation graph.** A pinned ref cannot
+  change underfoot; a remote head never reaches into the memo table.
+  Pending updates arrive as ordinary edits through the same loop.
+
+The bookkeeping cost: a result memo alone cannot say what a
+definition edit dirties — each fold step must also record its read
+set (which clauses and foreign nodes it consulted; `GapRetry`'s
+consulted-rules is the existing form). The batch fold stays the
+oracle the incremental engine is property-tested against.
+
+Queries are not folds — find-usages, resolvers, pending-update scans
+get their own incremental story: an inverse ref index maintained by
+diffing the ref set on each edit.
+
+Scheduling is priority tiers over one engine: visible `edit`
+surfaces re-fold per frame (lazily — meanings not on screen cost
+nothing), `eval` where surfaces display results, `compile` and
+`typecheck` in the background. Compilation being a memoized fold,
+incremental compilation is free — a rebuild re-folds only the dirty
+cone — and deployable artifacts are derived data, content-addressed
+by (term, meaning).
 
 ## Bootstrap
 

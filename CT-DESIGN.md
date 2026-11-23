@@ -156,6 +156,47 @@ language turns source into behavior. The fold over instances runs on
 algebras obtained by folding definitions — this staging is why `eval`
 is privileged among meanings.
 
+## Incrementality is tabulation
+
+The catamorphism law — `fold(A) ∘ in = A ∘ F(fold(A))` — says the
+fold's value at a node is a function of that node's level and
+nothing else: same subterm, same value, wherever it sits. Initiality
+forces *context-freedom*, and context-freedom is exactly what makes
+caching sound — the memo table is a partial tabulation of `fold(A)`
+itself, and the incremental engine's correctness claim is that the
+diagram commutes: incremental fold after an edit equals the full
+fold of the edited tree. The batch fold stays the oracle.
+
+An edit splits the tree into a changed subterm and its context — a
+*one-hole context*: the tree with a hole where the subterm was.
+One-hole contexts of a recursive type are its **derivative** `∂F`
+(Huet's zipper; the derivative of a regular type is its type of
+one-hole contexts). The dirty cone is the zipper's spine: re-fold
+the new subterm, then re-fold each level walking the spine to the
+root — work proportional to change plus path, never to tree size.
+Invalidation generally: dependency edges form a poset, and the dirty
+set is the *upward closure* of the edited positions — ref edges (a
+node's fold consults its definition's clause) are just more edges in
+the same poset.
+
+Two bonuses from the same toolbox:
+
+- **Banana split** (Meijer et al.): two catamorphisms fuse —
+  `fold(A) △ fold(B) = fold(A △ B)` — so several visible meanings
+  can be tabulated in one traversal rather than one memo each.
+- **Artifacts are tabulated values**: a `compile` result is a pure
+  function of (term, algebra), so it is soundly content-addressable —
+  "cached optimized transforms" is memoization persisting across
+  sessions instead of within one.
+
+The qualification: clauses see node ids and resolve refs, so the
+real object is a fold over the term *store* with a recorded
+read-set, not a pure `WΣ -> V`. The homomorphism states the
+destination; the read-set tracking is what makes the engine reach
+it. Priority tiers — `edit` per frame, `compile` in the background —
+are scheduling over one tabulation engine: laziness restricts the
+tabulation to what observation demands.
+
 ## Bootstrap is a self-encoding signature
 
 Bootstrap completes when Σ can describe itself — a type language in
