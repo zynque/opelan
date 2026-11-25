@@ -5,6 +5,7 @@ package opelan.foundation.document
 //   or a reference to another node in this document
 //   or a reference to a node in another document
 //   or, in a derived tree, a reference back to the source node
+//   TODO: enum?
 sealed trait NodeData
 
 object NodeData {
